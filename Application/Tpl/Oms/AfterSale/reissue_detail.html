@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <title>$lang('补发详情')</title>
+    <style>
+        span.shopTag>span {
+            position: absolute !important;
+            top: 0px;
+            left: 0px;
+            border-radius: 0px;
+            background-color: #f99c64;
+            border: 1px solid rgb(231, 156, 116) !important;
+        }
+        
+        .el-popover {
+            text-align: left !important;
+        }
+        
+        .guds-item {
+            width: 156px;
+            float: left;
+            padding: 5px 0px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .count-item {
+            padding: 5px 0px;
+            float: right;
+            font-weight: 600;
+            font-size: 14px
+        }
+        
+        .el-table .cell {
+            word-break: break-word !important;
+        }
+        
+        .ellipsis {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer;
+        }
+        
+        .sale-team {
+            width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+        
+        .title-info-container .title-info {
+            /*text-align: right;*/
+            padding-left: 12px;
+            height: 20px;
+            line-height: 20px;
+        }
+    </style>
+</head>
+
+<body class="orderList">
+    <div id="order-list" class="list-common" style="margin-bottom:220px;">
+        <div class="step-content">
+            <el-steps :active="active" align-center>
+                <el-step :title="$lang('已申请')"></el-step>
+                <el-step :title="$lang(activeVal)"></el-step>
+            </el-steps>
+        </div>
+        <!-- 分割线 start-->
+        <div class="orderList-line line-split"></div>
+        <!-- 分割线 end-->
+
+        <!-- 订单表格主体 start-->
+        <div class="orderList-Main list-common-main">
+            <header>
+                <!-- {{$lang('搜索结果')}}:{{$lang('共')}} -->
+                <!-- <span class="num-bold">{{totalCount}}</span> {{$lang('条记录')}} -->
+                <el-button type="primary" size="mini" @click="applyCancel()" v-if="total_status_code && total_status_code != 'N002800008' && total_status_code != 'N002800007' && total_status_code != 'N002800006'">{{$lang('取消售后')}}</el-button>
+            </header>
+
+            <el-table border show-header ref="multipleTable" :data="tableData" tooltip-effect="dark" style="width: 100%" class="order-list-table table-common" v-loading="tableLoading">
+                <el-table-column :label="$lang('售后单号')" prop="after_sale_no">
+                </el-table-column>
+                <el-table-column :label="$lang('订单号')">
+                    <template slot-scope="scope">
+                        {{scope.row.order_no}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('补发单号')" prop="reissue_no">
+                </el-table-column>
+                <el-table-column :label="$lang('子订单号')" prop="child_order_no">
+                </el-table-column>
+                <el-table-column :label="$lang('商品编码')">
+                    <template slot-scope="scope">
+                        <div v-if="scope.row.product_info && scope.row.product_info.hasOwnProperty('sku_id')">{{scope.row.product_info.sku_id}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('商品名称')">
+                    <template slot-scope="scope">
+                        <div v-if="scope.row.product_info && scope.row.product_info.hasOwnProperty('spu_name')">{{scope.row.product_info.spu_name}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('商品属性')">
+                    <template slot-scope="scope">
+                        <div v-if="scope.row.product_info && scope.row.product_info.hasOwnProperty('product_attr')">{{scope.row.product_info.product_attr}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('商品图片')" style="position: relative;">
+                    <template slot-scope="scope">
+                        <img v-if="scope.row.product_info && scope.row.product_info.hasOwnProperty('thumbnail')" :src="scope.row.product_info.thumbnail" style="cursor: pointer;" width="80" height="80" @mouseenter="showImg(scope.row)" @mouseleave="showImg(scope.row)">
+                        <div style="position: absolute; top: 10px; left: 100%; box-shadow: 0 0 5px #536d7a;z-index:999" v-if="scope.row.bigImg">
+                            <img :src="scope.row.product_info.thumbnail" width="300" height="300">
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="yet_reissue_num" :label="$lang('补发件数')"></el-table-column>
+                <el-table-column prop="created_at" :label="$lang('发起时间')"></el-table-column>
+                <el-table-column :label="$lang('收货人姓名')">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.receiver_name)}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="receiver_phone" :label="$lang('收货人手机号')"></el-table-column>
+                <el-table-column :label="$lang('详细地址')">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.address)}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('申请人')">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.created_by)}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('售后原因')">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.reissue_reason)}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('操作')">
+                    <template slot-scope="scope" v-if="scope.row.status_code != 'N002800006' && scope.row.status_code != 'N002800007' && scope.row.status_code != 'N002800008'">
+                        <el-button type="text" size="mini" @click="applyCancel(scope.row.reissue_goods_id,scope.row.reissue_no,scope.row.child_order_no)">{{$lang('取消补发申请')}}</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <!-- <el-pagination background @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="pages.current_page" :page-sizes="[10, 30, 50, 100]" :page-size="pages.per_page" layout="sizes,prev, pager, next, jumper" :total="totalCount">
+            </el-pagination> -->
+        </div>
+        <!-- 订单表格主体 end-->
+    </div>
+    <!--引入js-->
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/layer/1.9.3/layer.js"></script>
+    <script>
+        var VM = new Vue({
+            el: '#order-list',
+            components: {},
+            data: {
+                after_sale_no: '',
+                activeVal: '已完成',
+                order_no: '',
+                active: 0,
+                tableLoading: true,
+                pages: {
+                    per_page: 10,
+                    current_page: 1
+                },
+                // totalCount: 0, //总条数
+                tableData: [], //查询返回数据
+                bigImg: false,
+                total_status_code: '',
+            },
+            methods: {
+                getAfterOrderList: function getAfterOrderList() {
+                    var _this = this;
+                    var param = {
+                        after_sale_no: _this.after_sale_no,
+                    }
+                    _this.tableLoading = true;
+                    axios.post('/index.php?g=OMS&m=afterSale&a=reissueDetail', param).then(function(res) {
+                        if (res.data.code == 200) {
+                            _this.tableData = res.data.data.data;
+                            _this.total_status_code = res.data.data.total_status_code;
+                            _this.active = _this.total_status_code == 'N002800001' ? 0 : (_this.total_status_code == 'N002800006' || _this.total_status_code == 'N002800008' ? 1 : 2);
+                            _this.activeVal = _this.total_status_code == 'N002800008' ? '已取消' : '已完成';
+                            // _this.totalCount = parseInt(res.data.data.pages.total);
+                            setTimeout(function() {
+                                _this.tableLoading = false;
+                            }, 1000);
+                        } else {
+                            _this.$message.error(_this.$lang(res.data.info));
+                        }
+                    }).catch(function(err) {
+                        console.log(err);
+                    });
+                },
+                handleSizeChange: function handleSizeChange(val) {
+                    this.pages = {
+                        per_page: val,
+                        current_page: 1
+                    };
+                    this.getAfterOrderList();
+                },
+                handleCurrentChange: function handleCurrentChange(val) {
+                    this.pages.current_page = val
+                    this.getAfterOrderList();
+                },
+                showImg: function showImg(item) {
+                    Vue.set(item, 'bigImg', !item.bigImg);
+                },
+                applyCancel: function applyCancel(reissue_goods, reissue, child) {
+                    var _this = this;
+                    var data;
+                    if (!reissue_goods) {
+                        data = {
+                            after_sale_no: _this.after_sale_no,
+                            order_no: _this.order_no
+                        }
+                        _this.postCancelApply(data);
+                    } else {
+                        data = {
+                            reissue_goods_id: reissue_goods,
+                            order_no: _this.order_no,
+                            reissue_no: reissue,
+                            child_order_no: child,
+                        }
+                        _this.postCancelApply(data);
+                    }
+                },
+                postCancelApply: function postCancelApply(data) {
+                    var _this = this;
+                    if (_this.total_status_code == 'N002800006') {
+                        layer.confirm('商品已经入库,无法取消售后申请', function() {});
+                    } else {
+                        layer.confirm('是否取消售后申请', function() {
+                            axios.post('/index.php?g=OMS&m=afterSale&a=cancelReissue', data).then(function(res) {
+                                if (res.data.code == 200) {
+                                    layer.msg('已取消!', {
+                                        icon: 1,
+                                        time: 1000
+                                    });
+                                    _this.$message.success(_this.$lang(res.data.msg));
+                                    window.location.reload();
+                                } else {
+                                    layer.msg('取消失败!', {
+                                        icon: 1,
+                                        time: 1000
+                                    });
+                                    _this.$message.error(_this.$lang(res.data.msg));
+                                }
+                            }).catch(function(err) {
+                                console.log(err);
+                            });
+                        });
+                    }
+                }
+            },
+            created: function created() {
+                this.after_sale_no = getQueryVariable("after_sale_no");
+                this.order_no = getQueryVariable("order_no");
+                this.getAfterOrderList();
+            },
+        });
+        //获取url参数
+        function getQueryVariable(variable) {
+            var query = window.location.search.substring(1);
+            var vars = query.split("&");
+            for (var i = 0; i < vars.length; i++) {
+                var pair = vars[i].split("=");
+                if (pair[0] == variable) {
+                    return pair[1];
+                }
+            }
+            return false;
+        }
+    </script>
+</body>
+
+</html>

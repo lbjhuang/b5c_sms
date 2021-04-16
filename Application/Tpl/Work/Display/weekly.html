@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <title>周报</title>
+    <style>
+        .marginRight {
+            margin-right: 40px;
+        }
+        .list-common-main {
+            margin-top: 50px;
+        }
+        .cell p {
+            overflow: hidden;
+            text-overflow:ellipsis;
+            white-space: nowrap;
+        }
+        .el-button--primary {
+            color: #fff;
+            background-color: #1E7EB4;
+            border-color: #1E7EB4;
+        }
+        .el-pagination.is-background .el-pager li.active {
+            background-color: #1E7EB4;
+        }
+        .el-button--success {
+            color: #fff;
+            background-color: #2BA384;
+            border-color: #2BA384;
+        }
+        .el-button--success:hover {
+            background-color: #43CD80;
+            border-color: #43CD80;
+        }
+        .el-button--primary.is-plain:focus, .el-button--primary.is-plain:hover {
+            background: #4F94CD;
+            border-color: #4F94CD;
+        }
+        .el-button--primary.is-plain:focus, .el-button--primary:hover {
+            background: #4F94CD;
+            border-color: #4F94CD;
+        }
+    </style>
+</head>
+<body>
+    <div id="rkWrap" v-cloak class="list-common">
+        <!-- 搜索条件 start -->
+        <el-form ref="form" label-width="140px" :label-position="labelPosition">
+            <el-row>
+                <el-col :span="6" class="marginRight" style="text-align: right">
+                    <el-date-picker v-model="dateRange" style="height: 40px;" value-format="yyyy-MM-dd HH:mm:ss" size="small" type="datetimerange" align="right" 
+                    unlink-panels range-separator="至" :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')"></el-date-picker>
+                </el-col>
+                <el-col :span="6" class="marginRight">
+                    <el-select v-model="form.year" :placeholder="$lang('年数')" value="" style="width: 40%">
+                        <el-option v-for="(item, index) in yearList" :key="index" :label="item" :value="item"></el-option>
+                    </el-select>
+                    <el-select v-model="form.week" :placeholder="$lang('周数')" value="" style="width: 40%">
+                        <el-option v-for="(item, index) in weekList" :key="index" :label="item" :value="item"></el-option>
+                    </el-select>
+                </el-col>
+                <el-col :span="4" class="marginRight">
+                    <el-input v-model="form.content" :placeholder="$lang('关键字')" value=""></el-input>
+                </el-col>
+                <el-col :span="6" class="">
+                    <el-button @click="doSearch" type="primary" style="margin-right: 20px;display: inline;">{{$lang('搜索')}}</el-button>
+                    <el-button @click="doReset" type="primary" style="margin-right: 20px;display: inline;" plain>{{$lang('重置')}}</el-button>
+                </el-col>
+            </el-row>
+        </el-form>
+        <!-- 搜索条件 end -->
+
+
+        <!-- 周报列表 start-->
+        <div class="orderList-Main list-common-main">
+            <header>
+                <el-row>
+                    <el-col :span="20">
+                        {{$lang('搜索结果：')}}<span class="num-bold">{{$lang('共')}}{{totalCount}}{{$lang('条记录')}}</span>
+                        
+                    </el-col>
+                    <el-col :span="4" class="text-right">
+                        <el-button @click="toWriteWeekly" type="success" style="margin-right: 10px;">{{$lang('写周报')}}</el-button>
+                        
+                    </el-col>
+                </el-row>
+            </header>
+            <el-table border show-header tooltip-effect="dark" :data="weeklyDatas" style="width: 100%" class="order-list-table table-common" v-loading="tableLoading">
+                <el-table-column prop="report_code" :label="$lang('编号')" width="200"></el-table-column>
+                <el-table-column :label="$lang('周数')" width="220">
+                    <template scope="scope">
+                        <span>{{scope.row.year}}{{$lang('年')}}{{scope.row.week}}{{$lang('周')}}</span><span v-if="scope.row.year_extra">（{{scope.row.year_extra}}{{$lang('年第')}}{{scope.row.week_extra}}{{$lang('周）')}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="content" :label="$lang('内容概览')">
+                    <template scope="scope">
+                        <p style="color: #006699; cursor: pointer;" @click="goDetail(scope.row.id)" v-html="scope.row.content"></p>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="create_time" :label="$lang('创建时间')" width="200"></el-table-column>
+                <el-table-column prop="edit_time" :label="$lang('最后编辑时间')" width="200"></el-table-column>
+                <el-table-column :label="$lang('操作')" width="100">
+                    <template scope="scope">
+                        <el-button type="primary" size="small" @click="goEditor(scope.row.id)">{{$lang('编辑')}}</el-button>
+                    </template>
+                </el-table-column>
+                
+            </el-table>
+
+            <el-pagination background @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="form.p" 
+            :page-sizes="[10, 30, 50, 100]" :page-size="form.rows" layout="sizes, prev, pager, next, jumper" :total="totalCount"></el-pagination>
+        </div>
+        <!-- 周报列表 end -->
+    </div>
+
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js?<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script>
+        var OPTION = {
+            lock: true
+        };
+        
+        var nowYear = new Date().getFullYear();
+        var nowWeek = getWeekNumber();
+
+        var vm = new Vue({
+            el: '#rkWrap',
+            data: {
+                labelPosition: 'left',
+                tableLoading: false,
+                totalCount: 10,
+                weeklyDatas: [],
+                dateRange: '',
+                yearList: [],
+                weekList: [],
+
+                form: {
+                    min_create_time: '',
+                    max_create_time: '',
+                    year: '',
+                    week: '',
+                    content: '',
+                    p: 1,
+                    rows: 10
+                }
+            },
+            created: function () {
+                
+                for (var i = 2017; i <= nowYear; i++) {
+                    this.yearList.push(i);
+                };
+
+                this.getWeekList(nowWeek);
+                this.getWeeklyList();
+            },
+            methods: {
+                getWeeklyList: function () {
+                    var _this = this;
+                    var param = {
+                        url: '/index.php?g=work&m=report&a=weekly_report_list&p=' + this.form.p,
+                        data: this.form,
+                        method: 'post'
+                    };
+
+                    ajax(param, this, true).then(function (res) {
+                        var _data = res.data;
+
+                        _this.weeklyDatas = _data.data.list;
+                        _this.totalCount = _data.data.page.total_rows - 0;
+                    });
+                },
+                doSearch: function () {
+                    this.form.min_create_time = this.dateRange && this.dateRange[0];
+                    this.form.max_create_time = this.dateRange && this.dateRange[1];
+                    
+                    console.log(this.form)
+                    this.getWeeklyList();
+                },
+                doReset: function () {
+                    this.dateRange = '';
+                    this.form = {
+                        min_create_time: '',
+                        max_create_time: '',
+                        year: '',
+                        week: '',
+                        content: '',
+                        p: 1,
+                        rows: 10
+                    };
+                    this.getWeeklyList();
+                },
+                goEditor: function (id) {
+                    this.route('写周报', "editor_weekly", id);
+                },
+                handleSizeChange: function (val) {
+                    this.form.rows = val;
+                    this.getWeeklyList();
+                },
+                handleCurrentChange: function (val) {
+                    this.form.p = val;
+                    this.getWeeklyList();
+                },
+                toWriteWeekly: function () {
+                    this.route('写周报', "editor_weekly");
+                },
+                goDetail: function (id) {
+                    this.route('周报详情', "detail_weekly", id);
+                },
+                route: function(title, _html, id) {
+                    var dom = document.createElement("a"),
+                        _href = "/index.php?g=work&m=display&a=" + _html + "&_id=" + id;
+                    dom.setAttribute("onclick", "opennewtab(this,'" + title + "')");
+                    dom.setAttribute("_href", _href);
+                    dom.click();
+                },
+                getWeekList: function (wl) {
+                    var _arr = [];
+                    for (var i = 1; i <= wl; i++) {
+                        _arr.push(i);
+                    };
+                    this.weekList = _arr;
+                }
+            },
+            watch: {
+                'form.year': function (newV) {
+                    var weekLength = newV == nowYear ? getWeekNumber() : getWeekNumber(newV, 12, 31);
+                    this.getWeekList(weekLength);
+                },
+            }
+        });
+
+        /**
+         *获取某年某月某天是第几周
+        *第一天为周日
+        */
+        function getWeekNumber(y, m, d) {
+
+            var targetDay = y ? new Date(y, m - 1, d) : new Date();
+            var year = targetDay.getFullYear();
+            var month = targetDay.getMonth() + 1;
+            var days = targetDay.getDate();
+            //那一天是那一年中的第多少天
+            for (var i = 1; i < month; i++) {
+                days += getMonthDays(year, i);
+            }
+            //那一年第一天是星期几
+            var yearFirstDay = new Date(year, 0, 1).getDay() + 1;
+            //计算是第几周
+            days += yearFirstDay;
+            var week = Math.ceil(days / 7);
+            return week;
+        }
+
+        /**
+         *判断年份是否为润年
+            */
+        function isLeapYear(year) {
+            return (year % 400 == 0) || (year % 4 == 0 && year % 100 != 0);
+        };
+
+        /**
+         *获取某年某月的天数
+            */
+        function getMonthDays(year, month) {
+            return [31, (isLeapYear(year) ? 29 : 28), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1];
+        };
+
+        /*
+        *js函数方法
+        */
+
+        //判断数据类型
+        function type (o) {
+            var s = Object.prototype.toString.call(o);
+            return s.slice(s.indexOf(" ") + 1, s.length - 1).toLowerCase();
+        };
+        
+        /**
+         * 对axios的简单二次封装
+         * @param _data 必传  请求参数 
+         * @param v     必传  vue实例对象
+         * @param flag  可传  是否开启table加载loading
+         * @returns {*}
+         */
+        function ajax (_data, v, flag) {
+            if (type(_data) !== "object") {
+                return;
+            };
+            
+            if (flag) {
+                v.tableLoading = true;
+            };
+            var errData = "服务器开小差了-_-!";
+
+            // 添加返回拦截器
+            axios.interceptors.response.use(
+                function (res) {
+                    if (flag) {
+                        v.tableLoading = false;
+                    };
+                    var _re = res && res.data;
+                    if (_re.code !== 2000) {
+                        v.$message.error(_re.msg);
+                    };
+                    return res;
+                },
+                function (error) {
+                    console.log(errData);
+                }
+            );
+            
+            // 对象赋值,兼容ie
+            if (_data.data) {
+                var data_ =  _data.data;
+                _data.data = Qs.stringify(data_);
+            };
+            _data.timeout = 2000;
+            _data.responsetype = 'json';
+            _data.headers = {'Content-Type': 'application/x-www-form-urlencoded'};
+            _data.validateStatus = function (status) {
+                if (status < 200 || status >= 300) {
+                    console.log(errData);
+                };
+                return status >= 200 && status < 300;
+            };
+            return axios(_data);
+        };
+    </script>
+</body>
+</html>

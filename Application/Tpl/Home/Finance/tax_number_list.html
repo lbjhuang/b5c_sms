@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.13.0.css?v=<{$Think.const.V}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+
+</head>
+<style>
+  #taxNumberList {
+    display: none;
+  }
+
+  .list {
+    padding: 20px 20px 0 20px;
+  }
+
+  .list__filters {
+    display: flex;
+    flex-direction: column;
+    /*padding: 20px 20px 0 20px;*/
+    border-bottom: 1px solid #dddddd;
+  }
+
+  .list__statistics {
+    padding: 0px 20px 0px 20px;
+    border-top: 1px solid;
+    border-left: 1px solid;
+    border-right: 1px solid;
+  }
+
+  .list__actions {
+    border-bottom: none;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .list__actions--primary {
+    padding: 20px;
+  }
+
+  .list__data {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .list__pagination {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 10px;
+  }
+
+  /*
+   element-ui默认样式
+  */
+  .list__filters .el-select {
+    display: block !important;
+  }
+
+  .list__data .el-table__header tr th {
+    background: #546E7A !important;
+    color: #fff !important;;
+  }
+</style>
+<body>
+<div id="taxNumberList">
+  <div class="list">
+    <div data-test="filter" class="list__filters">
+      <el-form @submit.native.prevent ref="form">
+        <el-row :gutter="20" type="flex">
+          <el-col :md="4">
+            <el-form-item>
+              <el-select
+                  filterable
+                  @keyup.enter.native="onSearch"
+                  v-model="filter.search.our_company_cd"
+                  clearable
+                  :placeholder="$lang('请选择我方公司')"
+              >
+                <el-option
+                    filterable
+                    v-for="item in allCompany"
+                    :key="item.CD"
+                    :label="$lang(item.CD_VAL)"
+                    :value="item.CD"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :md="4">
+            <el-form-item>
+              <el-select
+                  filterable
+                  @keyup.enter.native="onSearch"
+                  v-model="filter.search.country_id"
+                  clearable
+                  :placeholder="$lang('请选择税号所属国')"
+              >
+                <el-option
+                    v-for="item in allCountry"
+                    :key="item.id"
+                    :label="$lang(item.NAME)"
+                    :value="item.id"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :md="4">
+            <el-form-item>
+              <el-input
+                  v-model="filter.search.vat_number"
+                  clearable
+                  :placeholder="$lang('请输入VAT号')"
+                  @keyup.enter.native="onSearch"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :md="4" :offset="1">
+            <el-form-item>
+              <el-button
+                  type="primary"
+                  class="button button--search"
+                  :loading="searching"
+                  @click="onSearch"
+              >{{$lang('查询')}}
+              </el-button
+              >
+              <el-button
+                  type="primary"
+                  @click="onReset"
+                  class="button"
+              >{{$lang('重置')}}
+              </el-button
+              >
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+    </div>
+
+    <div
+        class="list__actions"
+    >
+        <span>
+          <span>
+            <span>{{$lang('搜索结果：共') +" "+ pagedTaxNumbers.pages.total +" " + $lang('条记录')}}</span>
+          </span>
+        </span>
+      <span>
+          <el-button
+              type="primary"
+              @click="onExport"
+              class="button button--new"
+          >{{$lang('导出')}}
+          </el-button
+          >
+          <el-button
+              @click="onNew"
+              class="button button--new"
+          >{{$lang('新增')}}
+          </el-button
+          >
+        </span>
+    </div>
+
+    <div class="list__data">
+      <el-table
+          :data="pagedTaxNumbers.data"
+          :default-sort="pagination.sort"
+          border
+          @sort-change="onSort"
+      >
+        <el-table-column
+            align="center"
+            header-align="center"
+            prop="vat_number1"
+            :resizable="false"
+            :label="$lang('我方公司')"
+        >
+          <template slot-scope="scope">
+            <el-select
+                v-if="scope.row.isEdit"
+                :disabled="scope.row.isDisabled"
+                v-model="scope.row.our_company_cd"
+                clearable
+                filterable
+                :placeholder="$lang('请选择我方公司')"
+            >
+              <el-option
+                  v-for="item in allCompany"
+                  :key="item.CD"
+                  :label="$lang(item.CD_VAL)"
+                  :value="item.CD"
+              />
+            </el-select>
+            <span v-if="!scope.row.isEdit">{{$lang(scope.row.our_company_cd_val)}}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+            align="center"
+            header-align="center"
+            prop="vat_number2"
+            :resizable="false"
+            :label="$lang('税号所属国')"
+        >
+          <template slot-scope="scope">
+            <el-select
+                v-if="scope.row.isEdit"
+                :disabled="scope.row.isDisabled"
+                v-model="scope.row.country_id"
+                clearable
+                filterable
+                :placeholder="$lang('请选择税号所属国')"
+            >
+              <el-option
+                  v-for="item in allCountry"
+                  :key="item.id"
+                  :label="$lang(item.NAME)"
+                  :value="item.id"
+              />
+            </el-select>
+            <span v-if="!scope.row.isEdit">{{$lang(scope.row.country_name)}}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+            align="center"
+            header-align="center"
+            :resizable="false"
+            :label="$lang('VAT号')"
+        >
+          <template slot-scope="scope">
+            <el-input v-if="scope.row.isEdit"
+                      :placeholder="$lang('请输入VAT号')"
+                      :disabled="scope.row.isDisabled"
+                      v-model="scope.row.vat_number"></el-input>
+            <span v-if="!scope.row.isEdit">{{scope.row.vat_number}}</span>
+
+          </template>
+        </el-table-column>
+        <el-table-column
+            header-align="center"
+            align="center"
+            :resizable="false"
+            :label="$lang('税率')"
+        >
+          <template slot-scope="scope">
+            <span style="display: flex;align-items: center;" v-if="scope.row.isEdit">
+               <el-input
+                   type="number"
+                   :placeholder="$lang('请输入税率')"
+                   :disabled="scope.row.isDisabled"
+                   v-model="scope.row.tax_rate"></el-input>
+              <span style="margin-left: 10px">%</span>
+            </span>
+            <span v-if="!scope.row.isEdit">{{scope.row.tax_rate}}%</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+            align="center"
+            :resizable="false"
+            fixed="right"
+            prop="opretion"
+            :label="$lang('操作')"
+            width="220px"
+        >
+          <template slot-scope="scope">
+            <el-button v-if="!scope.row.isEdit" type="primary" @click="onEdit(scope.row)">{{$lang("编辑")}}</el-button>
+            <el-button v-if="scope.row.isEdit" type="primary" :loading="saveLoading" @click="onSave(scope.row)">
+              {{$lang("保存")}}
+            </el-button>
+            <el-button v-if="scope.row.isEdit" type="primary" @click="onClose(scope.row)">{{$lang("取消")}}</el-button>
+
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
+    <div data-test="pagination" class="list__pagination">
+      <el-pagination
+          @current-change="onPageChange"
+          @size-change="onSizeChange"
+          :current-page="pagination.pages.current_page"
+          :page-size="pagination.pages.per_page"
+          :page-sizes="[10,20]"
+          layout="sizes,prev, pager, next, jumper"
+          :total="pagedTaxNumbers.pages.total"
+      />
+    </div>
+  </div>
+
+</div>
+
+<script type="text/javascript" src="../Public/lib/jquery/1.9.1/jquery.min.js?v=<{$tdink.config.VER_NUM}>"></script>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue-2.6.10.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.13.0.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+
+<script src="./Application/Tpl/Home/Public/js/lodash-4.17.15.js"></script>
+
+<script>
+    if (getCookie('think_language') !== "zh-cn") {
+        ELEMENT.locale(ELEMENT.lang.en)
+    }
+</script>
+
+<script>
+    const vueApp = new Vue({
+        el: '#taxNumberList',
+        data() {
+            return {
+                filter: {
+                    search: {
+                        our_company_cd: "",
+                        country_id: "",
+                        vat_number: ""
+                    }
+                },
+                pagination: {
+                    pages: {
+                        current_page: 1,
+                        per_page: 10,
+                    },
+                },
+                searching: false,
+                saveLoading: false,
+                pagedTaxNumbers: {
+                    pages: {
+                        total: 0
+                    },
+                    data: []
+                },
+                currentLanguage: null,
+                currentRowData: {},
+                allCompany: [],
+                allCountry: [],
+                allLanguage: []
+            }
+        },
+        computed: {
+            text: function () {
+            }
+        },
+        created() {
+            let cookie = document.cookie.split("; ");
+            let cookieArray = [];
+            let currentLanguage = null;
+
+            cookie.forEach((value) => {
+                cookieArray.push({name: value.split("=")[0], value: value.split("=")[1]});
+
+            })
+            cookieArray.forEach((obj) => {
+                if (obj.name === "think_lang_list") {
+                    this.allLanguage = JSON.parse(unescape(obj.value).split("think:")[1]);
+                }
+                if (obj.name === "think_language") {
+                    currentLanguage = obj.value;
+                }
+            })
+            Object.keys(this.allLanguage).forEach((key) => {
+                if (this.allLanguage[key] === currentLanguage) {
+                    this.currentLanguage = key;
+                }
+            })
+
+            console.log("当前语", this.currentLanguage);
+            this.getOurCompany();
+            this.geAllCountry();
+            this.search();
+        },
+        mounted() {
+            document.getElementById("taxNumberList").style.display = "block";
+        },
+        methods: {
+            // 新版获取我方公司
+            getOurCompany() {
+                var _this = this;
+                axios.post('/index.php?g=common&m=index&a=get_our_company').then(function(res) {
+                    if (res.data.code === 2000) {
+                        _this.allCompany = res.data.data;
+                    } else {
+                        _this.$message.error(this.$lang(res.data.msg));
+                    }
+                })
+            },
+            geAllCountry() {
+                axios.post("/index.php?g=oms&m=CommonData&a=commonData", {
+                    data: {
+                        query: {
+                            "area_code": "true",
+                        },
+                        "type": "sorting"
+                    }
+                }).then((res) => {
+                    const data = res.data.data;
+                    this.allCountry = data.area_code;
+                    console.log("国家数据", data.area_code);
+
+                });
+            },
+            onExport() {
+                axios.post("/index.php?m=finance&a=exportTaxNumberList", {
+                    search: this.filter.search,
+                    pages: this.pagination.pages
+                }, {
+                    responseType: 'blob',
+                }).then((res) => {
+                    console.log("数据",res);
+                    let blob = res.data;
+                    let reader = new FileReader();
+
+                    reader.readAsDataURL(blob)
+                    reader.onload = (e) => {
+                        let a = document.createElement('a');
+                        let fileName = this.$lang('税号管理')+".csv";
+                        a.download = fileName;
+                        a.href = e.target.result;
+
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                    }
+                })
+            },
+            onNew() {
+                if (this.pagedTaxNumbers.data.length != 0) {
+                    if (!this.pagedTaxNumbers.data[0].our_company_cd || !this.pagedTaxNumbers.data[0].country_id || !this.pagedTaxNumbers.data[0].vat_number || !this.pagedTaxNumbers.data[0].tax_rate) {
+                        this.$meeage.error(this.$lang("请先保存内容或取消新增"));
+                        return;
+                    }
+                    this.pagedTaxNumbers.data.unshift({
+                        our_company_cd: "",
+                        country_id: "",
+                        vat_number: "",
+                        tax_rate: "",
+                    });
+                    this.$set(this.pagedTaxNumbers.data[0], "isEdit", true);
+                } else {
+                    this.pagedTaxNumbers.data.unshift({
+                        our_company_cd: "",
+                        country_id: "",
+                        vat_number: "",
+                        tax_rate: "",
+                    });
+                    this.$set(this.pagedTaxNumbers.data[0], "isEdit", true);
+
+                }
+
+            },
+            onEdit(row) {
+                this.currentRowData = _.cloneDeep(row);
+                console.log("编辑行数据", this.currentRowData);
+                this.$set(row, "isEdit", true);
+                this.$set(row, "isDisabled", false);
+
+            },
+            onSave(row) {
+                this.saveLoading = true;
+                if (!row.our_company_cd) {
+                    this.$message.error(this.$lang("我方公司必填"));
+                    this.saveLoading = false;
+                    return;
+                }
+                if (!row.country_id) {
+                    this.$message.error(this.$lang("税号所属国必填"));
+                    this.saveLoading = false;
+                    return;
+                }
+                if (!row.vat_number) {
+                    this.$message.error(this.$lang("VAT号必填"));
+                    this.saveLoading = false;
+                    return;
+                }
+                if (!row.tax_rate) {
+                    this.$message.error(this.$lang("税率必填"));
+                    this.saveLoading = false;
+                    return;
+                }
+                if (row.tax_rate < 0) {
+                    this.$message.error(this.$lang("税率只能填非负数"));
+                    this.saveLoading = false;
+                    return;
+                }
+                if (row.id) {
+                    axios.post("/index.php?m=finance&a=saveTaxNumber", {
+                        id: row.id,
+                        our_company_cd: row.our_company_cd,
+                        country_id: row.country_id,
+                        vat_number: row.vat_number,
+                        tax_rate: row.tax_rate,
+                    }).then((res) => {
+                        if (res.data.code === 200) {
+                            this.$message.success(this.$lang("编辑成功"));
+                            this.saveLoading = false;
+                            this.search();
+
+                        } else {
+                            console.log("编辑失败数据", row);
+                            this.$message.error(this.$lang(res.data.msg));
+                            this.saveLoading = false;
+                        }
+
+                    }).catch(() => {
+                        this.$message.error(this.$lang("编辑失败"));
+                        this.search();
+                        this.saveLoading = false;
+                    });
+                } else {
+                    axios.post("/index.php?m=finance&a=saveTaxNumber", {
+                        our_company_cd: row.our_company_cd,
+                        country_id: row.country_id,
+                        vat_number: row.vat_number,
+                        tax_rate: row.tax_rate,
+                    }).then((res) => {
+                        if (res.data.code === 200) {
+                            this.$message.success(this.$lang("新增成功"));
+                            this.saveLoading = false;
+                            this.search();
+                        } else {
+                            this.$message.error(this.$lang(res.data.msg));
+                            this.saveLoading = false;
+                        }
+
+                    }).catch(() => {
+                        this.saveLoading = false;
+                        this.$message.error(this.$lang("新增失败"));
+                    });
+                }
+            },
+            onClose(row) {
+                // 区分是新增还是编辑
+                if (row.id) {//编辑
+                    this.$set(row, "isEdit", false);
+                    console.log("当前行数据", this.currentRowData);
+
+                    this.$set(row, "our_company_cd", null);
+                    this.$set(row, "country_id", null);
+                    this.$set(row, "vat_number", null);
+                    this.$set(row, "tax_rate", null);
+
+                    this.$set(row, "our_company_cd", this.currentRowData.our_company_cd);
+                    this.$set(row, "country_id", this.currentRowData.country_id);
+                    this.$set(row, "vat_number", this.currentRowData.vat_number);
+                    this.$set(row, "tax_rate", this.currentRowData.tax_rate);
+                    console.log("设置后的数据", row);
+                    // this.search();
+                } else {
+                    this.pagedTaxNumbers.data.shift();
+                }
+            },
+            onSort() {
+
+            },
+            onPageChange(page) {
+                console.log("页码", page);
+                this.pagination.pages.current_page = page;
+                this.search();
+            },
+            onSizeChange(size) {
+                this.pagination.pages.per_page = size;
+                this.search();
+            },
+            onReset() {
+                Object.keys(this.filter.search).forEach((key) => {
+                    this.filter.search[key] = null
+                })
+                this.pagination.pages.current_page = 1;
+                this.pagination.pages.per_page = 10;
+                this.search();
+            },
+            onSearch() {
+                this.pagination.pages.current_page = 1;
+                this.search();
+            },
+            search() {
+                this.searching = true;
+                axios.post(`/index.php?m=finance&a=taxNumberList`, Object.assign({}, this.filter, this.pagination)).then(res => {
+                    this.searching = false;
+                    this.pagedTaxNumbers = res.data.data;
+                    this.pagedTaxNumbers.data.forEach((obj) => {
+                        this.$set(obj, "isDisabled", true);
+                        this.$set(obj, "isEdit", false);
+                    })
+                    console.log("列表数据", this.pagedTaxNumbers);
+                }).catch(() => {
+                    this.searching = false;
+
+                });
+            }
+        }
+    });
+
+</script>
+</body>
+</html>

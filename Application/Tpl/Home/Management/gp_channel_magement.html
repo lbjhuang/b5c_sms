@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+        href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+    <!-- <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.config.VER_NUM}>"> -->
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.config.VER_NUM}>">
+    <title>渠道平台管理</title>
+    <style>
+        .content {
+            border: 1px solid #dddddd;
+            padding: 25px;
+        }
+
+        .search-toggle {
+            border: 1px solid #dddddd;
+
+            box-shadow: 0 2px 2px 0 rgba(0, 0, 0, .1);
+        }
+
+        .demo-form-inline {
+            padding: 25px;
+        }
+
+        .el-table .warning-row {
+            background: oldlace;
+        }
+
+        .el-dialog__header {
+            display: block
+        }
+
+        .form-wrap {
+            text-align: left;
+            border: 1px solid #dddddd;
+            width: 80%;
+            margin: 0 auto;
+            padding: 20px;
+            margin: 0 auto;
+        }
+
+        /* elementUI */
+        /* 表格--element-ui自定义 */
+        .element-table tr th {
+            background: #546E7A;
+            color: #fff;
+        }
+
+        .element-table th>.cell,
+        .element-table td>.cell {
+            text-align: center;
+            line-height: 18px;
+        }
+
+        .el-tabs__header {
+            display: flex;
+        }
+
+        .el-tabs__nav-wrap::after,
+        .el-tabs__active-bar {
+            height: 0;
+        }
+
+        .el-tabs__nav .el-tabs__item {
+            width: 50% !important;
+        }
+        .el-tabs__nav div {
+            font-size: 26px;
+            font-weight: 600;
+        }
+
+        .el-tabs__item.is-active {
+            font-weight: 600;
+        }
+
+        .el-tabs__item:focus.is-active.is-focus:not(:active) {
+            box-shadow: none;
+        }
+        body .el-table th.gutter {
+            display: table-cell !important;
+        }
+
+        body .el-table colgroup.gutter {
+            display: table-cell !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app" v-cloak>
+        <el-tabs v-model="activeTab" class="tabs" @tab-click="handleChangeTab">
+            <el-tab-pane name="list" :label="$lang('平台列表')">
+                <div class="orderList">
+                    <h2 style="text-align: center">{{$lang('渠道平台管理')}}</h2>
+                    <div class="content">
+                        <div class="search-toggle">
+                            <!-- 搜索 -->
+                            <el-form :inline="true" :model="searchForm" ref="formInline" class="demo-form-inline">
+                                <el-form-item :label="$lang('平台编号')" prop="platform_name">
+                                    <el-input v-model="searchForm.sort_num" placeholder="请输入" autocomplete="off">
+                                    </el-input>
+                                </el-form-item>
+                                <el-form-item :label="$lang('平台名称')" prop="platform_tag">
+                                    <el-input v-model="searchForm.platform_name" placeholder="请输入"></el-input>
+                                </el-form-item>
+                                <el-form-item :label="$lang('平台标签')" prop="input3">
+                                    <el-input v-model="searchForm.platform_tag" placeholder="请输入"></el-input>
+                                </el-form-item>
+                                <el-form-item :label="$lang('所属人')">
+                                    <template>
+                                        <el-select v-model="searchForm.belong" :placeholder="$lang('请选择')" filterable
+                                            multiple clearable>
+                                            <el-option v-for="user in users" :key="user.id" :label="$lang(user.name)"
+                                                :value="user.name">
+                                            </el-option>
+                                        </el-select>
+                                    </template>
+                                </el-form-item>
+                                <el-form-item>
+                                    <el-button type="primary" @click="onSubmit()">{{$lang('搜索')}}</el-button>
+                                </el-form-item>
+                                <el-form-item>
+                                    <el-button @click="resetForm">{{$lang('重置')}}</el-button>
+                                </el-form-item>
+                            </el-form>
+                        </div>
+
+                        <div class="table-conten" style="overflow: hidden;margin-top:30px;">
+                            <div style="overflow: hidden">
+                                <div style="float: right">
+                                    <el-button type="primary" @click="addPlatform">{{$lang('新增平台')}}</el-button>
+                                </div>
+
+                            </div>
+                            <div style="margin-top:20px;">
+                                <el-table :data="tableData" v-loading="loading" border center style="width: 100%">
+                                    <el-table-column prop="sort_num" width="60" :label="$lang('平台编号')">
+                                    </el-table-column>
+                                    <el-table-column prop="platform_name" :label="$lang('平台名称')"></el-table-column>
+                                    <el-table-column prop="platform_tag" :label="$lang('平台标签')"></el-table-column>
+                                    <el-table-column prop="url" :label="$lang('URL')"></el-table-column>
+                                    <el-table-column prop="belong" :label="$lang('所属人')"></el-table-column>
+                                    <el-table-column prop="channel_country" :label="$lang('渠道所属国家')"></el-table-column>
+                                    <el-table-column prop="datetime" :label="$lang('创建时间')"></el-table-column>
+                                    <el-table-column prop="contact_name" :label="$lang('联系人姓名')"></el-table-column>
+                                    <el-table-column prop="contact_channel" :label="$lang('联系渠道')"></el-table-column>
+                                    <el-table-column prop="specific_way" :label="$lang('具体方式')"></el-table-column>
+                                    <el-table-column width="250" :label="$lang('操作')">
+                                        <template slot-scope="scope">
+                                            <div v-if="permission === 'write'">
+                                                <el-button size="mini" @click="handleEdit(scope.row)">
+                                                    {{$lang('编辑')}}</el-button>
+                                                <el-button size="mini" type="danger"
+                                                    @click="handleDelete(scope.$index, scope.row)">
+                                                    {{$lang('删除')}}</el-button>
+                                            </div>
+                                            <div v-else-if="scope.row.belong === user.name">
+                                                <el-button size="mini" @click="handleEdit(scope.row)">
+                                                    {{$lang('编辑')}}</el-button>
+                                                <el-button size="mini" type="danger"
+                                                    @click="handleDelete(scope.$index, scope.row)">
+                                                    {{$lang('删除')}}</el-button>
+                                            </div>
+                                        </template>
+                                    </el-table-column>
+                                </el-table>
+                                <div style="overflow: hidden;">
+                                    <div style="float: right">
+                                        <span style="padding-right: 20px;">
+                                            <span>{{totals}}{{$lang('页')}}</span>
+                                            <span>{{total}}{{$lang('条记录')}}</span>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div style="text-align: center;height: 50px;">
+                                    <span style="display: inline-block;">
+                                        <el-pagination background @current-change="currentChange" :current-page="page"
+                                            layout="prev, pager, next" :total="total">
+                                        </el-pagination>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 模态框 -->
+                        <el-dialog :visible.sync="visible" :title="type === 'add' ? $lang('新增平台') : $lang('编辑平台')"
+                            @close="handleCancel" width="50%" @close='clear("form")' show-close center>
+                            <div style="padding-left: 40px;">
+                                <span style="padding:20px;text-align: left;display: inline-block; width: 80%;">
+                                    <span style="font-weight: 650;"> {{type === 'add' ? $lang('平台新增说明:') :
+                                        $lang('平台编辑说明:')}}</span>
+                                    <span> {{$lang('平台标签不可与已有标签重复')}}</span>
+                                </span>
+                            </div>
+                            <div class="form-wrap">
+                                <span style="display: inline-block;width: 80%;">
+                                    <el-form :rules="rules" ref="form" label-width="120px" :model="form">
+                                        <el-form-item :label="$lang('平台名称')" prop="platform_name">
+                                            <el-input v-model.trim="form.platform_name" type="text"></el-input>
+                                        </el-form-item>
+                                        <el-form-item :label="$lang('平台标签')" prop="platform_tag">
+                                            <el-input v-model.trim="form.platform_tag" :disabled="false" size="medium">
+                                            </el-input>
+                                        </el-form-item>
+                                        <el-form-item :label="$lang('URL')" prop="url">
+                                            <el-input v-model.trim="form.url"></el-input>
+                                        </el-form-item>
+                                        <el-form-item :label="$lang('所属人')" prop="belong">
+                                            <el-autocomplete v-if="permission === 'write'" v-model="form.belong"
+                                                :fetch-suggestions="searchUsers">
+                                            </el-autocomplete>
+                                            <el-autocomplete v-else :disabled="type === 'edit'" v-model="form.belong"
+                                                :fetch-suggestions="searchUsers">
+                                            </el-autocomplete>
+                                        </el-form-item>
+                                        <el-form-item :label="$lang('渠道所属国家')" prop="channel_country_id">
+                                            <el-select v-model="form.channel_country_id" filterable multiple>
+                                                <el-option v-for="country in countries" :key="country.id"
+                                                    :label="$lang(country.countyName)" :value="country.id"></el-option>
+                                            </el-select>
+                                        </el-form-item>
+                                        <el-form-item :label="$lang('联系人')" prop="contact_name">
+                                            <el-input v-model.trim="form.contact_name"></el-input>
+                                        </el-form-item>
+                                        <el-form-item :label="$lang('联系渠道')" prop="contact_channel">
+                                            <el-select v-model="form.contact_channel">
+                                                <el-option v-for="channel in channels" :key="channel"
+                                                    :label="$lang(channel)" :value="channel"></el-option>
+                                            </el-select>
+                                        </el-form-item>
+                                        <el-form-item :label="$lang('具体方式')" prop="specific_way">
+                                            <el-input v-model.trim="form.specific_way"></el-input>
+                                        </el-form-item>
+                                        <el-form-item :label="$lang('合作范围')" prop="cooperation_scope">
+                                            <el-checkbox-group v-model="form.cooperation_scope">
+                                                <el-checkbox label="GP" name="1"></el-checkbox>
+                                                <el-checkbox label="TPP" name="2"></el-checkbox>
+                                            </el-checkbox-group>
+                                        </el-form-item>
+                                    </el-form>
+                                </span>
+                            </div>
+
+                            <span slot="footer" class="dialog-footer">
+                                <el-button v-if="type === 'add'" :disabled="bLoading" type="primary"
+                                    @click="handleAddPlatform">{{$lang('确 定')}}</el-button>
+                                <el-button v-else type="primary" :disabled="bLoading" @click="handleEditPlatform">
+                                    {{$lang('确 定')}}</el-button>
+                                <el-button @click="handleCancel">{{$lang('取 消')}}</el-button>
+
+                            </span>
+                        </el-dialog>
+
+                        <!-- 模态框 -->
+
+                        <!-- <el-dialog :visible.sync="centerDialogVisible1" :title="$lang('编辑平台')" width="50%"
+                            @close='clear("formLabelAlign1")' show-close center>
+                            <div style="padding-left: 40px;">
+                                <span style="padding:20px;text-align: left;display: inline-block; width: 80%;">
+                                    <span style="font-weight: 650;"> {{$lang('平台编辑说明:')}}</span>
+                                    <span> {{$lang('平台标签不可与已有标签重复')}}</span>
+                                </span>
+                            </div>
+                            <div
+                                style="text-align:left;border: 1px solid #dddddd;width: 80%;margin: 0 auto;padding: 20px;">
+                                <span style="display: inline-block;width: 80%;">
+                                    <el-form :rules="rules" ref="formLabelAlign1" label-width="80px"
+                                        :model="formLabelAlign1">
+                                        <el-form-item :label="$lang('平台名称')" prop="name3" label-width="80px">
+                                            <el-input v-model="formLabelAlign1.name3" type="text"></el-input>
+                                        </el-form-item>
+
+                                        <el-form-item :label="$lang('平台标签')" prop="name4" label-width="80px">
+                                            <el-input v-model="formLabelAlign1.name4" :disabled="false" size="medium">
+                                            </el-input>
+                                        </el-form-item>
+                                    </el-form>
+
+                                </span>
+                            </div>
+
+                            <span slot="footer" class="dialog-footer">
+                                <el-button type="primary" @click="sure1('formLabelAlign1')">{{$lang('确 定')}}</el-button>
+                                <el-button @click="calce1('formLabelAlign1')">{{$lang('取 消')}}</el-button>
+
+                            </span>
+                        </el-dialog> -->
+                        <el-dialog :title="$lang('平台删除')" :visible.sync="dialogTableVisible" width="50%" show-close
+                            center>
+                            <div
+                                style="padding:30px 20px;border: 1px solid #dddddd;width: 80%;margin:10px auto;text-align: center;font-size: 20px;">
+                                <div>
+                                    <span>{{$lang('平台')}}&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                                    <span style="font-weight: bold;">{{$lang(platform_name)}}</span>
+                                    <span>&nbsp;&nbsp;&nbsp;&nbsp;{{$lang('将被删除')}}</span>
+                                </div>
+                            </div>
+                            <div slot="footer" class="dialog-footer">
+                                <el-button type="primary" @click="queding()">{{$lang('确定')}}</el-button>
+                                <el-button @click="dialogTableVisible = false">{{$lang('取 消')}}</el-button>
+                            </div>
+                        </el-dialog>
+                    </div>
+                </div>
+            </el-tab-pane>
+            <el-tab-pane name="log" :label="$lang('操作日志')">
+                <!-- 表格 start -->
+                <el-table border show-header :data="logs" tooltip-effect="dark" style="width: 100%"
+                    class="element-table" v-loading="loading">
+                    <el-table-column :label="$lang('操作人')" prop="operator">
+                    </el-table-column>
+                    <el-table-column :label="$lang('操作时间')" prop="operating_time">
+                    </el-table-column>
+                    <el-table-column :label="$lang('操作内容')" prop="content">
+                    </el-table-column>
+                    <el-table-column :label="$lang('详细信息')" prop="message">
+                    </el-table-column>
+                </el-table>
+                <!-- 表格 end -->
+                <div class="use-row pagination">
+                    <div class="col-100 text-right">
+                        <el-pagination background layout="sizes, prev, pager, next" :page-sizes="[10, 50, 100]"
+                            @size-change="handlePageSize" @current-change="handlePage" :total="logParams.totalLogTotal">
+                        </el-pagination>
+                    </div>
+                </div>
+            </el-tab-pane>
+        </el-tabs>
+    </div>
+
+
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js?v=<{$Think.config.VER_NUM}>">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js">
+    </script>
+    <!-- <script type="text/javascript" src="./Application/Tpl/Home/Public/js/echarts.min.js?v=<{$Think.config.VER_NUM}>"> -->
+    </script>
+    <script>
+        if (getCookie('think_language') !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en)
+        };
+        var app = new Vue({
+            el: "#app",
+
+            data() {
+                var validatePlatformLabel = (rule, value, callback) => {
+                    var _that = this
+                    var myreg = /^[0-9a-zA-Z]+$/
+                    if (value === '' || value == undefined) {
+                        this.next = false
+                        callback(new Error('请输入平台标签'))
+                    } else if (!myreg.test(value)) {
+                        this.next = false
+                        callback(new Error('请输入由字母或数字组成的标签'))
+                    } else {
+                        if (this.origin.platform_tag === value) return callback();
+                        const msgs2 = _that.checkLabel(value)
+                        msgs2.then((result) => {
+                            if (result.success === true) {
+                                this.next = true
+                                callback()
+                            } else {
+                                this.next = false
+                                callback(new Error(result.msg))
+                            }
+                        })
+                        // callback()
+                    }
+                };
+                return {
+                    activeTab: 'list',
+                    loading: false,
+                    logs: [],
+                    options: [
+                        {
+                            value: "all",
+                            label: '全部'
+                        },
+                        {
+                            value: "1",
+                            label: '使用中'
+                        },
+                        {
+                            value: "0",
+                            label: '已暂停'
+                        },
+                    ],
+                    users: [],
+                    user: {},
+                    permission: undefined,
+                    type: 'add',
+                    searchForm: {
+                        sort_num: undefined,
+                        platform_name: undefined,
+                        platform_tag: undefined,
+                        belong: [],
+                    },
+                    channels: ['邮箱', 'Skype', 'Telegram', '其他'], // 11249需求只提供了这几个渠道
+                    show: true,
+                    totals: "",//页数
+                    platform_name: '',
+                    visible: false, // 模态框
+                    countries: [],
+                    centerDialogVisible1: false,
+                    tableData: [],
+                    page: 1,
+                    pageSize: 10,
+                    total: 0,
+                    logParams: {
+                        page: 1,
+                        pageSize: 10,
+                        totalLogTotal: 0,
+                    },
+                    form: {
+                        platform_name: undefined, // 渠道名称
+                        platform_tag: undefined,
+                        url: undefined,
+                        belong: undefined,  // 默认选用,
+                        channel_country_id: [],
+                        channel_country: [],
+                        contact_name: undefined,
+                        contact_channel: undefined,
+                        specific_way: undefined,
+                        cooperation_scope: []
+                    },
+                    origin: {},
+                    bLoading: false,
+                    formLabelAlign1: {
+                        name3: "",
+                        name4: ""
+                    },
+
+                    timeout: null,
+                    dialogTableVisible: false,
+
+                    // 跨域
+                    queryPost: function (url, param) {
+                        var headers = {
+                            headers: {
+                                'erp-req': true,
+                                'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+                            }
+                        }
+                        // var host = (window.location.origin == "http://erp.gshopper.com" || window.location.origin == "https://erp.gshopper.com") ?
+                        //     "http://insight.gshopper.com/insight-backend/gpPlatform" :
+                        //     ((window.location.origin == "http://erp.gshopper.prod.com") ?
+                        //         "http://insight.gshopper.prod.com/insight-backend/gpPlatform" :
+                        //         "http://insight.gshopper.stage.com/insight-backend/gpPlatform");
+
+                        var host = (window.location.origin == window.location.protocol + "//erp.gshopper.com") ?
+                            window.location.protocol + "//insight.gshopper.com/insight-backend/gpPlatform" :
+                            ((window.location.origin == window.location.protocol + "//erp.gshopper.prod.com") ?
+                                window.location.protocol + "//insight.gshopper.prod.com/insight-backend/gpPlatform" :
+                                window.location.protocol + "//insight.gshopper.stage.com/insight-backend/gpPlatform");
+
+                        // 初始化时间展示
+                        return axios.post(host + url, Qs.stringify(param), headers);
+                    },
+                    rules: {
+                        platform_name: [
+                            { required: true, message: this.$lang('请输入平台名称'), trigger: 'blur' },
+                            { min: 0, max: 100, message: this.$lang('最大不超过100个字符'), trigger: 'blur' }
+                        ],
+                        platform_tag: [
+                            { required: true, message: this.$lang('请输入平台标签'), trigger: 'blur' },
+                            { min: 0, max: 100, message: this.$lang('最大不超过100个字符'), trigger: 'blur' },
+                            { required: true, validator: validatePlatformLabel, trigger: 'blur' }
+                        ],
+                        url: [
+                            { required: true, message: this.$lang('URL不能为空'), trigger: 'blur' }
+                        ],
+                        belong: [
+                            { required: true, message: this.$lang('所属人不能为空'), trigger: 'blur' }
+                        ],
+                        channel_country_id: [
+                            { required: true, message: this.$lang('渠道所属国家不能为空'), trigger: 'blur' }
+                        ],
+                        contact_name: [
+                            { required: true, message: this.$lang('联系人姓名不能为空'), trigger: 'blur' }
+                        ],
+                        contact_channel: [
+                            { required: true, message: this.$lang('联系渠道不能为空'), trigger: 'blur' }
+                        ],
+                        specific_way: [
+                            { required: true, message: this.$lang('具体方式不能为空'), trigger: 'blur' }
+                        ],
+                        cooperation_scope: [
+                            { required: true, message: this.$lang('合作范围不能为空'), trigger: 'blur' }
+                        ]
+                    }
+                }
+            },
+            mounted() {
+                // this.getUserName()
+                this.getTable()
+            },
+            created() {
+                // this.getUsers();
+                // this.getCodes();
+                this.getUsersAndCodes()
+            },
+            methods: {
+                async getUsersAndCodes() {
+                    await this.getUsers();
+                    await this.getCodes();
+                },
+                getUsers() {
+                    return axios.get('/index.php?m=admin&a=admin_options').then(res => {
+                        if (res.data.code === 2000) {
+                            this.users = res.data.data || []
+                            const userId = getCookie('userId');
+                            const user = this.users.find(user => user.id === userId);
+                            this.user = user;
+                            this.form.belong = user && user.name;
+                        }
+                    })
+                },
+                getCodes() {
+                    const params = {
+                        search: {
+                            "prefix": "N00381", // 查询推广平台权限
+                        },
+                    }
+                    axios.post('index.php?g=Common&m=Dictionary&a=getCodeList', params).then(res => {
+                        if (res.data.code === 2000) {
+                            const codes = res.data.data.data;
+                            const userId = getCookie('userId');
+                            const user = this.users.find(user => user.id === userId);
+                            let code = codes.find(code => code.CD === 'N003810001');
+                            if (code && code.ETC.includes(user.name)) {
+                                this.permission = 'read';
+                            }
+                            code = codes.find(code => code.CD === 'N003810002');
+                            if (code && code.ETC.includes(user.name)) {
+                                this.permission = 'write';
+                            }
+                        }
+                    })
+                },
+                searchUsers(username, cb) {
+                    if (!username) return cb([]);
+                    axios.get('/index.php?m=admin&a=admin_options', { params: { name: username } }).then(res => {
+                        if (res.data.code === 2000) {
+                            const users = res.data.data.map(user => {
+                                return {
+                                    value: user.name,
+                                    id: user.id
+                                }
+                            })
+                            cb(users);
+                        }
+                    })
+                },
+                handleChangeTab() {
+                    if (this.activeTab === 'log') {
+                        this.getOpLogs();
+                    } else {
+                        this.getTable();
+                    }
+                },
+                getOpLogs() {
+                    var params = {
+                        'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp-req': true,
+                        page: this.logParams.page,
+                        pageSize: this.logParams.pageSize
+                    }
+                    this.loading = true;
+                    this.queryPost('/queryOperatingLog', params).then(res => {
+                        this.loading = false;
+                        if (res.data.success) {
+                            this.logs = res.data.datas || [];
+                            this.logParams.totalLogTotal = res.data.totalCount;
+                        }
+                    })
+                },
+                handlePageSize(size) {
+                    this.logParams.pageSize = size;
+                    this.getOpLogs();
+                },
+                handlePage(current) {
+                    this.logParams.page = current;
+                    this.getOpLogs();
+                },
+                getCountries() {
+                    // 推广国家
+                    var params = {
+                        'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp-req': true
+                    }
+
+                    var headers = {
+                        'erp-req': true,
+                        'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+                    }
+
+                    var host = (window.location.origin == window.location.protocol + "//erp.gshopper.com") ?
+                        window.location.protocol + "//insight.gshopper.com/insight-backend/gpActivity" :
+                        ((window.location.origin == window.location.protocol + "//erp.gshopper.prod.com") ?
+                            window.location.protocol + "//insight.gshopper.prod.com/insight-backend/gpActivity" :
+                            window.location.protocol + "//insight.gshopper.stage.com/insight-backend/gpActivity");
+
+
+                    axios.post(host + '/queryCountryName', params, {
+                        headers: headers
+                    }).then(res => {
+                        if (res.data.success === true) {
+                            this.countries = res.data.datas
+                        }
+                    })
+                },
+                handleAddPlatform() {
+                    this.$refs.form.validate(valid => {
+                        if (valid) {
+                            const { platform_name, platform_tag, url, belong, channel_country_id, contact_name, contact_channel, specific_way, cooperation_scope } = this.form;
+                            const params = {
+                                'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                                'erp-req': true,
+                                platform_name,
+                                platform_tag,
+                                url,
+                                belong,
+                                contact_name,
+                                contact_channel,
+                                specific_way,
+                                channel_country_id: channel_country_id.join(','),
+                                cooperation_scope: cooperation_scope.join(',')
+                            }
+                            const countries = [];
+                            channel_country_id.map(countryId => {
+                                const country = this.countries.find(c => c.id === countryId);
+                                if (country) {
+                                    countries.push(country.countyName);
+                                }
+                            });
+                            params.channel_country = countries.join(',');
+                            this.bLoading = true;
+                            this.queryPost('/addChannelPlatform', params).then(res => {
+                                this.bLoading = false;
+                                if (res.data.success) {
+                                    this.$message.success(res.data.msg);
+                                    setTimeout(() => {
+                                        this.handleCancel();
+                                        this.getTable();
+                                    }, 2 * 1000);
+                                } else {
+                                    this.$message.error(res.data.msg);
+                                }
+                            })
+                        }
+                    })
+                },
+                handleEditPlatform() {
+                    this.$refs.form.validate(valid => {
+                        if (valid) {
+                            const { id, platform_name, platform_tag, url, belong, channel_country_id, contact_name, contact_channel, specific_way, cooperation_scope } = this.form;
+                            const params = {
+                                'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                                'erp-req': true,
+                                id: id,
+                                platform_name,
+                                platform_tag,
+                                url,
+                                belong,
+                                contact_name,
+                                contact_channel,
+                                specific_way,
+                                channel_country_id: channel_country_id.join(','),
+                                cooperation_scope: cooperation_scope.join(',')
+                            }
+                            const countries = [];
+                            channel_country_id.map(countryId => {
+                                const country = this.countries.find(c => c.id === countryId);
+                                if (country) {
+                                    countries.push(country.countyName);
+                                }
+                            });
+                            params.channel_country = countries.join(',');
+                            this.bLoading = true;
+                            this.queryPost('/editChannelPlatform', params).then(res => {
+                                this.bLoading = false;
+                                if (res.data.success) {
+                                    this.$message.success(res.data.msg);
+                                    setTimeout(() => {
+                                        this.handleCancel();
+                                        this.getTable();
+                                    }, 2 * 1000);
+                                } else {
+                                    this.$message.error(res.data.msg);
+                                }
+                            })
+                        }
+                    })
+                },
+                handleCancel() {
+                    this.$refs.form.resetFields();
+                    this.form = {
+                        platform_name: undefined, // 渠道名称
+                        platform_tag: undefined,
+                        url: undefined,
+                        belong: undefined,  // 默认选用,
+                        channel_country_id: [],
+                        channel_country: [],
+                        contact_name: undefined,
+                        contact_channel: undefined,
+                        specific_way: undefined,
+                        cooperation_scope: []
+                    }
+                    this.type = 'add';
+                    this.visible = false;
+                },
+                clear(formName) {
+                    this.form = {
+
+                    }
+                    this.form.name1 = ''
+                    this.form.name2 = ''
+                    this.formLabelAlign1.name3 = ''
+                    this.formLabelAlign1.name4 = ''
+                    this.$refs[formName].clearValidate();
+                    this.$refs[formName].resetFields();
+
+
+                },
+                handleEdit(row) {
+                    this.origin = Object.assign({}, row);
+                    this.form = Object.assign({}, row);
+                    this.form.channel_country = this.form.channel_country ? this.form.channel_country.split(',') : [];
+                    this.form.channel_country_id = this.form.channel_country_id ? this.form.channel_country_id.split(',').map(id => parseFloat(id)) : [];
+                    this.form.cooperation_scope = this.form.cooperation_scope.split(',');
+                    this.type = 'edit';
+                    if (this.countries.length === 0) {
+                        this.getCountries();
+                    }
+                    this.visible = true;
+                    // this.centerDialogVisible1 = true
+                    // this.text = ''
+                    // this.text = row.sort_num
+                    // this.gridData = []
+                    // this.id = ''
+                    // this.id = row.id
+                    // this.formLabelAlign1.name3 = row.platform_name
+                    // this.formLabelAlign1.name4 = row.platform_tag
+                    // this.gridData.push({
+                    //     "sort_num": row.sort_num,
+                    //     "platform_name": row.platform_name,
+                    //     "platform_tag": row.platform_tag,
+                    //     'id': row.id
+                    // })
+                },
+                handleDelete(index, row) {
+                    this.text = ''
+                    this.text = row.sort_num
+                    this.platform_name = ''
+
+                    this.platform_name = row.platform_name
+                    this.gridData = []
+
+                    this.gridData.push({
+                        "sort_num": row.sort_num,
+                        "platform_name": row.platform_name,
+                        "platform_tag": row.platform_tag,
+                        'id': row.id
+                    })
+                    this.dialogTableVisible = true
+                },
+                async queding() {
+                    let _that = this
+                    const param = {
+                        'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp-req': true,
+                        'id': _that.gridData[0].id
+                    }
+                    const url = '/deleteChannelPlatform'
+                    const delet = await _that.useAPi(url, param)
+                    if (delet.success === true) {
+                        this.$message({
+                            message: delet.msg,
+                            type: 'success'
+                        });
+                        _that.getTable()
+                    } else {
+                        this.$message({
+                            message: delet.msg,
+                            type: 'warning'
+                        });
+                        _that.getTable()
+                    }
+                    _that.dialogTableVisible = false
+                },
+                //搜索按钮
+                onSubmit(formName) {
+                    this.getTable()
+                },
+                //重置按钮
+                resetForm() {
+                    this.searchForm = {
+                        sort_num: undefined,
+                        platform_name: undefined,
+                        platform_tag: undefined,
+                        belong: []
+                    };
+                    this.getTable()
+
+                    // this.$refs[formName].resetFields();
+                },
+                // 新增渠道
+
+                addPlatform() {
+                    this.visible = true;
+                    if (this.countries.length === 0) {
+                        this.getCountries();
+                    }
+                    const userId = getCookie('userId');
+                    const user = this.users.find(user => user.id === userId);
+                    this.form.belong = user && user.name;
+                },
+                sure(formName) {
+                    let _that = this
+                    _that.$refs[formName].validate((valid) => {
+                        if (valid) {
+                            if (_that.next) {
+                                _that.addNewChanner()
+                                _that.$refs[formName].clearValidate();
+                                _that.$refs[formName].resetFields();
+                                //_that.centerDialogVisible = false
+                            } else {
+                                _that.$refs[formName].clearValidate();
+                                _that.$refs[formName].resetFields();
+                                //_that.centerDialogVisible = false
+                            }
+                        } else {
+
+                            // _that.$refs[formName].clearValidate();
+                            // _that.$refs[formName].resetFields();
+                            return false
+                        }
+                    })
+
+                    // _that.centerDialogVisible = false
+                },
+                calce(formName) {
+                    let _that = this
+                    _that.$refs[formName].clearValidate();
+                    _that.$refs[formName].resetFields();
+                    _that.centerDialogVisible = false
+                },
+                sure1(formName) {
+                    let _that = this
+                    _that.$refs[formName].validate((valid) => {
+                        if (valid) {
+                            _that.updataChanner()
+                            _that.$refs[formName].clearValidate();
+                            _that.$refs[formName].resetFields();
+                        } else {
+                            return false
+                        }
+                    })
+                    // _that.updataChanner()
+
+                    // _that.centerDialogVisible = false
+                },
+                calce1(formName) {
+                    let _that = this
+                    _that.$refs[formName].clearValidate();
+                    _that.$refs[formName].resetFields();
+                    _that.centerDialogVisible1 = false
+                },
+
+                // 新增渠道
+                async addNewChanner() {
+                    let _that = this
+                    const param = {
+                        'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp-req': true,
+                        'platform_name': _that.form.platform_name, //渠道平台
+                        'platform_tag': _that.form.platform_tag, // 渠道平台标签
+                        //'create_by': 'manyi' //创建人
+                    }
+                    const url = '/addChannelPlatform'
+                    const addNewChannerdata = await _that.useAPi(url, param)
+                    if (addNewChannerdata.success === true) {
+                        _that.getTable()
+                        _that.centerDialogVisible = false
+                    } else {
+
+                    }
+                },
+                async updataChanner() {
+                    let _that = this
+                    const param = {
+                        'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp-req': true,
+                        'id': _that.gridData[0].id,
+                        'sort_num': _that.gridData[0].sort_num,
+                        'platform_name': _that.formLabelAlign1.name3,//渠道平台
+                        'platform_tag': _that.formLabelAlign1.name4, // 渠道平台标签
+                        //'update_by': 'manyi' //创建人
+                    }
+                    const url = '/editChannelPlatform'
+                    const addNewChannerdata = await _that.useAPi(url, param)
+                    if (addNewChannerdata.success === true) {
+                        _that.centerDialogVisible1 = false
+                        _that.getTable()
+                    } else {
+
+                    }
+                },
+                /*
+                * api请求
+                 */
+                // 封装公共的api
+                useAPi(url, param) {
+
+                    let datas
+                    const data = this.queryPost(url, param).then((res) => {
+                        if (res.data.success === true) {
+                            datas = res.data
+                            return datas
+                        } else {
+                            datas = res.data
+                            return datas
+                        }
+                    })
+                    return data
+                },
+                // // 创建人查询接口
+                // async getUserName() {
+                //     let _that = this
+                //     const param = {
+                //         'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                //         'erp-req': true
+                //     }
+                //     const url = '/queryUsername'
+                //     const userName = await _that.useAPi(url, param)
+                //     if (userName != undefined) {
+                //         userName.datas.forEach((i, k) => {
+                //             _that.options1.push({
+                //                 value: i.create_by,
+                //                 label: i.create_by
+                //             })
+                //         })
+                //     }
+                // },
+                async getTable() {
+                    let _that = this
+                    const param = {
+                        'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp-req': true,
+                        'page': _that.page,
+                        'pageSize': 10,
+                        'sort_num': _that.searchForm.sort_num, //渠道编号
+                        'platform_name': _that.searchForm.platform_name, //平台名称
+                        'platform_tag': _that.searchForm.platform_tag, // 平台标签
+                        'belong': this.searchForm.belong.join(',')
+                    }
+                    const table = await _that.useAPi('/queryPlatform', param)
+
+                    if (table != undefined) {
+                        _that.tableData = table.datas
+                        _that.total = table.totalCount
+                        function isInteger(n) {
+                            return parseInt(n) == parseFloat(n)
+                        }
+                        let num = table.totalCount / _that.pageSize
+                        // console.log( res.data.totalCount)
+                        // console.log(isInteger(num))
+
+                        if (isInteger(num)) {
+                            _that.total = table.totalCount
+
+
+                            if (Math.round(num) == 0) {
+                                _that.totals = 1
+                            } else {
+                                if (Math.round(num) < num) {
+                                    _that.totals = Math.round(num) + 1
+                                } else {
+                                    _that.totals = Math.round(num)
+                                }
+                            }
+                        } else {
+                            if (Math.round(num) == 0) {
+                                _that.totals = 1
+                            } else {
+                                if (Math.round(num) < num) {
+                                    _that.totals = Math.round(num) + 1
+                                } else {
+                                    _that.totals = Math.round(num)
+                                }
+
+                            }
+                            _that.total = table.totalCount
+                        }
+                    } else {
+                        _that.tableData = []
+                    }
+
+                },
+                // 页面翻页功能
+                currentChange(value) {
+                    var _that = this
+                    this.page = value
+                    _that.getTable()
+                },
+                // 渠道标签的校验
+                async checkLabel(value) {
+                    let _that = this
+                    const param = {
+                        'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp-req': true,
+                        'platform_tag': value,
+                        'id': _that.id
+                    }
+                    const msg = await _that.useAPi('/checkPlatformLabel', param)
+                    return msg
+                }
+
+            }
+        })
+    </script>
+</body>
+
+</html>

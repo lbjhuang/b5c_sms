@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>应收列表</title>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+        href="./Application/Tpl/Home/Public/../Hr/hrstyle.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+        href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+</head>
+
+<style>
+    [v-cloak] {
+        display: none;
+    }
+
+    .btn-pub {
+        outline: none;
+    }
+
+    .show-list .table-list tr th {
+        padding: 0px 6px;
+    }
+
+    .use-row .col-100 {
+        overflow: auto;
+    }
+
+    .el-pagination {
+        height: 200px;
+    }
+
+    .show-list .el-form-item__label {
+        padding: 0px;
+    }
+
+    .show-list .table-list tr td {
+        white-space: normal;
+        line-height: 22px;
+    }
+    .width_lab .el-form-item .el-form-item__label {
+        width: 120px !important;
+    }
+    .width_lab .el-form-item .el-form-item__content {
+        margin-left: 120px !important;
+    }
+    .B2bOrder_wrap .el-form-item .el-form-item__label {
+        width: 160px !important;
+    }
+    .B2bOrder_wrap .el-form-item .el-form-item__content {
+        margin-left: 160px !important;
+    }
+    .el-textarea__inner {
+        padding: 8px 2px;
+    }
+</style>
+
+<body>
+    <div id="cost" class="show-list" v-cloak>
+        <el-form ref="form" :model="form" :label-position="labelPosition" label-width="100px">
+            <div class="use-row">
+                <div class="col-100">
+                    <table class="search-table">
+                        <tbody>
+                            <tr>
+                                <td class="B2bOrder_wrap" style="width:33%">
+                                    <el-form-item :label="$lang('B2B订单号/销售PO单号')">
+                                        <el-input type="textarea" :autosize="true" :placeholder="$lang('支持英文逗号/换行符/空格分割')"
+                                        v-model="form.order_type_value"></el-input>
+                                    </el-form-item>
+                                </td>
+                                <td style="width:33%">
+                                    <el-form-item :label="$lang('应收状态')">
+                                        <el-select :filterable="true" multiple collapse-tags :placeholder="$lang('全部')"
+                                            v-model="form.receivable_status" clearable>
+                                            <el-option :key="item.CD" :label="$lang(item.CD_VAL)" :value="item.CD"
+                                                v-for="item in baseData.receivable_status"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                </td>
+                                <td style="width:33%">
+                                    <el-form-item :label="$lang('客户')">
+                                        <el-input v-model="form.CLIENT_NAME" :placeholder='$lang("请填写客户")'>
+                                        </el-input>
+                                    </el-form-item>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td tyle="width:33%">
+                                    <el-form-item :label="$lang('销售团队')">
+                                        <el-select :filterable="true" multiple collapse-tags :placeholder="$lang('全部')"
+                                            v-model="form.SALES_TEAM" clearable>
+                                            <el-option :key="item.CD" :label="item.CD_VAL" :value="item.CD"
+                                                v-for="item in baseData.sell_team"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                </td>
+                                <td tyle="width:33%" class="width_lab">
+                                    <el-form-item :label="$lang('销售人员/销售助理')">
+                                        <el-input v-model="form.PO_USER" :placeholder='$lang("请填写销售人员")'>
+                                    </el-form-item>
+                                </td>
+                                <td tyle="width:33%">
+                                    <el-form-item :label="$lang('核销人')">
+                                        <el-input v-model="form.verification_by" :placeholder='$lang("请填写核销人")'>
+                                    </el-form-item>
+                                </td>
+
+                            </tr>
+                            <tr>
+                                <td tyle="width:33%">
+                                    <el-form-item :label="$lang('核销日期')">
+                                        <el-date-picker style="width:100%;height: 40px;"
+                                            v-model="form.verification_date" :clearable="clearDate"
+                                            value-format="yyyy-MM-dd" size="small" type="daterange" align="right"
+                                            unlink-panels :range-separator="$lang('至')"
+                                            :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')"
+                                            :picker-options="pickerOptions">
+                                        </el-date-picker>
+                                    </el-form-item>
+                                </td>
+                                <td tyle="width:33%">
+                                    <el-form-item :label="$lang('订单创建日期')">
+                                        <el-date-picker style="width:100%;height: 40px;" v-model="form.create_date"
+                                            :clearable="clearDate" value-format="yyyy-MM-dd" size="small"
+                                            type="daterange" align="right" unlink-panels :range-separator="$lang('至')"
+                                            :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')"
+                                            :picker-options="pickerOptions">
+                                        </el-date-picker>
+                                    </el-form-item>
+                                </td>
+                                <td>
+                                    <el-form-item :label="$lang('应收金额')">
+                                        <el-select :filterable="true" collapse-tags :placeholder="$lang('选择正负')"
+                                            v-model="form.current_receivable_status" clearable>
+                                            <el-option :label="$lang('正')" value="1"></el-option>
+                                            <el-option label="0" value="0"></el-option>
+                                            <el-option :label="$lang('负')" value="-1"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td tyle="width:33%" class="width_lab">
+                                    <el-form-item :label="$lang('开始提醒收款日期')">
+                                        <el-date-picker v-model="form.start_reminding_date_receipt" type="date" :placeholder="$lang('选择日期')">
+                                        </el-date-picker>
+                                    </el-form-item>
+                                </td>
+                                <td>
+                                    <el-form-item :label="$lang('核销负责人')">
+                                        <el-input v-model="form.verification_leader_by" :placeholder='$lang("请填写核销负责人")'>
+                                        </el-input>
+                                    </el-form-item>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="col-100 use-btn">
+                                        <el-button type="primary" @click="search('first_page')">
+                                            {{$lang('查询')}}</el-button>
+                                        <el-button @click="reset()">{{$lang('重置')}}</el-button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </el-form>
+        <div class="baseline"></div>
+        <div class="use-row create-wrap">
+            <div class="col-50 result-num occupy">
+                {{$lang('搜索结果')}}：&nbsp;&nbsp;{{$lang('共')}} <b>{{totalCount}}</b> {{$lang('条')}}
+                {{$lang('应收金额')}}：&nbsp;&nbsp;CNY <b>{{sum_current_receivable_cny | separatNum}}</b>
+            </div>
+            <div class="col-50 text-right occupy" style="width: 50%">
+                <?php if(ButtonAction::hidden()){ ?>
+                <el-button type="primary" @click="exportList()">{{$lang('导出')}}</el-button>
+                <?php }?>
+            </div>
+        </div>
+        <div class="use-row">
+            <div class="col-100">
+                <table class="table-list" v-loading="tableLoading">
+                    <thead>
+                        <tr>
+                            <th>{{$lang('B2B订单号')}}</th>
+                            <th>{{$lang('PO单号')}}</th>
+                            <th>{{$lang('客户')}}</th>
+                            <th>{{$lang('销售人员')}} </th>
+                            <th>{{$lang('销售团队')}} </th>
+                            <th>{{$lang('币种')}}</th>
+                            <th>{{$lang('收入（含税）')}}</th>
+                            <th>{{$lang('实际收款')}}</th>
+                            <th>{{$lang('客户扣费')}}</th>
+                            <th>{{$lang('汇率损益')}}</th>
+                            <th>{{$lang('应收')}}</th>
+                            <th>{{$lang('应收（CNY）')}}</th>
+                            <th>{{$lang('订单创建时间')}}</th>
+                            <th>{{$lang('应收状态')}}</th>
+                            <th>{{$lang('操作')}}</th>
+
+
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(item,index) in dataList">
+                            <td>{{item.PO_ID}}</td>
+                            <td>{{item.THR_PO_ID}}</td>
+                            <td>{{$lang(item.CLIENT_NAME)}}</td>
+                            <td>{{item.PO_USER}}</td>
+                            <td>{{item.SALES_TEAM_val}}</td>
+                            <td>{{item.po_currency_val}}</td>
+                            <td>{{item.po_currency_val}} {{item.order_account | separatNum}}</td>
+                            <td>{{item.po_currency_val}} {{item.actual_collection | separatNum}}</td>
+                            <td>{{item.po_currency_val}} {{item.sum_deduction_amount | separatNum}}</td>
+                            <td>{{item.po_currency_val}} {{item.rate_losses | separatNum}}</td>
+
+                            <td>{{item.po_currency_val}} {{item.current_receivable | separatNum}}</td>
+                            <td>CNY {{item.current_receivable_cny | separatNum}}</td>
+                            <td>{{item.created_at}}</td>
+                            <td>{{item.receivable_status_val}}</td>
+                            <td>
+                                <el-button type="primary" @click="toDetail(item.ORDER_ID)">查看</el-button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="use-row">
+            <div class="col-100 text-right">
+                <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange"
+                    :current-page.sync="form.page" :page-sizes="[20, 50, 100, 200]" :page-size="form.page_size"
+                    layout="sizes, prev, pager, next,jumper" :total="totalCount"></el-pagination>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript"
+        src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+    <script src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js">
+    </script>
+    <script src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js">
+    </script>
+    <script>
+        if (getCookie('think_language') !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en)
+        }
+        var way = new Vue({
+            el: '#cost',
+            data: {
+                queryType: [{
+                    CD: 'PO_ID',
+                    CD_VAL: 'B2B订单号'
+                }, {
+                    CD: 'THR_PO_ID',
+                    CD_VAL: 'PO单号'
+                }],
+                clearDate: false,
+                labelPosition: 'left',
+                totalCount: 0,
+                tableLoading: false,
+                searchKeywords: '',
+                form: {
+                    receivable_status: [],
+                    order_type: "PO_ID",
+                    order_type_value: '',
+                    our_company: "",
+                    CLIENT_NAME: "",
+                    SALES_TEAM: [],
+                    PO_USER: "",
+                    verification_date: [],
+                    current_receivable_status: '',
+                    create_date: [],
+                    verification_by: "",
+                    start_reminding_date_receipt: "", // 提醒收款日期
+                    verification_leader_by: "",//核销负责人
+                    verification_at: {
+                        start: "",
+                        end: ""
+                    },
+                    created_at: {
+                        start: "",
+                        end: ""
+                    },
+                    page: 1,
+                    page_size: 20
+                },
+                baseData: {},
+                storeList: [],
+                dataList: [],
+                userList: [],
+                pickerOptions: {},
+                dateNow: utils.dateFormat(new Date(), 'yyyy-MM-dd'),
+                sum_current_receivable_cny: 0,
+            },
+            created: function () {
+                var _this = this;
+                function getQueryVariable(variable){
+                        var query = window.location.search.substring(1);
+                        var vars = query.split("&");
+                        for (var i=0;i<vars.length;i++) {
+                                var pair = vars[i].split("=");
+                                if(pair[0] == variable){return pair[1];}
+                        }
+                        return(false);
+                }
+                var strReceivable = getQueryVariable('receivable_status')
+                
+                console.log(strReceivable)
+                if(strReceivable != false){
+                    var arrReceivable = strReceivable.split('+');
+                    _this.form.receivable_status = arrReceivable
+                }
+                if(getQueryVariable('verification_leader_by') != false){
+                    _this.form.verification_leader_by = getQueryVariable('verification_leader_by')
+                }
+                
+                this.pickerOptions = {
+                    disabledDate(time) {
+                        return time.getTime() < new Date('2018-07-31');
+                    },
+                    shortcuts: [{
+                        text: this.$lang("最近一周"),
+                        onClick: function (picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: this.$lang("最近一个月"),
+                        onClick: function (picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: this.$lang("最近三个月"),
+                        onClick: function (picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }]
+                }
+                var endDate = utils.dateFormat(new Date(), 'yyyy-MM-dd');
+                this.form.create_date = ['2018-08-01', endDate]
+                this.getBaseData();
+                this.search('first_page');
+            },
+            methods: {
+                getBaseData: function () {
+                    var _this = this;
+                    var param = {
+                        cd_type: {
+                            receivable_status: false,
+                            sell_team: false
+                        }
+                    }
+                    axios.post("/index.php?g=common&m=index&a=get_cd", param).then(function (res) {
+                        if (res.data.code == 2000) {
+                            _this.baseData = res.data.data;
+                            // console.log(_this.baseData)
+                        }
+                    })
+                },
+                toDetail: function toDetail(id) {
+                    var dom = document.createElement('a');
+                    var _href = "/index.php?m=b2b&a=receivable_detail&order_id=" + id;
+                    dom.setAttribute("onclick", "opennewtab(this,'" + this.$lang('应收详情') + "')");
+                    dom.setAttribute("_href", _href);
+                    dom.click();
+                },
+                search: function (type) {
+                    var _this = this;
+                    var postData = {};
+                    function GMTToStr(time){
+                        let date = new Date(time)
+                        let Str=date.getFullYear() + '-' +
+                        (date.getMonth() + 1) + '-' + 
+                        date.getDate() + ''
+                        return Str
+                    }
+
+                    for (var key in this.form) {
+                        if (this.form[key] && key != 'create_date' && key != 'verification_date' && key !=
+                            'page' && key != 'verification_at' && key != 'created_at' && key != 'start_reminding_date_receipt'
+                        ) {
+                            postData[key] = this.form[key]
+                        }else if(this.form[key] && key == 'start_reminding_date_receipt'){
+                            var GMTreminding = GMTToStr(this.form[key])
+                            console.log(GMTreminding)
+                            postData[key] = GMTreminding
+                        }
+                    }
+                    if (this.form.create_date.length) {
+                        postData.created_at = {}
+                        postData.created_at.start = this.form.create_date[0] || '';
+                        postData.created_at.end = this.form.create_date[1] || '';
+                    }
+                    if (this.form.verification_date.length) {
+                        postData.verification_at = {}
+                        postData.verification_at.start = this.form.verification_date[0] || '';
+                        postData.verification_at.end = this.form.verification_date[1] || '';
+                    }
+                    var param = {
+                        search: postData,
+                        pages: {
+                            per_page: this.form.page_size,
+                            current_page: this.form.page
+                        }
+                    }
+                    console.log(postData)
+                    if (type == 'first_page') {
+                        this.form.page = 1;
+                        param.pages.current_page = 1;
+                    }
+                    this.tableLoading = true;
+                    if (param.search.order_type_value) {
+                        param.search.order_type_value = param.search.order_type_value.replace(/，/g,',')
+                    }
+                    axios.post("/index.php?m=B2b&a=receivableList", param).then(function (res) {
+                        var data = res.data;
+                        _this.tableLoading = false;
+                        if (data.code == 200000) {
+                            _this.dataList = data.data.data;
+                            _this.totalCount = +data.data.pages.total;
+                            _this.sum_current_receivable_cny = +data.data
+                            .sum_current_receivable_cny;
+                            
+                        } else {
+                            _this.$message({
+                                message: _this.$lang('获取数据失败'),
+                                type: 'warning'
+                            });
+                        }
+                    })
+                },
+                handleSizeChange: function (size) {
+                    this.form.page_size = size;
+                    this.search('first_page');
+                },
+                handleCurrentChange: function (currentPage) {
+                    this.form.page = currentPage;
+                    this.search();
+                },
+                reset: function () {
+                    var endDate = utils.dateFormat(new Date(), 'yyyy-MM-dd');
+                    this.form = {
+                        receivable_status: [],
+                        order_type: "PO_ID",
+                        order_type_value: '',
+                        our_company: "",
+                        CLIENT_NAME: "",
+                        SALES_TEAM: [],
+                        PO_USER: "",
+                        verification_date: [],
+                        create_date: ['2018-08-01', endDate],
+                        verification_by: "",
+                        verification_at: {
+                            start: "",
+                            end: ""
+                        },
+                        created_at: {
+                            start: "",
+                            end: ""
+                        },
+                        page: 1,
+                        page_size: 20
+                    }
+                    this.search('first_page');
+                },
+                exportList: function () {
+                    var param = {
+                        search: JSON.parse(JSON.stringify(this.form))
+                    }
+                    if (this.form.verification_date.length) {
+                        param.search.verification_at.start = this.form.verification_date[0];
+                        param.search.verification_at.end = this.form.verification_date[1]
+                    }
+                    if (this.form.create_date.length) {
+                        param.search.created_at.start = this.form.create_date[0];
+                        param.search.created_at.end = this.form.create_date[1]
+                    }
+                    
+                    this.$delete(param.search, 'verification_date')
+                    this.$delete(param.search, 'create_date')
+                    this.$delete(param.search, 'page')
+                    this.$delete(param.search, 'page_size')
+
+
+                    var tmep = document.createElement('form');
+                    tmep.action = '/index.php?m=B2b&a=claimListExport';
+                    tmep.method = "post";
+                    tmep.style.display = "none";
+                    var opt = document.createElement("input");
+                    opt.name = 'export_params';
+                    opt.value = JSON.stringify(param);
+                    tmep.appendChild(opt);
+                    document.body.appendChild(tmep);
+                    tmep.submit();
+                    $(tmep).remove();
+                },
+            },
+            filters: {
+                formatDate: function formatDate(time) {
+                    var date = new Date(time);
+                    return _formatDate(date, 'yyyy-MM-dd hh:mm');
+                },
+                separatNum: function (num) { //千分位方法
+                    var num = Number(num).toFixed(2);
+                    num = num + "";
+                    var _arr = num.split(".");
+                    return _arr[1] === "00" ? (num - 0).toLocaleString() + ".00" : (num - 0)
+                    .toLocaleString();
+                },
+                percentage: function (num) {
+                    return num ? ((num * 100).toFixed(2) + "%") : '';
+                },
+            },
+            watch: {
+                form: {
+                    handler: function handler(newValue, oldValue) {
+                        // this.search();
+                    },
+
+                    deep: true
+                }
+            },
+        })
+    </script>
+</body>
+
+</html>

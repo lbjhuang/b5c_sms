@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>$lang('新增品牌')</title>
+  <meta name="viewport"
+    content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.8.2.css?v=<{$Think.const.V}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Legal/common.css?v=<{$Think.const.V}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+  <style>
+    .el-checkbox {
+      width: 13%;
+    }
+    .custom-table [class*=el-col-] {
+      float: none;
+    }
+    .upload {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .upload .el-upload-list{
+      width: 100%;
+    }
+    .el-icon-plus {
+      font-size: 120px;
+    }
+    .title-info {
+      font-size: 16px;
+      text-align: center;
+    }
+    .titleHead{
+      font-size: 22px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .required-attention{
+      font-size: 14px;
+      margin-left: 10px;
+    }
+    .listImg .el-upload-list--picture-card:not(:empty) + .el-upload--picture-card{
+        display: none;
+    }
+    .el-upload-list--picture-card .el-upload-list__item{
+      margin:0;
+    }
+    
+  </style>
+</head>
+
+<body>
+  <div id="odm-add" class="wrapper" v-cloak>
+    <div class="titleHead">{{$lang('新建商标')}}</div>
+    <div>
+      <!-- 条件筛选 start-->
+      <el-row class="module-wrap-title">
+        {{$lang('基础信息')}}<span class="required-attention"><i class="el-icon-warning"></i>{{$lang('商品服务仅能添加一个')}}</span>
+      </el-row>
+      <el-row>
+        <el-col :span="20">
+          <el-row class="element-row" style="margin-top: 10px;">
+            <el-col :span="3" class="title-info">{{$lang('商标类型')}}<label class="required-content"></label></el-col>
+            <el-col :span="18">
+              <el-radio-group v-model="trademark_base.trademark_type">
+                <el-radio v-for="type in commonData.trademark_type" :key="type.cd" :label="type.cd" :value="type.cd">{{$lang(type.cdVal)}}</el-radio>
+              </el-radio-group>
+            </el-col>
+          </el-row>
+          <el-row class="element-row" style="margin-top: 10px;">
+            <el-col :span="3" class="title-info">{{$lang('商标名称:')}}<label class="required-content"></label></el-col>
+            <el-col :span="5">
+              <el-input :placeholder="$lang('请输入商标名称')" v-model.trim="trademark_base.trademark_name" clearable>
+              </el-input>
+            </el-col>
+            <el-col :span="3" class="title-info">{{$lang('注册公司')}}<label class="required-content"></label></el-col>
+            <el-col :span="5">
+              <el-select v-model.trim="trademark_detail.company_code" filterable :placeholder="$lang('注册公司')">
+                <el-option v-for="item in companyList" :key="item.CD" :label="$lang(item.CD_VAL)" :value="item.CD">
+                </el-option>
+              </el-select>
+            </el-col>
+          </el-row>
+          <el-row class="element-row" style="margin-top: 10px;">        
+            <el-col :span="3" class="title-info">{{$lang('国家')}}<label class="required-content"></label></el-col>
+            <el-col :span="5">
+              <el-select v-model.trim="trademark_detail.country_code" @change="countryChange" filterable :placeholder="$lang('国家')">
+                <el-option v-for="item in commonData.area_code" :key="item.id" :label="$lang(item.NAME)" :value="item.id">
+                </el-option>
+              </el-select>
+            </el-col>
+            <el-col :span="3" class="title-info">{{$lang('申请周期')}}<label class="required-content"></label></el-col>
+            <el-col :span="5">
+              <el-input :placeholder="$lang('请输入申请周期')" v-model.trim="trademark_detail.apply_period" clearable>
+              </el-input>
+              </el-select>
+            </el-col>
+          </el-row>   
+          <el-row class="element-row" style="margin-top: 10px;">        
+            <el-col :span="3" class="title-info">{{$lang('申请价格')}}<label class="required-content"></label></el-col>
+            <el-col :span="5">
+              <div style="display: flex;">
+                <el-select v-model.trim="trademark_detail.apply_currency" filterable :placeholder="$lang('币种')">
+                  <el-option v-for="item in commonData.currency" :key="item.cd" :label="item.cdVal" :value="item.cd">
+                  </el-option>
+                </el-select>
+                <el-input @keyup.native="watchNum('apply_price')" v-model="trademark_detail.apply_price" clearable></el-input>
+              </div>
+            </el-col>
+            <!-- <el-col :span="4">
+            </el-col> -->
+            <el-col :span="3" class="title-info">{{$lang('关联注册单号')}}<label class="required-content"></label></el-col>
+            <el-col :span="5">
+              <el-input :placeholder="$lang('请输入关联注册单号')" v-model.trim="trademark_base.register_apply_no" disabled>
+              </el-input>
+            </el-col>
+          </el-row>   
+          <el-row class="element-row" style="margin-top: 10px;">        
+            <el-col :span="3" class="title-info">{{$lang('商标保护期限')}}<label class="required-content"></label></el-col>
+            <el-col style="display: flex;align-items: center;" :span="3">
+              <el-input @keyup.native="watchNum('protect_period')" :placeholder="$lang('请输入商标保护期限')" v-model.trim="trademark_base.protect_period">
+              </el-input>
+              {{$lang('年')}}
+            </el-col>
+          </el-row>          
+        </el-col> 
+        <el-col :span="3" class="listImg" v-if="trademark_base.trademark_type=='N002970002'||trademark_base.trademark_type=='N002970005'||trademark_base.trademark_type=='N002970006'||trademark_base.trademark_type=='N002970007'">
+          <el-upload
+              action="/index.php?&m=trademark&a=file_upload"
+              ref="upload"
+              class="upload"
+              list-type="picture-card"
+              :on-success="uploadSuccess"
+              :on-exceed="uploadExceed"
+              :on-preview="handlePictureCardPreview"
+              :file-list="imgList"
+              :limit="1"
+              accept="image/png,image/jpg,image/jpeg"
+              :on-remove="uploadRemove">
+              <i class="el-icon-plus"></i>
+          </el-upload>
+          <el-dialog :visible.sync="dialogVisible"><img width="100%" :src="dialogImageUrl" alt=""></el-dialog>
+        </el-col>        
+      </el-row>
+      
+      <!-- 条件筛选 end-->
+    </div>
+
+    <div>
+      <el-row class="module-wrap-title" style="margin-top: 10px;">
+        {{$lang('详细信息')}}
+      </el-row>
+      <table cellpadding="0" cellspacing="0" border="0" class="custom-table">
+        <tr>
+          <td>{{$lang('申请编号')}}</td>
+          <td>
+            <el-input type="textarea" v-model="trademark_detail.apply_code" clearable>
+              </el-input>
+          </td>
+          <td>{{$lang('注册编号')}}</td>
+          <td>
+            <el-input type="textarea" v-model="trademark_detail.register_code" clearable>
+            </el-input>
+          </td>
+          <td>{{$lang('国际分类')}}<label class="required-content"></label></td>
+          <td>
+            <el-input type="textarea" v-model="trademark_detail.international_type" clearable>
+            </el-input>
+          </td>
+        </tr>
+        <tr>
+          <td>{{$lang('商品/服务')}}</td>
+          <td colspan="5">
+            <el-input type="textarea" v-model="trademark_detail.goods" clearable :rows="12">
+            </el-input>
+          </td>
+        </tr>
+        <tr>
+          <td>{{$lang('初审公告日期')}}</td>
+          <td>
+            <el-date-picker v-model.trim="trademark_detail.initial_review_date" type="date" :placeholder="$lang('选择日期')" value-format="yyyy-MM-dd">
+            </el-date-picker>
+          </td>
+          <td>{{$lang('申请日期')}}</td>
+          <td>
+            <el-date-picker v-model.trim="trademark_detail.applied_date" type="date" :placeholder="$lang('选择日期')" value-format="yyyy-MM-dd">
+            </el-date-picker>
+          </td>
+          <td>{{$lang('注册日期')}}</td>
+          <td>
+            <el-date-picker v-model.trim="trademark_detail.register_date" type="date" :placeholder="$lang('选择日期')" value-format="yyyy-MM-dd">
+            </el-date-picker>
+          </td>
+        </tr>
+        <tr>
+          <td>{{$lang('商标有效期')}}<label class="required-content"></label></td>
+          <td>
+          
+            <el-date-picker
+              v-model="effective_date"
+              type="daterange"
+              value-format="yyyy-MM-dd"
+              :range-separator="$lang('至')"
+              :start-placeholder="$lang('开始日期')"
+              :end-placeholder="$lang('结束日期')">
+            </el-date-picker>
+            
+          </td>
+          <td>{{$lang('当前状态')}}<label class="required-content"></label></td>
+          <td>
+            <el-select v-model.trim="trademark_detail.current_state" filterable>
+              <el-option v-for="type in commonData.current_type" :key="type.cd" :label="type.cdVal" :value="type.cd">
+              </el-option>
+            </el-select>
+          </td>
+          <td>{{$lang('代理/办理机构')}}</td>
+          <td>
+            <el-input v-model="trademark_detail.agent" clearable>
+            </el-input>
+          </td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>{{$lang('备注')}}</td>
+          <td colspan="5">
+            <el-input v-model="trademark_detail.remark" clearable>
+            </el-input>
+          </td>
+        </tr>
+      </table>
+    </div>
+    <el-row type="flex" justify="center" style="margin-top: 20px;">
+      <el-col :span="3">
+        <el-button class="element-btn btn-reset" @click="returnList">{{$lang('取消')}}</el-button>
+      </el-col>
+      <el-col :span="3">
+        <el-button class="element-btn btn-search" @click="submit" :disabled="btnclick">{{$lang('保存')}}</el-button>
+      </el-col>     
+    </el-row>
+  </div>
+
+  <!--引入js-->
+  <script src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+  <script src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+  <script src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+  <script src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+  <script src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+  <script src="./Application/Tpl/Home/Public/js/element-ui-2.8.2.js?v=<{$Think.const.V}>">
+  </script>
+  <script src="./Application/Tpl/Home/Public/js/element-en.js">
+  </script>
+  <script src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>">
+  </script>
+  <script>
+
+    if (getCookie('think_language') !== "zh-cn") {
+      ELEMENT.locale(ELEMENT.lang.en)
+    }
+    var VM = new Vue({
+      el: '#odm-add',
+      data: {
+        trademark_base: {
+          trademark_name: '', //商标名称
+          img_url: '', //附加文件，original_name:选择的文件名；save_name:上传后保存发文件名
+          trademark_type: '', //商标类型
+          register_apply_no:'',
+          protect_period:''
+        },
+        trademark_detail: {
+          country_code: '',//注册国家CODE
+          company_code: '',//注册公司CODE
+          register_code:'', // 注册编号
+          apply_code:'', //申请编号
+          international_type: '', //国际分类
+          goods: '', //商品/服务
+          initial_review_date: '',//初审公告日期
+          applied_date: '',//申请日期
+          register_date: '', //注册日期
+          current_state: '',//当前状态
+          agent: '',//代理/办理机构
+          remark: '',//备注
+          register_no:'',
+          apply_period:'',
+          apply_currency:'',
+          effective_start:'',
+          effective_end:'',
+        },
+        commonData: {
+
+        },
+        companyList: [],
+        imgList: [],
+        dialogImageUrl: '',
+        dialogVisible: false,
+        btnclick: false,
+        effective_date:'',
+        register_id:''
+      },
+      created: function () {
+        this.trademark_base.register_apply_no = this.getQueryString('register_no');
+        this.trademark_base.trademark_name = decodeURIComponent(this.getQueryString('trademark_name'));
+        this.trademark_detail.country_code = this.getQueryString('country_id');
+        this.register_id = this.getQueryString('register_id');
+        this.trademark_base.protect_period =   this.getQueryString('country_id') == '334' ? '5':'10'
+        this.getCommonData();
+        this.getOurCompany();
+      },
+      methods: {
+        /**
+         *  获取我方公司 新接口废弃已过滤公司
+         */
+        getOurCompany() {
+          axios.post('/index.php?g=common&m=index&a=get_our_company').then(res => {
+            if (res.data.code === 2000) {
+              this.companyList = res.data.data;
+            } else {
+              this.$message.error(this.$lang(res.data.msg))
+            }
+          })
+        },
+        /**
+         * 获取URL中查询字符串中相应参数的值
+         *
+         * @param {string} name 参数名
+         * @return {(string | null)} 参数的值
+         */
+        queryPost: function (url, param) {
+          var headers = {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          }
+          return axios.post(url, Qs.stringify(param), headers);
+        },
+        getQueryString: function (name) {
+          var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+          var r = window.location.search.substr(1).match(reg);
+          if (r != null) return decodeURIComponent(r[2]);
+          return null;
+        },
+
+        // 获取通用数据
+        getCommonData: function () {
+          var param = {
+            data: {
+              query: {
+                area_code: 'true',
+                trademark_type: 'true',
+                current_type: 'true',
+                company: 'true',
+                currency:'true'
+              }
+            }
+          };
+          axios.post("/index.php?g=oms&m=CommonData&a=commonData", param).then((res) => {
+            var data = res.data;
+            if (data.code === 2000) {
+              this.commonData = data.data
+            } else {
+              this.$message.error(this.$lang(data.msg));
+            }
+          }).catch(err => {
+            console.log(err)
+          });
+        },
+        watchNum:function(type){
+          var _this = this
+          if(type == 'apply_price'){
+            _this.trademark_detail.apply_price = _this.trademark_detail.apply_price.replace(/[^\.\d]/g,'');
+            _this.trademark_detail.apply_price = _this.trademark_detail.apply_price.replace(".", "$#$").replace(/\./g, "").replace("$#$", ".").replace(/^(\-)*(\d+)\.(\d\d).*$/, '$1$2.$3')
+          }else if(type == 'protect_period'){
+            _this.trademark_base.protect_period = _this.trademark_base.protect_period.replace(/[^\.\d]/g,'');
+            _this.trademark_base.protect_period = _this.trademark_base.protect_period.replace(".", "$#$").replace(/\./g, "").replace("$#$", ".").replace(/^(\-)*(\d+)\.(\d\d).*$/, '$1$2.$3')
+          }
+        },
+
+        // logo上传成功
+        uploadSuccess(res, file, fileList) {
+          if (res.status === 1) {
+            this.trademark_base.img_url = {
+              original_name:res.info[0].name,
+              save_name:res.info[0].savename
+            }
+            this.imgList = [{
+              name: res.info[0].name,
+              url: res.info[0].show_img,
+            }]
+          } else {
+            this.$message.warning(res.info)
+            this.$refs.upload.clearFiles()
+          }
+        },
+
+        uploadExceed(files, fileList) {
+          this.$message.warning(this.$lang('只能上传一张图片'))
+        },
+
+        uploadRemove() {
+          this.trademark_base.img_url = ''
+        },
+
+        handlePictureCardPreview(file) {
+          if(file.cdnAddr){
+            this.dialogImageUrl = file.cdnAddr;
+          }else{
+            this.dialogImageUrl = file.url;
+
+          }
+          this.dialogVisible = true;
+        },
+        countryChange(val){
+          console.log(val);
+          this.trademark_base.protect_period =  val == '334' ? '5':'10'
+        },
+        returnList(){
+          backTab('/index.php?m=legal&a=registered_trademark', this.$lang('注册商标'))
+        },
+
+        submit() {
+          if (!this.trademark_base.trademark_type) {
+            this.$message.warning(this.$lang('请选择商标类型'))
+            return
+          }
+          if (!this.trademark_base.trademark_name) {
+            this.$message.warning(this.$lang('请输入商标名称'))
+            return
+          }
+          if (!this.trademark_detail.company_code) {
+            this.$message.warning(this.$lang('请选择注册公司'))
+            return
+          }
+          if (!this.trademark_detail.country_code) {
+            this.$message.warning(this.$lang('请选择注册国家'))
+            return
+          }
+          if (!this.trademark_detail.current_state) {
+            this.$message.warning(this.$lang('请选择当前状态'))
+            return
+          }
+
+
+          if (!this.trademark_detail.apply_price) {
+            this.$message.warning(this.$lang('请输入申请价格'))
+            return
+          }
+          if (!this.trademark_detail.apply_currency) {
+            this.$message.warning(this.$lang('请输入申请价格币种'))
+            return
+          }
+          if (!this.trademark_detail.apply_period) {
+            this.$message.warning(this.$lang('请输入申请周期'))
+            return
+          }
+          if (this.trademark_detail.apply_period && this.trademark_detail.apply_period.length > 20) {
+            this.$message.warning(this.$lang('申请周期字数限制为20字以内'))
+            return
+          }
+          if (!this.trademark_base.register_apply_no) {
+            this.$message.warning(this.$lang('请输入关联注册单号'))
+            return
+          }
+          if (!this.trademark_base.protect_period) {
+            this.$message.warning(this.$lang('请输入商标保护期限'))
+            return
+          }
+          if (!this.effective_date[0] || !this.effective_date[1]) {
+            this.$message.warning(this.$lang('请选择商标有效期'))
+            return
+          }
+          if (!this.trademark_detail.international_type) {
+            this.$message.warning(this.$lang('请输入国际分类'))
+            return
+          }
+          if (!Number(this.trademark_detail.international_type)) {
+            this.$message.warning(this.$lang('国际分类仅支持填写数字'))
+            return
+          }
+
+          this.trademark_detail.effective_start = this.effective_date[0]
+          this.trademark_detail.effective_end = this.effective_date[1]
+
+
+          this.btnclick = true;
+          const postData = {
+            trademark_base: this.trademark_base,
+            trademark_detail: this.trademark_detail,
+            register_id:this.register_id
+          }
+          // console.log(postData);
+          axios.post("/index.php?m=Trademark&a=createTrademark", postData).then((res) => {
+            var data = res.data;
+            if (data.code === 2000) {
+              this.$message.success(this.$lang('保存成功'))
+              setTimeout(() => {
+                backTab('/index.php?m=legal&a=odm', this.$lang('ODM 商标管理'))
+              }, 1000);
+            } else {
+              this.$message.error(this.$lang(data.msg));
+            }
+            this.btnclick = false;
+          }).catch(err => {
+            console.log(err)
+            this.btnclick = false;
+          });
+        }
+      },
+    });
+
+  </script>
+</body>
+
+</html>

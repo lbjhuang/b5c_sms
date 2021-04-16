@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>库存锁定</title>
+    <!--<link rel="stylesheet" type="text/css" href="<{$HI_PATH}>css/H-ui.min.css"/>-->
+    <link rel="stylesheet" type="text/css" href="../Public/css/H-ui-3.1.min.css"/>
+    <link rel="stylesheet" type="text/css" href="<{$HI_PATH}>css/H-ui.admin.css"/>
+    <link rel="stylesheet" type="text/css" href="<{$HI_PATH}>lib/Hui-iconfont/1.0.1/iconfont.css"/>
+    <link rel="stylesheet" type="text/css" href="<{$HI_PATH}>lib/icheck/icheck.css"/>
+    <link rel="stylesheet" type="text/css" href="<{$HI_PATH}>skin/default/skin.css"  />
+    <link rel="stylesheet" type="text/css" href="<{$HI_PATH}>css/style.css"/>
+    <!--<link rel="stylesheet" href="<{$HI_PATH}>css/stock.css">-->
+    <link rel="stylesheet" type="text/css" href="../Public/css/stock_new.css" />
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+</head>
+<style>
+    #kc-lock{
+        padding: 20px;
+        height: 700px;
+        overflow-y: scroll;
+    }
+    .modal-footer button{
+        display: inline-block;
+        height: 32px;
+        font-size: 14px;
+        line-height: 32px;
+        background: #1E7EB4;
+        padding: 0px 15px;
+        color: white;
+        border-radius: 4px;
+        border: none;
+        outline: none;
+        cursor: pointer;
+    }
+</style>
+<body>
+<div class="kc-lock" id="kc-lock" v-cloak>
+    <div class="select-line">
+        <form id="search_lock" action="#" method="post"  >
+            <div class="row">
+                <div class="col-40 text-r">
+                </div>
+            </div>
+        </form>
+    </div>
+    <div class="button-wrap">
+        <div class="row">
+            <div class="col-50">
+
+            </div>
+        </div>
+    </div>
+    <div id="Hui-tabNav" class="Hui-tabNav">
+        <div class="Hui-tabNav-wp">
+            <ul id="min_title_list" class="acrossTab cl" style="width: 250px; left: 0px;">
+            </ul>
+        </div>
+    </div>
+    <form>
+        <div class="kc-tabel">
+            <table class="tabel table table-border table-bordered table-bg">
+                <thead class="th-wrap">
+                <tr class="text-c">
+                    <!--<th width="30">全选</th>-->
+                    <th><{$Think.lang.商品名称}></th>
+                    <th><{$Think.lang.批次号}></th>
+                    <th><{$Think.lang.仓库}></th>
+                    <th><{$Think.lang.销售团队}></th>
+                    <th><{$Think.lang.采购单号}></th>
+                    <th><{$Think.lang.采购团队}></th>
+                    <!--<th><{$Think.lang.生产日期}></th>-->
+                    <!--<th><{$Think.lang.保质期截止时间}></th>-->
+                    <th><{$Think.lang.到期日}></th>
+                    <th><{$Think.lang.剩余可售}></th>
+                    <th><{$Think.lang.该批次锁库数量}></th>
+                    <th><{$Think.lang.锁库总量}></th>
+                </tr>
+                </thead>
+                <tbody class="text-c td-wrap">
+                <tr v-for="(i, v) in batchs">
+                    <input type="hidden">
+                    <td :rowspan="count" v-if="v+1 == 1">{{guds_name}}</td>
+                    <td name="batch_code[]">{{i.batch_code}}</td>
+                    <td><span v-if="i.warehouse_id in house_all_list">{{house_all_list[i.warehouse_id].warehouse}}</span><span v-else>-</span></td>
+                    <td><span v-if="i.sale_team_code in sale_teams">{{sale_teams[i.sale_team_code]}}</span></td>
+                    <td>{{i.purchase_order_no}}</td>
+                    <td>{{sp_teams[i.purchase_team_code]}}</td>
+                    <!--<td>{{i.deadline_date_for_use|timeZone(0)}}</td>-->
+                    <td>{{i.deadline_date_for_use}}</td>
+                    <!--<td>{{i.deadline_date_for_use|timeZone(i.SHELF_LIFE)}}</td>-->
+                    <td>{{i.available_for_sale_num}}</td>
+                    <td><input class="input-text ac_input" v-model="i.locks" style="text-align: center;" type="text" @keyup="addition(i, v)"></td>
+                    <td :rowspan="count" v-if="v+1 == 1">{{launch_total}}</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="modal-footer" style="text-align: center;">
+            <button type="button" class="btn btn-primary" @click="submit()">确定</button>
+            <!--<a class="btn" data-dismiss="modal" aria-hidden="true">关闭</a>-->
+        </div>
+    </form>
+    <!--选择锁定店铺-->
+    <div id="modal-demo" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content radius">
+                <div class="modal-header">
+                    <center><h3 class="modal-title"><{$Think.lang.选择锁定店铺}></h3></center>
+                    <a class="close" data-dismiss="modal" aria-hidden="true" href="javascript:void();">×</a>
+                </div>
+                <div class="modal-body">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="<{$HI_PATH}>/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="../Public/js/jquery-ui.min.js"></script>
+<script type="text/javascript" src="<{$HI_PATH}>/js/stock/alert.js"></script>
+<script type="text/javascript" src="<{$HI_PATH}>/js/vue.js"></script>
+<script type="text/javascript" src="<{$HI_PATH}>/js/axios.min.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui-3.1.min.js"></script>
+<script type="text/javascript" src="../Public/lib/layer/1.9.3/layer.js"></script>
+<script type="text/javascript">
+    Vue.filter('timeZone', function (time, self_time) {
+        var self_time = parseInt(self_time);
+        var pdate = new Date(time);
+        var str = '';
+        pdate.setDate(pdate.getDate()+self_time);
+        if (pdate != 'Invalid Date') {
+            year = pdate.getFullYear()
+            month = pdate.getMonth()+1;
+            day = pdate.getDate();
+            str = year + "-" + month + "-" + day;
+        } else {
+            str = "-";
+        }
+
+        return str;
+    });
+    var vm = new Vue({
+        el: '#kc-lock',
+        data: {
+            batchs: <{$batchs}>,
+            count: <{$count}>,
+            total: 0,
+            isunlock: 0,
+            store_id: <{$store_id}>,
+            promptmsg: {
+                '1001': '锁定数量不可超出可售数量',
+                '1002': '请设定锁库数量',
+                '1003': '加载中'
+            },
+            showTime: 2000,
+            launch_save_input_num: [],
+            launch_total: 0,
+            channel: <{$channel}>,
+            sku: <{$sku}>,
+            channel_sku_id: <{$channel_sku_id}>,
+            sale_teams: <{$sale_teams}>,
+            sp_teams: <{$sp_teams}>,
+            guds_name: <{$guds_name}>,
+            house_all_list: <{$house_all_list}>
+        },
+        methods: {
+            addition: function(e, idx) {
+                var locks = parseInt(e.locks);
+                var max = parseInt(e.available_for_sale_num);
+                if (locks > max) {
+                    $.Huimodalalert('锁库超出最大可售范围', 2000);
+                    e.locks = max;
+                    vm.launch_total += locks;
+                } else {
+                    if (locks >= 0) {
+                        e.locks = locks;
+                    } else {
+                        e.locks = 0;
+                    }
+                }
+                vm.launch_save_input_num[idx] = e.locks;
+                vm.calculation_launch();
+                vm.batchs.splice(1, 0);
+                return;
+            },
+            calculation_launch: function () {
+                var sum = 0;
+                for (var i in vm.launch_save_input_num) {
+                    if (parseInt(vm.launch_save_input_num [i]) > 0) sum += parseInt(vm.launch_save_input_num [i]);
+                }
+                vm.launch_total = vm.total = sum;
+            },
+            subtraction: function(e) {
+                var locks = parseInt(e.locks);
+                var max = parseInt(e.available_for_sale_num);
+                if (locks > max) {
+                    $.Huimodalalert(vm.promptmsg[1001], vm.showTime);
+                    e.locks = max;
+                    vm.total -= locks;
+                } else {
+                    if (locks > 0) {
+                        e.locks = locks;
+                        vm.total -= locks;
+                    } else {
+                        e.locks = 0;
+                    }
+                }
+                vm.batchs.splice(1, 0);
+                return;
+            },
+            submit: function() {
+                if (this.total == 0) {
+                    $.Huimodalalert(vm.promptmsg[1002], vm.showTime);
+                    return;
+                } else {
+                    var loadIndex = layer.msg(vm.promptmsg[1003], {
+                        icon: 16
+                        ,shade: 0.01
+                        ,time: 0
+                    });
+                    axios.post('/index.php?m=stock&a=savelock&store_id=' + vm.store_id + '&isunlock=' + vm.isunlock + '&sku=' + vm.sku + '&channel=' + vm.channel + '&channel_sku_id=' + vm.channel_sku_id, this.batchs).then(function(response){
+                        var res = response.data;
+                        $.Huimodalalert(res['msg'], 3000);
+                        layer.close(loadIndex);
+                        setInterval("window.location.href='/index.php?m=stock&a=lock_extend'", vm.showTime);
+                    });
+                }
+            }
+        }
+    });
+
+    // 可拖动
+    $("#modal-demo").draggable({
+        handle: ".modal-header",
+        cursor: 'move',
+        refreshPositions: false
+    });
+
+    // 居中
+    function centerModals() {
+        $('#modal-demo').each(function(i) {
+            var $clone = $(this).clone().css('display', 'block').appendTo('body'); var top = Math.round(($clone.height() - $clone.find('.modal-content').height()) / 2);
+            top = top > 0 ? top : 0;
+            $clone.remove();
+            $(this).find('.modal-content').css("margin-top", top);
+        });
+    }
+    $('#modal-demo').on('show.bs.modal', centerModals);
+    $(window).on('resize', centerModals);
+
+    // 新窗口
+    function opennewtab(o,title){
+        if($(o).attr('_href')){
+            var bStop=false;
+            var bStopIndex=0;
+            var _href=$(o).attr('_href');
+            var _titleName=$(o).html();
+            var topWindow=$(window.parent.document);
+            var show_navLi=topWindow.find("#min_title_list li");
+            show_navLi.each(function() {
+                if($(this).find('span').attr("data-href")==_href){
+                    bStop=true;
+                    bStopIndex=show_navLi.index($(o));
+                    return false;
+                }
+            });
+            if(!bStop){
+                var topWindow=$(window.parent.document);
+                var show_nav=topWindow.find('#min_title_list');
+                show_nav.find('li').removeClass("active");
+                var iframe_box=topWindow.find('#iframe_box');
+                show_nav.append('<li class="active"><span data-href="'+_href+'">'+title+'</span><i></i><em></em></li>');
+
+                var topWindow=$(window.parent.document);
+                var taballwidth=0,
+                    $tabNav = topWindow.find('.acrossTab'),
+                    $tabNavWp = topWindow.find(".Hui-tabNav-wp"),
+                    $tabNavitem = topWindow.find(".acrossTab li"),
+                    $tabNavmore =topWindow.find(".Hui-tabNav-more");
+                if (!$tabNav[0]){return}
+                $tabNavitem.each(function(index, element) {
+                    taballwidth+=Number(parseFloat($(this).width()+60))});
+                $tabNav.width(taballwidth+25);
+                var w = $tabNavWp.width();
+                if(taballwidth+25>w){
+                    $tabNavmore.show()}
+                else{
+                    $tabNavmore.hide();
+                    $tabNav.css({left:0})}
+                var iframeBox=iframe_box.find('.show_iframe');
+                iframeBox.hide();
+                iframe_box.append('<div class="show_iframe"><div class="loading"></div><iframe frameborder="0" src='+_href+'></iframe></div>');
+                var showBox=iframe_box.find('.show_iframe:visible');
+                showBox.find('iframe').attr("src",_href).load(function(){
+                    showBox.find('.loading').hide();
+                });
+
+            }
+            else{
+                show_navLi.removeClass("active").eq(bStopIndex).addClass("active");
+                var iframe_box=topWindow.find("#iframe_box");
+                iframe_box.find(".show_iframe").hide().eq(bStopIndex).show().find("iframe").attr("src",_href);
+            }
+        }
+    }
+</script>
+</body>
+</html>

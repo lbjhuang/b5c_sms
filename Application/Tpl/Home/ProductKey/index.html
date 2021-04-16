@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link href="../Public/css/H-ui-3.1.min.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="../Public/css/stock.css">
+    <link rel="stylesheet" type="text/css" href="../Public/css/style.css"/>
+    <link rel="stylesheet" type="text/css" href="../Public/css/default.css"/>
+    <link rel="stylesheet" type="text/css" href="../Public/lib/Hui-iconfont/1.0.7/iconfont.css"/>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" type="text/css" href="../Public/css/NewAllocate.css"/>
+    <link rel="stylesheet" href="/Application/Tpl/Oms/Order/orderDetail.css">
+    <style>
+        #main {
+            padding: 20px;
+        }
+        [v-cloak]{
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<div id="main" v-cloak>
+    <el-row style="display: flex;align-items: center;">
+        Product Key：
+        <el-input
+                placeholder=""
+                size="small"
+                v-model="form.key"
+                style="width: 180px"
+        >
+        </el-input>
+        <div style="margin-left: 20px">
+            <el-button type="primary"  size="mini" @click="getData">{{$lang('查询')}}</el-button>
+            <el-button size="mini" @click="re">{{$lang('重置')}}</el-button>
+        </div>
+    </el-row>
+    <div style="background: #cccccc;margin: 10px 0; height: 1px"></div>
+    <div class="order-basic-info">
+        <header style="margin-top: 10px;">
+            {{$lang('基础信息')}}
+        </header>
+        <table border="0" cellspacing="0" cellpadding="0" class="order-basic-table">
+            <tbody>
+            <tr>
+                <td class="info-title">
+                    <div class="cell">
+                        Product Key
+                    </div>
+                </td>
+                <td><span>{{info.product_key}}</span></td>
+                <td class="info-title">
+                    <div class="cell">
+                        {{$lang('SKU编码')}}
+                    </div>
+                </td>
+                <td><span>{{info.sku_id}}</span></td>
+                <td class="info-title">
+                    <div class="cell">
+                        {{$lang('条形码')}}
+                    </div>
+                </td>
+                <td><span style="white-space: pre-line">{{info.upc_id}}</span></td>
+            </tr>
+            <tr>
+                <td class="info-title">
+                    <div class="cell">
+                        {{$lang('商品名称')}}
+                    </div>
+                </td>
+                <td><span>{{info.spu_name}}</span></td>
+                <td class="info-title">
+                    <div class="cell">
+                        {{$lang('商品属性')}}
+                    </div>
+                </td>
+                <td><span>{{info.attr}}</span></td>
+                <td class="info-title">
+                    <div class="cell">
+                        {{$lang('商品图片')}}
+                    </div>
+                </td>
+                <td>
+                    <el-popover
+                            placement="right-end"
+                            title=""
+                            trigger="hover" style="" offset="500" :visible-arrow="false">
+                        <img :src="info.image_url"/>
+                        <img slot="reference" :src="info.image_url"  style="max-height: 40px;max-width: 40px">
+                    </el-popover></td>
+            </tr>
+            <tr>
+                <td class="info-title">
+                    <div class="cell">
+                        {{$lang('初始数量')}}
+                    </div>
+                </td>
+                <td><span>{{info.init_num}}</span></td>
+                <td class="info-title">
+                    <div class="cell">
+                        {{$lang('当前在库数量')}}
+                    </div>
+                </td>
+                <td>{{info.in_stock_num}}</td>
+                <td class="info-title">
+                    <div class="cell">
+                        {{$lang('可售数量')}}
+                    </div>
+                </td>
+                <td><span>{{info.available_sale_num}}</span></td>
+            </tr>
+            <tr>
+                <td class="info-title">
+                    <div class="cell">
+                        {{$lang('占用数量')}}
+                    </div>
+                </td>
+                <td><span>{{info.occupy_num}}</span></td>
+                <td class="info-title">
+                    <div class="cell">
+                        {{$lang('锁定数量')}}
+                    </div>
+                </td>
+                <td><span>{{info.lock_num}}</span></td>
+                <td class="info-title">
+                    <div class="cell">
+                        {{$lang('已售出数量')}}
+                    </div>
+                </td>
+                <td><span>{{info.sold_num}}</span></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="order-basic-info">
+        <header style="margin-top: 10px;">
+            {{$lang('利润分析')}}
+        </header>
+        <table border="0" cellspacing="0" cellpadding="0" class="order-basic-table">
+            <tbody>
+            <tr>
+                <td class="info-title" style="width: 220px !important;">
+                    <div class="cell">
+                        {{$lang('成本单价（不含增值税，USD）')}}
+                    </div>
+                </td>
+                <td><span>{{profit_analysis.cost_price}}</span></td>
+                <td class="info-title"  style="width: 220px !important;">
+                    <div class="cell">
+                        {{$lang('平均销售单价（不含增值税，USD）')}}
+                    </div>
+                </td>
+                <td><span>{{profit_analysis.average_sales_price}}</span></td>
+            <tr>
+                <td class="info-title">
+                    <div class="cell">
+                        {{$lang('毛利')}}
+                    </div>
+                </td>
+                <td><span>{{profit_analysis.gross_profit}}</span></td>
+                <td class="info-title">
+                    <div class="cell">
+                        {{$lang('毛利率')}}
+                    </div>
+                </td>
+                <td><span>{{profit_analysis.gross_profit_margin}}</span></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="order-basic-info">
+        <header style="margin-top: 10px;">
+            {{$lang('采购信息')}}
+        </header>
+        <table border="0" cellspacing="0" cellpadding="0" class="order-basic-table">
+            <tbody>
+            <tr>
+                <td class="info-title">
+                    <div class="cell">
+                        {{$lang('采购单号')}}
+                    </div>
+                </td>
+                <td><span><a @click="orderDetal(purchasing_information.action_url,'采购详情')" style="color:blue">{{purchasing_information.purchase_order_no}}</a></span></td>
+                <td class="info-title">
+                    <div class="cell">
+                        {{$lang('采购人')}}
+                    </div>
+                </td>
+                <td><span>{{purchasing_information.purchased_by}}</span></td>
+                <td class="info-title">
+                    <div class="cell">
+                        {{$lang('创建时间')}}
+                    </div>
+                </td>
+                <td><span>{{purchasing_information.created_at}}</span></td>
+                <td class="info-title">
+                    <div class="cell">
+                        {{$lang('距今天数')}}
+                    </div>
+                </td>
+                <td><span>{{purchasing_information.from_today}}</span></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="order-basic-info">
+        <header style="margin-top: 10px;">
+            {{$lang('销售信息')}}
+        </header>
+        <table border="0" cellspacing="0" cellpadding="0" class="order-basic-table">
+            <tbody>
+            <tr>
+                <td class="info-title">
+                    <div class="cell">
+                        {{$lang('订单类型')}}
+                    </div>
+                </td>
+                <td class="info-title">
+                    <div class="cell">
+                        {{$lang('订单号')}}
+                    </div>
+                </td>
+                <td class="info-title">
+                    <div class="cell">
+                        {{$lang('销售/运营人员')}}
+                    </div>
+                </td>
+                <td class="info-title">
+                    <div class="cell">
+                        {{$lang('下单时间')}}
+                    </div>
+                </td>
+            </tr>
+            <tr v-for="(v,k) in sales_information" v-if="(k>9 && bool) || k<9">
+                <td>
+                    <span>{{v.order_type}}</span>
+                </td>
+                <td>
+                    <span><a @click="orderDetal(v.action_url,'订单详情')" style="color:blue">{{v.order_no}}</a></span>
+                </td>
+                <td>
+                    <span>{{v.sales_by}}</span>
+                </td>
+                <td>
+                    <span>{{v.order_time}}</span>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <div v-if="sales_information.length>9 && !bool" @click="bool = !bool" style="
+    position: relative;
+    text-align: center;
+    font-weight: bold;
+    color:#737373;
+
+">
+            <div style="
+    font-size: 23px;
+"><span style="cursor: pointer">﹀</span>
+            </div>
+            <div style="margin-top: -28px;font-size: 23px;"><span style="cursor: pointer">﹀</span></div>
+        </div>
+    </div>
+    <div class="order-basic-info">
+        <header style="margin-top: 10px;">
+            {{$lang('关联Payment Key')}}
+        </header>
+        <table border="0" cellspacing="0" cellpadding="0" class="order-basic-table">
+            <tbody>
+            <tr>
+                <td class="info-title">
+                    <div class="cell">
+                        Product Key
+                    </div>
+                </td>
+                <td class="info-title">
+                    <div class="cell">
+                        {{$lang('创建时间')}}
+                    </div>
+                </td>
+                <td class="info-title">
+                    <div class="cell">
+                        {{$lang('创建人')}}
+                    </div>
+                </td>
+                <td class="info-title">
+                    <div class="cell">
+                        {{$lang('触发操作')}}
+                    </div>
+                </td>
+                <td class="info-title">
+                    <div class="cell">
+                        {{$lang('操作')}}
+                    </div>
+                </td>
+            </tr>
+            <tr v-for="(v,k) in related_payment_keys" >
+                <td>
+                    <div>{{v.payment_key}}</div>
+                </td>
+                <td>
+                    <span>{{v.created_at}}</span>
+                </td>
+                <td>
+                    <span>{{v.created_by}}</span>
+                </td>
+                <td>
+                    <span>{{v.trigger_action}}</span>
+                </td>
+                <td>
+                    <span><el-button type="primary"  size="mini" @click="open(v.action_url)">查看</el-button></span>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+<script src="../Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script src="../Public/lib/layer-v3.0.3/layer/layer.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript"
+        src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript"
+        src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script>
+    var vueApp = new Vue({
+        el: '#main',
+        data: {
+            url:'/index.php?m=ProductKey&a=search&product_key=',
+            form: {
+                key: ''
+            },
+            bool:false,
+            data:{
+
+            },
+            info:{
+
+            },
+            profit_analysis:{},
+            purchasing_information:{},
+            sales_information:[],
+            related_payment_keys:{},
+            table: []
+        },
+        mounted: function () {
+        },
+        created: function () {
+        },
+        watch: {},
+        methods: {
+            orderDetal: function (href, title) {
+                var dom = document.createElement('a');
+                dom.setAttribute("onclick", "opennewtab(this,'"+this.$lang(title) + "')");
+                dom.setAttribute("_href", href);
+                dom.click();
+            },
+            open:function(url){
+                this.orderDetal(url,'Payment Key详情')
+            },
+            querySearch(queryString, cb) {
+                var restaurants = this.arr;
+                var results = queryString ? restaurants.filter(this.createFilter(queryString)) : restaurants;
+                // 调用 callback 返回建议列表的数据
+                cb(results);
+            },
+            createFilter(queryString) {
+                return (restaurant) => {
+                    return (restaurant.value.toLowerCase().indexOf(queryString.toLowerCase()) === 0);
+                };
+            },
+            re: function () {
+                this.form = {
+                    "key": "",
+                }
+                window.location.reload()
+            },
+            handleSizeChange: function (e) {
+
+            },
+            handleCurrentChange: function () {
+
+            },
+            getData: function (type) {
+                var _this = this;
+                axios.get(this.url+this.form.key/*, {product_key:this.form.key}*/).then(function (response) {
+                    if (response.data.code === 2000) {
+                        /*_this.$message({
+                            message: response.data.msg,
+                            type: 'error'
+                        });*/
+                        _this.info = response.data.data.info
+                        _this.profit_analysis = response.data.data.profit_analysis
+                        _this.purchasing_information = response.data.data.purchasing_information
+                        _this.related_payment_keys = response.data.data.related_payment_keys
+                        _this.sales_information = []
+                        for(var x in response.data.data.sales_information){
+                            _this.sales_information.push( response.data.data.sales_information[x])
+                        }
+                    }else{
+                        _this.$message({
+                            message: response.data.msg,
+                            type: 'error'
+                        });
+                    }
+                })
+            }
+        }
+    });
+</script>
+</html>

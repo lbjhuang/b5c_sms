@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>erp使用度统计</title>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/../Hr/hrstyle.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+</head>
+
+<style>
+    [v-cloak] {
+        display: none;
+    }
+    .btn-pub{
+        outline: none;
+    }
+    .show-list .table-list tr th{
+        padding:0px 6px;
+    }
+    .use-row .col-100{
+        overflow: auto;
+    }
+    .el-pagination{
+        height: 200px;
+    }
+    .show-list .el-form-item__label{
+        padding-top:0px;
+        padding-bottom:0px;
+    }
+    .show-list .table-list tr td{
+        white-space: normal;
+        word-break: break-all;
+    }
+</style>
+
+<body>
+    <div id="stat" class="show-list" v-cloak>
+        <el-form ref="form" :model="form" :label-position="labelPosition" label-width="120px">
+            <div class="use-row">
+                <div class="col-100">
+                    <table class="search-table">
+                        <tbody>
+                            <tr>
+                                <td style="width:20%">
+                                    <el-form-item :label="$lang('职能模块')">
+                                        <el-select :filterable="true" :placeholder="$lang('全部')" v-model="form.module" clearable @change="pickModule">
+                                            <el-option :key="item.id" :label="$lang(item.name)" :value="item.id" v-for="item in baseData.moduleList"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                </td>
+                                <td style="width:20%">
+                                    <el-form-item :label="$lang('页面')">
+                                        <el-select :filterable="true" :placeholder="$lang('全部')" v-model="form.action" clearable>
+                                            <el-option :key="item.id" :label="$lang(item.name)" :value="item.id" v-for="item in baseData.actionList"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                </td>
+                                <td style="width:35%">
+                                    <el-form-item :label="$lang('时间')">
+                                        <el-date-picker style="width:100%;height: 40px;" v-model="form.date"
+                                            :clearable="clearDate" value-format="yyyy-MM-dd" size="small" type="daterange"
+                                            align="right" unlink-panels :range-separator="$lang('至')"
+                                            :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')"
+                                            :picker-options="pickerOptions">
+                                        </el-date-picker>
+                                    </el-form-item>
+                                </td>
+                                <td style="width:20%">
+                                    <el-form-item :label="$lang('操作人员')">
+                                        <el-select class="width-100" remote filterable clearable v-model="form.user" :loading="userLoading" :placeholder="$lang('请输入')"
+                                            value-key="name" :remote-method="remoteMethod">
+                                            <el-option v-for="(item, index) in userList" :key="index" :label="item.name" :value="item.name"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <el-button type="primary" @click="search">查询</el-button>
+                                    <el-button @click="reset">重置</el-button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </el-form>
+        <div class="baseline"></div>
+        <div class="use-row create-wrap">
+            <div class="col-50 result-num occupy">
+                {{$lang('搜索结果')}}：&nbsp;&nbsp;{{$lang('共')}}
+                <b>{{totalCount}}</b> {{$lang('条')}}
+            </div>
+        </div>
+        <div class="use-row">
+            <div class="col-100">
+                <table class="table-list" v-loading="tableLoading">
+                    <thead>
+                        <tr>
+                            <th width="60px">{{$lang('序号')}}</th>
+                            <th width="">{{$lang('职能模块')}}</th>
+                            <th>{{$lang('功能点')}}</th>
+                            <th>{{$lang('操作次数')}}</th>
+                            <th width="50%">{{$lang('操作人')}} </th>                      
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(item,index) in dataList">
+                            <td>{{(form.page - 1) * form.page_size + index + 1}}</td>
+                            <td>{{$lang(item.module)}}</td>
+                            <td>{{$lang(item.action)}}</td>
+                            <td>{{item.times}}</td>
+                            <td> {{item.users.join()}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="use-row">
+            <div class="col-100 text-right">
+                <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="form.page"
+                    :page-sizes="[20, 50, 100, 200]" :page-size="form.page_size" layout="sizes, prev, pager, next,jumper"
+                    :total="totalCount"></el-pagination>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+    <script src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script>
+        if (getCookie('think_language') !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en)
+        }
+        var way = new Vue({
+            el: '#stat',
+            data: {
+                clearDate: false,
+                labelPosition: 'left',
+                totalCount: 0,
+                tableLoading: false,
+                onwayAmount: 0,
+                form: {
+                    action: '',
+                    module: '',
+                    date:[],
+                    user:'',
+                    page: 1,
+                    page_size: 20
+                },
+                baseData: {},
+                dataList: [],
+                userList: [],
+                userLoading:false,
+                pickerOptions: {},
+                resList:[],
+            },
+            created: function () {
+                var endTime = new Date();
+                var startTime = new Date();
+                startTime.setTime(startTime.getTime() - 3600 * 1000 * 24 * 7);
+                this.form.date = [startTime,endTime];
+
+                this.pickerOptions = {
+                    disabledDate(time) {
+                        return time.getTime() < new Date('2018-07-31');
+                    },
+                    shortcuts: [{
+                        text: this.$lang("最近一周"),
+                        onClick: function (picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: this.$lang("最近一个月"),
+                        onClick: function (picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: this.$lang("最近三个月"),
+                        onClick: function (picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }]
+                }
+
+                this.getModuleList();
+            },
+            methods: {
+                getModuleList: function () {
+                    var _this = this;
+                    axios.get('/index.php?m=user_log&a=module_list')
+                        .then(function (res) {
+                            var res = res.data;
+                            if (res.code == 200) {
+                                _this.$set(_this.baseData, 'moduleList', res.data);
+                            } else {
+                                _this.$set(_this.baseData, 'moduleList', []);
+                            }
+                        })
+                },
+                pickModule:function(id){
+                    var _this = this;
+                    axios.get('/index.php?m=user_log&a=action_list&node_id=' + id, {
+                        headers: { 'Accept': '*/*' }
+                    }).then(function (res) {
+                        var res = res.data;
+                        if (res.code == 200) {
+                            _this.$set(_this.baseData, 'actionList', res.data);
+                        } else {
+                            _this.$set(_this.baseData, 'actionList', []);
+                        }
+                    })
+                },
+                remoteMethod(query) {
+                    var _this = this;
+                    if (!query) return;
+                    this.userLoading = true;
+                    axios.post("/index.php?g=common&m=user&a=search_user", Qs.stringify({ name: query }))
+                        .then(function (res) {
+                            var _data = res.data;
+                            _this.userLoading = false;
+                            if (_data.code === 2000) {
+                                _this.userList = _data.data || [];
+                            } else {
+                                _this.$message.error(_this.$lang(_data.msg));
+                            };
+                        })
+                },
+                
+                search: function () {
+                    var _this = this;
+                    this.tableLoading = true;
+                    axios.post("/index.php?m=user_log&a=menu_stat_list", this.form).then(function (res) {
+                        var data = res.data;
+                        _this.tableLoading = false;
+                        if (data.code == 200) {
+                            var start = (_this.form.page - 1) * _this.form.page_size,
+                                end = start + _this.form.page_size;
+                            _this.resList = data.data.list || [];
+                            _this.dataList =  _this.resList.slice(start,end);
+                            _this.totalCount = +data.data.total;
+                        } else {
+                            _this.$message({
+                                message: _this.$lang('获取数据失败'),
+                                type: 'warning'
+                            });
+                        }
+                    })
+                },
+                handleSizeChange: function (size) {
+                    var start = (this.form.page - 1) * size,
+                        end = start + size;
+                    this.dataList = this.resList.slice(start, end);
+                },
+                handleCurrentChange: function (currentPage) {
+                    var start = (currentPage - 1) * this.form.page_size,
+                        end = start + +this.form.page_size;
+                    this.dataList = this.resList.slice(start, end);;
+                },
+                reset: function () {
+                    this.form = {
+                        action: '',
+                        module: '',
+                        user:'',
+                        page: 1,
+                        page_size: 20
+                    }
+                    var endTime = new Date();
+                    var startTime = new Date();
+                    startTime.setTime(startTime.getTime() - 3600 * 1000 * 24 * 7);
+                    this.form.date = [startTime,endTime];
+                },
+            },
+            filters: {
+                numberFormat: function (val) {
+                    if (val) {
+                        var num = parseFloat(val).toLocaleString();
+                        return num.indexOf('.') > 0 ? num : num + ".00";
+                    }
+                }
+            },
+            watch: {
+                form: {
+                    handler: function handler(newValue, oldValue) {
+                        this.search();
+                    },
+                    deep: true
+                }
+            },
+        })
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title><{:L('优惠券添加')}></title>
+    <script type="text/javascript" src="/Application/Tpl/Home/Public/lib/My97DatePicker/WdatePicker.js"></script>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/common.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" type="text/css" href="/Application/Tpl/Home/Public/utils/css/public.style.css?v=20170306" />
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/lib/webuploader/0.1.5/webuploader.css"/>
+</head>
+<style>
+    .row+.row{margin: 30px 0;}
+    [v-cloak]{display: none !important;}
+    .layui-layer-content{width:500px;background:white !important;border:1px solid #cccccc;border-right:2px solid #cccccc}
+</style>
+<body >
+<div id="couponAdd">
+    <h3 class="use-title"><{:L('优惠券添加')}></h3>
+    <!-- 基本信息 -->
+    <form action="<{:U('coupon/coupon/doCouponAdd')}>" method="post"  id="_submit">
+    <div class="row">
+        <div class="col-100">
+            <table class="use-table-two" cellspacing="0" cellpadding="0">
+                <caption><{:L('优惠券名称')}></caption>
+                <tbody class="use-body use-form">
+                <tr>
+                    <td width="10%"><{:L('优惠券名称')}></td>
+                    <td width="40%">
+                        <input type="text" class="use-input" name = 'title' placeholder="<{:L('请输入优惠券名称')}>">
+                    </td>
+                    <td width="10%"><{:L('适用平台')}></td>
+                    <td width="40%">
+                        <ul>
+                            <volist name="shopData" id="vo">
+                                <li><input type="checkbox" value="<{$vo.ID}>" @click="suitableShop()"/><span><{$vo.STORE_NAME}></span></li>
+                            </volist>
+                            <input type="hidden" name = 'shop' id="shopVal">
+                        </ul>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <!-- 规则限制 -->
+    <div class="row" >
+        <div class="col-100">
+            <table class="use-table-two" cellspacing="0" cellpadding="0">
+                <caption><{:L('规则限制')}></caption>
+                <tbody class="use-body use-form">
+                <tr>
+                    <td width="10%"><{:L('发放方式')}></td>
+                    <td width="40%">
+                        <select class="use-input" name = 'sendWay' @change="useSendWayItemsChange()">
+                            <option value=""><{:L('请选择')}></option>
+                            <volist name="commData['sendWay']" id="vo" key="k">
+                                <option value="<{$vo.CD}>"><{:L($vo['CD_VAL'])}></option>
+                            </volist>
+                        </select>
+                    </td>
+                    <td width="10%"><{:L('发放对象')}></td>
+                    <td width="40%" class="use-object">
+                        <!--一次性发放-->
+                        <div v-cloak v-if="useSendWayItems.empty">
+                            <select class="use-input" :disabled="objectchoseState==true">
+                                <option value=""><{:L('请选择')}></option>
+                            </select>
+                        </div>
+                        <div v-cloak v-if="useSendWayItems.once" >
+                            <select class="use-input" name = 'sendObject' @change="sendObjectItemsChange()" :disabled="objectchoseState==true">
+                                <option value=""><{:L('请选择')}></option>
+                                <volist name="onceSendObject" id="vo" key="k">
+                                    <option value="<{$vo.CD}>"><{:L($vo['CD_VAL'])}></option>
+                                </volist>
+                            </select>
+                            <div class="use-input use-object-items" v-cloak>
+                                <span class="use-object-items-num" v-if="sendObjectItems.allUser"><i></i><{:L('名')}></span>
+                                <div v-if="sendObjectItems.manualSelection">
+                                    <button type="button" class="use-object-manual" @click="ObjectmanualSelection()"><{:L('点此选择')}></button>
+                                    <span>{{objectchoseMenulStateparts}}<{:L('名')}></span>
+                                </div>
+                                <div v-if="sendObjectItems.excelUser">
+                                    <span class="use-object-excel" >
+                                        <a class="use-object-excelDonload" href="<{:U('coupon/coupon/downloadFile','fileName=demo.csv')}>"><{:L('下载模板')}></a>
+                                        <!--<a ><{:L('上传')}>EXCEL</a><i>111<{:L('名')}></i>-->
+                                        <button type="button"  id="import-goods" data-toggle="modal" data-target="#fileModal" style="padding: 0"><{:L('上传模板文件')}></button>
+                                        <i>{{excelUploadNum}}</i><{:L('名')}>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <!--持续性发放-->
+                        <div v-cloak v-if="useSendWayItems.continue">
+                            <select class="use-input" @change="sendContinuteObjectItemsChange()" name = 'sendObject' :disabled="objectchoseState==true">
+                                <option value="0"><{:L('请选择')}></option>
+                                <volist name="continuedSendObject" id="vo">
+                                <option value="<{$vo.CD}>"><{:L($vo['CD_VAL'])}></option>
+                                </volist>
+                            </select>
+                            <div class="use-sendWay-continute-items use-input" v-cloak  v-if="sendContinuteObjectVip">
+                                <input type="text" placeholder="<{:L('输入需求成功支付订单的次数')}>" name="orderNum" class="use-categories-money" >
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td><{:L('使用门槛')}></td>
+                    <td class="use-limit">
+                        <select class="use-input" name = 'threshold' @change="useLimitChange()">
+                            <option value=""><{:L('请选择')}></option>
+                            <volist name="commData['threshold']" id="vo" key="k">
+                                <option value="<{$vo.CD}>"><{:L($vo['CD_VAL'])}></option>
+                            </volist>
+                        </select>
+                        <div class="use-limit-items use-input" v-if="useLimitItems" v-cloak>
+                            <{:L('满')}> <input type="text" name="thresholdCondition"> <{:L('金额')}>(USD)
+                        </div>
+                    </td>
+                    <td><{:L('优惠券类型')}></td>
+                    <td class="use-categories">
+                        <select class="use-input" name="couponType" @change="useCategoriesChange()">
+                            <option value=""><{:L('请选择')}></option>
+                            <volist name="couponType" id="vo" key="k">
+                                <option value="<{$vo.CD}>"><{:L($vo['CD_VAL'])}></option>
+                            </volist>
+                        </select>
+                        <div class="use-input use-categories-items" v-cloak>
+                            <span class="use-categories-money" v-if="useCategoriesItems.money" v-cloak><input type="text" name="maxAmount" placeholder="<{:L('请输入抵扣金额')}>" >USD</span>
+                            <div class="use-categories-Voucher" v-if="useCategoriesItems.vouche" v-cloak>
+                                <span><input type="text" name="proportion" placeholder="<{:L('抵扣比例')}>" class="use-categories-Voucher-Proportion" @blur="VoucherProtion()">%</span>
+                                <span><input type="text" name="maxAmount"  placeholder="<{:L('最高优惠金额')}>" class="use-categories-Voucher-most">USD</span>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td><{:L('使用时间')}></td>
+                    <td class="use-times">
+                        <select class="use-input" name = 'timeType' @change="useTimesChange()">
+                            <option value=""><{:L('请选择')}></option>
+                            <volist name="commData['usedTimeType']" id="vo" key="k">
+                                <option value="<{$vo.CD}>"><{:L($vo['CD_VAL'])}></option>
+                            </volist>
+                        </select>
+                        <div class="use-times-items use-input">
+                            <div class="use-times-absolute" v-show="useTimesItems.absolute" v-cloak>
+                                <div class="use-times-absolute-left">
+                                    <input type="text" name="start_time" id="start_time"  onFocus="WdatePicker({dateFmt: 'yyyy-MM-dd HH:mm:ss',maxDate:'#F{$dp.$D(\'end_time\')}'})" placeholder="<{$Think.lang.起始日期}>" class="form-control">
+                                    <span class="input-group-btn">
+                                    <button class="btn btn-secondary" type="button"><i ></i></button>
+                                </span>
+                                </div>
+                                <div class="use-times-absolute-center"><{:L('到')}></div>
+                                <div class="use-times-absolute-right">
+                                    <input type="text" name="end_time" id="end_time" onFocus="WdatePicker({dateFmt: 'yyyy-MM-dd HH:mm:ss',minDate:'#F{$dp.$D(\'start_time\')}'})" placeholder="<{$Think.lang.结束日期}>" class="form-control">
+                                    <span class="input-group-btn">
+                                    <button class="btn btn-secondary" type="button"><i ></i></button>
+                                </span>
+                                </div>
+                            </div>
+                            <div class="use-times-relative" v-show="useTimesItems.relative" v-cloak>
+                                <span class="use-times-relative-span1"> <i><{:L('收到后')}></i><input type="text" name="timeValue"><i><{:L('天')}></i> </span>
+                                <span class="use-times-relative-span2">
+                                    <select name="timeHourValue" id="">
+                                        <for start="0" end="24">
+                                          <option value="<{$i}>"><{$i}></option>
+                                        </for>
+                                    </select> <{:L('小时')}>
+                                </span>
+                                <span class="use-times-relative-span3">
+                                    <select name="timeMinuteValue" id="">
+                                        <for start="0" end="60">
+                                          <option value="<{$i}>"><{$i}></option>
+                                        </for>
+                                    </select> <{:L('分内')}>
+                                </span>
+                            </div>
+                        </div>
+                    </td>
+                    <td><{:L('叠加规则')}></td>
+                    <td>
+                        <select class="use-input" name="superpositionRule">
+                            <option value=""><{:L('请选择')}></option>
+                            <volist name="commData['superpositionRule']" id="vo" key="k">
+                                <option value="<{$vo.CD}>"><{:L($vo['CD_VAL'])}></option>
+                            </volist>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td><{:L('适用范围')}></td>
+                    <td colspan="3" class="use-btn use-suitableRange" >
+                        <select class="use-input" name="useRange" @change="useSuitableRangeChange()">
+                            <option value=""><{:L('请选择')}></option>
+                            <volist name="commData['useRange']" id="vo" key="k">
+                                <option value="<{$vo.CD}>"><{:L($vo['CD_VAL'])}></option>
+                            </volist>
+                        </select>
+                        <div v-if="useSuitableRangeItemsAll" v-cloak class="couponAddPopGudsSaveDataAll">{{couponAddPopGudsSaveDataAll}} <{:L('个')}></div>
+                        <div class="use-suitableRange-items" v-if="useSuitableRangeItems" v-cloak>
+                            <button type="button" @click="partsGoodsSelection('1')"><{:L('选择商品')}></button><span>{{useSuitableRangeItemsparts}}<{:L('个')}></span>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+        <input type="hidden" name='users'/>
+        <input type="hidden" name='products'/>
+    <div class="row">
+        <div class="col-100 use-btn text-center">
+            <button class="btn-pub btn-blue mg-l-20" type="button" @click="_submit()"><{:L('保存')}></button>
+        </div>
+    </div>
+    </form>
+    <div class="coupon-addPop-manual coupon-addPop" v-cloak v-if="couponAddPopManual">
+        <div class="coupon-addPop-main">
+            <form action="">
+                <p><i @click="ObjectmanualSelectionClose()">×</i></p>
+                <div>
+                    <select name="" id="couponAddPopManualSelect">
+                        <option value=""><{:L('请选择')}></option>
+                        <option value="mobile"><{:L('手机号')}></option>
+                        <option value="nickname"><{:L('用户名称')}></option>
+                        <option value="email"><{:L('邮箱')}></option>
+                    </select>
+                    <input type="text" placeholder="<{:L('请输入内容')}>" id="couponAddPopManualInput">
+                    <button type="button" class="btn" @click="couponAddPopManualSearch()"><{:L('查询')}></button>
+                    <button type="reset" class="btn"><{:L('重置')}></button>
+                </div>
+                <h3><{:L('搜索结果')}>：<{:L('共')}>{{pageManul.pageLength}}<{:L('条记录')}></h3>
+                <table class="use-table-two" cellspacing="0" cellpadding="0">
+                    <thead>
+                        <tr>
+                            <th width=""><input type="checkbox" @click="couponAddPopManuaCheckboxAll()" id="ManuaCheckboxAll"></th>
+                            <th width=""><{:L('归属平台')}></th>
+                            <th width=""><{:L('手机号')}></th>
+                            <th width=""><{:L('用户名称')}></th>
+                            <th width=""><{:L('邮箱')}></th>
+                        </tr>
+                    </thead>
+                    <tbody class="use-body use-form">
+                    <template v-for="(a,index) in ObjectmanualData">
+                        <tr>
+                            <td><input type="checkbox" :value="a.email"  class="ManuaCheckbox" @click="couponAddPopManuaCheckbox()"></td>
+                            <td>{{a.plat}}</td>
+                            <td>{{a.mobile}}</td>
+                            <td>{{a.nickName}}</td>
+                            <td>{{a.email}}</td>
+                        </tr>
+                    </template>
+                    </tbody>
+                </table>
+                <div class="block">
+                    <el-pagination
+                            @current-change="handleCurrentChange"
+                            :current-page.sync="pageManul.sePage"
+                            :page-size="pageManul.pageSize"
+                            layout="prev, pager, next"
+                            :total="pageManul.pageLength">
+                    </el-pagination>
+                </div>
+                <div class="coupon-addPop-submit">
+                    <button type="button" class="btn" @click="couponAddPopManualSave()"><{:L('确认')}></button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="coupon-addPop-partsGoods coupon-addPop" v-cloak  v-if="partsGoodsItems">
+        <div class="coupon-addPop-main">
+            <form action="">
+                <p><i @click="partsGoodsSelectionClose()">×</i></p>
+                <div>
+                    <select name="" id="couponAddPopGudsSelect">
+                        <option value=""><{:L('请选择')}></option>
+                        <option value="gudsId">SPU ID</option>
+                        <option value="skuId">G_SKU ID</option>
+                        <option value="gudsName"><{:L('商品名')}></option>
+                    </select>
+                    <input type="text" placeholder="<{:L('请输入内容')}>" id="couponAddPopGudsInput">
+                    <button type="button" class="btn" @click="couponAddPopGudsSearch()"><{:L('查询')}></button>
+                    <button type="reset" class="btn" ><{:L('重置')}></button>
+                </div>
+                <h3><{:L('搜索结果')}>：<{:L('共')}>{{pageGuds.pageLength}}<{:L('条记录')}></h3>
+                <table class="use-table-two" cellspacing="0" cellpadding="0">
+                    <thead>
+                    <tr>
+                        <th width=""><input type="checkbox" class="GudsCheckboxAll" @click="couponAddPopGudsCheckboxAll()"></th>
+                        <th width="">SPU ID</th>
+                        <th width="">G_SKU ID</th>
+                        <th width=""><{:L('商品名')}></th>
+                    </tr>
+                    </thead>
+                    <tbody class="use-body use-form">
+                    <template v-for="(guds,index) in ObjectGudsData">
+                        <tr>
+                            <td><input type="checkbox" :value="guds.spuId" class="GudsCheckbox" @click="couponAddPopGudsCheckbox()"></td>
+                            <td>{{guds.spuId}}</td>
+                            <td>{{guds.skuId}}</td>
+                            <td>{{guds.gudsName}}</td>
+                        </tr>
+                    </template>
+                    </tbody>
+                </table>
+                <div class="block">
+                    <el-pagination
+                            @current-change="handleCurrentChangeGuds"
+                            :current-page.sync="pageGuds.sePage"
+                            :page-size="pageGuds.pageSize"
+                            layout="prev, pager, next"
+                            :total="pageGuds.pageLength">
+                    </el-pagination>
+                </div>
+                <div class="coupon-addPop-submit">
+                    <button type="button"  class="btn" @click="couponAddPopGudsSave()"><{:L('确认')}></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+<script src="/Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/vue.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/lib/layer-v3.0.3/layer/layer.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/element-ui.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/lib/webuploader/0.1.5/webuploader.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/utils/utils.js"></script>
+<script src="/Application/Tpl/Home/Public/lib/layer/1.9.3/layer.js" type="text/javascript"></script>
+<script type="text/javascript" src="/Application/Tpl/Coupon/public/Coupon/add.js"></script>
+</html>

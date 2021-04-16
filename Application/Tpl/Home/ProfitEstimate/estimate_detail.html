@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+        <{Think.lang.预估记录详情}>
+    </title>
+
+    <link href="../Public/css/H-ui-3.1.min.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="../Public/css/stock.css?v=<{$Think.const.V}>" />
+    <link rel="stylesheet" type="text/css" href="../Public/css/style.css?v=<{$Think.const.V}>" />
+    <link rel="stylesheet" type="text/css" href="../Public/css/default.css?v=<{$Think.const.V}>" />
+    <link rel="stylesheet" type="text/css" href="../Public/lib/Hui-iconfont/1.0.7/iconfont.css?v=<{$Think.const.V}>" />
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.13.0.css?v=<{$Think.const.V}>">
+
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+
+        .operate {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .button-group {
+            margin-right: 20px;
+        }
+
+        .tips-text {
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="esRecordDetail" v-cloak>
+        <div class="es-header">
+            <div>
+                <span>{{$lang('预估次数：')}} {{data.es_year}}年 {{$lang('第')}}{{data.es_num}}{{$lang('次')}}</span>
+                <span v-if="data.sysCreated === 1" class="tips">（<span class="tips-text">{{$lang('未填写')}}</span>）</span>
+            </div>
+            <div>{{$lang('考核指标：')}}{{data.assess_index}}</div>
+            <div v-if="data.assess_business.split(',').length < 3">{{$lang('考核业务：')}}{{data.assess_business}}</div>
+            <div class="operate">
+                <div></div>
+                <div class="button-group" v-if="!isExpired">
+                    <el-button v-if="type === 'read'" type="primary" @click="handleEdit">{{$lang('编辑预估记录')}}</el-button>
+                    <template v-else>
+                        <el-button type="primary" @click="handleBack">{{$lang('返回')}}</el-button>
+                        <el-button type="primary" @click="handleSave">{{$lang('保存')}}</el-button>
+                    </template>
+                </div>
+            </div>
+        </div>
+        <div class="es-content">
+            <el-form :model="records" :rules="records.rules" ref="form">
+                <el-table :data="records.data" border class="table-list">
+                    <el-table-column :label="$lang('预估周期')">
+                        <template slot-scope="scope">
+                            <div>{{scope.row.es_cycle_start_time}} ~ {{scope.row.es_cycle_end_time}}</div>
+                        </template>
+                    </el-table-column>
+                    <el-table-column v-if="nodeList.includes('销售额（$）')" :label="$lang('销售额（$）')">
+                        <template slot-scope="scope">
+                            <el-form-item :prop="'data.' + scope.$index + '.es_sale'" :rules="records.rules.es_sale">
+                                <div v-if="type === 'read'">{{digitFormat(scope.row.es_sale)}}</div>
+                                <el-input v-else @input="calculation(scope.$index)" v-model="scope.row.es_sale">
+                                </el-input>
+                            </el-form-item>
+                        </template>
+                    </el-table-column>
+                    <el-table-column v-if="nodeList.includes('运营成本（$）')" :label="$lang('运营成本（$）')">
+                        <template slot-scope="scope">
+                            <el-form-item :prop="'data.' + scope.$index + '.es_operating_costs'"
+                                :rules="records.rules.es_operating_costs">
+                                <div v-if="type === 'read'">{{digitFormat(scope.row.es_operating_costs)}}</div>
+                                <el-input v-else @input="calculation(scope.$index, 'es_operating_profit')"
+                                    v-model="scope.row.es_operating_costs"></el-input>
+                            </el-form-item>
+                        </template>
+                    </el-table-column>
+                    <el-table-column v-if="nodeList.includes('公司成本（$）')" :label="$lang('公司成本（$）')"
+                        prop="es_company_costs">
+                        <template slot-scope="scope">
+                            <el-form-item :prop="'data.' + scope.$index + '.es_company_costs'"
+                                :rules="records.rules.es_company_costs">
+                                <div v-if="type === 'read'">{{digitFormat(scope.row.es_company_costs)}}</div>
+                                <el-input v-else @input="calculation(scope.$index, 'es_net_profit')"
+                                    v-model="scope.row.es_company_costs"></el-input>
+                            </el-form-item>
+                        </template>
+                    </el-table-column>
+                    <el-table-column v-if="nodeList.includes('运营利润（$）')" :label="$lang('运营利润（$）')"
+                        prop="es_operating_profit">
+                        <template slot-scope="scope">
+                            <el-form-item :prop="'data.' + scope.$index + '.es_operating_profit'">
+                                <div>{{digitFormat(scope.row.es_operating_profit)}}</div>
+                            </el-form-item>
+                        </template>
+                    </el-table-column>
+                    <el-table-column v-if="nodeList.includes('净利（$）')" :label="$lang('净利（$）')">
+                        <template slot-scope="scope">
+                            <el-form-item :prop="'data.' + scope.$index + '.es_net_profit'">
+                                <div>{{digitFormat(scope.row.es_net_profit)}}</div>
+                            </el-form-item>
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </el-form>
+        </div>
+    </div>
+</body>
+<script src="../Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script type="text/javascript" src="../Public/js/request.js?v=<{$Think.const.V}>"></script>
+<script>
+    if (getCookie("think_language") !== "zh-cn") {
+        ELEMENT.locale(ELEMENT.lang.en);
+    }
+    var app = new
+        Vue({
+            name: "estimate_record",
+            el: "#esRecordDetail",
+            data() {
+                const numberValidate = (rule, value, callback) => {
+                    if (value) {
+                        if (!/^(-?\d+)(\.\d+)?$/.test(value)) {
+                            return callback(new Error(this.$lang('请输入数字')));
+                        } else {
+                            callback();
+                        }
+                    } else {
+                        callback();
+                    }
+                }
+                return {
+                    data: {
+                        assess_business: '',
+                        assess_index: '',
+                        es_num: '',
+                        es_year: ''
+                    },
+                    records: {
+                        rules: {
+                            es_sale: [
+                                { validator: numberValidate, trigger: 'blur' }
+                            ],
+                            es_operating_costs: [
+                                { validator: numberValidate, trigger: 'blur' }
+                            ],
+                            es_company_costs: [
+                                { validator: numberValidate, trigger: 'blur' }
+                            ]
+                        },
+                        data: []
+                    },
+                    type: 'read',
+                    originData: [],
+                    nodeList: [],
+                    isExpired: false,
+                }
+            },
+            created() {
+                this.getData();
+            },
+            methods: {
+                getData() {
+                    const id = this.getQueryParam('id');
+                    if (!id) return;
+                    const form = new FormData();
+                    form.append('id', id);
+                    form.append('isEdit', 0);
+                    request('plfData/queryOnePlfData', form, 'insight').then(res => {
+                        if (res.success) {
+                            this.data = res.datas;
+                            this.records.data = res.datas.plfDataListOfCycle;
+                            this.nodeList = res.datas.estimate_index;
+                            this.isExpired = Date.now() > res.datas.es_deadLine ? true : false;
+                        }
+
+                    })
+                },
+                digitFormat(num) {
+                    num = parseFloat(num).toFixed(2);
+                    if (isNaN(num)) return;
+                    var num1 = num.split('.')[0] + '';//数字转字符串  
+                    var str = "";//字符串累加  
+                    for (var i = num1.length - 1, j = 1; i >= 0; i--, j++) {
+                        if (j % 3 == 0 && i != 0 && num1[i - 1] != '-') {//每隔三位加逗号，过滤正好在第一个数字的情况 过滤负数情况 
+                            str += num1[i] + ",";//加千分位逗号  
+                            continue;
+                        }
+                        str += num1[i];//倒着累加数字
+                    }
+                    return str.split('').reverse().join("") + '.' + num.split('.')[1];
+                },
+                getQueryParam(name) {
+                    var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)"); //构造一个含有目标参数的正则表达式对象
+                    var r = window.location.search.substr(1).match(reg);  //匹配目标参数
+                    if (r != null) return unescape(r[2]); return null; //返回参数值
+                },
+                handleEdit() {
+                    const id = this.getQueryParam('id');
+                    if (!id) return;
+                    const form = new FormData();
+                    form.append('id', id);
+                    form.append('isEdit', 1);
+                    request('plfData/queryOnePlfData', form, 'insight').then(res => {
+                        if (res.success) {
+                            this.data = res.datas;
+                            this.records.data = res.datas.plfDataListOfCycle;
+                            this.nodeList = res.datas.estimate_index;
+                            this.originData = JSON.parse(JSON.stringify(this.records.data));
+                            this.type = 'edit';
+                        }
+                    })
+                },
+                handleSave() {
+                    this.$refs.form.validate(valid => {
+                        if (!valid) return;
+                        let records = this.records.data;
+                        const params = records.map(record => {
+                            const data = {
+                                id: this.getQueryParam('id'),
+                                es_sale: record.es_sale,
+                                es_operating_costs: record.es_operating_costs,
+                                es_company_costs: record.es_company_costs,
+                                es_operating_profit: record.es_operating_profit,
+                                es_net_profit: record.es_net_profit,
+                                es_cycle_start_time: record.es_cycle_start_time,
+                                es_cycle_end_time: record.es_cycle_end_time,
+                                es_deadline: this.data.deadLine,
+                                es_year: this.data.es_year,
+                                es_num: this.data.es_num,
+                            }
+                            return data;
+                        });
+                        request('plfData/saveOrUpdateForEdit', params, 'insight').then(res => {
+                            if (res.success) {
+                                this.$message.success(this.$lang(res.msg));
+                                this.$refs.form.resetFields();
+                                this.getData();
+                                this.type = 'read';
+                            }
+                        })
+                    })
+                },
+                handleBack() {
+                    this.$confirm(this.$lang('已编辑记录将不被保存，确认返回吗？'), this.$lang('提示'), {
+                        confirmButtonText: this.$lang('确定'),
+                        cancelButtonText: this.$lang('取消'),
+                        type: 'warning'
+                    }).then(() => {
+                        this.records.data = JSON.parse(JSON.stringify(this.originData));
+                        this.type = 'read';
+                        newTab('/index.php?m=profit_estimate&a=estimate_record', this.$lang('盈亏预估记录'))
+                        closeTab();
+                        this.$message({
+                            type: 'success',
+                            message: '返回成功'
+                        });
+                    }).catch(() => {
+                        newTab('/index.php?m=profit_estimate&a=estimate_record', this.$lang('盈亏预估记录'))
+                        closeTab();
+                    })
+                },
+                calculation(index, key) {
+                    // 计算
+                    const data = this.records.data[index];
+                    const keys = Object.keys(data);
+                    if (keys.includes('es_operating_profit')) {
+                        if (!data.es_sale || !data.es_operating_costs) {
+                            this.$set(this.records.data[index], 'es_operating_profit', '');
+                            this.$set(this.records.data[index], 'es_net_profit', '');
+                            return;
+                        }
+                        let amount = parseFloat(data.es_sale - data.es_operating_costs);
+                        this.$set(this.records.data[index], 'es_operating_profit', isNaN(amount) ? '' : amount.toFixed(2));
+                    }
+                    if (keys.includes('es_net_profit')) {
+                        if (!data.es_operating_profit || !data.es_company_costs) {
+                            return this.$set(this.records.data[index], 'es_net_profit', '');
+                        }
+                        let amount = parseFloat(data.es_operating_profit - data.es_company_costs);
+                        this.$set(this.records.data[index], 'es_net_profit', isNaN(amount) ? '' : amount.toFixed(2));
+                    }
+                },
+            }
+        });
+</script>
+
+</html>

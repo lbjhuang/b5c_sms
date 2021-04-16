@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>库存锁定</title>
+    <!--<link rel="stylesheet" type="text/css" href="<{$HI_PATH}>css/H-ui.min.css"/>-->
+    <link rel="stylesheet" type="text/css" href="../Public/css/H-ui-3.1.min.css"/>
+    <link rel="stylesheet" type="text/css" href="<{$HI_PATH}>css/H-ui.admin.css"/>
+    <link rel="stylesheet" type="text/css" href="<{$HI_PATH}>lib/Hui-iconfont/1.0.1/iconfont.css"/>
+    <link rel="stylesheet" type="text/css" href="<{$HI_PATH}>lib/icheck/icheck.css"/>
+    <link rel="stylesheet" type="text/css" href="<{$HI_PATH}>skin/default/skin.css"  />
+    <link rel="stylesheet" type="text/css" href="<{$HI_PATH}>css/style.css"/>
+    <link rel="stylesheet" href="<{$HI_PATH}>css/stock.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <style>
+        .kcs-box {
+            position: absolute;
+            top:calc((100% - 270px) / 2);
+            left:calc((100% - 270px) / 2);
+            background: white;width: 270px;
+            height:270px;border-radius: 3px;
+            border:1px solid #e5e5e5;
+            padding:0 20px 10px;
+            box-shadow:3px 2px 6px #dedede;
+        }
+        .kcs-box div, h4, h5 {
+            margin: 10px 0;
+        }
+        .kcs-box h4 {
+            font-size:18px;
+            font-weight:600;
+        }
+
+        .kcs-box h5 {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .kcs-box div > span {
+            margin-right: 10px;
+            display: inline-block;
+            padding: 10px;
+        }
+
+        .kcs-box div > input {
+            border: 1px solid #cccccc;
+            width: 150px;
+            height: 26px;
+            padding: 0 10px;
+            border-radius: 2px;
+            box-sizing: border-box;
+        }
+        .kcs-box div > select {
+            border: 1px solid #cccccc;
+            width: 150px;
+            height: 30px;
+            padding: 0 10px;
+            border-radius: 2px;
+        }
+        .kcs-box div > button:first-child {
+            border: 1px solid #ca2756;
+            padding: 3px 12px;
+            border-radius: 2px;
+            background: #ed2d65;
+            color: white;
+            margin-right: 30px;
+            margin-left: 10px;
+        }
+        .kcs-box div > button:last-child {
+            border: 1px solid #b3b3b3;
+            padding: 3px 12px;
+            border-radius: 2px;
+            background: #dddddd;
+            color: #555;
+            margin-left: 30px;
+        }
+        .button-pink{background:#EC2D64}
+        .td-sku input{
+            border-radius:5px 0px 0px 5px;
+        }
+        .td-sku img{border-radius:0px 5px 5px 0px;}
+        select,input,button{border-radius: 5px}
+        .button-hide{
+            background: none;
+            border:none;
+            position:relative;
+        }
+        .button-hide img{
+            position: absolute;
+            left:-6px;
+            top:-8px;
+            background:white;
+        }
+        .button-hide img[data-img='1']{
+            z-index: 99;
+        }
+        .button-hide img[data-img='2']{
+            z-index: 100;
+        }
+    </style>
+</head>
+
+<body>
+<div class="kc-lock" id="kc-lock" v-cloak>
+    <div class="select-line">
+        <form id="search_lock" action="#" method="post"  >
+            <div class="row">
+                <div class="col-30">
+                    <select name="init_key" v-model="post.init_key">
+                        <option value="SKU">SKU</option>
+                        <option value="GUDS_CNS_NM"><{$Think.lang.按渠道展开}></option>
+                        <option value="GUDS_CODE"><{$Think.lang.自编码}></option>
+                        <option value="channel"><{$Think.lang.渠道}></option>
+                    </select>
+                    <input name="init_value" type="text" v-model="post.init_value" placeholder="<{$Think.lang.输入关键字搜索}>">
+                </div>
+                <div class="col-15">
+                    <select name="DELIVERY_WAREHOUSE" v-model="post.DELIVERY_WAREHOUSE" >
+                        <option value="" ><{$Think.lang.所有仓库}></option>
+                        <option  v-for="h in house_all_list" :value="h.CD">{{h.warehouse}}</option>
+                    </select>
+                </div>
+                <div class="col-40 text-r">
+                    <input type="submit" class="button-pink" value="<{$Think.lang.查询}>">
+                    <input type="reset" class="button-black" value="<{$Think.lang.重置}>">
+                </div>
+            </div>
+        </form>
+    </div>
+    <div class="button-wrap">
+        <div class="row">
+            <div class="col-50">
+                <button type="button" name="int" class="button-pink" @click="add_list"> + <{$Think.lang.新增}></button>
+            </div>
+            <!--<div class="col-50 text-r">
+                <button type="button" name="reset" class="button-pink margin-right-10" @click="add_all_lock(index)">批量锁定</button>
+                <button type="button" name="reset" class="button-black margin-left-10" @click="del_all_lock(index)">批量解锁</button>
+            </div>-->
+        </div>
+    </div>
+    <div id="Hui-tabNav" class="Hui-tabNav">
+        <div class="Hui-tabNav-wp">
+            <ul id="min_title_list" class="acrossTab cl" style="width: 250px; left: 0px;">
+                <a href="/index.php?m=stock&a=lock" ><li class="active"><span style="padding-left: 16px;" ><{$Think.lang.锁定}></span><em></em></li></a>
+                <a href="/index.php?m=stock&a=lock_log"><li class=""><span  style="padding-left: 16px;" title="My Home" ><{$Think.lang.日志}></span><em></em></li></a>
+             </ul>
+        </div>
+    </div>
+    <div class="kc-tabel">
+        <table class="tabel table table-border table-bordered table-bg">
+            <thead class="th-wrap">
+            <tr class="text-c">
+                <!--<th width="30">全选</th>-->
+                <th width="30"><{$Think.lang.序号}></th>
+                <th><{$Think.lang.SKU编码}></th>
+                <th><{$Think.lang.第三方SKU编码}></th>
+                <th><{$Think.lang.商品名称}></th>
+                <th><{$Think.lang.自编码}></th>
+                <th width="30"><{$Think.lang.单位}></th>
+                <th><{$Think.lang.仓库}></th>
+                <th><{$Think.lang.锁定库存}></th>
+                <th><{$Think.lang.锁定渠道}></th>
+                <th width="100px"><{$Think.lang.操作}></th>
+            </tr>
+            </thead>
+            <tbody class="text-c td-wrap">
+            <template v-for="(l,index) in lock_list">
+            <tr>
+               <!-- <td>
+                    <label>
+                        <input type="checkbox"  :value="index" v-model="operation">
+                    </label>
+                </td>-->
+                <td>
+                    <button class="button-hide" @click="lockShowDetail(l)">
+                        <img src="<{$HI_PATH}>/images/rk-add.png"  width="14" height="14" data-img="1">
+                        <img src="<{$HI_PATH}>/images/rk-shrink.png" v-if="l.shrink_show" width="14" height="14" data-img="2">
+                    </button>
+                </td>
+                <td class="td-sku">
+                    <input type="text" v-model="l.SKU_ID" v-if="l.SKU_ID != null && l.SKU_ID != ''">
+                    <input v-else v-model="l.SKU_ID" type="text"  >
+                    <img src="<{$HI_PATH}>images/search.png" alt="" width="12px" height="20" @click="search(index)">
+                </td>
+                <td v-if="l.CHANNEL_SKU_ID">{{l.CHANNEL_SKU_ID}}</td>
+                <td v-else></td>
+
+                <td v-if="l.goods[0].GUDS_CNS_NM != null && l.goods[0].GUDS_CNS_NM != ''">{{l.goods[0].GUDS_CNS_NM}}</td>
+                <td v-else></td>
+
+                <td v-if="l.goods[0].GUDS_CODE != null && l.goods[0].GUDS_CODE != ''">{{l.goods[0].GUDS_CODE}}</td>
+                <td v-else=""></td>
+
+                <td v-if="l.goods[0].VALUATION_UNIT in metering">{{metering[l.goods[0].VALUATION_UNIT].CD_VAL}}</td>
+                <td v-else></td>
+
+                <td v-if="l.goods[0].DELIVERY_WAREHOUSE != null && l.goods[0].DELIVERY_WAREHOUSE != ''">{{house_all_list[l.goods[0].DELIVERY_WAREHOUSE].warehouse}}</td>
+                <td v-else></td>
+
+                <td>{{l.locking}}</td>
+                <!--<td v-if="l.total_inventory != null && l.total_inventory != ''">{{l.total_inventory}}</td>-->
+                <!--<td v-else></td>-->
+
+                <td class="channel" v-if="l.channel in all_channel">{{all_channel[l.channel].CD_VAL}}</td>
+                <td v-else=""></td>
+                <td>
+                    <input type="button" class="btn" name="" value="<{$Think.lang.锁定}>" @click="test(index)" v-if="l.channel == null || l.channel == ''">
+                    <!--<input type="button" name="" value="<{$Think.lang.锁定}>" @click="add_lock(index)" v-if="l.channel == null || l.channel == ''">-->
+                    <input type="button" class="btn" name="" value="<{$Think.lang.取消}>" @click="remove_lock(index)" v-if="l.channel == null || l.channel == ''">
+                    <!--<input type="button" name="" value="<{$Think.lang.解锁}>" @click="del_list(index)" v-else>-->
+                    <a class="btn btn-primary" onclick="del_list_extend(this)" target="_blank" href="javascript:void(0);" v-else><{$Think.lang.解锁}></a>
+                </td>
+            </tr>
+            <!--合同-->
+            <tr v-if="l.shrink_show">
+                <td colspan="16" class="padding0">
+                    <div class="insert-wrap">
+                        <table class="table table-border table-bordered table-bg" style="width: 82%;margin-left: 38px;">
+                            <thead class="th-wrap">
+                                <th><{$Think.lang.批次号}></th>
+                                <th><{$Think.lang.销售团队}></th>
+                                <th><{$Think.lang.采购单号}></th>
+                                <th><{$Think.lang.采购团队}></th>
+                                <th><{$Think.lang.保质期截止日期}></th>
+                                <th><{$Think.lang.销售数量}></th>
+                            </thead>
+                            <tbody class="td-wrap">
+                                <tr v-for="index in 8">
+                                    <td>{{index}}</td>
+                                    <td>{{index}}</td>
+                                    <td>{{index}}</td>
+                                    <td>{{index}}</td>
+                                    <td>{{index}}</td>
+                                    <td>{{index}}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </td>
+            </tr>
+            </template>
+            </tbody>
+        </table>
+    </div>
+    <div class="kcs-box" v-show="show_lock">
+        <h4 class="text-c"><{$Think.lang.提示}></h4>
+        <h5 class="text-c"><{$Think.lang.当前可用库存数为}> <span>{{lock_num}}</span></h5>
+        <div>
+            <span v-if="is_del == 0"><{$Think.lang.锁定数量}></span>
+            <span v-if="is_del == 1"><{$Think.lang.解锁数量}></span>
+            <input type="text" v-model="init_num"></div>
+        <div>
+            <span v-if="is_del == 0"><{$Think.lang.锁定}><{$Think.lang.渠道}></span>
+            <span v-if="is_del == 1"><{$Think.lang.解锁渠道}></span>
+            <select v-model="init_channel" v-if="is_del == 0">
+                <option :value="c.CD" v-for="c in all_channel">{{c.CD_VAL}}</option>
+            </select>
+            <select v-model="init_channel" v-if="is_del == 1" disabled>
+                <option :value="c.CD" v-for="c in all_channel">{{c.CD_VAL}}</option>
+            </select>
+        </div>
+        <div>
+            <span ><{$Think.lang.渠道}>SKU</span>
+            <select v-model="channel_sku" v-if="is_del == 0" >
+                <option :value="c.SKU_ID" v-for="c in channel_sku_arr">{{c.THRD_SKU_ID}}</option>
+            </select>
+            <input type="text" v-model="channel_sku" v-if="is_del == 1" disabled >
+        </div>
+        <div class="text-c">
+            <button @click="save_lock()" v-if="is_del == 0"><{$Think.lang.确定}></button>
+            <button @click="del_lock()" v-if="is_del == 1"><{$Think.lang.确定}></button>
+            <button @click="close_lock"><{$Think.lang.取消}></button>
+        </div>
+    </div>
+    <div class="col-md-7 padding10-0">
+        <ul class="pagination">
+            <{$pages}>
+        </ul>
+    </div>
+
+    <!--选择锁定店铺-->
+    <div id="modal-demo" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content radius">
+                <div class="modal-header">
+                    <center><h3 class="modal-title"><{$Think.lang.选择锁定店铺}></h3></center>
+                    <a class="close" data-dismiss="modal" aria-hidden="true" href="javascript:void();">×</a>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-sm-4">
+                        <span class="select-box">
+                        <select v-model="plat_code" class="select" size="1" name="plat_code">
+                            <option value=""><{$Think.lang.选择锁定平台}></option>
+                            <option :value="v" v-for="(i, v) in plats">{{i}}</option>
+                        </select>
+                    </span>
+                        </div>
+                        <div class="col-sm-4">
+                        <span class="select-box">
+                      <select v-model="store_id" class="select" size="1" name="demo1">
+                        <option value=""><{$Think.lang.选择锁定店铺}></option>
+                        <option :value="v" v-for="(i, v) in sotres">{{i}}</option>
+                      </select>
+                    </span>
+                        </div>
+                        <div class="col-sm-4">
+                        <span class="select-box">
+                      <select v-model="channel_sku_id" class="select" size="1" name="demo1">
+                        <option value=""><{$Think.lang.选择渠道SKU}></option>
+                        <option :value="i.SKU_ID" v-for="(i, v) in channel_skus">{{i.SKU_ID}}</option>
+                      </select>
+                    </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a class="btn btn-primary" onclick="opennewtab(this,'库存批次详情')" target="_blank" :_href="'/index.php?m=stock&a=batch_lock&channel=' + plat_code + '&channel_sku_id=' + channel_sku_id + '&store_id=' + store_id + '&sku=' + current_sku + '&guds_name=' + guds_name" href="javascript:void(0);">确定</a>
+                    <a class="btn" data-dismiss="modal" aria-hidden="true">关闭</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="<{$HI_PATH}>/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="../Public/js/jquery-ui.min.js"></script>
+<script type="text/javascript" src="<{$HI_PATH}>/js/stock/alert.js"></script>
+<script type="text/javascript" src="<{$HI_PATH}>/js/vue.js"></script>
+<script type="text/javascript" src="<{$HI_PATH}>/js/axios.min.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui-3.1.min.js"></script>
+<script type="text/javascript">
+    var vm = new Vue({
+        el: '#kc-lock',
+        data: {
+            lock_list:<{$lock_list}>,
+            old_lock_list:'',
+            all_channel:<{$all_channel}>,
+            house_all_list:<{$house_all_list}>,
+            metering:<{$metering}>,
+            skuadd:"<{$skuadd}>",
+            show_lock: 0,
+            init_data:{"SKU_ID":"","total_inventory":0,"channel":"","goods":[{"GUDS_CNS_NM":"","GUDS_CODE":"","VALUATION_UNIT":"","DELIVERY_WAREHOUSE":""}]},
+            init_sku:'',
+            init_num:0,
+            init_channel:'',
+            init_index:'',
+            post:<{$post}>,
+            init_lock:0,
+            is_del:0,
+            lock_num:0,
+            del_id:'',
+            channel_sku:'',
+            channel_sku_arr:[],
+            // 锁定店铺信息
+            plats: <{$plat_ret}>,
+            plat_code: '',
+            sotres: '',
+            store_id: '',
+            channel_skus: '',
+            channel_sku_id: '',
+            current_sku: '',
+            ButtonCurrentSrc:'<{$HI_PATH}>/images/rk-add.png',
+            guds_name: '',
+        },
+        watch: {
+            init_channel: function(e) {
+                this.channel_sku_arr = []
+                if('N000831400' == e ){
+                    this.get_gshopper_sku(e)
+                }
+            },
+            plat_code: function(e) {
+                if (!e) {
+                    vm.store_id = '';
+                    vm.sotres = [];
+                    vm.channel_sku_id = 0;
+                    vm.channel_skus = [];
+                    return;
+                }
+                vm.store_id = '';
+                vm.stores = [];
+                vm.channel_sku_id = 0;
+                vm.channel_skus = [];
+                this.get_store_id(e);
+                this.get_channel_sku(e);
+            },
+            store_id: function(e) {
+                return;
+                if (!e) {
+                    vm.channel_sku_id = 0;
+                    vm.channel_skus = [];
+                    return;
+                }
+                vm.channel_sku_id = 0;
+                vm.channel_skus = [];
+                this.get_channel_sku(e);
+            }
+        },
+        methods: {
+            get_store_id: function(e) {
+                axios.post('/index.php?m=stock&a=get_store',{
+                    plat_code: e
+                }).then(function(response){
+                    var res = response.data;
+                    if(res['code'] == '20000'){
+                        vm.sotres = res['data'];
+                    }else{
+                        $.Huimodalalert(res['msg'], 2000);
+                    }
+                })
+            },
+            get_channel_sku: function(e) {
+                axios.post('/index.php?m=stock&a=get_gshopper_sku',{
+                    sku: vm.current_sku,
+                    plat_cd: e
+                }).then(function(response){
+                    var res = response.data;
+                    if(res['code'] == '20000'){
+                        vm.channel_skus = res['data']
+                    }else{
+                        $.Huimodalalert(res['msg'], 2000);
+                    }
+                })
+            },
+            get_gshopper_sku: function(e) {
+                axios.post('/index.php?m=stock&a=get_gshopper_sku',{
+                    sku: this.lock_list[this.init_index].SKU_ID,
+                    channel: this.init_channel,
+                }).then(function(response){
+                    var res = response.data;
+                    if(res['code'] == '20000'){
+                        vm.channel_sku_arr = res['data']
+                    }else{
+                        box.Alert('<{$Think.lang.提示}>',res['msg'])
+                    }
+                })
+            },
+            add_list: function () {
+                if(this.init_lock == 1){
+                    return false;
+                }
+                if(this.lock_list == null){
+                    this.lock_list = []
+                }
+
+                this.lock_list.unshift(this.init_data);
+                this.init_lock = 1;
+
+            },
+            add_lock: function (id) {
+                var this_id = this.init_index = id
+                if(vm.lock_list[this_id].goods[0].GUDS_CNS_NM == '' || vm.lock_list[this_id].goods[0].GUDS_CNS_NM == null){
+                    box.Alert('<{$Think.lang.提示}>', '请输入正确的SKU编码,并效验');
+                    return false;
+                }else{
+                    this.init_sku = this.lock_list[this_id].SKU_ID
+                    this.init_num = this.lock_list[this_id].total_inventory
+                    this.init_channel = this.lock_list[this_id].channel
+                    this.check_lock_num(this.init_sku,1);
+                    this.show_lock = 1
+                }
+            },
+            remove_lock:function(id){
+                this.lock_list.splice(id,1);
+                this.close_lock()
+            },
+            del_list:function(id){
+                this.init_index = id;
+                this.init_channel = this.lock_list[id].channel;
+                this.channel_sku = this.lock_list[id].CHANNEL_SKU_ID;
+                this.check_lock_num(this.lock_list[id].SKU_ID,this.lock_list[id].channel,this.channel_sku);
+                this.show_lock = 1;
+                this.is_del = 1;
+                this.del_id = id;
+                //var sku = this.lock_list[id].SKU_ID;
+                //window.open("<{:U('Stock/batch_lock')}>&sku=" + sku + "&channel_sku_id=" + channel_sku_id + "&channel=" + channel);
+                //location.href = "<{:U('Stock/batch_lock')}>&sku=" + sku + "&channel_sku_id=" + channel_sku_id + "&channel=" + channel;
+            },
+            del_lock:function(){
+                var this_id = this.del_id
+                this.check_lock_num(this.lock_list[this_id].SKU_ID,this.lock_list[this_id].channel);
+                if(this.init_num > this.lock_num){
+                    box.Alert('<{$Think.lang.提示}>','数量过大')
+                    return false;
+                }
+                axios.post('/index.php?m=stock&a=del_lock', {
+                    params:{
+//                        id: this_id,
+                        sku: this.lock_list[this_id].SKU_ID,
+//                        total_inventory: this.lock_list[this_id].total_inventory,
+                        total_inventory: this.lock_num,
+                        init_num:this.init_num,
+                        channel: this.lock_list[this_id].channel,
+                        channel_sku: this.lock_list[this_id].CHANNEL_SKU_ID,
+                    }
+                }).then(function (response) {
+                    var res = response.data;
+                    if(res['status'] == 'y'){
+                        history.go(0)
+                    }else{
+                        box.Alert('<{$Think.lang.提示}>',res['curl_data']+','+res['msg'])
+                    }
+                }).catch(function (error) {
+                    console.log(error)
+                })
+
+            },
+            close_lock: function () {
+                this.show_lock = 0
+                this.init_sku = ''
+                this.init_num = 0
+                this.init_channel = ''
+                this.init_index = ''
+                this.init_lock = 0
+                this.init_data = {"SKU_ID":"","total_inventory":0,"channel":"","goods":[{"GUDS_CNS_NM":"","GUDS_CODE":"","VALUATION_UNIT":"","DELIVERY_WAREHOUSE":""}]}
+                this.is_del = 0
+                this.channel_sku_arr = []
+            },
+            save_lock:function(){
+                var this_id = this.init_index;
+                if(this.init_num > this.lock_num){
+                    box.Alert('<{$Think.lang.提示}>','数量过大')
+                    return false;
+                }
+                axios.post('/index.php?m=stock&a=save_lock', {
+                    params:{
+                        sku: this.lock_list[this_id].SKU_ID,
+                        total_inventory: this.init_num,
+                        channel: this.init_channel,
+                        channel_sku: this.channel_sku,
+                    }
+                }).then(function (response) {
+                    var res = response.data;
+                    if(res['status'] == 'y'){
+                        vm.lock_list[this_id].total_inventory = vm.init_num
+                        vm.lock_list[this_id].channel = vm.init_channel
+                        vm.close_lock()
+                    }else{
+                        box.Alert('<{$Think.lang.提示}>',res['msg'])
+                    }
+                }).catch(function (error) {
+                    console.log(error)
+                })
+
+            },
+            search:function(id){
+                var this_id = id;
+                var this_GSKU = this.lock_list[id].SKU_ID;
+                vm.current_sku = this.lock_list[id].SKU_ID;
+                $.ajax({
+                    type: "POST",
+                    async: false,
+                    url: "/index.php?m=stock&a=search_goods",
+                    data: {
+                        GSKU: this_GSKU,
+                    },
+                    success: function (res) {
+                        var res_arr = JSON.parse(res);
+                        if(res_arr.status == 'y'){
+                            if (res_arr['data'][0]['GUDS_CNS_NM'] != '' && res_arr['data'][0]['GUDS_CNS_NM'] != null) {
+                                vm.lock_list[this_id].goods[0].GUDS_CNS_NM = res_arr['data'][0]['GUDS_CNS_NM']
+                                 vm.lock_list[this_id].goods[0].GUDS_CODE = res_arr['data'][0]['GUDS_CODE']
+                                 vm.lock_list[this_id].goods[0].VALUATION_UNIT = res_arr['data'][0]['VALUATION_UNIT']
+                                 vm.lock_list[this_id].goods[0].DELIVERY_WAREHOUSE = res_arr['data'][0]['DELIVERY_WAREHOUSE']
+
+                            } else {
+                                box.Alert('<{$Think.lang.提示}>', 'SKU中单位信息不存在');
+                                return false;
+                            }
+                        } else {
+                            box.Alert('<{$Think.lang.提示}>', '请输入正确的SKU编码');
+                            return false;
+                        }
+                    },
+                    error: function () {
+                        alertNew('网络繁忙，请重试！')
+                    }
+                })
+            },
+            check_lock_num:function(sku,channel,channel_sku = ''){
+                axios.post('/index.php?m=stock&a=check_lock_num',{
+                    params:{
+                        sku:sku,
+                        channel:channel,
+                        channel_sku:channel_sku
+                    }
+                }).then(function(responsse){
+                    vm.lock_num = responsse.data;
+                }).catch(function(error){
+                    console.log(error)
+                })
+
+            },
+            add_sku:function() {
+                this.add_list()
+                this.lock_list[0].SKU_ID = this.skuadd
+                setTimeout(this.search(0),200)
+            },
+            test: function(e) {
+                var this_id = this.init_index = e;
+                if(vm.lock_list[this_id].goods[0].GUDS_CNS_NM == '' || vm.lock_list[this_id].goods[0].GUDS_CNS_NM == null){
+                    $.Huimodalalert('请输入正确的SKU编码,并效验', 2000);
+                    return false;
+                }else{
+                    vm.guds_name = vm.lock_list[this_id].goods[0].GUDS_CNS_NM;
+                    this.init_sku = this.lock_list[this_id].SKU_ID;
+                    $("#modal-demo").modal("show");
+                }
+            },
+            lockShowDetail:function(index){
+                if (index.shrink_show){
+                    Vue.set(index, 'shrink_show', false);
+                } else {
+                    Vue.set(index, 'shrink_show', true);
+                    var SKU_ID='',store_id='',channel='';
+                    var event = window.event||event
+                    SKU_ID = event.target.parentNode.parentNode.parentNode.querySelector('.td-sku input').value;
+                    console.info(SKU_ID)
+                }
+            }
+        }
+    });
+    if(vm.skuadd.length > 3){
+        setTimeout(vm.add_sku,100)
+    }
+
+//    function modaldemo(){
+//        $("#modal-demo").modal("show");
+//    }
+
+    /**
+     * 弹出层校验
+     *
+     */
+    function vali()
+    {
+        var flag = true;
+        if (!vm.plat_code) {
+            flag = false;
+        }
+        return flag;
+    }
+
+    /**
+     * 弹出层可拖动
+     *
+     */
+    $("#modal-demo").draggable({
+        handle: ".modal-header",
+        cursor: 'move',
+        refreshPositions: false
+    });
+
+    function del_list_extend(obj){
+        var _this = $(obj);
+        var id = _this.parent().parent()[0].rowIndex - 1;
+        vm.init_index = id;
+        vm.channel_sku = vm.lock_list[id].CHANNEL_SKU_ID;
+        //vm.check_lock_num(vm.lock_list[id].SKU_ID,vm.lock_list[id].channel,vm.channel_sku);
+        //vm.show_lock = 1;
+        vm.is_del = 1;
+        vm.del_id = id;
+        vm.init_channel = vm.lock_list[id].channel;
+        vm.guds_name = vm.lock_list[id].goods[0].GUDS_CNS_NM;
+        vm.lock_list[id].SKU_ID;
+        vm.current_sku = vm.lock_list[id].SKU_ID;
+        _this.attr('_href', "<{:U('Stock/batch_unlock')}>&sku=" + vm.current_sku + "&channel_sku_id=" + vm.channel_sku + "&channel=" + vm.init_channel + '&guds_name=' + vm.guds_name);
+        //window.open("<{:U('Stock/batch_lock')}>&sku=" + sku + "&channel_sku_id=" + channel_sku_id + "&channel=" + channel);
+        //location.href = "<{:U('Stock/batch_lock')}>&sku=" + sku + "&channel_sku_id=" + channel_sku_id + "&channel=" + channel;
+        //:_href="'/index.php?m=stock&a=batch_unlock&channel=' + init_channel + '&channel_sku_id=' + channel_sku + '&store_id=' + store_id + '&sku=' + current_sku"
+        opennewtab(obj, '解除锁库');
+    }
+
+    /**
+     * 弹出层显示到中间
+     *
+     */
+    function centerModals() {
+        $('#modal-demo').each(function(i) {
+            var $clone = $(this).clone().css('display', 'block').appendTo('body'); var top = Math.round(($clone.height() - $clone.find('.modal-content').height()) / 2);
+            top = top > 0 ? top : 0;
+            $clone.remove();
+            $(this).find('.modal-content').css("margin-top", top);
+        });
+    }
+    $('#modal-demo').on('show.bs.modal', centerModals);
+    $(window).on('resize', centerModals);
+
+    /**
+     * 新的页面
+     *
+     */
+    function opennewtab(o,title){
+        if(!vali()) {
+            $.Huimodalalert('请选择锁定平台', 2000);
+            //return;
+        }
+        if($(o).attr('_href')){
+            var bStop=false;
+            var bStopIndex=0;
+            var _href=$(o).attr('_href');
+            var _titleName=$(o).html();
+            var topWindow=$(window.parent.document);
+            var show_navLi=topWindow.find("#min_title_list li");
+            show_navLi.each(function() {
+                if($(this).find('span').attr("data-href")==_href){
+                    bStop=true;
+                    bStopIndex=show_navLi.index($(o));
+                    return false;
+                }
+            });
+            if(!bStop){
+                var topWindow=$(window.parent.document);
+                var show_nav=topWindow.find('#min_title_list');
+                show_nav.find('li').removeClass("active");
+                var iframe_box=topWindow.find('#iframe_box');
+                show_nav.append('<li class="active"><span data-href="'+_href+'">'+title+'</span><i></i><em></em></li>');
+
+                var topWindow=$(window.parent.document);
+                var taballwidth=0,
+                    $tabNav = topWindow.find('.acrossTab'),
+                    $tabNavWp = topWindow.find(".Hui-tabNav-wp"),
+                    $tabNavitem = topWindow.find(".acrossTab li"),
+                    $tabNavmore =topWindow.find(".Hui-tabNav-more");
+                if (!$tabNav[0]){return}
+                $tabNavitem.each(function(index, element) {
+                    taballwidth+=Number(parseFloat($(this).width()+60))});
+                $tabNav.width(taballwidth+25);
+                var w = $tabNavWp.width();
+                if(taballwidth+25>w){
+                    $tabNavmore.show()}
+                else{
+                    $tabNavmore.hide();
+                    $tabNav.css({left:0})}
+                var iframeBox=iframe_box.find('.show_iframe');
+                iframeBox.hide();
+                iframe_box.append('<div class="show_iframe"><div class="loading"></div><iframe frameborder="0" src='+_href+'></iframe></div>');
+                var showBox=iframe_box.find('.show_iframe:visible');
+                showBox.find('iframe').attr("src",_href).load(function(){
+                    showBox.find('.loading').hide();
+                });
+
+            }
+            else{
+                show_navLi.removeClass("active").eq(bStopIndex).addClass("active");
+                var iframe_box=topWindow.find("#iframe_box");
+                iframe_box.find(".show_iframe").hide().eq(bStopIndex).show().find("iframe").attr("src",_href);
+            }
+        }
+    }
+</script>
+</body>
+
+</html>
+
+
+

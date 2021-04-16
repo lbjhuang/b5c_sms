@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+        <{Think.lang.报告预览}>
+    </title>
+
+    <link href="../Public/css/H-ui-3.1.min.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="../Public/css/stock.css?v=<{$Think.const.V}>" />
+    <link rel="stylesheet" type="text/css" href="../Public/css/style.css?v=<{$Think.const.V}>" />
+    <link rel="stylesheet" type="text/css" href="../Public/css/default.css?v=<{$Think.const.V}>" />
+    <link rel="stylesheet" type="text/css" href="../Public/lib/Hui-iconfont/1.0.7/iconfont.css" />
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.13.0.css?v=<{$Think.const.V}>">
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+
+        .tips {
+            color: red;
+        }
+
+        .p-base-cell {
+            display: flex;
+            justify-content: flex-start;
+            padding: 5px;
+        }
+
+        .p-base-cell-title {
+            padding-right: 20px;
+            text-align: right;
+            width: 100px;
+        }
+
+        .button-group {
+            margin-left: 30px;
+        }
+
+        .p-data {
+            margin-top: 20px;
+        }
+
+        .cell {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .cell-title {
+            flex: 1;
+            text-align: right;
+        }
+
+        .cell-data {
+            display: flex;
+            flex: 2;
+            justify-content: space-around;
+            text-align: left;
+        }
+
+        .cell-reporter {
+            width: 180px !important;
+            padding: 34px 0 !important;
+            position: absolute;
+            width: 187px;
+            background: #fff;
+            margin-top: -30px;
+            height: 20px;
+        }
+
+        .reporter-none {
+            width: 180px !important;
+            padding: 0 !important;
+        }
+
+        .cell-accuracy {
+            display: flex;
+            justify-content: space-evenly;
+            align-items: center;
+            height: 17px;
+        }
+
+        /* ele样式调整 */
+        .el-popover {
+            width: 300px !important;
+            right: 116px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="report_preview" v-cloak>
+        <div class="p-header">
+            <div class="button-group">
+                <el-button size="small" type="primary" @click="handleBack">{{$lang('返回')}}</el-button>
+                <el-button size="small" type="primary" @click="generateReport">{{$lang('生成报告')}}</el-button>
+            </div>
+            <div class="p-base">
+                <div class="p-base-cell">
+                    <div class="p-base-cell-title">{{$lang('预估周期')}}</div>
+                    <div>{{data.cycle}}</div>
+                </div>
+                <div class="p-base-cell">
+                    <div class="p-base-cell-title">{{$lang('insight取数时间')}}</div>
+                    <div>{{data.insightTime}}</div>
+                </div>
+                <div class="p-base-cell">
+                    <div class="p-base-cell-title">{{$lang('录入数据时间')}}</div>
+                    <div>{{data.importDate}}</div>
+                </div>
+                <div v-if="isCopyWriting">
+                    <div>{{$lang('* N/A表示对应项目无实际数据')}}</div>
+                </div>
+            </div>
+            <div class="p-data">
+                <div v-if="data.es_deadline">
+                    <span class="tips">*</span>
+                    <span>{{$lang('预估数据在')}}{{data.es_deadline}}{{$lang('后显示')}}</span>
+                </div>
+                <div class="es-content">
+                    <table class="table-list" v-for="item in plfReportList">
+                        <thead>
+                            <tr>
+                                <th>{{$lang('负责人')}}</th>
+                                <th>{{$lang('数据')}}</th>
+                                <th>{{$lang('销售额（$）')}}</th>
+                                <th>{{$lang('运营成本（$）')}}</th>
+                                <th>{{$lang('公司成本（$）')}}</th>
+                                <th>{{$lang('运营利润（$）')}}</th>
+                                <th>{{$lang('净利（$）')}}</th>
+                                <th>{{$lang('预估准确率')}}</th>
+                            </tr>
+                        </thead>
+                        <thead v-if="plfReportList.length > 0">
+                            <tr>
+                                <td class="reporter-none"></td>
+                                <td>{{$lang('预估数据')}}</td>
+                                <td>{{digitFormat(item.es_sale)}}</td>
+                                <td>{{digitFormat(item.es_operating_costs)}}</td>
+                                <td>{{digitFormat(item.es_company_costs)}}</td>
+                                <td>{{digitFormat(item.es_operating_profit)}}</td>
+                                <td>{{digitFormat(item.es_net_profit)}}</td>
+                                <td class="cell-accuracy">
+                                    <div>{{item.es_accuracy}}</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="cell-reporter">{{item.creater}}</td>
+                                <td>{{$lang('实际数据')}}</td>
+                                <td>{{digitFormat(item.sales)}}</td>
+                                <td>{{digitFormat(item.operating_cost)}}</td>
+                                <td>{{digitFormat(item.company_cost)}}</td>
+                                <td>{{digitFormat(item.operating_profit)}}</td>
+                                <td>{{digitFormat(item.net_profit)}}</td>
+                                <td class="cell-accuracy">
+                                    <div>{{item.real_accuracy}}</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="reporter-none"></td>
+                                <td>{{$lang('差异')}}</td>
+                                <td>{{digitFormat(item.di_sales)}}</td>
+                                <td>{{digitFormat(item.di_operating_costs)}}</td>
+                                <td>{{digitFormat(item.di_company_costs)}}</td>
+                                <td>{{digitFormat(item.di_operating_profit)}}</td>
+                                <td>{{digitFormat(item.di_net_profit)}}</td>
+                                <td class="cell-accuracy">
+                                    <div>{{item.di_accuracy}}</div>
+                                </td>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+<script src="../Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script type="text/javascript" src="../Public/js/request.js?v=<{$Think.const.V}>"></script>
+
+<script>
+    if (getCookie("think_language") !== "zh-cn") {
+        ELEMENT.locale(ELEMENT.lang.en);
+    }
+    var app = new Vue({
+        name: 'report_preview',
+        el: '#report_preview',
+        data() {
+            return {
+                data: {},
+                plfReportList: [],
+                isCopyWriting: false, //是否显示文案：* N/A表示对应项目无实际数据
+            }
+        },
+        created() {
+            const data = JSON.parse(window.localStorage.getItem('gp-erp-estimate-report-generate'));
+            this.plfReportList = data.plfReportList.map(item => {
+                item.di_sales = this.calculation(item.es_sale, item.sales);
+                item.di_operating_costs = this.calculation(item.es_operating_costs, item.operating_cost);
+                item.di_company_costs = this.calculation(item.es_company_costs, item.company_cost);
+                item.di_operating_profit = this.calculation(item.es_operating_profit, item.operating_profit);
+                item.di_net_profit = this.calculation(item.es_net_profit, item.net_profit);
+                if (item.es_accuracy === 'N/A') {
+                    this.isCopyWriting = true;
+                }
+                item.visible = false;
+                return item;
+            })
+            this.data = data;
+        },
+        methods: {
+            columnMethod({ row, column, rowIndex, columnIndex }) {
+                if (columnIndex === 0) {
+                    if (rowIndex % this.data.length === 0) {
+                        return {
+                            rowspan: this.data.length,
+                            colspan: 1
+                        };
+                    } else {
+                        return {
+                            rowspan: 0,
+                            colspan: 0
+                        };
+                    }
+                }
+            },
+            handleBack() {
+                window.localStorage.removeItem('gp-erp-estimate-report-generate')
+                closeTab();
+                newTab('/index.php?m=profit_estimate&a=estimate_report', this.$lang('盈亏预估汇报'))
+            },
+            generateReport() {
+                if (this.plfReportList.length === 0 || (this.data.es_deadline && new Date(this.data.es_deadline).getTime() > Date.now())) {
+                    this.$confirm(this.$lang('预估数据暂未获取，无法生成报告'), '', {
+                        confirmButtonText: this.$lang('确定'),
+                        cancelButtonText: this.$lang('取消'),
+                        type: 'warning'
+                    }).then(() => {})
+                    return;
+                }
+                this.$confirm(this.$lang('报告生成后，对应预估周期的记录、取数时间等信息将无法修改。确认生成报告吗？'), '', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    const form = new FormData();
+                    const reportList = this.plfReportList.map(item => {
+                        return {
+                            reporter: item.creater,
+                            es_sales: item.es_sale,
+                            es_operating_costs: item.es_operating_costs,
+                            es_company_costs: item.es_company_costs,
+                            es_operating_profit: item.es_operating_profit,
+                            es_net_profit: item.es_net_profit,
+                            es_accuracy: item.es_accuracy,
+                            real_sales: item.sales,
+                            real_operating_costs: item.operating_cost,
+                            real_company_costs: item.company_cost,
+                            real_operating_profit: item.operating_profit,
+                            real_net_profit: item.net_profit,
+                            di_sales: item.di_sales,
+                            di_operating_costs: item.di_operating_costs,
+                            di_company_costs: item.di_company_costs,
+                            di_operating_profit: item.di_operating_profit,
+                            di_net_profit: item.di_net_profit
+                        }
+                    })
+                    const [es_cycle_start_time, es_cycle_end_time] = this.data.cycle.split('~');
+                    const [import_start_time, import_end_time] = this.data.importDate.split('~');
+                    const params = {
+                        es_cycle_start_time: es_cycle_start_time,
+                        es_cycle_end_time: es_cycle_end_time,
+                        import_start_time: import_start_time,
+                        import_end_time: import_end_time,
+                        insight_time: this.data.insightTime,
+                        plfReportList: reportList
+                    }
+                    request('report/saveReport', params, 'insight').then(res => {
+                        if (res.success) {
+                            this.$message.success(this.$lang('生成成功'));
+                            setTimeout(() => {
+                                newTab('/index.php?m=profit_estimate&a=estimate_report', this.$lang('盈亏预估汇报'))
+                                closeTab();
+                            }, 1 * 1000)
+                        }
+                    })
+                }).catch((e) => {
+                })
+            },
+            calculation(esNumber, realNumber) {
+                if (esNumber && realNumber) {
+                    const number = parseFloat(esNumber.replace(/,/g, '') - realNumber.replace(/,/g, ''));
+                    return number;
+                    // return this.digitFormat().toFixed(2));
+                }
+                return;
+            },
+            digitFormat(num) {
+                num = parseFloat(num).toFixed(2);
+                if (isNaN(num)) return '';
+                var num1 = num.split('.')[0] + '';//数字转字符串  
+                var str = "";//字符串累加  
+                for (var i = num1.length - 1, j = 1; i >= 0; i--, j++) {
+                    if (j % 3 == 0 && i != 0 && num1[i - 1] != '-') {//每隔三位加逗号，过滤正好在第一个数字的情况 过滤负数情况 
+                        str += num1[i] + ",";//加千分位逗号  
+                        continue;
+                    }
+                    str += num1[i];//倒着累加数字
+                }
+                return str.split('').reverse().join("") + '.' + num.split('.')[1];
+            },
+            calculaDate(date) {
+                if (!date) return;
+                // 计算日期是否最后一个月
+                let nowDate = new Date();
+                const year = nowDate.getFullYear();
+                const month = nowDate.getMonth();
+                const lastDay = new Date(year, month + 1, 0);
+                return lastDay.toLocaleDateString().split('/')[2] === date.split('-')[2];
+            }
+        }
+    })
+</script>
+
+</html>

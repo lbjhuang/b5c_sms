@@ -1,0 +1,1119 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <title>{{$lang('申请售后')}}</title>
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+        #applyAfterSales{
+            padding: 20px 20px 20px 30px;
+        }
+        .sales_basic_info .header{
+            font-size: 16px;
+            line-height: 40px !important;
+            line-height: 20px;
+            height: 40px;
+            margin-top: 20px;
+            padding-left: 20px;
+            text-align: left;
+            letter-spacing: 0;
+            color: rgb(255, 255, 255);
+            background: rgb(84, 110, 122);
+        }
+        .sales_basic_info .refund-info{
+            margin-bottom: 20px;
+        }
+        .sales_basic_info .refund-info .refund-row{
+            border: 1px solid #ebeef5;
+        }
+        .sales_basic_info .refund-info .refund-row .el-col{
+            padding: 10px;
+        }
+        .sales_basic_info .refund-info .refund-row .el-col .el-select{
+            width: 600px;
+        }
+        .sales_basic_info .refund-info .refund-row .refund-col-left{
+            border-right: 1px solid #ebeef5;
+        }
+        .sales_basic_info .refund-info .title-info{
+            text-align: center;
+            line-height: 40px;
+        }
+        .sales_basic_info .refund-info .child-order-box {
+            padding-right: 300px;
+        }
+        .requst{
+            color: #f00;
+        }
+        .sales_basic_info table tr th{
+            background: rgb(84, 110, 122);
+            color: rgb(255, 255, 255);
+            text-align: center;
+        }
+        .salesData .el-table__header-wrapper tr th:nth-last-child(2){
+            background: #fff;
+        }
+        .salesData .el-table__header-wrapper tr th:nth-last-child(2) .cell div{
+            display: flex;
+            justify-content: center;
+        }
+        .el-table td div{
+            text-align: center;
+        }
+        .delete_icon{
+            color: rgb(64, 158, 255);
+            cursor: pointer;
+            font-size: 24px;
+        }
+        .after_sale_order,.after_sale_order .el-table__body-wrapper{
+            overflow: visible;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div id="applyAfterSales" v-cloak>
+        <div class="salesType">
+            <span>{{$lang('售后类型')}}：</span>
+            <el-checkbox disabled>{{$lang('补发')}}</el-checkbox>
+            <el-checkbox disabled>{{$lang('退货')}}</el-checkbox>
+            <el-checkbox v-model="refund" disabled>{{$lang('退款')}}</el-checkbox>
+        </div>
+        <div class="sales_basic_info">
+            <div class="header">
+                {{$lang('退款')}}
+            </div>
+            <div class="refund-info">
+                <el-row class="refund-row">
+                    <el-col :span="4" class="refund-col-left">
+                        <div class="title-info">{{$lang('具体退款子单')}}
+                            <span class="requst" v-if="has_child_order == 1">*</span>
+                        </div>
+                    </el-col>
+                    <el-col :span="20">
+                        <div class="child-order-box">
+                            <el-select v-model="subList" :disabled="has_child_order !== 1 || (orderType == 'approval' && audit_status_val !== 'N003170001')" multiple collapse-tags :placeholder="$lang('请选择')">
+                                <el-option v-for="(item,key) in child_order_info" :key="key" :label="item.ORDER_ID" :value="item.ORDER_ID">
+                                </el-option>
+                            </el-select>
+                        </div>
+                    </el-col>
+                </el-row>
+            </div>
+            <!-- 订单 -->
+            <el-table class="after_sale_order" :data="orderData" stripe border show-header style="width: 100%">
+                <el-table-column :label="$lang('订单号')">
+                    <template slot-scope="scope">
+                        <div>{{scope.row.order_no}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('商品状态')">
+                    <template slot-scope="scope">
+                        <div v-if="scope.row.product_info">{{$lang(scope.row.product_info.sale_states_val)}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('商品名称')">
+                    <template slot-scope="scope">
+                        <div v-if="scope.row.product_info">{{scope.row.product_info.spu_name}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('商品图片')" width="100">
+                    <template slot-scope="scope">
+                    <div v-if="scope.row.product_info">
+                        <img :src="scope.row.product_info.thumbnail" style="cursor: pointer;" width="80" height="80" @mouseenter="showImg(scope.row)" @mouseleave="showImg(scope.row)">  
+                        <div style="position: absolute; top: 10px; left: 100%; box-shadow: 0 0 5px #536d7a;z-index:999" v-if="scope.row.bigImg">
+                            <img :src="scope.row.product_info.thumbnail" width="300" height="300">
+                        </div>
+                    </div>
+                        <!-- <img  style="width: 100%;" :src="scope.row.product_info.thumbnail" > -->
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('商品编码')">
+                    <template slot-scope="scope">
+                        <div v-if="scope.row.product_info">{{scope.row.product_info.sku_id}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('交易号')">
+                    <template slot-scope="scope">
+                        <div>{{scope.row.trade_no}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('商品属性')">
+                    <template slot-scope="scope">
+                        <div v-if="scope.row.product_info">{{scope.row.product_info.product_attr}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('订单件数')">
+                    <template slot-scope="scope">
+                        <div>{{scope.row.order_goods_num}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('可退货件数')">
+                    <template slot-scope="scope">
+                        <div>{{scope.row.over_return_num}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('已退货件数')">
+                    <template slot-scope="scope">
+                        <div>{{scope.row.yet_return_num}}</div>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <!-- 售后-申请 -->
+            <el-table v-if="orderType == 'apply'" class="salesData" :data="salesData" stripe border show-header style="width: 100%;margin-top: 20px;">
+                <el-table-column
+                        type="index"
+                        width="50">
+                </el-table-column>
+                <el-table-column :label="$lang('售后类型')">
+                    <template slot-scope="scope">
+                        <div>
+                            <span v-if="scope.row.type == 0">{{$lang('退款')}}</span>
+                            <span v-else-if="scope.row.type == 1">{{$lang('退款}_其他')}</span>
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('订单支付日期')">
+                    <template slot-scope="scope">
+                        <div>{{scope.row.order_pay_date}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('当前日期')">
+                    <template slot-scope="scope">
+                        <div>{{scope.row.current_date}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('退款/赔付渠道')">
+                    <template slot-scope="scope">
+                        <div>
+                            <el-select :disabled="scope.row.is_history == '1'" v-model="scope.row.refund_channel_cd" :placeholder="$lang('退款/赔付渠道')">
+                                <el-option v-for="item in refund_channel_arr" :label="item.cdVal" :value="item.cd" :key="item.cd"></el-option>
+                            </el-select>
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('账号')">
+                    <template slot-scope="scope">
+                        <div>
+                            <el-input :disabled="scope.row.is_history == '1'" v-model="scope.row.refund_account" :placeholder="scope.row.refund_reason_cd === 'N003160001'?'必填':'非必填'"></el-input>
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('退款/赔付对象')">
+                    <template slot-scope="scope">
+                        <div>
+                            <el-input :disabled="scope.row.is_history == '1'" v-model="scope.row.refund_user_name"></el-input>
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('支付金额/币种')">
+                    <template slot-scope="scope">
+                        <div style="display: flex;align-items: center;">
+                            <el-input :disabled="scope.row.is_history == '1'" style="display: flex;flex: 1;margin-right: 5px;" v-model="scope.row.refund_amount"></el-input>
+                            {{scope.row.amount_currency_cd_val}}
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('实际业务所属部门')">
+                    <template slot-scope="scope">
+                        <div>
+                            <el-select :disabled="scope.row.is_history == '1'" v-model="scope.row.sales_team_cd" :placeholder="$lang('退款/赔付渠道')">
+                                <el-option v-for="(key,value) in department_arr" :label="key" :value="value" :key="value"></el-option>
+                            </el-select>
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('实际费用申请人')">
+                    <template slot-scope="scope">
+                        <div>{{scope.row.created_by}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column width="200" :label="$lang('退款/赔付原因')">
+                    <template slot-scope="scope">
+                        <div style="display: flex;align-items: center;">
+                            <span>{{$lang('其他')}}：</span>
+                            <div style="display: flex;flex: 1;" v-if="scope.row.is_history == '1'">
+                                <el-input disabled  v-model="scope.row.refund_reason_cd_val">
+                            </div>
+                            <div style="display: flex;flex: 1;" v-else>
+                                <el-select v-show="!scope.row.reasonInput" @change="selectReason(scope)" v-model="scope.row.refund_reason_cd" :placeholder="$lang('退款/赔付渠道')">
+                                    <el-option v-for="item in refund_reason_arr" :label="$lang(item.CD_VAL)" :value="item.CD" :key="item.CD"></el-option>
+                                </el-select>
+                                <el-input @keyup.native="watchNum(scope)"  v-show="scope.row.reasonInput" v-model="scope.row.refund_reason_input">
+                            </div>
+                            
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column  :render-header="renderHeaderDate" width="100">
+                    <template slot-scope="scope">
+                        <div>
+                            <i @click="AfterSaleDel(scope)" v-show="scope.row.is_history != '1'" class="el-icon-remove-outline delete_icon"></i>
+                        </div>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <!-- 售后-审核 -->
+            <el-table v-else-if="orderType == 'approval'" :data="salesData" stripe border show-header style="width: 100%;margin-top: 20px;">
+                <el-table-column :label="$lang('售后类型')">
+                    <template slot-scope="scope">
+                        <div>
+                            <span v-if="scope.row.type == 0">{{$lang('退款')}}</span>
+                            <span v-else-if="scope.row.type == 1">{{$lang('退款_其他')}}</span>
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('订单支付日期')">
+                    <template slot-scope="scope">
+                        <div>{{scope.row.order_pay_date}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('当前日期')">
+                    <template slot-scope="scope">
+                        <div>{{scope.row.current_date}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('退款/赔付渠道')">
+                    <template slot-scope="scope">
+                        <div v-if="scope.row.audit_status_cd === 'N003170001'">
+                            <el-select v-model="scope.row.refund_channel_cd"
+                                :placeholder="$lang('退款/赔付渠道')">
+                                <el-option v-for="item in refund_channel_arr" :label="item.cdVal" :value="item.cd"
+                                    :key="item.cd"></el-option>
+                            </el-select>
+                        </div>
+                        <div v-else>{{scope.row.refund_channel_cd_val}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('账号')">
+                    <template slot-scope="scope">
+                        <div v-if="scope.row.audit_status_cd === 'N003170001'">
+                            <el-input v-model="scope.row.refund_account">
+                            </el-input>
+                        </div>
+                        <div v-else>{{scope.row.refund_account}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('退款/赔付对象')">
+                    <template slot-scope="scope">
+                        <div v-if="scope.row.audit_status_cd === 'N003170001'">
+                            <el-input v-model="scope.row.refund_user_name">
+                            </el-input>
+                        </div>
+                        <div v-else>{{scope.row.refund_user_name}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('支付金额/币种')">
+                    <template slot-scope="scope">
+                        <div v-if="scope.row.audit_status_cd === 'N003170001'"
+                            style="display: flex;align-items: center;">
+                            <el-input
+                                style="display: flex;flex: 1;margin-right: 5px;" v-model="scope.row.refund_amount">
+                            </el-input>
+                            {{scope.row.amount_currency_cd_val}}
+                        </div>
+                        <div v-else>{{scope.row.refund_amount}} {{scope.row.amount_currency_cd_val}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('实际业务所属部门')">
+                    <template slot-scope="scope">
+                        <div v-if="scope.row.audit_status_cd === 'N003170001'">
+                            <el-select v-model="scope.row.sales_team_cd"
+                                :placeholder="$lang('退款/赔付渠道')">
+                                <el-option v-for="(key,value) in department_arr" :label="key" :value="value"
+                                    :key="value"></el-option>
+                            </el-select>
+                        </div>
+                        <div v-else>{{scope.row.sales_team_cd_val}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('实际费用申请人')">
+                    <template slot-scope="scope">
+                        <div>{{scope.row.created_by}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('退款/赔付原因')">
+                    <template slot-scope="scope">
+                        <div v-if="scope.row.audit_status_cd === 'N003170001'"
+                            style="display: flex;align-items: center;">
+                            <span>{{$lang('其他')}}：</span>
+                            <div style="display: flex;flex: 1;">
+                                <el-select v-show="!scope.row.reasonInput" @change="selectReason(scope)"
+                                    v-model="scope.row.refund_reason_cd" :placeholder="$lang('退款/赔付渠道')">
+                                    <el-option v-for="item in refund_reason_arr" :label="$lang(item.CD_VAL)" :value="item.CD"
+                                        :key="item.CD"></el-option>
+                                </el-select>
+                                <el-input @keyup.native="watchNum(scope)" v-show="scope.row.reasonInput"
+                                    v-model="scope.row.refund_reason_input">
+                            </div>
+                        </div>
+                        <div v-else>{{scope.row.refund_reason_cd_val}}</div>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <!-- 附件 -->
+            <div style="margin: 20px 0;color:red">
+                <span>{{$lang('请上传相关退款说明文件，支持多选附件')}}</span>
+            </div>
+            <div style="width: 30%;">
+                <el-upload
+                    class="upload-payment"
+                    action="/index.php?m=order_detail&a=file_upload"
+                    :on-preview="handlePreview"
+                    :on-success="handleSuccessDeductible"
+                    :on-remove="handleRemoveDeductible"
+                    :before-upload="beforeUpload"
+                    multiple
+                    :file-list="sales_attachment">
+                    <el-button size="small" type="primary">{{$lang('添加附件')}}</el-button>
+                </el-upload>
+                <!-- <div v-if="attachment">
+                    <div class="attachmentLink"   v-for="item in JSON.parse(attachment)">
+                        <a class="file_type" :href="'/index.php?m=order_detail&a=download&file='+item.save_name">{{item.original_name}}</a>
+                    </div>
+                </div> -->
+            </div>
+            <!-- 签字 -->
+            <div style="display: flex;margin: 20px 0;align-items: center;">
+                <span style="margin-right: 20px;">{{$lang('签字意见')}}</span>
+                <el-input
+                    style="display: flex;flex:1"
+                    type="textarea"
+                    :rows="2"
+                    :placeholder="$lang('请输入内容')"
+                    v-model="salesTextarea">
+                </el-input>
+            </div>
+            <!-- 申请 -->
+            <div v-if="orderType == 'apply'" style="text-align: center;">
+                <el-button  @click="submit('draft')" type="info">{{$lang('保存为草稿')}}</el-button>
+                <el-button @click="submit('Application')" type="primary">{{$lang('提交申请')}}</el-button>
+            </div>
+            <!-- 审批 -->
+            <div v-else-if="orderType == 'approval'" style="text-align: center;">
+                <el-button v-if="audit_status_val == 'N003170003'" @click="approval('success')" type="primary">{{$lang('通过')}}</el-button>
+                <el-button v-if="audit_status_val == 'N003170003'" @click="approval('refuse')" type="danger">{{$lang('不通过')}}</el-button>
+                <el-button v-if="audit_status_val == 'N003170004'" @click="approval('return')" type="warning">{{$lang('撤回此申请')}}</el-button>
+                <el-button v-if="audit_status_val == 'N003170001'" @click="approval('submit')" type="success">{{$lang('提交申请')}}</el-button>
+                <el-button v-if="audit_status_val == 'N003170001'" @click="approval('abandon')" type="info">{{$lang('废弃')}}</el-button>
+            </div>
+        </div>
+    </div>
+    <!--引入js-->
+    <script type="text/javascript" src="/Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="/Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="/Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="/Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+
+    <script>
+        var VM = new Vue({
+            el: '#applyAfterSales',
+            data: {
+                refund:true,
+                subList: [],
+                child_order_info: [],
+                has_child_order: '',
+                orderData:[],
+                salesData:[],
+                orderType:'',
+                order_no:'',
+                pay_the_total_price:'',
+                currency:'',
+                created_by:'',
+                after_sale_no:'',
+                paymentDate:'',
+                thrId:'',
+                platCode:'',
+                trade_no:'',
+                after_sale_id:'',
+                payment_audit_id:'',
+                audit_status_val:'',
+                yet_return_num:'',
+                sales_attachment:[],
+                attachment:'',
+                sales_attachmentArr:[],
+                salesTextarea:'',
+                refund_channel_arr:[],
+                department_arr:[],
+                after_sale_status:false,
+                refund_reason_arr:[],
+                reasonStatus:false,
+                pay_channel: ''
+            },
+            created() {
+                this.getUrlparam()
+                this.getBasicData()
+                this.getData()
+            },
+            watch: {
+                subList: function(newVal,oldVal) {
+                    console.log(newVal,oldVal)
+                    let arr = [];
+                    newVal.forEach(element => {
+                        let child = this.child_order_info.find(item => {
+                            return element == item.ORDER_ID
+                        });
+                        arr.push(child)
+                    });
+                    this.orderData = arr;
+                }
+            },
+            methods: {
+                getUrlparam:function(){
+                    // 类型
+                    this.orderType = this.getQueryVariable("type");
+                    // 下单时间
+                    this.paymentDate = Number(this.getQueryVariable("paymentDate"));
+                    // 总价
+                    this.pay_the_total_price = this.getQueryVariable("pay_the_total_price");
+                    // 币种
+                    this.currency = this.getQueryVariable("currency");
+                    // 申请人
+                    this.created_by = window.parent.document.querySelector('#scName').textContent
+                    // 售后单号
+                    if(this.getQueryVariable("after_sale_no")){
+                        this.after_sale_no = this.getQueryVariable("after_sale_no");
+                    }else{
+                        this.after_sale_no  = ''
+                    }
+                    // 订单id
+                    this.order_no = this.getQueryVariable("order_no");
+                    // 订单号
+                    this.thrId = this.getQueryVariable("thrId");
+                    // 平台code
+                    this.platCode = this.getQueryVariable("platCode");
+
+                },
+                getBasicData:function(){
+                    var _this = this
+                    var param = {
+                        "data": {
+                            "query": {
+                                "payment_channel":"true",
+                                "saleTeams":"true",
+                            }
+                        }
+                    }
+                    axios.post("/index.php?m=finance&a=commonData", param).then(function(res) {
+                        if(res.data.code == 2000){
+                            _this.refund_channel_arr = res.data.data.payment_channel
+                            _this.department_arr = res.data.data.saleTeams
+                        }
+                    }); 
+                    var param2 = {
+                        "cd_type": {
+                            "after_sale_reason":"false",
+                        }
+                    }
+                    axios.post("/index.php?g=common&m=index&a=get_cd", param2).then(function(res) {
+                        // console.log(res);
+                        
+                        if(res.data.code == 2000){
+
+                            var after_sale_reason_arr = res.data.data.after_sale_reason
+                            var obj = {
+                                CD_VAL:'输入',
+                                CD:'2'
+                            }
+                            if(after_sale_reason_arr){
+                                after_sale_reason_arr.push(obj)
+                            }else{
+                                after_sale_reason_arr = []
+                                after_sale_reason_arr.push(obj)
+                            }
+                            
+                            _this.refund_reason_arr = after_sale_reason_arr
+                            
+                            if(_this.refund_reason_arr.length > 1){
+                                _this.reasonStatus = true
+                            }else{
+                                _this.reasonStatus = false
+                            }
+                        }
+                    }); 
+                },
+                getData:function(){
+                    var _this = this
+                    // if(_this.after_sale_no){
+                    //     var after_sale_no = _this.after_sale_no
+                    // }else{
+                    //     var after_sale_no = ''
+                    // }
+                    var param = {
+                        "order_id":_this.order_no,
+                        "order_no":_this.thrId,
+                        "platform_cd":_this.platCode,
+                        "after_sale_no":_this.after_sale_no
+                    }
+                    axios.post("/index.php?g=OMS&m=afterSale&a=refundApplyDetail", param).then(function(res) {
+                        console.log(res)
+                        if(res.data.code == 200){
+                            _this.orderData = res.data.data.has_child_order == 1 ? [] : res.data.data.order_info;
+
+                            if(res.data.data.has_child_order == 1 && _this.orderType == 'approval') { // 为审批状态且有子单号
+                                _this.subList = res.data.data.refund_child_order ? res.data.data.refund_child_order.split(',') : [];
+                            }
+                            
+                            _this.child_order_info = res.data.data.child_order_info
+                            _this.has_child_order = res.data.data.has_child_order
+                            _this.pay_channel = res.data.data.pay_channel
+                            // _this.salesData = res.data.data.refund_info
+                            var refund_infoArr = res.data.data.refund_info
+                            if(res.data.data.attachment){
+                                var attachmentArr = JSON.parse(res.data.data.attachment)
+                                for (const key in attachmentArr) {
+                                    var obj = {}
+                                    var obj2 = {}
+                                    obj.name = attachmentArr[key].original_name
+                                    obj.url = attachmentArr[key].save_name
+
+                                    obj2.original_name = attachmentArr[key].original_name
+                                    obj2.save_name = attachmentArr[key].save_name
+
+                                    _this.sales_attachment.push(obj)
+                                    _this.sales_attachmentArr.push(obj2)
+                                }
+                            }
+                            // console.log(_this.sales_attachmentArr);
+                            
+                            // sales_attachmentArr
+                             
+                            
+
+
+                            _this.yet_return_num = res.data.data.order_info[0].yet_return_num
+                            _this.trade_no = res.data.data.order_info[0].trade_no
+                            _this.salesTextarea = res.data.data.apply_opinion
+                            _this.audit_status_val = res.data.data.audit_status_cd
+
+                            if(res.data.data.after_sale_id){
+                                _this.after_sale_id = res.data.data.after_sale_id
+                            }
+
+                            if(res.data.data.payment_audit_id){
+                                _this.payment_audit_id = res.data.data.payment_audit_id
+                            }
+                            
+                            
+                            // _this.attachment = res.data.data.attachment
+                            for (var item in refund_infoArr) {
+                               var obj = {}
+                               obj.type = refund_infoArr[item].type
+                               obj.order_pay_date = refund_infoArr[item].order_pay_date
+                               obj.current_date = refund_infoArr[item].current_date
+                               obj.refund_channel_cd_val = refund_infoArr[item].refund_channel_cd_val
+
+                               // 改动原因规则详见需求10233
+                               obj.refund_channel_cd = refund_infoArr[item].refund_channel_cd || res.data.data.pay_channel
+                               obj.audit_status_cd = refund_infoArr[item].audit_status_cd
+                               obj.refund_detail_id = refund_infoArr[item].refund_detail_id
+
+                               obj.refund_account = refund_infoArr[item].refund_account
+                               obj.refund_user_name = refund_infoArr[item].refund_user_name
+                               obj.refund_amount = refund_infoArr[item].refund_amount
+                               obj.amount_currency_cd_val = refund_infoArr[item].amount_currency_cd_val
+                               obj.sales_team_cd_val = refund_infoArr[item].sales_team_cd_val
+                               obj.sales_team_cd = refund_infoArr[item].sales_team_cd
+                               obj.created_by = refund_infoArr[item].created_by
+                               obj.refund_reason_cd = refund_infoArr[item].refund_reason_cd
+                               obj.refund_reason_cd_val = refund_infoArr[item].refund_reason_cd_val
+                               obj.is_history = refund_infoArr[item].is_history
+
+                            //    if(refund_infoArr[item].refund_reason_cd != 'N003160001' && refund_infoArr[item].refund_reason_cd != 'N003160002' && refund_infoArr[item].refund_reason_cd != undefined){
+                            //         obj.reasonInput = true
+                            //    }else{
+                            //         obj.reasonInput = false
+                            //    }
+                                // console.log(refund_infoArr[item].refund_reason_cd);
+                                // console.log(refund_infoArr[item].refund_reason_cd_val);
+                                // if(refund_infoArr[item].refund_reason_cd){
+                                //     obj.reasonInput = false
+                                // }else{
+                                //     obj.reasonInput = true 
+                                // }
+                                obj.reasonInput = false
+                                
+                               /*if(refund_infoArr[item].status_code && refund_infoArr[item].status_code != 'N002800014'){
+                                    _this.after_sale_status = true
+                               }*/
+
+                            //    reasonInput
+                               
+                               _this.salesData.push(obj)
+                            }
+                        }
+                    });
+                },
+                renderHeaderDate:function(h,{column}){
+                    return h(
+                        'div',
+                            [
+                            h('i', {
+                                class:'el-icon-circle-plus-outline',
+                                style:'color:#409eff;cursor: pointer;font-size: 24px;',
+                                on:{
+                                    click: this.add
+                                }
+                            })
+                            ],
+                        );
+                },
+                add:function(){
+                    var _this = this
+                    var salesDataArr  = _this.salesData 
+                    var sumRefund = 0
+                    var sumRefundOther = 0
+                    if(_this.after_sale_status){
+                        _this.$message({
+                            message: '条件不符合，无法新增！',
+                            type: 'warning'
+                        }); 
+                    }else{
+                        for (var item in salesDataArr) {
+                            console.log(salesDataArr[item]);
+                            
+                            if(salesDataArr[item].type == 0 && salesDataArr[item].is_history != '1'){
+                                sumRefund++
+                            }else if(salesDataArr[item].type == 1 && salesDataArr[item].is_history != '1'){
+                                sumRefundOther++
+                            }
+                        }
+                        
+                        if(sumRefund + sumRefundOther <= 2){
+                            if(sumRefund <=1){
+                                var obj = {}
+                                obj.type = 0
+                                if(_this.paymentDate){
+                                    obj.order_pay_date = _this.formatDate(_this.paymentDate)
+                                }else{
+                                    obj.order_pay_date = ''
+                                }
+                                obj.current_date = _this.formatDate(new Date().getTime())
+                                obj.amount_currency_cd_val = _this.currency
+                                obj.refund_amount =sumRefund == 0? _this.pay_the_total_price:0
+                                obj.created_by = _this.created_by
+                                obj.reasonInput = false
+
+                                // 售后-申请时，即售后单为可编辑的草稿状态时，表格可编辑，并且“退款/赔付渠道”的值可根据查询得出一个默认的，规则详见需求10233
+                                obj.refund_channel_cd = _this.pay_channel
+                                
+                                _this.salesData.push(obj)
+                            }else{
+                                 if(_this.yet_return_num >= 1){
+                                     var obj = {}
+                                     obj.type = 1
+                                     if(_this.paymentDate){
+                                         obj.order_pay_date = _this.formatDate(_this.paymentDate)
+                                     }else{
+                                         obj.order_pay_date = ''
+                                     }
+                                     obj.current_date = _this.formatDate(new Date().getTime())
+                                     obj.amount_currency_cd_val = _this.currency
+                                     obj.refund_amount = 0
+                                     obj.created_by = _this.created_by
+                                     obj.reasonInput = false
+                                     _this.salesData.push(obj)
+                                 }else{
+                                     _this.$message({
+                                         message: '已退货件数需>=1',
+                                         type: 'warning'
+                                     });
+                                 }
+                            }
+                        }else{
+                            _this.$message({
+                                message: '最多添加三条',
+                                type: 'warning'
+                            });
+                        }
+                    }
+                    
+                },
+                watchNum:function(val){
+                    var index = val.$index
+                    if(this.salesData[index].refund_reason_input == ''){
+                        if(this.refund_reason_arr.length > 1){
+                            val.row.reasonInput = false
+                            this.reasonStatus = true
+                        }
+                        // this.salesData[index].reasonInput = false
+                    }
+                },
+                AfterSaleDel:function(val){
+                    var index = val.$index
+                    this.salesData.splice(index,1);
+                    console.log(this.salesData);
+                    
+                },  
+                selectReason:function(val){
+                    var index = val.$index
+                    if(val.row.refund_reason_cd == 2){
+                        this.salesData[index].reasonInput = true
+                        this.reasonStatus = false
+                        if(this.refund_reason_arr.length > 1){
+                            console.log(this.refund_reason_arr[0].CD);
+                            val.row.refund_reason_cd = this.refund_reason_arr[0].CD
+                        }
+                    }
+                },
+                //获取url参数
+                getQueryVariable:function(variable){
+                    var query = window.location.search.substring(1);
+                    var vars = query.split("&");
+                    for (var i = 0; i < vars.length; i++) {
+                        var pair = vars[i].split("=");
+                        if (pair[0] == variable) {
+                            return pair[1];
+                        }
+                    }
+                    return false;
+                },
+                formatDate:function(val){
+                    var date =new Date(val);
+
+                    if(date == '' || date == null ){
+                        return('')
+                    }else{
+                        var myMonth = date.getMonth() + 1
+                        var myDate = date.getDate()
+                        var myHours = date.getHours()
+                        var myMinutes = date.getMinutes()
+                        var mySeconds = date.getSeconds()
+                        if(myMonth<10){
+                            myMonth = "0" + myMonth
+                        }
+                        if(myDate<10){
+                            myDate = "0" + myDate
+                        }
+                        if(myHours<10){
+                            myHours = "0" + myHours
+                        }
+                        if(myMinutes<10){
+                            myMinutes = "0" + myMinutes
+                        }
+                        if(mySeconds<10){
+                            mySeconds = "0" + mySeconds
+                        }
+                        return(date.getFullYear()+'-'+myMonth+'-' +myDate + ' ' + myHours + ':' + myMinutes + ':' + mySeconds)
+                    }
+                },
+                // 上传附件
+                handleSuccessDeductible: function(res, file, fileList) {
+                    // console.log(fileList);
+                    // console.log(res);
+                    if(res.status == '0'){
+                        this.$message({
+                            message: this.$lang(res.info),
+                            type: 'error'
+                        });
+                    }else{
+                        this.sales_attachment = fileList;
+                    }
+
+                    var data = this.sales_attachment
+                    console.log(data);
+                    
+                    var payment_attachment_upload = []
+                    for(let key in data){
+                        var obj ={}
+                        if(data[key].response){
+                            obj.original_name = data[key].response.info.name
+                            obj.save_name = data[key].response.info.savename
+                        }else{
+                            obj.original_name = data[key].name
+                            obj.save_name = data[key].url
+                        }
+
+
+                        payment_attachment_upload.push(obj)
+                    }
+                    this.sales_attachmentArr = payment_attachment_upload
+
+                    console.log(this.sales_attachmentArr);
+                    
+                    
+                },
+                handleRemoveDeductible: function(file, fileList) {
+                    // console.log(fileList);
+                    this.sales_attachment = fileList;
+
+                    var data = this.sales_attachment
+                    var payment_attachment_upload = []
+                    for(let key in data){
+                        var obj ={}
+                        if(data[key].response){
+                            obj.original_name = data[key].response.info.name
+                            obj.save_name = data[key].response.info.savename
+                        }else{
+                            obj.original_name = data[key].name
+                            obj.save_name = data[key].url
+                        }
+                        payment_attachment_upload.push(obj)
+                    }
+                    this.sales_attachmentArr = payment_attachment_upload
+                },
+                //过滤同名文件
+                beforeUpload: function(file) {
+                    // console.log(file);
+                    var flag = true;
+                    var _this = this;
+                    var length = this.sales_attachment.length;
+                    if (length) {
+                        for (var i = 0; i < length; i++) {
+                            if (file.name === _this.sales_attachment[i].name) {
+                                flag = false;
+                            }
+                        }
+                    }
+                    if (!flag) {
+                        _this.$message({
+                            message: _this.$lang('不能上传同名文件'),
+                            type: 'error'
+                        });
+                    } 
+                    return flag;
+                },
+                handlePreview:function(file){
+                    console.log(file);
+
+                    if(file.response){
+                        var a = document.createElement('a')
+                        var event = new MouseEvent('click')
+                        a.download = file.response.info.name
+                        a.href = '/index.php?m=order_detail&a=download&file='+ file.response.info.savename
+                        a.dispatchEvent(event)
+                    }else{
+                        var a = document.createElement('a')
+                        var event = new MouseEvent('click')
+                        a.download = file.name
+                        a.href = '/index.php?m=order_detail&a=download&file='+ file.url
+                        a.dispatchEvent(event)
+                    }
+
+                },
+                jumpAfter_saleList:function(){
+                    var index = ''
+                    var min_title_list_li = window.parent.document.querySelectorAll('#min_title_list li')
+                    for (var item in min_title_list_li) {
+                        if(typeof(min_title_list_li[item]) == "object" && min_title_list_li[item].getAttribute('class') == 'active'){
+                            index = item
+                        }
+                    }
+
+                    var dom = document.createElement('a');
+                    var _href = '/index.php?g=oms&m=after_sale&a=after_sale_list';
+                    dom.setAttribute("onclick", "opennewtab(this,'" + '售后单列表' + "')");
+                    dom.setAttribute("_href", _href);
+                    dom.click();
+
+                    setTimeout(() => {
+                        // window.parent.document.querySelectorAll('#min_title_list li')[index].querySelector('b').click()
+                        window.parent.document.querySelectorAll('#min_title_list li')[index].remove()
+                        window.parent.document.querySelectorAll('#iframe_box .show_iframe')[index].remove()
+                    }, 500);
+                },
+                submit:function(type){
+                    var _this = this
+                    // 审核状态
+                    if(type == 'draft'){
+                       var audit_status = 'N003170001'
+                    }else if(type == 'Application_approval' || type == 'Application'){
+                        var audit_status = 'N003170003'
+                    }
+                    if(_this.has_child_order == 1 && _this.subList.length == 0) {
+                        _this.$message({
+                            message: '请先选择子单号',
+                            type: 'warning'
+                        });
+                        return false;
+                    }
+                    var status = true
+                    if(_this.salesData.length == 0){
+                        _this.$message({
+                            message: '可用数据为空 不能提交',
+                            type: 'warning'
+                        }); 
+                        status = false
+                    }
+                    // 售后table
+                    var refund_info_arr = []
+                    var salesData_arr = _this.salesData
+                    for (const item in salesData_arr) {
+                        var obj = {}
+                        obj.type = salesData_arr[item].type
+                        obj.order_pay_date = salesData_arr[item].order_pay_date
+                        obj.current_date = salesData_arr[item].current_date
+                        obj.refund_channel_cd = salesData_arr[item].refund_channel_cd
+                        obj.refund_user_name = salesData_arr[item].refund_user_name
+                        obj.refund_account = salesData_arr[item].refund_account
+                        obj.refund_amount = salesData_arr[item].refund_amount
+                        obj.amount_currency_cd = salesData_arr[item].amount_currency_cd_val
+                        obj.sales_team_cd = salesData_arr[item].sales_team_cd
+                        obj.created_by = salesData_arr[item].created_by
+                        obj.id = salesData_arr[item].refund_detail_id
+                        if(salesData_arr[item].refund_reason_input){
+                            obj.refund_reason_cd = salesData_arr[item].refund_reason_input
+                        }else{
+                            obj.refund_reason_cd = salesData_arr[item].refund_reason_cd
+                        }
+                        // if(salesData_arr[item].is_history != '1'){
+                            // 改动原因详见需求10233功能点2
+                            refund_info_arr.push(obj)
+                        // }
+                        
+                        if((Number(salesData_arr[item].refund_amount) > Number(_this.pay_the_total_price) && type != 'Application_approval')){
+                            _this.$message({
+                                message: '支付金额需小于等于支付总价',
+                                type: 'warning'
+                            });  
+                            status = false
+                        }
+                    }
+
+                    if(status){
+                        var param = {
+                            "order_id" :  _this.order_no,
+                            "order_no" :  _this.thrId,
+                            "platform_cd" :  _this.platCode,
+                            "trade_no" :  _this.trade_no,
+                            "attachment" :  _this.sales_attachmentArr,
+                            "apply_opinion" :  _this.salesTextarea,
+                            "audit_status_cd":audit_status,
+                            "after_sale_no":_this.after_sale_no,
+                            "refund_info":refund_info_arr,
+                            "refund_child_order": this.subList.join(',')
+                        }
+
+                        console.log(param);
+                    
+                        axios.post("/index.php?g=OMS&m=afterSale&a=refundApplySubmit", param).then(function(res) {
+                            console.log(res)
+                            if(res.data.code == 200){
+                                _this.jumpAfter_saleList()
+                            }else{
+                                _this.$message({
+                                    message: res.data.msg,
+                                    type: 'error'
+                                });
+                            }
+                        });
+                    }
+
+                },
+                // 审批
+                approval:function(type){
+                    var _this = this
+                    if(type == 'success'){
+                        axios.post("/index.php?g=OMS&m=afterSale&a=auditRefund", {
+                            after_sale_id:_this.after_sale_id,
+                            audit_status_cd	:'N003170004',
+                            audit_opinion	:_this.salesTextarea
+                        }).then(function(res) {
+                            if(res.data.code == 200){
+                                _this.jumpAfter_saleList()
+                                
+                            }else{
+                                _this.$message({
+                                    message: res.data.msg,
+                                    type: 'error'
+                                }); 
+                            }
+                        })    
+                        
+                    }else if(type == 'refuse'){
+                        axios.post("/index.php?g=OMS&m=afterSale&a=auditRefund", {
+                            after_sale_id:_this.after_sale_id,
+                            audit_status_cd	:'N003170005',
+                            audit_opinion	:_this.salesTextarea
+                        }).then(function(res) {
+                            console.log(res);
+                            if(res.data.code == 200){
+                                _this.jumpAfter_saleList()
+                            }else{
+                                _this.$message({
+                                    message: res.data.msg,
+                                    type: 'error'
+                                }); 
+                            }
+                        }) 
+
+                    }else if(type == 'abandon'){
+                        axios.post("/index.php?g=OMS&m=afterSale&a=auditRefund", {
+                            after_sale_id:_this.after_sale_id,
+                            audit_status_cd	:'N003170002',
+                            audit_opinion	:_this.salesTextarea
+                        }).then(function(res) {
+                            console.log(res);
+                            if(res.data.code == 200){
+                                _this.jumpAfter_saleList()
+                            }else{
+                                _this.$message({
+                                    message: res.data.msg,
+                                    type: 'error'
+                                }); 
+                            }
+                        }) 
+
+                    }else if(type == 'return'){
+
+                        this.$confirm('确定要撤回吗?', '提示', {
+                            confirmButtonText: '是',
+                            cancelButtonText: '否',
+                            type: 'warning'
+                        }).then(() => {
+                            axios.post("/index.php?g=OMS&m=afterSale&a=revokeReview", {
+                                payment_audit_id:_this.payment_audit_id,
+                                status:0,
+                                is_return:0,
+                                source_cd:'N003010003'
+                            }).then(function(res) {
+                                console.log(res);
+                                if(res.data.code == 200){
+                                    _this.jumpAfter_saleList()
+                                }else{
+                                    _this.$message({
+                                        message: res.data.msg,
+                                        type: 'error'
+                                    }); 
+                                }
+                            })  
+                        }).catch(() => {
+                            this.$message({
+                                type: 'info',
+                                message: '已取消撤回'
+                            });          
+                        });
+
+                        
+
+                        
+
+                    }else if(type == 'submit'){
+                        _this.submit('Application_approval')
+                    }
+                    
+                },
+                showImg: function showImg(item) {
+                    Vue.set(item, 'bigImg', !item.bigImg);
+                },
+
+            }
+        });
+    </script>
+</body>
+
+</html>
+        

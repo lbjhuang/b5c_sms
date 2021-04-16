@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.config.VER_NUM}>">
+    <title>报价列表</title>
+</head>
+<style>
+    .el-input {
+        width: 95%;
+    }
+    
+    .el-date-editor .el-range-input {
+        width: 35%;
+    }
+    
+    .el-form-item__label {
+        display: flex;
+        line-height: normal;
+        height: 40px;
+        align-items: center;
+    }
+    
+    .imgStyle {
+        width: 60px !important;
+        height: 60px !important;
+        cursor: pointer;
+    }
+</style>
+
+<body class="orderList">
+    <div id="list" class="list-common" v-cloak style="margin-bottom:220px">
+        <!-- 搜索查询 start-->
+        <div class="orderList-search search-common">
+            <!-- 搜索查询 start-->
+            <el-form ref="form" label-width="90px" :label-position="labelPosition">
+                <el-row>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('SKU/条形码')">
+                            <el-input v-model="search_id" :placeholder="$lang('请输入SKU/条形码')"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('商品名称')">
+                            <el-input v-model="goods_name" :placeholder="$lang('请输入商品名称')"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('客户')">
+                            <el-input v-model="customer" :placeholder="$lang('客户')"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('供应商')">
+                            <el-input v-model="supplier" :placeholder="$lang('请输入供应商')"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('交易类型')">
+                            <el-select :popper-append-to-body="false" v-model="form.deal_type" :placeholder="$lang('请选择交易类型')" style="width:100%;padding:0;">
+                                <el-option v-for="item in baseData.deal_type" :label="$lang(item.CD_VAL)" :value="item.CD" :key="item.CD"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('业务类型')">
+                            <el-select :popper-append-to-body="false" v-model="form.business_mode" :placeholder="$lang('请选择业务类型')" style="width:100%;padding:0;">
+                                <el-option v-for="item in baseData.business_type" :label="item.CD_VAL" :value="item.CD" :key="item.CD"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('采购交货条件')">
+                            <el-select :popper-append-to-body="false" v-model="form.delivery_type" :placeholder="$lang('请选择采购交货条件')" style="width:100%;padding:0;">
+                                <el-option v-for="item in baseData.delivery_type" :label="item.CD_VAL" :value="item.CD" :key="item.CD"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('销售交货条件')">
+                            <el-select :popper-append-to-body="false" v-model="form.receive_mode" :placeholder="$lang('请选择销售交货条件')" style="width:100%;padding:0;">
+                                <el-option v-for="item in baseData.delivery_type" :label="item.CD_VAL" :value="item.CD" :key="item.CD"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('入库仓库')">
+                            <el-select :popper-append-to-body="false" v-model="form.warehouse" :placeholder="$lang('请选择入库仓库')" filterable style="width:100%;padding:0;">
+                                <el-option v-for="item in baseData.warehouse" :label="item.CD_VAL" :value="item.CD" :key="item.CD"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6" class="getAddress">
+                        <el-form-item :label="$lang('客户收货地')">
+                            <el-select :popper-append-to-body="false" v-model="form.receive_country" :placeholder="$lang('国家')" filterable @change="countryChange" style="padding:0; width: 45%;">
+                                <el-option v-for="(item, index) in GoodsCountries" :key="index" :label="item.NAME" :value="item.ID"></el-option>
+                            </el-select>
+                            <el-select :popper-append-to-body="false" v-model="form.receive_province" :placeholder="$lang('省/州')" filterable style="padding:0; width: 45%;">
+                                <el-option v-for="(item, index) in GoodsProvinces" :key="index" :label="item.NAME" :value="item.ID"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('成交日期')">
+                            <el-date-picker style="width:95%;height: 40px;" value-format="yyyy-MM-dd" size="small" v-model="form.dateRange" type="daterange" align="right" unlink-panels :range-separator="$lang('至')" :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')"
+                                :picker-options="pickerOptions"></el-date-picker>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <div class="btns">
+                    <button @click="doSearch" class="btn-search" name="search" type="button">
+                        {{$lang('搜索')}}
+                    </button>
+                    <button @click="doReset" class="btn-reset" name="reset" type="button">
+                        {{$lang('重置')}}
+                    </button>
+                </div>
+            </el-form>
+            <!-- 搜索查询 end-->
+        </div>
+        <!-- 分割线 start-->
+        <div class="orderList-line line-split"></div>
+        <!-- 分割线 end-->
+        <!-- 订单表格主体 start-->
+        <div class="orderList-Main list-common-main">
+            <header>
+                <el-row>
+                    <el-col :span="8">
+                        {{$lang('搜索结果:共')}}
+                        <span class="num-bold">{{totalCount}}</span> {{$lang('条记录')}}
+                        <el-button class="export-order" type="info" style="margin-left:15px;" @click="exportOrder">{{$lang('导出')}}</el-button>
+                    </el-col>
+                </el-row>
+            </header>
+
+            <el-table border show-header ref="multipleTable" :data="listData" tooltip-effect="dark" @selection-change="handleSelectionChange" style="width: 100%" class="order-list-table table-common" v-loading="tableLoading">
+                <el-table-column type="selection" min-width="30"></el-table-column>
+                <el-table-column :label="$lang('需求编号')">
+                    <template slot-scope=scope>
+                        <a href="javascript:void(0)" @click="goDetail(scope.row.demand_code)">{{scope.row.demand_code}}</a>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('交易类型')">
+                    <template slot-scope="scope">
+                            {{$lang(scope.row.deal_type)}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('业务类型')">
+                    <template slot-scope="scope">
+                            {{$lang(scope.row.business_mode)}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="sku_id" :label="$lang('SKU编码')"></el-table-column>
+                <el-table-column prop="bar_code" :label="$lang('条形码')"></el-table-column>
+                <el-table-column prop="goods_name" :label="$lang('商品名称')"></el-table-column>
+                <el-table-column prop="attributes" :label="$lang('商品属性')"></el-table-column>
+                <el-table-column :label="$lang('商品图片')">
+                    <template slot-scope="scope">
+                        <img :class="{imgStyle: scope.row.image_url}" :src="scope.row.image_url"  @mouseenter="showImg(scope.$index)" @mouseleave="hiddenImg">
+                        <div style="position: absolute; top: -10px; left: 120px; box-shadow: 0 0 5px #536d7a;z-index:99999" v-show="imgShowIndex === scope.$index">
+                            <img :src="scope.row.image_url" width="300" height="300">
+                        </div>
+                    </template>
+                </el-table-column>
+
+                <el-table-column prop="deal_time" :label="$lang('成交日期')"></el-table-column>
+                <el-table-column prop="require_number" :label="$lang('单次需求总数')"></el-table-column>
+                <el-table-column :label="$lang('供应商')">
+                    <template slot-scope="scope">
+                            {{$lang(scope.row.supplier)}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="delivery_type" :label="$lang('采购交货方式')"></el-table-column>
+                <el-table-column prop="warehouse" :label="$lang('入库仓库')"></el-table-column>
+                <el-table-column prop="currency" :label="$lang('采购币种')"></el-table-column>
+                <el-table-column :label="$lang('采购单价（不含增值税）')">
+                    <template slot-scope="scope">
+                        {{scope.row.currency}} {{scope.row.purchase_price_not_contain_tax | separatNum}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('采购增值税单价')">
+                    <template slot-scope="scope">
+                        {{scope.row.currency}} {{scope.row.purchase_price_tax | separatNum}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="customer" :label="$lang('客户')"></el-table-column>
+                <el-table-column prop="receive_mode" :label="$lang('销售交货方式')"></el-table-column>
+                <el-table-column :label="$lang('客户收货地')">
+                    <template slot-scope="scope">
+                        {{scope.row.receive_country}}-{{scope.row.receive_province}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="sell_currency" :label="$lang('销售币种')"></el-table-column>
+                <el-table-column :label="$lang('销售单价（不含增值税）')">
+                    <template slot-scope="scope">
+                        {{scope.row.sell_currency}} {{scope.row.sell_price_not_contain_tax | separatNum}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('销售增值税单价')">
+                    <template slot-scope="scope">
+                        {{scope.row.sell_currency}} {{scope.row.sell_price_tax | separatNum}}
+                    </template>
+                </el-table-column>
+            </el-table>
+
+            <el-pagination background @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="form.p" :page-sizes="[10, 30, 50, 100]" :page-size="form.rows" layout="sizes,prev, pager, next, jumper" :total="totalCount"></el-pagination>
+        </div>
+        <!-- 订单表格主体 end-->
+    </div>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js?<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script>
+        if (getCookie('think_language') !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en)
+        }
+        re = new Vue({
+            el: '#list',
+            data: {
+                tableLoading: true,
+                labelPosition: 'left',
+                listData: [],
+                totalCount: 10,
+                multipleSelection: [],
+                imgShowIndex: '',
+                GoodsCountries: [],
+                GoodsProvinces: [],
+                search_id: '',
+                supplier: '',
+                goods_name: '',
+                customer: '',
+                deal_type: '',
+                receive_mode: '',
+                business_mode: '',
+                delivery_type: '',
+                warehouse: '',
+                receive_country: '',
+                receive_province: '',
+                baseData: {},
+                form: {
+                    search_id: '',
+                    goods_name: '',
+                    supplier: '',
+                    customer: '',
+                    deal_type: '',
+                    business_mode: '',
+                    receive_mode: '',
+                    delivery_type: '',
+                    warehouse: '',
+                    receive_country: '',
+                    receive_province: '',
+                    start_time: undefined,
+                    end_time: undefined,
+                    dateRange: '',
+                    rows: 10,
+                    p: 1,
+                },
+                pickerOptions: {
+
+                },
+                queryPost: function(url, param) {
+                    var headers = {
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    }
+                    return axios.post(url, Qs.stringify(param), headers);
+                }
+            },
+            created: function() {
+                this.pickerOptions = {
+                    shortcuts: [{
+                        text: this.$lang('最近一周'),
+                        onClick: function(picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: this.$lang('最近一个月'),
+                        onClick: function(picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: this.$lang('最近三个月'),
+                        onClick: function(picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }]
+                }
+                this.getListData();
+                this.getBaseData();
+                this.getGoodsCountries();
+            },
+            methods: {
+                goDetail: function (code) {
+                    axios.post('./index.php?g=scm&m=demand&a=demand_list&p=1', { demand_code: code })
+                        .then(function (res) {
+                            if (res.data.code == 2000) {
+                                var data = res.data.data.list[0];
+                                newTab('/index.php?g=scm&m=display&a=demands&type=' + data.id, '需求详情')
+                            } else {
+                                this.$message.error('未找到对应的详情页')
+                            }
+                        })
+                },
+                getBaseData() {
+                    let param = {
+                        cd_type: {
+                            business_type: true,
+                            delivery_type: true,
+                            warehouse: true,
+                            deal_type: true
+                        }
+                    }
+                    this.queryPost("/index.php?g=common&m=index&a=get_cd", param).then((res) => {
+                        var _data = res.data;
+                        if (_data.code === 2000) {
+                            this.baseData = _data.data;
+                        } else {
+                            this.$message.error(this.$lang(_data.msg));
+                        }
+                    }).catch(function(err) {
+                        console.log(err);
+                    });
+                },
+                getListData: function() {
+                    this.tableLoading = true;
+
+                    this.form.start_time = this.form.dateRange && this.form.dateRange[0];
+                    this.form.end_time = this.form.dateRange && this.form.dateRange[1];
+
+                    this.queryPost("/index.php?g=scm&m=demand&a=deal_list&p=" + this.form.p + "&rows=" + this.form.rows, this.form).then((res) => {
+                        var _data = res.data;
+                        if (_data.code == 2000) {
+                            this.tableLoading = false;
+                            this.listData = _data.data.list || [];
+                            this.totalCount = _data.data.page.total_rows - 0;
+                        } else {
+                            this.$message.error(this.$lang('获取列数据失败'));
+                        }
+                    }).catch(function(err) {
+                        console.log(err);
+                    });
+                },
+                //获取货源国家
+                getGoodsCountries: function() {
+                    this.queryPost("/index.php?g=common&m=index&a=get_address").then((res) => {
+                        var _data = res.data;
+                        if (_data.code === 2000) {
+                            this.GoodsCountries = _data.data;
+                        } else {
+                            this.$message.error(this.$lang(_data.msg));
+                        }
+                    }).catch(function(err) {
+                        console.log(err);
+                    });
+                },
+                /**
+                 * 货源国家改变
+                 */
+                countryChange(val) {
+                    this.getGoodsProvinces(val);
+                    this.form.receive_province = '';
+                },
+                //获取省份
+                getGoodsProvinces: function(val) {
+                    this.queryPost("/index.php?g=common&m=index&a=get_address", {
+                        pid: val
+                    }).then((res) => {
+                        var _data = res.data;
+                        if (_data.code === 2000) {
+                            this.GoodsProvinces = _data.data;
+                        } else {
+                            this.$message.error(this.$lang(_data.msg));
+                        }
+                    }).catch(function(err) {
+                        console.log(err);
+                    });
+                },
+                showImg: function(index) {
+                    this.imgShowIndex = index;
+                },
+                hiddenImg: function() {
+                    this.imgShowIndex = '';
+                },
+                multiSelect: function(baseName, selName, item) {
+                    if (item.CD) {
+                        item.flag && this.form[selName].push(item.CD) || (this.form[selName] = this.form[selName].filter(v => v != item.CD));
+                        this.baseData[baseName][0].flag = !this.form[selName].length;
+                    } else {
+                        this.form[selName].splice(0, this.form[selName].length);
+                        this.baseData[baseName].map(v => v.flag = false);
+                        this.baseData[baseName][0].flag = true;
+                    };
+                },
+                doSearch: function() {
+                    this.form.search_id = this.search_id;
+                    this.form.supplier = this.supplier;
+                    this.form.goods_name = this.goods_name;
+                    this.form.customer = this.customer;
+                    this.form.deal_type = this.deal_type;
+                    this.form.business_mode = this.business_mode;
+                    this.form.receive_mode = this.receive_mode;
+                    this.form.delivery_type = this.delivery_type;
+                    this.form.receive_country = this.receive_country;
+                    this.form.receive_province = this.receive_province;
+                    this.form.warehouse = this.warehouse,
+
+                        this.getListData(this.form);
+                },
+                doReset: function() {
+                    this.search_id = '';
+                    this.supplier = '';
+                    this.goods_name = '';
+                    this.deal_type = '';
+                    this.receive_mode = '';
+                    this.delivery_type = '';
+                    this.warehouse = '';
+                    this.customer = '';
+                    this.business_mode = '';
+                    this.receive_country = '';
+                    this.receive_province = '';
+                    this.GoodsProvinces.length = 0;
+
+                    this.form = {
+                        search_id: '',
+                        goods_name: '',
+                        supplier: '',
+                        customer: '',
+                        deal_type: '',
+                        business_mode: '',
+                        receive_mode: '',
+                        delivery_type: '',
+                        warehouse: '',
+                        receive_country: '',
+                        receive_province: '',
+                        start_time: undefined,
+                        end_time: undefined,
+                        dateRange: '',
+                        rows: 10,
+                        p: 1,
+                    };
+                },
+                handleSizeChange: function(val) {
+                    this.form.rows = val;
+                },
+                handleCurrentChange: function(val) {
+                    this.form.p = val;
+                },
+                handleSelectionChange: function handleSelectionChange(val) {
+                    this.multipleSelection = val;
+                },
+                route: function(title, _html, type) {
+                    var dom = document.createElement("a"),
+                        _href = "/index.php?g=scm&m=display&a=" + _html + "&type=" + type;
+                    dom.setAttribute("onclick", "opennewtab(this,'" + title + "')");
+                    dom.setAttribute("_href", _href);
+                    dom.click();
+                },
+                /**
+                 * 导出  exportOrder
+                 * 导入  importOrder
+                 * 模板下载 downTmep
+                 * */
+                exportOrder: function exportOrder() {
+                    var where = {
+                        wheres: {
+                            search_id: this.form.search_id,
+                            supplier: this.form.supplier,
+                            goods_name: this.form.goods_name,
+                            customer: this.form.customer,
+                            deal_type: this.form.deal_type,
+                            receive_mode: this.form.receive_mode,
+                            delivery_type: this.form.delivery_type,
+                            warehouse: this.form.warehouse,
+                            business_mode: this.form.business_mode,
+                            receive_country: this.form.receive_country,
+                            receive_province: this.form.receive_province,
+                            start_time: this.form.start_time,
+                            end_time: this.form.end_time
+                        },
+                        // ids: []
+                    };
+                    // for (var i = 0; i < this.multipleSelection.length; i++) {
+                    //     where.ids.push(this.multipleSelection[i].id);
+                    // }
+                    var tmep = document.createElement('form');
+                    tmep.action = '/index.php?g=scm&m=demand&a=deal_export';
+                    tmep.method = "post";
+                    tmep.style.display = "none";
+                    for (var k in where.wheres) {
+                        var opt = document.createElement("input");
+                        opt.name = k;
+                        opt.value = where.wheres[k];
+                        tmep.appendChild(opt);
+                    }
+                    // var opt = document.createElement("input");
+                    // opt.name = 'post_data';
+                    // opt.value = JSON.stringify(where);
+                    // tmep.appendChild(opt);
+                    document.body.appendChild(tmep);
+                    tmep.submit();
+                    $(tmep).remove();
+                },
+
+            },
+            //监听数据
+            watch: {
+                form: {
+                    handler(newValue, oldValue) {
+                        this.getListData(newValue);
+                    },
+                    deep: true
+                }
+
+            },
+            //过滤器
+            filters: {
+                separatNum: function(num) { //千分位方法
+                    if (!num) {
+                        return
+                    };
+                    num = num + "";
+                    var _arr = num.split(".");
+                    return _arr[1] === "00" ? (num - 0).toLocaleString() + ".00" : (num - 0).toLocaleString();
+                },
+            }
+        })
+    </script>
+</body>
+
+</html>

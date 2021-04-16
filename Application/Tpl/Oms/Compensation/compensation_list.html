@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css">
+
+    <title>{{$lang('物流赔付单列表')}}</title>
+</head>
+<style>
+    [v-cloak] {
+        display: none;
+    }
+
+    /* 头部按钮状态列表 */
+    .search-item-i {
+        font-size: 0;
+    }
+
+    .title-info {
+        margin-left: 20px;
+    }
+
+    .search-item-i>span {
+        background: rgba(244, 244, 244, 1);
+        border-radius: 20px;
+        line-height: 35px;
+        text-align: center;
+        padding: 0;
+        display: inline-block;
+        font-size: 13px;
+        margin: 5px;
+        cursor: pointer;
+    }
+
+    .search-item-i>span.active {
+        background: #0375DE;
+        color: #fff;
+    }
+
+    .search-item-i>span.tab-item-min {
+        min-width: 115px;
+        min-height: 35px;
+        word-break: break-all;
+        padding: 2px;
+    }
+
+    .op-btn-group {
+        display: flex;
+        justify-content: space-between;
+        margin: 0 20px 20px 20px;
+    }
+
+    .right-ops-group {
+        display: flex;
+    }
+
+    .right-ops-group .ops-btn {
+        margin: 0 5px;
+    }
+
+    .link {
+        color: #55dbff;
+        cursor: pointer;
+    }
+
+    /* element UI */
+    .el-row--flex {
+        align-items: center;
+        margin: 10px 0;
+    }
+
+    .el-input {
+        width: 90%;
+    }
+</style>
+
+<body>
+    <div id="app" v-cloak>
+        <header>
+            <el-row type="flex">
+                <el-col :span="2" class="title-info-container">
+                    <div class="title-info">{{$lang('物流赔付单状态')}}</div>
+                </el-col>
+                <el-col :span="22" class="search-item-i">
+                    <span class="tab-item-min" :class="{active: activeIds.includes(state.CD)}"
+                        v-for="(state, index) in states" :key="state.CD"
+                        @click="handleState(state)">{{$lang(state.CD_VAL)}}</span>
+                    <!-- <span class="tab-item-min active" v-for="">{{$lang('待处理')}}</span> -->
+                    <!-- <span class="tab-item-min">{{$lang('处理中')}}</span> -->
+                </el-col>
+            </el-row>
+            <el-form label-width="100px">
+                <el-row>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('平台订单ID')">
+                            <el-input v-model="search.order_id"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('运单号')">
+                            <el-input v-model="search.waybill_number"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('出库时间')">
+                            <el-date-picker value-format="yyyy-MM-dd" v-model="search.sendout_time" type="daterange"
+                                :range-separator="$lang('至')" :start-placeholder="$lang('开始日期')"
+                                :end-placeholder="$lang('结束日期')">
+                            </el-date-picker>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('申请人')">
+                            <el-input v-model="search.created_by"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('站点')">
+                            <el-select style="width: 350px;" v-model="search.plat_cd" clearable filterable>
+                                <el-option v-for="site in sites" :key="site.CD" :label="$lang(site.CD_VAL)"
+                                    :value="site.CD"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('发货仓库')">
+                            <el-select style="width: 350px;" v-model="search.delivery_warehouse_cd" multiple filterable>
+                                <el-option v-for="warehouse in deliveryWarehouses" :key="warehouse.CD"
+                                    :label="$lang(warehouse.CD_VAL)" :value="warehouse.CD"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('申请时间')">
+                            <el-date-picker value-format="yyyy-MM-dd" v-model="search.created_at" type="daterange"
+                                :range-separator="$lang('至')" :start-placeholder="$lang('开始日期')"
+                                :end-placeholder="$lang('结束日期')">
+                            </el-date-picker>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('SKU 编号')">
+                            <el-input v-model="search.b5c_sku_id"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('是否提交资料')">
+                            <el-select v-model="search.is_post_img" clearable style="width: 330px;">
+                                <el-option :label="$lang('是')" value="1"></el-option>
+                                <el-option :label="$lang('否')" value="0"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('订单号')">
+                            <el-input v-model="search.b5c_order_no"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('赔付单号')">
+                            <el-input v-model="search.compensate_no" style="width: 350px;"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item>
+                            <el-button @click="handleSearch">{{$lang('查询')}}</el-button>
+                            <el-button type="primary" @click="reset">{{$lang('重置')}}</el-button>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+            </el-form>
+        </header>
+        <div class="baseline"></div>
+        <div class="op-btn-group">
+            <div class="left">
+                <?php if(checkPermissions('Oms/Compensation', 'compenCreate')){ ?>
+                <el-button type="primary" @click="createCompensation">{{$lang('新建赔付')}}</el-button>
+                <?php } ?>
+                <?php if(checkPermissions('Oms/Compensation', 'compenDelete')){ ?>
+                <el-button type="success" @click="handleDelete">{{$lang('删除')}}
+                </el-button>
+                <?php } ?>
+            </div>
+            <div class="right-ops-group">
+                <div class="ops-btn">
+                    <el-button @click="downloadTemplate" :loading="bLoading">{{$lang('下载模板')}}</el-button>
+                </div>
+                <div class="ops-btn">
+                    <el-upload action="" :show-file-list="false" :before-upload="handleImport">
+                        <el-button>{{$lang('批量导入')}}</el-button>
+                    </el-upload>
+                </div>
+                <div class="ops-btn">
+                    <el-button :loading="bLoading" @click="handleGenerateInvoice">{{$lang('一键生成发票')}}</el-button>
+                </div>
+                <div class="ops-btn">
+                    <el-button @click="handleExport" :loading="bLoading">{{$lang('导出')}}</el-button>
+                </div>
+            </div>
+        </div>
+        <div class="content">
+            <el-table :data="list" border align="center" ref="multipleTable" :row-key="getRowKeys"
+                @selection-change="handleSelectionChange" v-loading="loading">
+                <el-table-column type="selection" :reserve-selection="true"></el-table-column>
+                <el-table-column :label="$lang('赔付单号')" prop="compensate_no">
+                    <template slot-scope="scope">
+                        <div class="link" @click="routeToDetail(scope.row.id)">{{scope.row.compensate_no}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('订单号')" prop="b5c_order_no"></el-table-column>
+                <el-table-column :label="$lang('运单号')" prop="waybill_number"></el-table-column>
+                <el-table-column :label="$lang('SKU 编号')" prop="b5c_sku_id"></el-table-column>
+                <el-table-column :label="$lang('平台订单ID')" prop="order_id"></el-table-column>
+                <el-table-column :label="$lang('发货仓库')" prop="delivery_warehouse_cd_val"></el-table-column>
+                <el-table-column :label="$lang('出库时间')" prop="sendout_time"></el-table-column>
+                <el-table-column :label="$lang('申请时间')" prop="created_at"></el-table-column>
+                <el-table-column :label="$lang('申请人')" prop="created_by"></el-table-column>
+                <el-table-column :label="$lang('站点')" prop="plat_cd_val"></el-table-column>
+                <el-table-column :label="$lang('是否提交资料')">
+                    <template slot-scope="scope">
+                        <div>{{scope.row.is_post_img == 1 ? $lang('是') : $lang('否')}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('异常处理状态')" prop="status_cd_val"></el-table-column>
+                <el-table-column :label="$lang('操作')">
+                    <template slot-scope="scope">
+                        <?php if(checkPermissions('Oms/Compensation', 'compenEdit')){ ?>
+                        <el-button type="primary" @click="routeToEdit(scope.row.id)">{{$lang('修改')}}</el-button>
+                        <?php } ?>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <div class="pagination">
+                <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange"
+                    :current-page="search.page" :page-sizes="[10, 20, 50, 100]" :page-size="search.page_size"
+                    layout="total, sizes, prev, pager, next, jumper" :total="total">
+                </el-pagination>
+            </div>
+        </div>
+
+        <el-dialog :title="$lang('批量导入异常')" :visible.sync="importException" :custom-class="'custom-dialog-body'">
+            <el-table :data="errMessages" border class="order-list-table table-common">
+                <el-table-column :label="$lang('错误列')" prop="key">
+                    <template slot-scope="scope">
+                        <div>{{scope.row.cell}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('错误信息')" prop="value">
+                    <template slot-scope="scope">
+                        <div>{{scope.row.msg_string}}</div>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </el-dialog>
+    </div>
+    <!--引入js-->
+
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js?v=<{$Think.const.V}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.const.V}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.6.3.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/warehouse/js/request.js?v=20210312"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/warehouse/js/utils.js?v=20210312"></script>
+    <script>
+        if (getCookie('think_language') !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en)
+        }
+        const app = new Vue({
+            el: '#app',
+            data() {
+                return {
+                    list: [],
+                    search: {
+                        page: 0,
+                        page_size: 10,
+                        b5c_order_no: '',
+                        order_id: '',
+                        waybill_number: '',
+                        delivery_warehouse_cd: [],
+                        sendout_time: [],
+                        plat_cd: '',
+                        shipping_methods: '',
+                        country: '',
+                        created_by: '',
+                        status_cd: [],
+                        b5c_sku_id: '',
+                        compensate_no: '',
+                        is_post_img: '',
+                        created_at: [],
+                    },
+                    sites: [],
+                    states: [],
+                    activeIds: [],
+                    total: 0,
+                    importException: false,
+                    errMessages: [],
+                    selectedOrders: [],
+                    deliveryWarehouses: [],
+                    loading: false,
+                    auth: {},
+                    bLoading: false,
+                }
+            },
+            created() {
+                this.getSites();
+                this.getStates();
+                this.getList();
+            },
+            methods: {
+                handleSearch() {
+                    this.selectedOrders = [];
+                    this.$refs.multipleTable.clearSelection();
+                    this.getList();
+                },
+                getList() {
+                    const params = Object.assign({}, this.search);
+                    const [sendOutStart, sendOutEnd] = this.search.sendout_time;
+                    const [start, end] = this.search.created_at;
+                    params.sendout_time = {
+                        start: sendOutStart,
+                        end: sendOutEnd
+                    }
+                    params.created_at = {
+                        start: start,
+                        end: end
+                    }
+                    this.loading = true;
+                    request('/index.php?g=OMS&m=Compensation&a=CompenList', params).then(res => {
+                        this.loading = false
+                        this.list = res.data.list;
+                        this.auth = res.data.button;
+                        this.total = parseInt(res.data.page.count) || 0;
+                    })
+                },
+                reset() {
+                    this.search = {
+                        page: 0,
+                        page_size: 10,
+                        b5c_order_no: '',
+                        order_id: '',
+                        waybill_number: '',
+                        delivery_warehouse_cd: [],
+                        sendout_time: [],
+                        plat_cd: '',
+                        shipping_methods: '',
+                        country: '',
+                        created_by: '',
+                        status_cd: [],
+                        b5c_sku_id: '',
+                        compensate_no: '',
+                        is_post_img: '',
+                        created_at: [],
+                    }
+                    this.activeIds = [];
+                    this.selectedOrders = [];
+                    this.$refs.multipleTable.clearSelection();
+                    this.getList();
+                },
+                handleImport(file) {
+                    const form = new FormData();
+                    form.append('file', file);
+                    request('index.php?g=OMS&m=compensation&a=batchImportCompensate', form, { headers: { 'Content-Type': 'multipart/form-data' }, loading: false }).then(res => {
+                        if (res.code !== 2000) {
+                            if (Array.isArray(res.data)) {
+                                this.importException = true;
+                                this.errMessages = res.data;
+                                return;
+                            } else {
+                                return this.$message.error(res.msg);
+                            }
+                        }
+                        this.$message.success(this.$lang('导入成功'));
+                        this.getList();
+                    })
+                    return false;
+                },
+                async handleGenerateInvoice() {
+                    if (this.selectedOrders.length === 0) {
+                        return this.$message.warning(this.$lang('请勾选需要生成的赔付单'));
+                    }
+                    // if (this.selectedOrders.length > 20) {
+                    //     return this.$message.warning(this.$lang('最多支持20条批量生成发票'));
+                    // }
+                    this.bLoading = true;
+                    request('/index.php?g=OMS&m=compensation&a=generateInvoice', { compensate_ids: this.selectedOrders }, null, { responseType: 'blob', timeout: 1000000 }).then(res => {
+                        this.bLoading = false;
+                        if (res.type === 'application/json') {
+                            const that = this;
+                            let reader = new FileReader(res);
+                            reader.onload = function (event) {
+                                let content = reader.result
+                                let obj = JSON.parse(content) // 错误信息
+                                that.$message.error(obj.msg);
+                            }
+                            reader.readAsText(res)
+                            return;
+                        }
+                        downloadFile(res, '赔付发票.zip');
+                    })
+
+                },
+                getSites() {
+                    request('index.php?g=oms&m=order&a=getSite', { plat_cd: [] }).then(res => {
+                        this.sites = res.data;
+                    })
+                },
+                getStates() {
+                    request('index.php?g=OMS&m=Compensation&a=compenCommonList', {}).then(res => {
+                        this.states = res.data.compen_status || []; // 赔付状态
+                        this.deliveryWarehouses = res.data.warehouse || []; // 仓库
+                    })
+                },
+                handleSizeChange(size) {
+                    this.search.page_size = size;
+                    this.getList();
+                },
+                handleCurrentChange(current) {
+                    this.search.page = current;
+                    this.getList();
+                },
+                handleState(state) {
+                    if (this.activeIds.includes(state.CD)) {
+                        const index = this.activeIds.findIndex(CD => CD === state.CD);
+                        this.activeIds.splice(index, 1);
+                    } else {
+                        this.activeIds.push(state.CD);
+                    }
+                    // this.activeId.push(state.CD);
+                    this.search.status_cd = this.activeIds;
+                    this.getList();
+                },
+                getRowKeys(row) {
+                    return row.id;
+                },
+                createCompensation() {
+                    newTab("/index.php?g=Oms&m=compensation&a=create", this.$lang('新建赔付单'));
+                },
+                routeToEdit(id) {
+                    newTab('/index.php?g=Oms&m=compensation&a=edit&id=' + id, this.$lang('修改赔付单'))
+                },
+                routeToDetail(id) {
+                    newTab('/index.php?g=Oms&m=compensation&a=detail&id=' + id, this.$lang('查看赔付单'))
+                },
+                handleSelectionChange(orders) {
+                    this.selectedOrders = orders.map(order => order.id);
+                },
+                handleDelete() {
+                    if (this.selectedOrders.length === 0) {
+                        return this.$message.warning(this.$lang('请勾选需要删除的赔付单'));
+                    }
+                    this.$confirm(this.$lang('是否确认删除当前勾选赔付单'), '', {
+                        confirmButtonText: this.$lang('确认'),
+                        showCancelButton: false
+                    }).then(() => {
+                        request('index.php?g=OMS&m=Compensation&a=compenDelete', { ids: this.selectedOrders }).then(res => {
+                            if (res.code === 2000) {
+                                this.$message.success(this.$lang('删除成功'));
+                                this.$refs.multipleTable.clearSelection();
+                                this.getList();
+                            }
+                        })
+                    })
+                },
+                handleExport() {
+                    if (this.selectedOrders.length === 0) return this.$message.warning(this.$lang('请选择需要导出的赔付单'));
+                    this.bLoading = true;
+                    request('/index.php?g=OMS&m=Compensation&a=compenExport', { ids: this.selectedOrders }, '', { responseType: 'blob' }).then(res => {
+                        this.bLoading = false;
+                        downloadFile(res, this.$lang('物流赔付单列表.xlsx'))
+                    })
+                },
+                downloadTemplate() {
+                    this.bLoading = true;
+                    request('index.php?g=OMS&m=compensation&a=downloadTemplate', null, null, { responseType: 'blob', method: 'get' }).then(res => {
+                        this.bLoading = false;
+                        downloadFile(res, this.$lang('赔付批量导入模板.xlsx'))
+                    })
+                }
+            }
+        })
+    </script>
+
+</body>
+
+</html>

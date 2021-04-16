@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.const.V}>">
+    <title>$lang('售后单列表')</title>
+    <style>
+        #order-list {
+            visibility: hidden;
+        }
+
+        [v-cloak]{
+            display: none;
+        }
+
+        span.shopTag>span {
+            position: absolute !important;
+            top: 0px;
+            left: 0px;
+            border-radius: 0px;
+            background-color: #f99c64;
+            border: 1px solid rgb(231, 156, 116) !important;
+        }
+
+        .el-popover {
+            text-align: left !important;
+        }
+
+        .guds-item {
+            width: 156px;
+            float: left;
+            padding: 5px 0px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .count-item {
+            padding: 5px 0px;
+            float: right;
+            font-weight: 600;
+            font-size: 14px
+        }
+
+        .el-table .cell {
+            word-break: break-word !important;
+        }
+
+        .ellipsis {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer;
+        }
+
+        .sale-team {
+            width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+
+        .title-info-container .title-info {
+            /*text-align: right;*/
+            padding-left: 12px;
+            height: 20px;
+            line-height: 20px;
+        }
+
+        .el-select{
+            padding: 0 !important;
+        }
+
+        .btn-search{
+            background-color: #0375DE !important;
+        }
+        .third-order-num{
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .third-order-num a{
+            width: fit-content;
+        }
+        .commodity_wrap{
+            display: flex;
+            padding: 10px 0;
+            align-items: center;
+            overflow: hidden;
+        }
+        .commodity_wrap .commodity_info{
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            padding-left: 10px;
+            line-height: 1.5;
+        }
+        .commodity_wrap .commodity_info .commodity_info_name{
+            display: block;
+            overflow: hidden;
+            white-space: nowrap;
+            max-width: 200px;
+            text-overflow: ellipsis;
+         }
+        .el-loading-spinner{
+            top:300px;
+            margin-top: -21px;
+            position: fixed;
+        }
+        .border{
+            border: 1px #cccccc solid;
+        }
+        .over-box{
+            padding-right: 140px;
+        }
+        .afterSaleBtn{
+            width: 155px;
+            height: 24px;
+            line-height: 24px;
+            padding: 0;
+            border-radius: 12px;
+        }
+        .el-button--info{
+            background:rgb(244, 244, 244);
+            border-color: rgb(244, 244, 244);
+            color: #000;
+        }
+        .el-button--primary{
+            background:rgb(3, 117, 222);
+            border-color: rgb(3, 117, 222);
+        }
+        .el-button--primary:focus{
+            background:rgb(3, 117, 222);
+            border-color: rgb(3, 117, 222);
+        }
+        .el-button--info:focus{
+            background:rgb(244, 244, 244);
+            border-color: rgb(244, 244, 244);
+            color: #000;
+        }
+        .el-checkbox__inner{
+
+        }
+        .el-checkbox__input.is-disabled.is-checked .el-checkbox__inner {
+            background-color: #409EFF;
+            border-color: #409EFF;
+        }
+        .el-checkbox__input.is-disabled.is-checked .el-checkbox__inner::after {
+            border-color: #ffffff;
+        }
+        .el-checkbox__input.is-disabled+span.el-checkbox__label {
+            color: #409EFF;
+        }
+        .el-notification__content{
+            max-height: 400px;
+            overflow: auto;
+        }
+    </style>
+</head>
+
+<body class="orderList">
+    <div id="order-list" class="list-common" v-cloak style="margin-bottom:220px;" v-loading="tableLoading">
+        <!-- 搜索查询 start-->
+        <div class="orderList-search search-common">
+            <!-- 平台 start-->
+            <div class="search-toggle">
+                <el-row type="flex">
+                    <el-col :span="4" class="title-info-container">
+                        <div class="title-info">{{$lang('平台渠道')}}</div>
+                    </el-col>
+                    <el-col :span="22" class="search-item-i">
+                        <span :class="{active:!channelData.length}" @click="selectChannel()">{{$lang('全部')}}</span>
+                        <span :class="{active:channel.checked}" v-for="(channel,key) in channels" :key="key" :data-cd="channel.CD" @click="selectChannel(channel)">{{$lang(channel.CD_VAL)}}</span>
+                    </el-col>
+                </el-row>
+                <el-row v-if="plat.length>0" type="flex" >
+                    <el-col :span="4" class="title-info-container">
+                        <div class="title-info">{{$lang('站点')}}</div>
+                    </el-col >
+                    <el-col :span="22" class="search-item-i">
+                        <el-button v-show="plat.length>= 10" @click="showMore = !showMore" style="position: absolute;right: 75px;" type="text">{{showMore ? $lang('收起') : $lang('展开')}}<i :class="showMore ? 'el-icon-arrow-up' : 'el-icon-arrow-down'" class="el-icon--right"></i></el-button>
+                        <!-- <span :class="{active:item.checked}" v-for="item in plat" :data-cd="item.CD" @click="selectPlat(item)">{{$lang(item.CD_VAL)}}</span> -->
+                        <div class="search-item-i over-box">
+                            <span :class="{active:item.checked}" v-for="(item,key) in plat.slice(0,9)" :key="key" :data-cd="item.CD" @click="selectPlat(item)">{{$lang(item.CD_VAL)}}</span>
+                            <span v-show="showMore" :class="{active:item.checked}" v-for="(item,key) in plat.slice(9)" :key="key" :data-cd="item.CD" @click="selectPlat(item)">{{$lang(item.CD_VAL)}}</span>
+                        </div>
+                    </el-col>
+                </el-row>
+                <!-- 平台 end-->
+                <!-- 补发 -->
+                <el-row type="flex">
+                    <el-col :span="2" class="title-info-container">
+                        <div class="title-info">{{$lang('补发')}}</div>
+                    </el-col>
+                    <el-col :span="22" class="search-item-i after_sale_btn">
+                        <el-button :disabled="reissueStatus" class="afterSaleBtn" :type="!reissueData.length ? 'primary':'info'" @click="selectReissue()">{{$lang('全部')}}</el-button>
+                        <el-button :disabled="reissueStatus" class="afterSaleBtn" :type="item.checked ? 'primary':'info'" v-for="(item,key) in reissue" :key="key" :data-cd="item.CD" @click="selectReissue(item)">{{$lang(item.CD_VAL)}}</el-button>
+
+                        <!-- <span :class="{active:!reissueData.length}" @click="selectReissue()">{{$lang('全部')}}</span> -->
+                        <!-- <span :class="{active:item.checked}" v-for="item in reissue" :data-cd="item.CD" @click="selectReissue(item)">{{$lang(item.CD_VAL)}}</span> -->
+                    </el-col>
+                </el-row>
+                <!-- 退货 -->
+                <el-row type="flex">
+                    <el-col :span="4" class="title-info-container">
+                        <div class="title-info">{{$lang('退货')}}</div>
+                    </el-col>
+                    <el-col :span="22" class="search-item-i after_sale_btn">
+                        <!-- <span :class="{active:!returnsData.length}" @click="selectReturns()">{{$lang('全部')}}</span>
+                        <span :class="{active:item.checked}" v-for="item in returns" :data-cd="item.CD" @click="selectReturns(item)">{{$lang(item.CD_VAL)}}</span> -->
+                        <el-button :disabled="returnsStatus" class="afterSaleBtn" :type="!returnsData.length ? 'primary':'info'" @click="selectReturns()">{{$lang('全部')}}</el-button>
+                        <el-button :disabled="returnsStatus" class="afterSaleBtn" :type="item.checked ? 'primary':'info'" v-for="(item,key) in returns" :key="key" :data-cd="item.CD" @click="selectReturns(item)">{{$lang(item.CD_VAL)}}</el-button>
+                    </el-col>
+                </el-row>
+                <!-- 退款 -->
+                <el-row type="flex">
+                    <el-col :span="4" class="title-info-container">
+                        <div class="title-info">{{$lang('退款')}}</div>
+                    </el-col>
+                    <el-col :span="22" class="search-item-i after_sale_btn">
+                        <!-- <span :class="{active:!refundData.length}" @click="selectRefund()">{{$lang('全部')}}</span>
+                        <span :class="{active:item.checked}" v-for="item in refund" :data-cd="item.CD" @click="selectRefund(item)">{{$lang(item.CD_VAL)}}</span> -->
+                        <el-button :disabled="refundStatus" class="afterSaleBtn" :type="!refundData.length ? 'primary':'info'" @click="selectRefund()">{{$lang('全部')}}</el-button>
+                        <el-button :disabled="refundStatus" class="afterSaleBtn" :type="item.checked ? 'primary':'info'" v-for="(item,key) in refund" :key="key" :data-cd="item.CD" @click="selectRefund(item)">{{$lang(item.CD_VAL)}}</el-button>
+                    </el-col>
+                </el-row>
+                <!-- 订单状态 start-->
+                <!--<el-row type="flex">-->
+                    <!--<el-col :span="4" class="title-info-container">-->
+                        <!--<div class="title-info">{{$lang('售后状态')}}</div>-->
+                    <!--</el-col>-->
+                    <!--<el-col :span="22" class="search-item-i">-->
+                        <!--<span :class="{active:!afterSaleData.length}" class="tab-item-min" @click="selectAfterStatus()">{{$lang('全部')}}</span>-->
+                        <!--<span :class="{active:status.checked}" class="tab-item-min" v-for="status in baseData.after_sale_status" v-if="status.CD_VAL != '已申请' && status.CD_VAL != '退货成功' && status.CD_VAL != '拒绝退货' " :data-cd="status.CD" @click="selectAfterStatus(status)">-->
+                                <!--{{$lang(status.CD_VAL)}}-->
+                        <!--</span>-->
+                    <!--</el-col>-->
+                <!--</el-row>-->
+                <!-- 订单状态 end-->
+            </div>
+            <div class='cls' style="height:auto;">
+                <el-col :span="4" class="title-info-container" style="height:100%;">
+                    <div class="title-info">{{$lang('条件筛选')}}</div>
+                </el-col>
+                <el-col :span="22" class="search-item-i">
+                    <div class="fl sort-item">
+                        <el-input size="small" @keyup.enter.native="submit_keywords" :placeholder="$lang('售后单号')" v-model="after_sale_no"></el-input>
+                    </div>
+                    <div class="fl sort-item">
+                        <el-select :popper-append-to-body=false size="small" v-model="search.after_sale_type" multiple collapse-tags style="width:150px" @change="after_sale_type_change" :placeholder="$lang('售后类型')">
+                            <!-- <el-option :label="$lang('全部')" :value="0"></el-option> -->
+                            <el-option :label="$lang('补发')" :value="2"></el-option>
+                            <el-option :label="$lang('退货')" :value="1"></el-option>
+                            <el-option :label="$lang('退款')" :value="3"></el-option>
+                        </el-select>
+                    </div>
+                    <div class="fl sort-item">
+                        <el-input size="small" @keyup.enter.native="submit_keywords" :placeholder="$lang('商品编码')" v-model="sku_id"></el-input>
+                    </div>
+                    <div class="fl sort-item">
+                        <el-input size="small" @keyup.enter.native="submit_keywords" :placeholder="$lang('订单号')" v-model="order_no"></el-input>
+                    </div>
+                    <div class="fl sort-item">
+                        <div>
+                            <el-date-picker value-format="yyyy-MM-dd HH:mm:ss" size="small" v-model="dateRange" type="datetimerange" :default-time="['00:00:00', '23:59:59']" align="right" unlink-panels :range-separator="$lang('至')" :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')" :picker-options="pickerOptions">
+                            </el-date-picker>
+                        </div>
+                    </div>
+                    <div class="fl sort-item">
+                        <el-select v-model="search.audit_status_cd" size="small" :placeholder="$lang('审核状态')">
+                            <el-option v-for="item in turnOver" :label="$lang(item.CD_VAL)" :value="item.CD" :key="item.CD"></el-option>
+                        </el-select>
+                    </div>
+                    <div class="fl sort-item">
+                        <el-select filterable size="small" :multiple-limit=10 v-model="search.selectedShops" multiple collapse-tags :placeholder="$lang('店铺')" style="width:300px">
+                            <el-option v-for="shopItem in shopStatus" :key="shopItem.CD" :label="$lang(shopItem.CD_VAL)" :value="shopItem.CD">
+                            </el-option>
+                        </el-select>
+                    </div>
+                </el-col>
+            </div>
+            <div class="search-btn-container">
+                <div class="btns" style="padding-left: 80px;">
+                    <button @click="doSearch" class="btn-search" name="search">{{$lang('搜索')}}</button>
+                    <button @click="doReset" class="btn-reset" name="reset">{{$lang('重置')}}</button>
+                </div>
+            </div>
+
+            <!-- 搜索查询 end-->
+
+        </div>
+        <!-- 分割线 start-->
+        <div class="orderList-line line-split"></div>
+        <!-- 分割线 end-->
+
+        <!-- 订单表格主体 start-->
+        <div class="orderList-Main list-common-main">
+            <header>{{$lang('搜索结果')}}:{{$lang('共')}}
+                <span class="num-bold">{{totalCount}}</span> {{$lang('条记录')}}
+                <button @click="download"  name="search">{{$lang('导出')}}</button>
+            </header>
+            <div style="margin-bottom: 20px">
+                <b>{{$lang('已选择')}}</b>&nbsp;&nbsp;{{isCheck}}&nbsp;&nbsp;
+                <el-button type="text" @click="inverseSelection">{{$lang('反选')}}</el-button>
+                <el-button :disabled="isDisabledBatchThrough" style="margin-left: 40px;" type="primary" @click="onBatchThrough">{{$lang('批量通过')}}</el-button>
+                <el-button :disabled="isDisabledBatchRefused" style="margin-right: 40px;" type="primary" @click="onBatchRefused">{{$lang('批量不通过')}}</el-button>
+                <el-button type="button" @click="onBatchClose">{{$lang('取消')}}</el-button>
+                <el-button type="primary" @click="onBatchConfirm">{{$lang('确认')}}</el-button>
+            </div>
+
+            <el-table     v-loading="auditLoading"
+                          border show-header ref="multipleTable" :data="tableData" @select="onSelectionChange" @selection-change="handleSelectionChange" tooltip-effect="dark" style="width: 100%" class="order-list-table table-common">
+                <!-- <el-table-column prop="number" :label="$lang('序号')"></el-table-column> -->
+                <el-table-column type="selection" width="55"></el-table-column>
+                <el-table-column :label="$lang('店铺')">
+                    <template slot-scope=scope>
+                        {{scope.row.store_name}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('售后单号')" width="180">
+                    <template slot-scope="scope">
+                        <div class="third-order-num">
+                            <span >{{scope.row.after_sale_no}}</span>
+                            <a class="to-detail-btn" @click="toDetail(scope.row.after_sale_no,scope.row.order_no,scope.row.type_name,scope.row)">{{$lang('查看')}}</a>
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('售后类型')">
+                    <template slot-scope=scope>
+                        {{$lang(scope.row.type_name)}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('商品')" width="300">
+                    <template slot-scope="scope">
+                        <div>
+                            <div v-if="isShow(index,scope.row)" class="commodity_wrap" v-for="(item, index) in scope.row.product_info" :key="index">
+                                <!-- 存在为空的情况  处理异常 -->
+                                <div class="commodity_pic" v-if="item">
+                                    <el-tooltip placement="right-end" effect="light">
+                                        <div slot="content">
+                                            <img :src="item.thumbnail" alt="" style="width: 195px;height: 195px;">
+                                        </div>
+                                        <img :src="item.thumbnail" alt="" style="width: 65px;height: 65px;">
+                                    </el-tooltip>
+                                </div>
+                                <div class="commodity_info"  v-if="item">
+                                    <span>SKU : {{item.sku_id}}<span style="font-weight: bold;font-size: 14px;"> X {{item.num}}</span></span>
+                                    <span>{{scope.row.pay_currency}} : {{scope.row.pay_total_price}}</span>
+                                    <span :title="$lang(item.spu_name)" class="commodity_info_name">{{$lang(item.spu_name)}}</span>
+                                    <span :title="item.product_attr" class="commodity_info_name">{{item.product_attr}}</span>
+                                </div>
+                            </div>
+                            <div v-if="scope.row.product_info.length > 1">
+                                <i style="font-size: 24px;cursor: pointer;" v-if="scope.row.is_show_all_sku" @click="iconClick(scope.$index, false)" class="el-icon-arrow-up"></i>
+                                <i style="font-size: 24px;cursor: pointer;" v-else @click="iconClick(scope.$index, true)" class="el-icon-arrow-down"></i>
+                            </div>
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('附件')">
+                    <template slot-scope="scope">
+                        <div v-for="(item,key) in scope.row.attachment" :key="key">
+                            <span v-if="item.save_name">
+                                <a class="file_type" :href="'/index.php?m=order_detail&a=download&file='+item.save_name">{{item.save_name}}</a>
+                            </span>
+                            </div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('商品编码')">
+                    <template slot-scope="scope" v-if="scope.row.product_info && scope.row.product_info[0]">
+                        <div v-if="scope.row.product_info && scope.row.product_info[0].hasOwnProperty('sku_id')">{{scope.row.product_info[0].sku_id}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('订单号')">
+                    <template slot-scope="scope">
+                        <div class="third-order-num">
+                            <span >{{scope.row.order_no}}</span>
+                            <a class="to-detail-btn" @click="toOrderDetail(scope.row.order_no,scope.row.order_id,scope.row.platform_country_code)">{{$lang('查看')}}</a>
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="created_at" :label="$lang('发起时间')">
+                </el-table-column>
+                <el-table-column :label="$lang('售后状态')">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.status_code_val)}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('申请人')">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.created_by)}}
+                    </template>
+                </el-table-column>
+                <el-table-column width="150px" :label="$lang('签字意见')">
+                    <template slot-scope="scope">
+                        <el-input
+                            :disabled="scope.row.isDisabledAuditOpinion"
+                            type="textarea"
+                            :rows="4"
+                            :placeholder="$lang('请输入意见')"
+                            v-model="scope.row.audit_opinion">
+                        </el-input>
+                    </template>
+                </el-table-column>
+                <el-table-column width="200px" :label="$lang('操作')">
+                    <template slot-scope="scope">
+                       <div v-if="scope.row.audit_status_cd==='N003170003'" style="display: flex;align-items: center;justify-content: space-around;padding: 5px 0px;">
+                         <div style="display: flex;flex-direction: column;align-items: flex-start;height: 72px;justify-content: space-around;">
+                           <el-checkbox  :disabled="scope.row.isDisabledApprove" @change="onApprove(scope.row)"  v-model="scope.row.approved" >{{$lang('审核通过')}}</el-checkbox >
+                           <el-checkbox  :disabled="scope.row.isDisabledRefused" @change="onRefused(scope.row)" v-model="scope.row.refused"  style="margin-left: 0px">{{$lang('审核不通过')}}</el-checkbox >
+                         </div>
+                         <div style="display: flex;flex-direction: column;align-items: flex-start;justify-content: space-around;height: 72px;">
+                           <el-button :disabled="scope.row.isDisabledSave"  type="primary" size="mini" @click="onConfirm(scope.row)">{{$lang('确认')}}</el-button>
+                           <el-button :disabled="scope.row.isDisabledClose"  style="margin-left: 0px" size="mini" type="primary" @click="onClose(scope.row)">{{$lang('取消')}}</el-button>
+                         </div>
+                       </div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('审核状态')">
+                    <template slot-scope="scope">
+                        <!-- {{$lang(scope.row.audit_status_cd_val)}} -->
+                        <div v-if="scope.row.audit_status_cd_val == '等待审核'">
+                            <?php if(checkPermissions('Oms/afterSale', 'auditRefund')){ ?>
+                                <a class="to-detail-btn" @click="refundDetail(scope.row)">{{$lang(scope.row.audit_status_cd_val)}}</a>
+                            <?php } else { ?>
+                                <span>{{$lang(scope.row.audit_status_cd_val)}}</span>
+                            <?php } ?>
+                        </div>
+                        <div v-else-if="scope.row.audit_status_cd_val == '审核通过_可撤销'">
+                            <?php if(checkPermissions('Oms/afterSale', 'revokeReview')){ ?>
+                                <a class="to-detail-btn" @click="refundDetail(scope.row)">{{$lang(scope.row.audit_status_cd_val)}}</a>
+                            <?php } else { ?>
+                                <span>{{$lang(scope.row.audit_status_cd_val)}}</span>
+                            <?php } ?>
+                        </div>
+                        <div v-else-if="scope.row.audit_status_cd_val == '草稿'">
+                            <a class="to-detail-btn" @click="refundDetail(scope.row)">{{$lang(scope.row.audit_status_cd_val)}}</a>
+                        </div>
+                        <div v-else>
+                            <span>{{$lang(scope.row.audit_status_cd_val)}}</span>
+                        </div>
+
+                        <!-- <a v-else-if="scope.row.audit_status_cd_val == '审核通过_可撤销'" class="to-detail-btn" @click="refundDetail(scope.row)">{{$lang(scope.row.audit_status_cd_val)}}</a>
+                        <a v-else-if="scope.row.audit_status_cd_val == '草稿'" class="to-detail-btn" @click="refundDetail(scope.row)">{{$lang(scope.row.audit_status_cd_val)}}</a>
+                        <span v-else>{{$lang(scope.row.audit_status_cd_val)}}</span> -->
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('售后原因')">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.reason)}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('运营备注')">
+                    <template slot-scope=scope>
+                        {{scope.row.remark}}
+                    </template>
+                </el-table-column>
+            </el-table>
+            <el-pagination background @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="pages.current_page" :page-sizes="[10, 30, 50, 100]" :page-size="pages.per_page" layout="sizes,prev, pager, next, jumper" :total="totalCount">
+            </el-pagination>
+        </div>
+        <!-- 订单表格主体 end-->
+    </div>
+    <!--引入js-->
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.6.3.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Oms/AfterSale/after_sale_list.js?v=<{$Think.const.V}>"></script>
+</body>
+
+</html>

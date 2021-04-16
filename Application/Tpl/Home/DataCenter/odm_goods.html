@@ -1,0 +1,210 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <meta name="renderer" content="webkit|ie-comp|ie-stand">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="renderer" content="webkit|ie-comp|ie-stand">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.8.2.css?v=<{$Think.config.VER_NUM}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>">
+  <title>{{$lang('9841-ODM商品数据')}}</title>
+  <style>
+    [v-cloak] {
+      display: none;
+    }
+
+    body {
+      padding: 0 0 90px;
+      background: #F4F4F4;
+    }
+
+    .flex-between {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .flex-start {
+      display: flex;
+      align-items: center;
+    }
+
+    .el-table.custom-table {
+      flex: 0 1 auto;
+      color: rgba(0, 0, 0, 0.65);
+    }
+
+    .el-table.custom-table thead {
+      color: rgba(0, 0, 0, 0.65);
+    }
+
+    .el-table.custom-table th {
+      background: #F4F4F4;
+    }
+
+  </style>
+</head>
+
+<body>
+  <div id="vm" v-cloak>
+    <el-table :data="tableData" class="custom-table">
+      <el-table-column prop="dateTime" width="100" :label="$lang('时间')">
+      </el-table-column>
+      <el-table-column>
+        <template slot="header" slot-scope="scope">
+          {{$lang('ODM商品B2C销售额')}}($)
+        </template>
+        <template slot-scope="scope">
+          {{ scope.row.b2c_sale | formatNum }}
+        </template>
+      </el-table-column>
+      <el-table-column  width="300" :label="$lang('ODM商品B2C销售额在总B2C销售额中占比')">
+        <template slot-scope="scope">
+          {{ scope.row.b2c_sale_proportion | formatNum(true) }}
+        </template>
+      </el-table-column>
+      <el-table-column>
+        <template slot="header" slot-scope="scope">
+          {{$lang('ODM商品B2B销售额')}}($)
+        </template>
+        <template slot-scope="scope">
+          {{ scope.row.b2b_sale | formatNum }}
+        </template>
+      </el-table-column>
+      <el-table-column  width="300" :label="$lang('ODM商品B2B销售额在总B2B销售额中占比')">
+        <template slot-scope="scope">
+          {{ scope.row.b2b_sale_proportion | formatNum(true) }}
+        </template>
+      </el-table-column>
+      <el-table-column>
+        <template slot="header" slot-scope="scope">
+          {{$lang('ODM商品总销售额')}}($)
+        </template>
+        <template slot-scope="scope">
+          {{ scope.row.total_sale | formatNum }}
+        </template>
+      </el-table-column>
+      <el-table-column :label="$lang('ODM商品总销售额在总销售额中占比')">
+        <template slot-scope="scope">
+          {{ scope.row.total_sale_proportion | formatNum(true) }}
+        </template>
+      </el-table-column>
+    </el-table>
+  </div>
+  <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js">
+  </script>
+  <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js">
+  </script>
+  <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.8.2.js?v=<{$Think.config.VER_NUM}>">
+  </script>
+  <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>">
+  </script>
+  <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js">
+  </script>
+  <script type="text/javascript" src="./Application/Tpl/Home/Public/js/echarts-4.2.1.js?v=<{$Think.config.VER_NUM}>">
+  </script>
+  <script src="./Application/Tpl/Home/DataCenter/utils/globalConstAndFunc.js?v=<{$Think.config.VER_NUM}>"></script>
+
+  <script>
+    if (getCookie('think_language') !== "zh-cn") {
+      ELEMENT.locale(ELEMENT.lang.en)
+    };
+    var vm = new Vue({
+      el: '#vm',
+      filters: {
+        /**
+        * 数值千分位表示，考虑小数情况
+        *
+        * @param number 数值(Number或者String)
+        * @param {boolean} addSymbol 返回的结果是否加上%(boolean)
+        * @param {boolean} dot2 返回的结果中，小数是否统一保留两位
+        * @return 金额格式的字符串,如'1,234,567.45'
+        * @type String
+        */
+        formatNum(number, addSymbol, dot2) {
+          let hasMinus = false
+          if (number === '-') {
+            return number
+          } else {
+            let numStr = dot2 ? parseFloat(number).toFixed(2) : number.toString()
+            if (numStr.startsWith('-')) {
+              hasMinus = true
+              numStr = numStr.slice(1)
+            }
+            const numArr = numStr.split('.')
+            let [num, dotNum] = numArr
+            let result = []
+            const operateNum = num.split('').reverse()
+            const length = operateNum.length
+            for (let i = 0; i < length; i++) {
+              result.push(operateNum[i])
+              if (((i + 1) % 3 === 0) && (i !== length - 1)) {
+                result.push(',')
+              }
+            }
+            if (dotNum) {
+              result.reverse().push('.', ...dotNum)
+            } else {
+              result.reverse()
+            }
+
+            if (addSymbol) {
+              result = result.join('').concat('%')
+            } else {
+              result = result.join('')
+            }
+
+            if (hasMinus) {
+              result = '-' + result
+            }
+
+            return result
+          }
+        },
+      },
+      data: {
+        apiHost: GlobalConstAndFunc.api(),
+        tableData: [],
+      },
+      mounted: function () {
+        this.getTableData()
+      },
+      methods: {
+        getTableData() {
+          let postData = {
+            'erp-req': true,
+            'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+          }
+          this.queryPost('/odm/queryOdmSales', postData).then(res => {
+            if (res.data.success) {
+              this.tableData = res.data.datas
+            } else {
+              this.$message.error(res.data.msg)
+            }
+          }).catch(err => {
+            console.log(err)
+          });
+        },
+
+        queryPost: function (url, param) {
+          var headers = {
+            headers: {
+              'erp-req': true,
+              'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+              'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+            }
+          }
+          // 初始化时间展示
+          return axios.post(this.apiHost + url, Qs.stringify(param), headers);
+
+        },
+      }
+    });
+  </script>
+</body>
+
+</html>

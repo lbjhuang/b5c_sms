@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="/Application/Tpl/Home/B2b/css/detail.css?v=<{$Think.const.V}>">
+    <title>发起退货</title>
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+
+        .order_dialog .el-dialog table {
+            max-width: 500px;
+            overflow: auto
+        }
+
+        .order_dialog .inline-td td {
+            padding: 8px 6px;
+        }
+
+        .order_dialog .inline-td td span {
+            white-space: normal;
+        }
+
+        .btn-content {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .header-step {
+            font-size: 26px;
+            font-weight: 600;
+            margin-bottom: 24px;
+        }
+
+        .el-select.full-width {
+            width: 100%;
+        }
+
+        .el-select.item-width {
+            width: 10%;
+            float: left;
+            margin-right: 2%;
+        }
+
+        .input-item-width {
+            width: 40%;
+            float: left;
+            margin-left: 2%;
+        }
+
+        .main-basic-table td {
+            padding: 4px 20px;
+        }
+
+        .search-goods {
+            margin: 16px 0 24px 0;
+        }
+
+        .search-goods > .el-select, .search-goods > .el-input {
+            margin-right: 16px;
+        }
+
+        .el-table td, .el-table th.is-leaf {
+            color: #282828;
+        }
+
+        .btn-footer {
+            margin-bottom: 200px;
+        }
+    </style>
+
+</head>
+
+<body>
+<div id="main-detail" v-cloak style="padding:0px 0px 50px;overflow: hidden;box-sizing: border-box;height: 100%;">
+    <div class="main-content" style="height:100%;overflow: auto;padding: 20px 20px 20px 30px;" v-loading.fullscreen.lock="!isFinishedAjax">
+        <header class="header-step">{{$lang('发起退货')}}({{stepNumber}}/2)</header>
+        <div class="main-basic-info">
+            <header style="margin-top:10px">
+                {{$lang('基本信息')}}
+            </header>
+            <table border="0" cellspacing="0" cellpadding="0" class="main-basic-table"
+                   style="table-layout: auto;width: 100%;">
+                <tbody>
+                <tr>
+                    <td class="info-title">
+                        <div class="cell">
+                            {{$lang('归属仓库')}} <span class="required"></span>
+                        </div>
+                    </td>
+                    <td>
+                        <el-select v-show="status === 'firstStep'" class="full-width" :filterable="true"
+                                   @change="doSelect('warehouse')"
+                                   :placeholder="$lang('请选择归属仓库')"
+                                   v-model="form.warehouse_cd">
+                            <el-option :key="item.CD" :label="item.CD_VAL" :value="item.CD"
+                                       v-for="item in baseData.warehouse"></el-option>
+                        </el-select>
+                        <span v-show="status === 'secondStep'">{{showForm.warehouse}}</span>
+                    </td>
+                    <td class="info-title">
+                        <div class="cell">
+                            {{$lang('归属供应商')}}<span class="required"></span>
+                        </div>
+                    </td>
+                    <td>
+                        <el-select v-show="status === 'firstStep'" class="full-width" :filterable="true"
+                                   remote
+                                   :remote-method="remoteMethod"
+                                   reserve-keyword
+                                   @change="doSelect('supplier')"
+                                   :placeholder="$lang('请选择归属供应商')"
+                                   v-model="form.supplier_id">
+                            <el-option :key="item.ID" :label="item.SP_NAME" :value="item.ID"
+                                       v-for="item in baseData.supplier"></el-option>
+                        </el-select>
+                        <span v-show="status === 'secondStep'">{{showForm.supplier}}</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="info-title">
+                        <div class="cell">
+                            {{$lang('归属采购团队')}}<span class="required"></span>
+                        </div>
+                    </td>
+                    <td>
+                        <el-select v-show="status === 'firstStep'" class="full-width" :filterable="true"
+                                   @change="doSelect('purchase_team')"
+                                   :placeholder="$lang('请选择归属采购团队')"
+                                   v-model="form.purchase_team_cd">
+                            <el-option :key="item.CD" :label="item.CD_VAL" :value="item.CD"
+                                       v-for="item in baseData.purchase_team"></el-option>
+                        </el-select>
+                        <span v-show="status === 'secondStep'">{{showForm.purchase_team}}</span>
+                    </td>
+                    <td class="info-title">
+                        <div class="cell">
+                            {{$lang('我方公司')}}<span class="required"></span>
+                        </div>
+                    </td>
+                    <td>
+                        <el-select v-show="status === 'firstStep'" class="full-width" :filterable="true"
+                                   @change="doSelect('our_company')"
+                                   :placeholder="$lang('请选择我方公司')"
+                                   v-model="form.our_company_cd">
+                            <el-option :key="item.CD" :label="item.CD_VAL" :value="item.CD"
+                                       v-for="item in baseData.our_company"></el-option>
+                        </el-select>
+                        <span v-show="status === 'secondStep'">{{showForm.our_company}}</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="info-title">
+                        <div class="cell">
+                            {{$lang('收货人')}}<span class="required"></span>
+                        </div>
+                    </td>
+                    <td>
+                        <el-input v-show="status === 'firstStep'" :placeholder="$lang('请输入收货人')"
+                                  v-model="form.receiver"></el-input>
+                        <span v-show="status === 'secondStep'">{{form.receiver}}</span>
+                    </td>
+                    <td class="info-title">
+                        <div class="cell">
+                            {{$lang('收货人联系电话')}}<span class="required"></span>
+                        </div>
+                    </td>
+                    <td>
+                        <el-input v-show="status === 'firstStep'" :placeholder="$lang('请输入收货人联系电话')"
+                                  v-model="form.receiver_contact_number"></el-input>
+                        <span v-show="status === 'secondStep'">{{form.receiver_contact_number}}</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="info-title">
+                        <div class="cell">
+                            {{$lang('收货地址')}}<span class="required"></span>
+                        </div>
+                    </td>
+                    <td colspan="3">
+                        <el-select v-show="status === 'firstStep'" class="item-width" filterable
+                                   :placeholder="$lang('国家')"
+                                   @change="changeAddress('1')"
+                                   v-model="form.receive_address_country">
+                            <el-option :key="item.area_no" :label="item.zh_name" :value="item.area_no"
+                                       v-for="item in address.country"></el-option>
+                        </el-select>
+                        <el-select v-show="status === 'firstStep'" class="item-width" filterable
+                                   :placeholder="$lang('省/州')"
+                                   @change="changeAddress('2')"
+                                   v-model="form.receive_address_province"
+                                   :disabled="!(form.receive_address_country && address.state)">
+                            <el-option :key="item.area_no" :label="item.zh_name" :value="item.area_no"
+                                       v-for="item in address.state"></el-option>
+                        </el-select>
+                        <el-select v-show="status === 'firstStep'" class="item-width" filterable
+                                   :placeholder="$lang('市/区')"
+                                   @change="changeAddress('3')"
+                                   v-model="form.receive_address_area"
+                                   :disabled="!(form.receive_address_country && form.receive_address_province && address.city)">
+                            <el-option :key="item.area_no" :label="item.zh_name" :value="item.area_no"
+                                       v-for="item in address.city"></el-option>
+                        </el-select>
+                        <el-input v-show="status === 'firstStep'" class="input-item-width"
+                                  :placeholder="$lang('请输入详细信息')"
+                                  v-model="form.receive_address_detail"></el-input>
+                        <span v-show="status === 'secondStep'">{{showForm.receive_address_country}} - {{showForm.receive_address_province}} <span v-if="showForm.receive_address_area">- {{showForm.receive_address_area}}</span> - {{form.receive_address_detail}}</span>
+                    </td>
+
+                </tr>
+                </tbody>
+            </table>
+            <div class="btn-content">
+                <el-button type="primary" v-show="status === 'firstStep'" @click="toNextStep">{{$lang('下一步')}}
+                </el-button>
+            </div>
+            <div class="search-goods" v-show="status === 'secondStep'">
+                <el-select style="width:120px;" class="full-width"
+                           v-model="searchType">
+                    <el-option :label="$lang('条形码')" value="0"></el-option>
+                    <el-option :label="$lang('SKU编码')" value="1"></el-option>
+                </el-select>
+                <el-input style="width:300px;" v-model="searchValue"></el-input>
+                <el-button type="primary" @click="doAddGood">{{$lang('添加')}}</el-button>
+
+
+                <?php if(ButtonAction::hidden()){ ?>
+                <el-upload style="float: right;" :on-error="handleError"
+                           :on-success="handleSuccess" :show-file-list="false"
+                           action="/index.php?g=purchase&m=return&a=import_goods"
+                           :auto-upload="true" accept="application"
+                           :data="postForm">
+                    <el-button type="primary">
+                        {{$lang('导入商品')}}
+                    </el-button>
+                </el-upload>
+                <?php } ?>
+                <el-button style="float: right;margin-right:20px;" type="default" @click="downloadTemp">
+                    {{$lang('下载导入模板')}}
+                </el-button>
+            </div>
+            <table v-if="status === 'secondStep'" border="0" cellspacing="0" cellpadding="0" class="main-basic-table"
+                   style="table-layout: auto !important;width: 100%;">
+                <thead>
+                <tr>
+                    <th>{{$lang('序号')}}</th>
+                    <th>{{$lang('SKU编码')}}</th>
+                    <th>{{$lang('条形码')}}</th>
+                    <th>{{$lang('商品名称')}}</th>
+                    <th>{{$lang('商品属性')}}</th>
+                    <th>{{$lang('商品图片')}}</th>
+                    <th>{{$lang('商品类型')}}</th>
+                    <th>{{$lang('归属采购单')}}</th>
+                    <th>{{$lang('可退数量')}}</th>
+                    <th>{{$lang('本次退货数量')}} <span class="required"></span></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="(gudItem,ind) in gudsListData">
+                    <td>{{ind+1}}</td>
+                    <td>{{gudItem.sku_id}}</td>
+                    <td>{{gudItem.upc_id}}</td>
+                    <td>{{gudItem.spu_name}}</td>
+                    <td>{{gudItem.attributes}}</td>
+                    <td style="position:relative">
+                        <img v-if="!!gudItem.image_url" :src="gudItem.image_url"
+                             style="cursor: pointer;" width="80" height="80" @mouseenter="showImg(gudItem)"
+                             @mouseleave="showImg(gudItem)">
+                        <div style="position: absolute; top: 10px; left: 200px; box-shadow: 0 0 5px #536d7a;z-index:999"
+                             v-if="gudItem.bigImg">
+                            <img :src="gudItem.image_url" width="300" height="300">
+                        </div>
+                    </td>
+                    <td>{{gudItem.vir_type_val}}</td>
+                    <td>{{gudItem.purchase_order_no}}</td>
+                    <td>{{gudItem.available_for_return_num}}</td>
+                    <td>
+                        <el-input v-model="gudItem.return_number"></el-input>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <div class="btn-content btn-footer" v-if="status === 'secondStep'">
+                <el-button type="default" @click="sureDialog = true">{{$lang('上一步')}}</el-button>
+                <el-button type="primary" @click="doSubmit" v-show="isFinishedAjax">{{$lang('提交')}}</el-button>
+                <el-dialog title="发起失败" :visible.sync="dialogError">
+                    <el-table :data="errorLog" border show-header>
+                        <el-table-column property="procurement_number" label="采购单号" width="220"></el-table-column>
+                        <el-table-column property="sku_id" label="SKU" width="150"></el-table-column>
+                        <el-table-column property="vir_type" label="商品类型"></el-table-column>
+                        <el-table-column property="info" label="失败原因"></el-table-column>
+                    </el-table>
+                </el-dialog>
+            </div>
+            <el-dialog title="提示" :visible.sync="sureDialog" width="40%">
+                <div>{{$lang('确定要返回上一步吗？选择的商品将不会保留哦。')}}
+                </div>
+                <span slot="footer">
+                        <el-button type="primary" @click="doSureBack">{{$lang('确定')}}</el-button>
+                        <el-button @click="sureDialog=false">{{$lang('取消')}}</el-button>
+                    </span>
+            </el-dialog>
+        </div>
+    </div>
+</div>
+<!--引入js-->
+<script type="text/javascript"
+        src="/Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/vue.2.5.13.js?<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript"
+        src="/Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script>
+  var VM = new Vue({
+    el: '#main-detail',
+    components: {},
+    data: {
+      dialogError: false,
+      isFinishedAjax:true,
+      errorLog: [],
+      form: {
+        warehouse_cd: '',
+        supplier_id: '',
+        receive_address_area: '',
+        purchase_team_cd: '',
+        our_company_cd: '',
+        receiver: '',
+        receiver_contact_number: '',
+        receive_address_country: '',
+        receive_address_province: '',
+        receive_address_area: '',
+        receive_address_detail: ''
+      },
+      postForm: {},
+      showForm: {},
+      address: {},
+      stepNumber: 1,
+      searchType: '0',
+      searchValue: '',
+      gudsListData: [],
+      // firstStep 第一步
+      // secondStep 第二步
+      status: 'firstStep',
+      sureDialog: false,
+      baseData: {},
+    },
+    created() {
+      this.getBaseData();
+      this.getOurCompany();
+      this.getAddress(0, 'country');
+    },
+    methods: {
+        getOurCompany() {
+            axios.post('/index.php?g=common&m=index&a=get_our_company').then(res => {
+                if (res.data.code === 2000) {
+                    this.baseData.our_company = res.data.data;
+                } else {
+                    this.$message.error(this.$lang(res.data.msg));
+                }
+            })
+        },
+        orderDetal: function (orderId, title) {
+            var dom = document.createElement('a');
+            var _href;
+            // window.location.href = "'<{:U('b2b/do_ship_show')}>&order_id='"+orderId;
+            // var _href = "/index.php?g=OMS&m=Order&a=orderDetail&thrId=" + title + "&platCode=" + result;
+            if (title === '退货详情') {
+                _href = "/index.php?m=order_detail&a=return_detail&id="+orderId;
+            }
+            if (title === 'B2B退货详情') {
+                _href = "/index.php?m=b2b&a=sales_return&order_id="+orderId;
+            }
+            dom.setAttribute("onclick", "opennewtab(this,'"+this.$lang(title) + "')");
+            dom.setAttribute("_href", _href);
+            dom.click();
+        },
+      /** 导入失败提醒
+       *
+       */
+      handleError: function () {
+        this.$message.error(this.$lang('导入失败'));
+      },
+      /** 导入成功 ，将商品数据push到列表
+       * @param res 导入成功返回数据
+       */
+      handleSuccess: function (res) {
+        var _this = this;
+        _this.gudsListData = [];
+        res.data.forEach(function (el, ind) {
+          el.return_number = 0;
+          _this.gudsListData.push(el)
+        });
+        if (res.data.length > 0) {
+          this.$message.success(this.$lang('导入成功'));
+        } else {
+          this.$message.error(this.$lang('导入失败'));
+        }
+      },
+      /** 第一步选择时 保存val值 在第二步展示
+       * @param type 下拉框 类型
+       */
+      doSelect: function (type) {
+        switch (type) {
+          case 'warehouse':
+            this.showForm.warehouse = getValueById(this.form.warehouse_cd, this.baseData.warehouse, 'CD', 'CD_VAL');
+            break;
+          case 'supplier':
+            this.showForm.supplier = getValueById(this.form.supplier_id, this.baseData.supplier, 'ID', 'SP_NAME');
+            break;
+          case 'purchase_team':
+            this.showForm.purchase_team = getValueById(this.form.purchase_team_cd, this.baseData.purchase_team, 'CD', 'CD_VAL');
+            break;
+          case 'our_company':
+            this.showForm.our_company = getValueById(this.form.our_company_cd, this.baseData.our_company, 'CD', 'CD_VAL');
+            break;
+        }
+      },
+      /** 修改 国家、省/州、市/区
+       * @param val 层级
+       */
+      changeAddress: function (val) {
+        switch (val) {
+          case '1' :
+            // 选择国家 清空 省/州、市/区
+            this.form.receive_address_area = '';
+            this.showForm.receive_address_area = '';
+            this.form.receive_address_province = '';
+            this.showForm.receive_address_province = '';
+            this.showForm.receive_address_country = getValueById(this.form.receive_address_country, this.address.country, 'area_no', "zh_name");
+            this.getAddress(this.form.receive_address_country, 'state');
+            break;
+          case '2' :
+            // 选择省/州  清空市/区
+            this.form.receive_address_area = '';
+            this.showForm.receive_address_area = '';
+            this.showForm.receive_address_province = getValueById(this.form.receive_address_province, this.address.state, 'area_no', "zh_name");
+            this.getAddress(this.form.receive_address_province, 'city');
+            break;
+          case '3' :
+            this.showForm.receive_address_area = getValueById(this.form.receive_address_area, this.address.city, 'area_no', "zh_name");
+            break;
+        }
+      },
+      /**
+       * 供应商模糊搜索
+       */
+      remoteMethod: function (query) {
+          if(query === ''){
+              return
+          }
+        var _this = this;
+        var param = {
+          supplier_id: query,
+          type: 0
+        };
+        axios.post('/index.php?g=common&m=index&a=search_customer_or_supplier', param).then(function (res) {
+          var data = res.data;
+          if (data.code == 2000) {
+            _this.$set(_this.baseData, 'supplier', data.data);
+          } else {
+            _this.$message({
+              message: _this.$lang('获取数据失败'),
+              type: 'warning'
+            });
+          }
+        })
+      },
+      /**
+       * 获取基本数据
+       */
+      getBaseData: function () {
+        var _this = this;
+        var param = {
+          "cd_type": {
+            warehouse: true,
+            purchase_team: true
+          }
+        };
+        axios.post('/index.php?g=common&m=index&a=get_cd', param).then(function (res) {
+          var data = res.data;
+          if (data.code == 2000) {
+            _this.baseData = Object.assign({}, data.data, _this.baseData);
+          } else {
+            _this.$message({
+              message: _this.$lang('获取数据失败'),
+              type: 'warning'
+            });
+          }
+        })
+      },
+
+      /**
+       * this.address.country/state/city 数据获取
+       * @param id  通过id获取地址列表数据
+       * @param key 将获取到的数据 赋值到对应的key上
+       * @returns {*}
+       */
+      getAddress: function (id, key) {
+        var _this = this;
+        var param = {
+          parent_no: id
+        };
+        axios.post('/index.php?g=common&m=index&a=get_area', param).then(function (res) {
+          var data = res.data;
+          if (data.code == 2000) {
+            _this.$set(_this.address, key, data.data)
+          } else {
+            _this.$message({
+              message: _this.$lang('获取数据失败'),
+              type: 'warning'
+            });
+          }
+        })
+      },
+      /**
+       * 下载 模板
+       */
+      downloadTemp: function downloadTemp() {
+        location.href = "/Application/Tpl/Home/OrderDetail/退货商品导入模板.xlsx";
+      },
+      /**
+       * 大图 显示隐藏切换
+       */
+      showImg: function showImg(item) {
+        Vue.set(item, 'bigImg', !item.bigImg);
+      },
+      /**
+       * 下一步 到第二步
+       */
+      toNextStep: function () {
+        var flag = true;
+        for (var key in this.form) {
+          if (this.form[key] == '' && key !== 'receive_address_area') {
+            flag = false;
+          }
+        }
+        if (flag) {
+          this.stepNumber = 2;
+          this.status = 'secondStep';
+          // 存储要提交的第一步数据
+          this.postForm = {
+            warehouse_cd: this.form.warehouse_cd,
+            supplier_id: this.form.supplier_id,
+            purchase_team_cd: this.form.purchase_team_cd,
+            our_company_cd: this.form.our_company_cd
+          }
+        } else {
+          this.$message({
+            message: this.$lang('请填写完整信息'),
+            type: 'error'
+          });
+        }
+      },
+      /**
+       * 发起退货操作
+       * */
+      doSubmit: function doSubmit() {
+        if(!this.isFinishedAjax) return;
+        this.isFinishedAjax = false;
+        var goods = [];
+        this.gudsListData.forEach(function (el, ind) {
+          if (+el.return_number) {
+            goods.push({
+              relevance_id: el.relevance_id,
+              information_id: el.information_id,
+              sku_id: el.sku_id,
+              purchase_order_no: el.purchase_order_no,
+              vir_type_cd: el.vir_type_cd,
+              return_number: el.return_number
+            })
+          }
+        });
+        var _this = this;
+        var param = JSON.parse(JSON.stringify(this.form));
+        param.goods = goods;
+        if (param.goods.length < 1) {
+          _this.isFinishedAjax = true;
+          this.$message({
+            message: _this.$lang('请填写退货数量'),
+            type: 'error'
+          });
+        } else {
+          axios.post("/index.php?g=purchase&m=return&a=initiate_return", param).then(function (res) {
+            var data = res.data;
+            if (data.code == 2000) {
+              _this.$message({
+                message: data.msg,
+                type: 'success'
+              });
+              setTimeout(function () {
+                _this.isFinishedAjax = true;
+                //window.location.reload()
+                  _this.orderDetal(data.data.id,'退货详情')
+              }, 800)
+                setTimeout(function(){
+                    var url = window.location.pathname + window.location.search
+                    sessionStorage.setItem('closeWindow',url)
+                },1200)
+            } else {
+              _this.isFinishedAjax = true;
+              if (/\[/.test(data.msg)) {
+                _this.errorLog = JSON.parse(data.msg);
+                _this.dialogError = true;
+              } else if(typeof (data.data) === 'object' && data.data.length){
+                _this.errorLog = data.data;
+                _this.dialogError = true;
+              }else {
+                _this.$message({
+                  message: data.msg,
+                  type: 'error'
+                });
+              }
+            }
+          }).catch(function (err) {
+            _this.isFinishedAjax = true;
+            console.log(err);
+          });
+        }
+      },
+      /**
+       * 添加商品
+       */
+      doAddGood: function doAddGood() {
+        var _this = this;
+        var param = {
+          warehouse_cd: this.form.warehouse_cd,
+          supplier_id: this.form.supplier_id,
+          purchase_team_cd: this.form.purchase_team_cd,
+          our_company_cd: this.form.our_company_cd,
+          type: this.searchType,
+          search_val: this.searchValue
+        };
+        axios.post("/index.php?g=purchase&m=return&a=search_goods", param).then(function (res) {
+          var data = res.data;
+          if (data.code == 2000) {
+            _this.$message({
+              message: data.msg,
+              type: 'success'
+            });
+            // 重复的商品 添加无效
+            var flag = true;
+            _this.gudsListData.forEach(function (el) {
+              el.return_number = 0;
+              data.data.forEach(function (e) {
+                if (el.sku_id === e.sku_id) {
+                  flag = false
+                }
+              });
+            });
+            if (flag) {
+              data.data.forEach(function (el) {
+                el.return_number = 0;
+                _this.gudsListData.push(el);
+              })
+
+            }
+            _this.stepNumber = 2;
+            _this.status = 'secondStep';
+            _this.searchValue = '';
+          } else {
+            _this.$message({
+              message: data.msg,
+              type: 'error'
+            });
+          }
+        }).catch(function (err) {
+          console.log(err);
+        });
+      },
+      /**
+       * 清空第二步填写数据
+       */
+      clearGuds: function clearGuds() {
+        this.gudsListData = [];
+        this.searchValue = '';
+      },
+      /**
+       * 退回到第一步
+       */
+      doSureBack: function doSureBack() {
+        this.stepNumber = 1;
+        this.sureDialog = false;
+        this.status = 'firstStep';
+        this.clearGuds();
+      }
+    }
+  });
+
+  /**
+   * 通过ID获取value
+   * @param id  要获取的ID值
+   * @param arr 要获取的数据arr
+   * @param ID_NAME  要获取的ID key
+   * @param VALUE_NAME 要获取的value 的key
+   * @returns {*}
+   */
+  function getValueById(id, arr, ID_NAME, VALUE_NAME) {
+    var result = '';
+    for (var i = 0; i < arr.length; i++) {
+      if (arr[i][ID_NAME] == id) {
+        result = arr[i][VALUE_NAME];
+        return result;
+      }
+    }
+    return result;
+  }
+</script>
+
+</body>
+
+</html>

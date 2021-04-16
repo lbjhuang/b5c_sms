@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>$lang('收入&成本报表')</title>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.8.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="/Application/Tpl/Logistics/ThrApi/data_list.css">
+    <style>
+        .search-box{
+            padding-right: 25px;
+        }
+        .el-date-editor{
+            width: 100% !important;
+        }
+        .el-select{
+            width: 100%;
+        }
+        .table-box{
+            padding: 0 35px;
+        }
+        .el-table th.is-leaf{
+            background: rgb(84, 110, 122);
+            color: #fff;
+        }
+        
+        .el-select__tags{
+           overflow: hidden; 
+        }
+        .thickening{
+            font-weight: 900
+        }
+    </style>
+</head>
+<body>
+    <div class="income-box" id="incomecost" v-cloak>
+        <div class="search-box">
+            <el-form ref="form" :model="searchForm" label-width="120px" size="small">
+                <el-row :gutter="10">
+                    <el-col :span="6"> 
+                        <el-form-item :label="$lang('收入成本ID')" prop="id">
+                            <el-input v-model="searchForm.id"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6"> 
+                        <el-form-item :label="$lang('生成日期')" prop="createTime">
+                            <el-date-picker v-model="searchForm.createTime" type="daterange" :range-separator="$lang('至')" :start-placeholder="$lang('请选择')" :end-placeholder="$lang('请选择')" value-format="yyyy-MM-dd HH:mm:ss" :default-time="['00:00:00', '23:59:59']">
+                            </el-date-picker>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6"> 
+                        <el-form-item :label="$lang('销售订单号')" prop="saleOrderNo">
+                            <el-input v-model="searchForm.saleOrderNo"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6"> 
+                        <el-form-item :label="$lang('采购订单号')" prop="purchaseOrderNo">
+                            <el-input v-model="searchForm.purchaseOrderNo"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row :gutter="10">
+                    <el-col :span="6"> 
+                        <el-form-item :label="$lang('我方公司')" prop="ourCompanyCodes">
+                            <el-select v-model="searchForm.ourCompanyCodes" filterable multiple :popper-append-to-body="false" collapse-tags :placeholder="$lang('请选择')">
+                                <el-option v-for="item in ourCompanyOptions" :key="item.CD" :label="item.CD_VAL" :value="item.CD">
+                                </el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6"> 
+                        <el-form-item :label="$lang('销售团队')" prop="saleTeamCodes">
+                            <el-select v-model="searchForm.saleTeamCodes" filterable multiple collapse-tags :placeholder="$lang('请选择')">
+                                <el-option v-for="item in SalesTeamOptions" :key="item.CD" :label="item.CD_VAL" :value="item.CD">
+                                </el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6"> 
+                        <el-form-item :label="$lang('采购团队')" prop="purchaseTeamCodes">
+                            <el-select v-model="searchForm.purchaseTeamCodes" filterable multiple collapse-tags :placeholder="$lang('请选择')">
+                                <el-option v-for="item in procurementTeamOptions" :key="item.CD" :label="item.CD_VAL" :value="item.CD">
+                                </el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6"> 
+                        <el-form-item :label="$lang('SKU/条形码')" prop="b5cSkuId">
+                            <el-input v-model="searchForm.b5cSkuId"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row :gutter="10">
+                    <el-col :span="6"> 
+                        <el-form-item :label="$lang('商品名称')" prop="gudsName">
+                            <el-input v-model="searchForm.gudsName"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6"> 
+                        <el-form-item :label="$lang('仓库')" prop="warehouseCodes">
+                            <el-select v-model="searchForm.warehouseCodes" filterable multiple collapse-tags :placeholder="$lang('请选择')">
+                                <el-option v-for="item in warehouseOptions" :key="item.CD" :label="item.CD_VAL" :value="item.CD">
+                                </el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6"> 
+                        <el-form-item :label="$lang('操作人')" prop="operator">
+                            <el-input v-model="searchForm.operator"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6"> 
+                        <el-form-item :label="$lang('业务类型')" prop="bizTypes">
+                            <el-select v-model="searchForm.bizTypes" filterable  multiple collapse-tags :placeholder="$lang('请选择')">
+                                <el-option v-for="item in businessTypeOptions" :key="item.CD" :label="item.CD_VAL" :value="item.CD">
+                                </el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row :gutter="10">
+                    <el-col :span="6"> 
+                        <el-form-item :label="$lang('客户')" prop="customName">
+                            <el-input v-model="searchForm.customName"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6"> 
+                        <el-form-item :label="$lang('客户ID')" prop="customId">
+                            <el-input v-model="searchForm.customId"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6"> 
+                        <el-form-item :label="$lang('平台')" prop="platCds">
+                            <el-select v-model="searchForm.platCds" filterable multiple collapse-tags :placeholder="$lang('请选择')">
+                                <el-option v-for="(item,index) in platformOptions" :key="index" :label="item" :value="index">
+                                </el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6"> 
+                        <el-form-item :label="$lang('店铺')" prop="storeIds">
+                            <el-select v-model="searchForm.storeIds" filterable multiple collapse-tags :placeholder="$lang('请选择')">
+                                <el-option v-for="item in shopOptions" :key="item.ID" :label="item.STORE_NAME" :value="item.ID">
+                                </el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    
+                </el-row>
+                <el-row :gutter="10">
+                    <el-col :span="6"> 
+                        <el-form-item :label="$lang('店铺ID')" prop="storeId">
+                            <el-input v-model="searchForm.storeId"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6"> 
+                        <el-form-item :label="$lang('供应商')" prop="suppliers">
+                            <el-select v-model="searchForm.suppliers" filterable multiple collapse-tags :placeholder="$lang('请选择')">
+                                <el-option v-for="item in supplierOptions" :key="item.ID" :label="item.SP_NAME" :value="item.ID">
+                                </el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6"> 
+                        <el-form-item :label="$lang('供应商ID')" prop="supplierId">
+                            <el-input v-model="searchForm.supplierId"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6"> 
+                        <el-form-item :label="$lang('收货国家')" prop="recevierCountryCodes">
+                            <el-select v-model="searchForm.recevierCountryCodes" filterable multiple collapse-tags :placeholder="$lang('请选择')">
+                                <el-option v-for="item in receivingCountryOptions" :key="item.id" :label="item.NAME" :value="item.id">
+                                </el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>                   
+                    
+                </el-row>
+                <el-row :gutter="10">
+                    <el-col :span="6"> 
+                        <el-form-item :label="$lang('是否组合商品')" prop="groupSku">
+                            <el-select v-model="searchForm.groupSku" :placeholder="$lang('请选择')">
+                                <el-option :label="$lang('全部')" value=""></el-option>
+                                <el-option :label="$lang('是')" :value="true"></el-option>
+                                <el-option :label="$lang('否')" :value="false"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6"> 
+                        <el-form-item :label="$lang('来源渠道')" prop="sourceChannelCodes">
+                            <el-select v-model="searchForm.sourceChannelCodes" filterable multiple collapse-tags :placeholder="$lang('请选择')">
+                                <el-option v-for="item in sourceChannelOptions" :key="item.cd" :label="$lang(item.cdVal)" :value="item.cd">
+                                </el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6"> 
+                        <el-form-item :label="$lang('关联出库ID')" prop="storeRelationId">
+                            <el-input v-model="searchForm.storeRelationId"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6"> 
+                        <el-row>
+                            <el-form-item :label="$lang('毛利率')" prop="minProfitRate"> 
+                            <el-col :span="10">
+                                    <el-input v-model.number="searchForm.minProfitRate" @change="minProfitRateChange"></el-input>
+                            </el-col>
+                    
+                            <el-col :span="2">
+                                <span>————</span>
+                            </el-col>
+
+                            <el-col :span="10">
+                                <el-form-item prop="maxProfitRate" label-width="0px"> 
+                                    <el-input v-model.number="searchForm.maxProfitRate" @change="maxProfitRateChange"></el-input>
+                                </el-form-item>
+                            </el-col> 
+
+                            <el-col :span="2">
+                                <span style="padding-left: 10px;font-size: 22px;">%</span>
+                            </el-col>
+                        </el-form-item>
+                        </el-row>
+                    </el-col>
+                </el-row>
+                <el-row :gutter="10">
+                    <el-col :span="6"> 
+                        <el-form-item :label="$lang('是否GP')" prop="isGshopper">
+                            <el-select v-model="searchForm.isGshopper" :placeholder="$lang('请选择')">
+                                <el-option :label="$lang('全部')" value=""></el-option>
+                                <el-option :label="$lang('是')" :value="true"></el-option>
+                                <el-option :label="$lang('否')" :value="false"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6"> 
+                        <el-form-item :label="$lang('是否ODM')" prop="isOdm">
+                            <el-select v-model="searchForm.isOdm" :placeholder="$lang('请选择')">
+                                <el-option :label="$lang('全部')" value=""></el-option>
+                                <el-option :label="$lang('是')" :value="true"></el-option>
+                                <el-option :label="$lang('否')" :value="false"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('数据类型')" prop="isOdm">
+                            <el-select v-model="searchForm.handleAuto" :placeholder="$lang('请选择')">
+                                <el-option v-for="v in codes" :key="v.CD" :label="v.CD_VAL" :value="v.CD"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row :gutter="10">
+                    <el-col :span="6" :offset="1"> 
+                        <el-button type="primary" @click="search" size="small">{{$lang('查询')}}</el-button>
+                        <el-button @click="rest" size="small">{{$lang('重置')}}</el-button>
+                    </el-col>
+                </el-row>
+            </el-form>
+            <div class="table-box">
+                <div style="overflow: hidden;padding: 8px 5px">
+                    <div style="float: left;" v-loading="searchloading">
+                        <p style="color: #0375DE;cursor: pointer;" v-if="seeDetail" @click="seeSearch">{{$lang('查看汇总数据')}}</p>
+                        <p v-else>
+                            {{$lang('汇总数据')}}: 
+                            <span class="thickening">{{total}}</span>{{$lang('条')}} &nbsp;&nbsp;&nbsp; 
+                            {{$lang('不含税收入(USD)')}}:
+                            <span class="thickening">{{totalData.exTaxMoneyUSDs.value | format}}</span>&nbsp;&nbsp;&nbsp; 
+                            {{$lang('不含税成本(USD)')}} : 
+                            <span class="thickening">{{totalData.exTaxCostUSDs.value | format}}</span> &nbsp;&nbsp;&nbsp; 
+                            {{$lang('毛利(USD)')}}: 
+                            <span class="thickening">{{totalData.grossProfitUSDs.value | format}}</span>
+                        </p>
+                    </div>
+                    <el-button type="primary" @click="exportData" style="float: right;" size="small">{{$lang('导出')}}</el-button>
+                </div>
+                <el-table :data="tableData" border v-loading="loading" :height="420">
+                    <el-table-column :label="$lang('序号')" width="50px" align="center" type="index"></el-table-column>
+                    <el-table-column prop="id" :label="$lang('收入成本ID')" width="100px" align="center"></el-table-column>
+                    <el-table-column :label="$lang('是否组合商品')" align="center" width="110px">
+                        
+                        <template slot-scope="scope">
+                            <span v-if="scope.row.groupSku">{{$lang('是')}}</span>
+                            <span v-else>{{$lang('否')}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('来源渠道')" align="center" width="110px">
+                        <template slot-scope="scope">
+                            {{$lang(scope.row.sourceChannelCodeNm)}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="bizTypeNm" :label="$lang('业务类型')" align="center" width="100px"></el-table-column>
+                    <el-table-column prop="storeRelationId" :label="$lang('关联出入库ID')" align="center" width="180px"></el-table-column>
+                    <el-table-column prop="saleCurrencyCodeNm" :label="$lang('销售币种')" align="center" width="100px"> </el-table-column>
+                    <el-table-column :label="$lang('不含税收入(订单币种)')" align="center" width="180px">
+                        <template slot-scope="scope">
+                            {{scope.row.saleCurrencyCodeNm}} {{scope.row.exTaxMoney | format}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="costCurrencyCodeNm" :label="$lang('成本币种')" align="center" width="100px"></el-table-column>
+                    <el-table-column :label="$lang('不含税成本(订单币种)')" align="center" width="180px">
+                        <template slot-scope="scope">
+                            {{scope.row.costCurrencyCodeNm}} {{scope.row.exTaxCost | format}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" width="160px">
+                        <template slot="header" slot-scope="scope">
+                            {{$lang('不含税收入(USD)')}}
+                            <el-tooltip effect="dark" content="用生成日期的汇率换算" placement="top">
+                                <i class="el-icon-question"></i>
+                            </el-tooltip>
+                        </template>
+                        <template slot-scope="scope">
+                            USD {{scope.row.exTaxMoneyUSD | format}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" width="160px">
+                        <template slot="header" slot-scope="scope">
+                            {{$lang('不含税成本(USD)')}}
+                            <el-tooltip effect="dark" content="用ERP入库日期的汇率换算" placement="top">
+                                <i class="el-icon-question"></i>
+                            </el-tooltip>
+                        </template>
+                        <template slot-scope="scope">
+                            USD {{scope.row.exTaxCostUSD | format}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('毛利USD')" align="center" width="100px">
+                        <template slot-scope="scope">
+                            USD {{scope.row.grossProfitUSD | format}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('毛利率%')" align="center" width="100px">
+                        <template slot-scope="scope">
+                            {{scope.row.grossProfitRate | numToPercent}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" width="130px">
+                        <template slot="header" slot-scope="scope">
+                            {{$lang('销项增值税率')}}
+                            <el-tooltip effect="dark" content="【销项增值税率】B2B业务，为销售的我方公司所在国家的对应的国家税率配置表的税率（香港地区的要对应国家税率表【中国香港】）；B2C业务，为店铺所在国家对应国家税率配置表的税率（香港地区的要对应国家税率表【中国香港】），如果店铺配置了不交税，则为0%。" placement="top">
+                                <i class="el-icon-question"></i>
+                            </el-tooltip>
+                        </template>
+                        <template slot-scope="scope">
+                            {{scope.row.saleVatRate*100}}%
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('销项增值税额(订单币种)')" align="center" width="190px">
+                        <template slot-scope="scope">
+                            {{scope.row.saleCurrencyCodeNm}} {{scope.row.saleVat | format}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" width="150px">
+                        <template slot="header" slot-scope="scope">
+                            {{$lang('进项增值税率')}}
+                            <el-tooltip effect="dark" :content="$lang('采购公司对应国家的税率')" placement="top">
+                                <i class="el-icon-question"></i>
+                            </el-tooltip>
+                        </template>
+                        <template slot-scope="scope">
+                            {{scope.row.inputVatRate*100}}%
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('进项增值税额(订单币种)')" align="center" width="190px">
+                        <template slot-scope="scope">
+                            {{scope.row.saleCurrencyCodeNm}} {{scope.row.inputVat | format}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" width="180px">
+                        <template slot="header" slot-scope="scope">
+                            {{$lang('销项增值税额(USD)')}}
+                            <el-tooltip effect="dark" content="用生成日期的汇率换算" placement="top">
+                                <i class="el-icon-question"></i>
+                            </el-tooltip>
+                        </template>
+                        <template slot-scope="scope">
+                            USD {{scope.row.saleVatUSD | format}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" width="180px">
+                        <template slot="header" slot-scope="scope">
+                            {{$lang('进项增值税额(USD)')}}
+                            <el-tooltip effect="dark" content="用ERP入库日期的汇率换算" placement="top">
+                                <i class="el-icon-question"></i>
+                            </el-tooltip>
+                        </template>
+                        <template slot-scope="scope">
+                            USD {{scope.row.inputVatUSD | format}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('销售订单号')" align="center" width="180px">
+                        <template slot-scope="scope">
+                            <span v-if="scope.row.parentSaleOrderNo">{{scope.row.parentSaleOrderNo}}</span>
+                            <span v-else>{{scope.row.saleOrderNo}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="ourCompanyName" :label="$lang('我方公司')" align="center" width="200px">
+                        <template slot-scope="scope">
+                            {{$lang(scope.row.ourCompanyName)}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="saleTeamName" :label="$lang('销售团队')" align="center" width="180px"></el-table-column>
+                    <el-table-column prop="warehouseName" :label="$lang('仓库')" align="center" width="100px"></el-table-column>
+                    <el-table-column prop="b5cSkuId" :label="$lang('SKU编码')" align="center" width="130px"></el-table-column>
+                    <el-table-column prop="barCode" :label="$lang('条形码')" align="center" width="160px">
+                        <template slot-scope="scope">
+                            <span style="white-space: pre-line">{{scope.row.barCode}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="gudsName" :label="$lang('商品名称')" align="center" width="150px" :show-overflow-tooltip="true">
+                        <template slot-scope="scope">
+                            {{$lang(scope.row.gudsName)}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="attributes" :label="$lang('商品属性')" align="center" width="180px" :show-overflow-tooltip="true"></el-table-column>
+                    <el-table-column prop="batchCode" :label="$lang('批次号')" align="center" width="100px"></el-table-column>
+                    <el-table-column prop="useNum" :label="$lang('数量')" align="center" width="100px"></el-table-column>
+                    <el-table-column prop="useNumUnitNm" :label="$lang('单位')" align="center" width="100px"></el-table-column>
+                    <el-table-column prop="operator" :label="$lang('操作人')" align="center" width="100px"></el-table-column>
+                    <el-table-column prop="createTimeMills" :label="$lang('生成时间')" align="center" width="160px">
+                        
+                    <template slot-scope="scope">
+                        {{scope.row.createTimeMills | formatDate}}
+                    </template>
+                    </el-table-column>
+                    <el-table-column prop="platNm" :label="$lang('平台')" align="center" width="100px"></el-table-column>
+                    <el-table-column prop="storeId" :label="$lang('店铺编号')" align="center" width="100px"></el-table-column>
+                    <el-table-column prop="storeName" :label="$lang('店铺')" align="center" width="150px"></el-table-column>
+                    <el-table-column prop="customId" :label="$lang('客户ID')" align="center" width="100px"></el-table-column>
+                    <el-table-column prop="customName" :label="$lang('客户名称')" align="center" width="100px"></el-table-column>
+                    <el-table-column prop="receiverCountryName" :label="$lang('收货国家')" align="center" width="100px"></el-table-column>
+                    <el-table-column prop="purchaseOrderNo" :label="$lang('采购单号')" align="center" width="180px"></el-table-column>
+                    <el-table-column prop="purchaseTeamName" :label="$lang('采购团队')" align="center" width="200px"></el-table-column>
+                    <el-table-column prop="supplierId" :label="$lang('供应商ID')" align="center" width="100px"></el-table-column>
+                    <el-table-column prop="supplierName" :label="$lang('供应商')" align="center" width="200px">
+                        <template slot-scope="scope">
+                            <span >{{$lang(scope.row.supplierName)}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="isGshopper" :label="$lang('是否GP')" align="center" width="200px">
+                        <template slot-scope="scope">
+                            <span v-if="scope.row.isGshopper">{{$lang('是')}}</span>
+                            <span v-else>{{$lang('否')}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="isOdm" :label="$lang('是否ODM')" align="center" width="200px">
+                        <template slot-scope="scope">
+                            <span v-if="scope.row.isOdm">{{$lang('是')}}</span>
+                            <span v-else>{{$lang('否')}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="isOdm" :label="$lang('数据类型')" align="center" width="200px">
+                        <template slot-scope="scope">
+                            <span >{{setData(scope.row.handleAuto)}}</span>
+                        </template>
+                    </el-table-column>
+                </el-table>
+                <div class="page" style="text-align: right;">
+                    <el-pagination
+                    background
+                    @size-change="handleSizeChange"
+                    @current-change="handleCurrentChange"
+                    :current-page="pageNo"
+                    :page-sizes="[10, 30, 50, 100]"
+                    :page-size="searchForm.pageSize"
+                    layout="sizes, prev, pager, next, jumper"
+                    :total="total">
+                    </el-pagination>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/axios.min.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.8.2.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public//utils/utils.js"></script>
+<script type="text/javascript" src="\Application\Tpl\Home\Public\js\H-ui.admin.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js?v=<{$Think.const.V}>"></script>
+<script>;
+    if (getCookie('think_language') !== "zh-cn") {
+        ELEMENT.locale(ELEMENT.lang.en)
+    }
+    var VM = new Vue({
+        el: '#incomecost',
+        data() {
+            return {
+              codes: [{
+                "CD": 1,
+                "CD_NM": "收入成本报表数据类型",
+                "CD_VAL": "正常生成",
+                "ETC": "",
+                "ETC2": "",
+                "ETC3": "",
+                "ETC4": "",
+                "ETC5": "",
+                "USE_YN": "Y",
+                "SORT_NO": "0"
+              }, {
+                "CD": 2,
+                "CD_NM": "收入成本报表数据类型",
+                "CD_VAL": "数据修复",
+                "ETC": "",
+                "ETC2": "",
+                "ETC3": "",
+                "ETC4": "",
+                "ETC5": "",
+                "USE_YN": "Y",
+                "SORT_NO": "0"
+              }, {
+                "CD": 3,
+                "CD_NM": "收入成本报表数据类型",
+                "CD_VAL": "未知",
+                "ETC": "",
+                "ETC2": "",
+                "ETC3": "",
+                "ETC4": "",
+                "ETC5": "",
+                "USE_YN": "Y",
+                "SORT_NO": "0"
+              }],
+                searchloading: false,
+                seeDetail: true,
+                ourCompanyOptions: '', // 我方公司数据源
+                SalesTeamOptions: '', // 销售团队数据源
+                procurementTeamOptions: '', // 采购团队数据源
+                warehouseOptions: '', // 仓库数据源
+                businessTypeOptions: '', // 业务类型数据源
+                platformOptions: '', // 平台数据源
+                shopOptions: '', // 店铺数据源
+                supplierOptions: '', // 供应商数据源
+                receivingCountryOptions: '', // 收货国家数据源
+                sourceChannelOptions: '', // 来源渠道数据源
+                searchForm: {
+                  handleAuto:'',
+                    id: '', // 收入成本id
+                    createTime: '', // 日期
+                    saleOrderNo: '', // 销售订单号
+                    purchaseOrderNo: '', // 采购单号
+                    ourCompanyCodes: [], // 我方公司
+                    saleTeamCodes: [], // 销售团队
+                    purchaseTeamCodes: [], // 采购团队
+                    b5cSkuId: '', // 条形码
+                    gudsName: '', // 商品名称
+                    warehouseCodes: [], // 仓库
+                    operator: '', // 操作人
+                    bizTypes: [], // 业务类型
+                    customName: '', // 客户名称
+                    customId: '', // 客户ID
+                    platCds: [], // 平台
+                    storeIds: [],  // 店铺
+                    storeId: '',  // 店铺ID
+                    suppliers: [], // 供应商
+                    supplierId: '',// 供应商ID
+                    recevierCountryCodes: [], // 收货国家
+                    groupSku: '', // 是否组合商品
+                    sourceChannelCodes: [], // 来源渠道
+                    storeRelationId: '', // 出库关联id
+                    minProfitRate: '', // 毛利率范围最小
+                    maxProfitRate: '', // 毛利率范围最大
+                    isGshopper: '', // 否是gshopper
+                    isOdm: '', // 是否是odm
+                    createStartTime: '', // 时间范围开始
+                    createEndTime: '', // 时间范围结束
+                    pageSize: 10, // 当前页条数
+                },
+                pageNo: 1, // 当前页数
+                tableData: [],
+                totalData: {},
+                total: 0,
+                loading: false,
+            }
+        },
+        methods: {
+          setData:function(i){
+            var x = ''
+            switch(i){
+              case 1:
+                x = this.$lang('正常生成');
+                break;
+              case 2:
+                x = this.$lang('数据修复');
+                break;
+              case 3:
+                x = this.$lang('未知');
+                break;
+            }
+            return x
+          },
+
+            // 查看搜索汇总数据
+            seeSearch() {
+                var _this = this;
+                
+                var storeIdArr = [];
+                for(var i of this.searchForm.storeIds){
+                    storeIdArr.push(i)
+                }
+                if(this.searchForm.storeId.trim() != ''){
+                    if(storeIdArr.indexOf(this.searchForm.storeId) == -1){
+                        this.$set(storeIdArr, storeIdArr.length, this.searchForm.storeId)
+                    }                   
+                }
+                var supplierArr = [];
+                for(var i of this.searchForm.suppliers){
+                    supplierArr.push(i)
+                }
+                if(this.searchForm.supplierId.trim() != ''){
+                    if(supplierArr.indexOf(this.searchForm.supplierId) == -1){
+                        this.$set(supplierArr, supplierArr.length, this.searchForm.supplierId)
+                    }      
+                }
+                let param = this.searchForm;
+                
+                param.storeIds = storeIdArr,  // 店铺
+                param.suppliers = supplierArr, // 供应商
+                _this.searchloading = true;
+                axios.post("/index.php?g=report&m=incomeCost&a=sum_data", param).then(function(res) {
+                    console.log(res);
+                    _this.searchloading = false;
+                    _this.seeDetail = false;
+                    if(res.data.code == 2000) {
+                        _this.totalData = res.data.data.data;
+                    } else {
+                        _this.$message.error(res.data.msg);
+                    }
+                })
+            },
+            // 翻页
+            handleSizeChange(size) {
+                this.searchForm.pageSize = size;
+                this.getData();
+            },
+            handleCurrentChange(index) {
+                this.pageNo = index;
+                this.getData();
+            },
+            // 获取公共通用数据
+            getConmonData() {
+                var _this = this;
+                let param = {
+                    "cd_type": {
+                        "warehouse": "true", // 仓库
+                        "our_company": "false", // 我方公司
+                        "purchase_team": "true", // 采购团队
+                        "sell_team": "true", // 销售团队
+                        "business_type": "true", // 业务类型
+                    }
+                }
+                axios.post("/index.php?g=common&m=index&a=get_cd", param).then(function(res) {
+                    console.log(res);
+                    if (res.status === 200 && res.data.code === 2000) {
+                        _this.ourCompanyOptions = res.data.data.our_company
+                        _this.SalesTeamOptions = res.data.data.sell_team
+                        _this.procurementTeamOptions = res.data.data.purchase_team
+                        _this.warehouseOptions = res.data.data.warehouse
+                        _this.businessTypeOptions = res.data.data.business_type
+                    };
+                })
+            },
+            getConmonDataStore() {
+                var _this = this;
+                let param = {
+                    "data": {
+                        "query": {
+                            "area_code": "true", // 国家
+                            "stores": "true", // 店铺
+                            "income_cost_sale_channel": "true", // 来源渠道
+                            "platform": "true", // 平台
+                        },
+                        "type":"sorting"
+                    }
+                }
+                axios.post("/index.php?g=oms&m=CommonData&a=commonData", param).then(function(res) {
+                    console.log(res);
+                    if (res.status === 200 && res.data.code === 2000) {
+                        _this.shopOptions = res.data.data.stores;
+                        _this.receivingCountryOptions = res.data.data.area_code;
+                        _this.sourceChannelOptions = res.data.data.income_cost_sale_channel;
+                        _this.platformOptions = res.data.data.platform
+                    };
+                })
+            },
+            getConmonDataCustomer() {
+                var _this = this;
+                let param = {
+                    supplier_id: '',
+                    type: 0,
+                    all: true
+                }
+                axios.post("/index.php?g=common&m=index&a=search_customer_or_supplier",param).then(function(res) {
+                    console.log(res);
+                    if (res.status === 200 && res.data.code === 2000) {
+                        _this.supplierOptions = res.data.data
+                    };
+                })
+            },
+            // 搜索
+            search() {
+                this.pageNo = 1;
+                this.searchForm.pageSize = 10;  
+                
+                if(this.searchForm.createTime) {
+                    this.searchForm.createStartTime = this.searchForm.createTime[0];
+                    this.searchForm.createEndTime = this.searchForm.createTime[1];  
+                }
+                this.searchForm.minProfitRate = this.searchForm.minProfitRate.toString();
+                this.searchForm.maxProfitRate = this.searchForm.maxProfitRate.toString();
+                // if(!this.searchForm.minProfitRate || !this.searchForm.maxProfitRate) {
+                //     this.searchForm.minProfitRate = '';
+                //     this.searchForm.maxProfitRate = '';
+                // }
+                this.getData();
+            },
+            // 获取搜索数据
+            getData() {
+                var _this = this;
+                var storeIdArr = [];
+                for(var i of this.searchForm.storeIds){
+                    storeIdArr.push(i)
+                }
+                if(this.searchForm.storeId.trim() != ''){
+                    if(storeIdArr.indexOf(this.searchForm.storeId) == -1){
+                        this.$set(storeIdArr, storeIdArr.length, this.searchForm.storeId)
+                    }                   
+                }
+                var supplierArr = [];
+                for(var i of this.searchForm.suppliers){
+                    supplierArr.push(i)
+                }
+                if(this.searchForm.supplierId.trim() != ''){
+                    if(supplierArr.indexOf(this.searchForm.supplierId) == -1){
+                        this.$set(supplierArr, supplierArr.length, this.searchForm.supplierId)
+                    }      
+                }
+                let param = {
+                  handleAuto:this.searchForm.handleAuto,
+                    id: this.searchForm.id, // 收入成本id
+                    createTime: this.searchForm.createTime, // 日期
+                    saleOrderNo: this.searchForm.saleOrderNo, // 销售订单号
+                    purchaseOrderNo: this.searchForm.purchaseOrderNo, // 采购单号
+                    ourCompanyCodes: this.searchForm.ourCompanyCodes, // 我方公司
+                    saleTeamCodes: this.searchForm.saleTeamCodes, // 销售团队
+                    purchaseTeamCodes: this.searchForm.purchaseTeamCodes, // 采购团队
+                    b5cSkuId: this.searchForm.b5cSkuId, // 条形码
+                    gudsName: this.searchForm.gudsName, // 商品名称
+                    warehouseCodes: this.searchForm.warehouseCodes, // 仓库
+                    operator: this.searchForm.operator, // 操作人
+                    bizTypes: this.searchForm.bizTypes, // 业务类型
+                    customName: this.searchForm.customName, // 客户名称
+                    customId: this.searchForm.customId, // 客户ID
+                    platCds: this.searchForm.platCds, // 平台
+                    storeIds: storeIdArr,  // 店铺
+                    suppliers: supplierArr, // 供应商
+                    recevierCountryCodes: this.searchForm.recevierCountryCodes, // 收货国家
+                    groupSku: this.searchForm.groupSku, // 是否组合商品
+                    sourceChannelCodes: this.searchForm.sourceChannelCodes, // 来源渠道
+                    storeRelationId: this.searchForm.storeRelationId, // 出库关联id
+                    minProfitRate: this.searchForm.minProfitRate, // 毛利率范围最小
+                    maxProfitRate: this.searchForm.maxProfitRate, // 毛利率范围最大
+                    isGshopper: this.searchForm.isGshopper, // 是否是gshopper
+                    isOdm: this.searchForm.isOdm, // 是否是odm
+                    createStartTime: this.searchForm.createStartTime, // 时间范围开始
+                    createEndTime: this.searchForm.createEndTime, // 时间范围结束
+                    pageSize: this.searchForm.pageSize, // 当前页条数
+                };
+                param.pageNo = this.pageNo - 1;
+                _this.loading = true;
+                _this.seeDetail = true;
+                console.log(param);
+                axios.post("/index.php?g=report&m=incomeCost&a=list_data", param).then(function(res) {
+                    console.log(res);
+                    _this.loading = false;
+                    if(res.data.code == 2000) {
+                        _this.tableData = res.data.data.rows;
+                        _this.total = res.data.data.totalCount;
+                    } else {
+                        _this.$message.error(res.data.msg);
+                    }
+                })
+            },
+            // 重置
+            rest() {
+                this.pageNo = 1;
+                this.$refs['form'].resetFields();
+              this.searchForm.handleAuto = ''
+                this.searchForm.createStartTime = '';
+                this.searchForm.createEndTime = '';
+                this.getData();
+            },
+            // 导出
+            exportData() {
+                var storeIdArr = [];
+                for(var i of this.searchForm.storeIds){
+                    storeIdArr.push(i)
+                }
+                if(this.searchForm.storeId.trim() != ''){
+                    if(storeIdArr.indexOf(this.searchForm.storeId) == -1){
+                        this.$set(storeIdArr, storeIdArr.length, this.searchForm.storeId)
+                    }                   
+                }
+                var supplierArr = [];
+                for(var i of this.searchForm.suppliers){
+                    supplierArr.push(i)
+                }
+                if(this.searchForm.supplierId.trim() != ''){
+                    if(supplierArr.indexOf(this.searchForm.supplierId) == -1){
+                        this.$set(supplierArr, supplierArr.length, this.searchForm.supplierId)
+                    }      
+                }
+                let param = this.searchForm;
+                
+                param.storeIds = storeIdArr,  // 店铺
+                param.suppliers = supplierArr, // 供应商
+                axios.post('/index.php?g=report&m=incomeCost&a=export',  {
+                    responseType: 'blod',
+                    params: param
+                }).then(res => {
+                    console.log(res);
+                    let url = window.URL.createObjectURL(new Blob(['\uFEFF' + res.data]), { type: 'text/csv;charset=utf-8' });
+                    console.log(url);
+                    let link = document.createElement("a");
+                    link.style.display = "none";
+                    link.href = url;
+                    link.setAttribute("download",  `收入成本报表${MathRand()}.csv`);
+
+                    document.body.appendChild(link);
+                    // console.log(res);
+
+                    link.click();
+                    // let blob = new Blob([res], {type: res.type})
+                    // let downloadElement = document.createElement('a')
+                    // let href = window.URL.createObjectURL(blob); //创建下载的链接
+                    // downloadElement.href = href;
+                    // downloadElement.download = '收入成本报表.csv'; //下载后文件名
+                    // document.body.appendChild(downloadElement);
+                    // downloadElement.click(); //点击下载
+                    // document.body.removeChild(downloadElement); //下载完成移除元素
+                    // window.URL.revokeObjectURL(href); //释放blob对象
+                })
+            },
+            // 利率验证
+            minProfitRateChange(val) {
+                var reg = /^(0|[1-9][0-9]*|-[1-9][0-9]*)$/;
+                if(val && !reg.test(val)){
+                    this.$message.error('只能输入整数');
+                    setTimeout(() => {
+                        this.searchForm.minProfitRate = '';
+                    }, 500);
+                }
+                if(val && this.searchForm.maxProfitRate && Number(val) > Number(this.searchForm.maxProfitRate)){
+                    this.$message.error('前面的数不能大于后面的数');
+                    setTimeout(() => {
+                        this.searchForm.minProfitRate = '';
+                    }, 500);
+                }
+            },
+            // 利率验证
+            maxProfitRateChange(val){
+                var reg = /^(0|[1-9][0-9]*|-[1-9][0-9]*)$/;
+                if(val && !reg.test(val)){
+                    this.$message.error('只能输入整数');
+                    setTimeout(() => {
+                        this.searchForm.maxProfitRate = '';
+                    }, 500);
+                }
+                if(val && this.searchForm.minProfitRate && Number(val) < Number(this.searchForm.minProfitRate)){
+                    this.$message.error('前面的数不能大于后面的数');
+                    setTimeout(() => {
+                        this.searchForm.maxProfitRate = '';
+                    }, 500);
+                }
+            }
+
+        },
+        created() {
+            this.getConmonDataCustomer();
+            this.getConmonData();
+            this.getConmonDataStore();
+            this.getData();
+        },
+        filters: {
+            formatDate: function formatDate(time) {
+                var date = new Date(time);
+                return _formatDate(date, 'yyyy-MM-dd hh:mm:ss');
+            },
+            // 数字加上千分位
+            format :function format(num) {
+                num = Number(num).toFixed(2)
+                var num1=num.split('.')[0]+'';//数字转字符串  
+                var str="";//字符串累加  
+                for(var i=num1.length- 1,j=1;i>=0;i--,j++){  
+                    if(j%3==0 && i!=0 && num1[i-1] != '-'){//每隔三位加逗号，过滤正好在第一个数字的情况 过滤负数情况 
+                        str+=num1[i]+",";//加千分位逗号  
+                        continue;  
+                    }  
+                    str+=num1[i];//倒着累加数字
+                }
+                return str.split('').reverse().join("") + '.' + num.split('.')[1];//字符串=>数组=>反转=>字符串  
+            },
+            // 数字转百分比
+            numToPercent(num) {
+                return Number(num * 100).toFixed(0) + '%'
+            }
+        }
+    })
+//时间戳转日期
+function _formatDate(date, fmt) {
+    if (/(y+)/.test(fmt)) {
+        fmt = fmt.replace(RegExp.$1, (date.getFullYear() + '').substr(4 - RegExp.$1.length));
+    }
+    var o = {
+        'M+': date.getMonth() + 1,
+        'd+': date.getDate(),
+        'h+': date.getHours(),
+        'm+': date.getMinutes(),
+        's+': date.getSeconds()
+    };
+    for (var k in o) {
+        if (new RegExp('(' + k + ')').test(fmt)) {
+            var str = o[k] + '';
+            fmt = fmt.replace(RegExp.$1, RegExp.$1.length === 1 ? str : padLeftZero(str));
+        }
+    }
+    return fmt;
+}
+
+function padLeftZero(str) {
+    return ('00' + str).substr(str.length);
+};
+function MathRand(){
+    var Num="";
+    for(var i=0;i<6;i++){
+        Num+=Math.floor(Math.random()*10);
+    }
+    return Num;
+}
+</script>
+</html>

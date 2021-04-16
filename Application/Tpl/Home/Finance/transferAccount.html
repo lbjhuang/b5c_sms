@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>转账外汇</title>
+    <link rel="stylesheet" href="../Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="../Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="../Public/css/default.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="../Public/../Hr/hrstyle.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="../Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+</head>
+
+<style>
+    [v-cloak] {
+        display: none;
+    }
+
+    .el-row+.el-row {
+        margin-top: 15px;
+    }
+
+    .btn-group>.label-name {
+        font-family: MicrosoftYaHei;
+        font-size: 13px;
+        color: #546E7A;
+        letter-spacing: 0;
+    }
+
+    .btn-group>button {
+        border: none;
+        padding: 10px 18px;
+        font-family: MicrosoftYaHei;
+        font-size: 13px;
+        color: #263238;
+        letter-spacing: 0;
+        background: white;
+        margin: 0 11px;
+        cursor: pointer;
+        outline: none;
+    }
+
+    .btn-group>button.active {
+        background: #1E7EB4;
+        border-radius: 100px;
+        color: #FFFFFF;
+        letter-spacing: 0;
+        line-height: 14px;
+    }
+
+    .btn-group>button:hover {
+        background: #228ECA;
+        border-radius: 100px;
+        color: #FFFFFF;
+        letter-spacing: 0;
+        line-height: 14px;
+    }
+
+    .el-pagination {
+        margin-bottom: 180px;
+    }
+
+    .normal {
+        white-space: normal !important;
+        word-wrap: break-word;
+        word-break: break-all;
+    }
+
+    .btn-dis>button {
+        color: #bfcbd9;
+        cursor: not-allowed;
+        border: none;
+        padding: 10px 18px;
+        font-family: MicrosoftYaHei;
+        font-size: 13px;
+        letter-spacing: 0;
+        background: white;
+        margin: 0 11px;
+        outline: none;
+    }
+
+    .btn-dis>.label-name {
+        font-family: MicrosoftYaHei;
+        font-size: 13px;
+        color: #bfcbd9;
+        letter-spacing: 0;
+    }
+
+    .link {
+        cursor: pointer;
+        color: blue;
+        text-decoration: underline;
+    }
+
+    .linkActive {
+        color: #9C27B0 !important;
+        text-decoration: none !important;
+    }
+    .create-wrap{
+        white-space: nowrap;
+    }
+
+    .create-wrap .occupy{
+        display: inline-block;
+        width: 49.5%;
+    }
+</style>
+
+<body>
+    <div id="transfer" class="show-list" v-cloak>
+        <el-form ref="form" :model="form" :label-position="labelPosition" label-width="95px">
+            <div class="user-row">
+                <div class="col-100" ng-cloak>
+                    <div class="btn-group">
+                        <label class="label-name">{{$lang('资金划转类型')}}: </label>
+                        <button type="button" @click="checkTransferType('')" :class="!form.accountTransferType ? 'active' : ''">{{$lang('全部')}}</button>
+                        <button type="button" :class="item.cd === form.accountTransferType ? 'active' : ''" v-for="item in baseData.account_transfer_type" @click="checkTransferType(item.cd)">{{$lang(item.cdVal)}}</button>
+                    </div>
+                </div>
+            </div>
+            <div class="use-row">
+                <div class="col-100" ng-cloak>
+                    <div class="btn-group">
+                        <label class="label-name">{{$lang('流程状态')}}：</label>
+                        <button type="button" @click="checkState('')" :class="!form.state ? 'active' : ''">{{$lang('全部')}}</button>
+                        <button type="button" :class="item.cd == form.state ? 'active' : ''" v-for="item in baseData.turnOver" @click="checkState(item.cd)">{{$lang(item.cdVal)}}</button>
+                    </div>
+                </div>
+            </div>
+            <div class="use-row">
+                <div class="col-100" ng-cloak>
+                    <div :class="form.state == 'N001940100' ? 'btn-group':'btn-dis'">
+                        <label class="label-name">{{$lang('当前审批人')}}：</label>
+                        <button type="button" :disabled="form.state != 'N001940100'" @click="checkAuditor('')" :class="!form.auditor ? 'active' : ''">{{$lang('全部')}}</button>
+                        <button type="button" :disabled="form.state != 'N001940100'" :class="item.cd == form.auditor ? 'active' : ''" v-for="item in baseData.currentAuditor" @click="checkAuditor(item.cd)">{{item.ETC3}}</button>
+                    </div>
+                </div>
+            </div>
+            <div class="use-row">
+                <div class="col-100">
+                    <table class="search-table">
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <el-form-item :label="$lang('资金划转编号')">
+                                        <el-input v-model="form.transferNo" :placeholder="$lang('请填写资金划转编号')"></el-input>
+                                    </el-form-item>
+                                </td>
+                                <td>
+                                    <el-form-item :label="$lang('付款单号')">
+                                        <el-input style="width:90%" v-model="form.paymentAuditNo" :placeholder="$lang('请填写付款单号')"></el-input>
+                                    </el-form-item>
+                                </td>
+                                <td>
+                                    <el-form-item :label="$lang('申请人')">
+                                        <el-input v-model="form.createUser" :placeholder="$lang('请输入申请人')"></el-input>
+                                    </el-form-item>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <el-form-item :label="$lang('转出公司')">
+                                        <el-select :filterable="true" :placeholder="$lang('请选择付款公司')" v-model="form.payCompanyCode" clearable>
+                                            <el-option :key="item.cd" :label="item.cdVal" :value="item.cd" v-for="item in baseData.company_open"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                </td>
+                                <td>
+                                    <el-form-item :label="$lang('转出银行')">
+                                        <el-input style="width:90%" v-model="form.payOpenBank" :placeholder="$lang('请填写转出银行')"></el-input>
+                                    </el-form-item>
+                                </td>
+                                <td>
+                                    <el-form-item :label="$lang('转出账号')">
+                                        <el-input v-model="form.payAccountBank" :placeholder="$lang('请填写账号')"></el-input>
+                                    </el-form-item>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <el-form-item :label="$lang('转入公司')">
+                                        <el-select :filterable="true" :placeholder="$lang('请选择收款公司')" v-model="form.recCompanyCode" clearable>
+                                            <el-option :key="item.cd" :label="item.cdVal" :value="item.cd" v-for="item in baseData.company_open"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                </td>
+                                <td>
+                                    <el-form-item :label="$lang('转入银行')">
+                                        <el-input style="width:90%" v-model="form.recOpenBank" :placeholder="$lang('请填写转入银行')"></el-input>
+                                    </el-form-item>
+                                </td>
+                                <td>
+                                    <el-form-item :label="$lang('转入账号')">
+                                        <el-input v-model="form.recAccountBank" :placeholder="$lang('请填写账号')"></el-input>
+                                    </el-form-item>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <el-form-item :label="$lang('收款币种')">
+                                        <el-select :filterable="true" :placeholder="$lang('请选择币种')" v-model="form.currencyCode" clearable>
+                                            <el-option :key="item.cd" :label="item.cdVal" :value="item.cd" v-for="item in baseData.currency"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                </td>
+                                <td>
+                                    <el-form-item :label="$lang('收款金额')">
+                                        <el-input v-model="form.minAmountMoney" :placeholder="$lang('最小')" style="width:44%"></el-input> -
+                                        <el-input v-model="form.maxAmountMoney" :placeholder="$lang('最大')" style="width:44%"></el-input>
+                                    </el-form-item>
+                                </td>
+                                <td>
+                                    <el-form-item :label="$lang('创建时间')">
+                                        <el-date-picker style="width:100%" v-model="form.times" type="daterange" align="right" unlink-panels :range-separator="$lang('至')" :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')" :picker-options="pickerOptions"> </el-date-picker>
+                                    </el-form-item>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="use-row">
+                <div class="col-100 use-btn">
+                    <button type="button" class="btn-pub btn-green" @click="search">{{$lang('查询')}}</button>
+                    <button type="button" class="btn-pub btn-default mg-l-20" @click="reset">{{$lang('重置')}}</button>
+                </div>
+            </div>
+        </el-form>
+        <div class="baseline"></div>
+        <div class="use-row create-wrap">
+            <div class="col-50 result-num occupy">
+                {{$lang('搜索结果：')}}&nbsp;&nbsp; {{$lang('共')}} <b>{{totalCount}}</b> {{$lang('条')}} ，
+                {{$lang('总金额为')}}：&nbsp;&nbsp; {{totalAmountMoneyCurrency}} <b> {{numberFormat(totalAmountMoney)}}</b>
+            </div>
+            <div class="col-50 text-right occupy" style="width: 50%">
+                <?php if(ButtonAction::hidden()){ ?>
+                    <el-button type="primary" @click="createDemand()">
+                        {{$lang('创建需求')}}
+                    </el-button>
+                <?php }?>
+            </div>
+        </div>
+        <div class="use-row">
+            <div class="col-100">
+                <table class="table-list">
+                    <thead>
+                        <tr>
+                            <th>
+                                {{$lang('序号')}}
+                            </th>
+                            <th>
+                                {{$lang('资金划转编号')}}
+                            </th>
+                            <th>
+                                {{$lang('资金划转类型')}}
+                            </th>
+                            <th>
+                                {{$lang('转出公司')}}
+                            </th>
+                            <th>
+                                {{$lang('转入公司')}}
+                            </th>
+                            <th>
+                                {{$lang('币种')}}
+                            </th>
+                            <th>
+                                {{$lang('金额')}}
+                            </th>
+                            <th>
+                                {{$lang('申请人')}}
+                            </th>
+                            <th>
+                                {{$lang('流程状态')}}
+                            </th>
+                            <th>
+                                {{$lang('当前审批人')}}
+                            </th>
+                            <th>
+                                {{$lang('创建时间')}}
+                            </th>
+                            <!-- <th>
+                                <{$Think.lang.操作}>
+                            </th> -->
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(item,index) in dataList">
+                            <td>{{1 + index + (form.pageIndex - 1) * form.pageSize}}</td>
+                            <td><a class="link" :class="item.click ? 'linkActive':''" @click="transferDetail(item)">{{item.transferNo}}</a></td>
+                            <td>{{$lang(item.accountTransferTypeVal)}}</td>
+                            <td class="normal">{{$lang(item.payCompanyName)}}</td>
+                            <td class="normal">{{$lang(item.recCompanyName)}}</td>
+                            <td>{{getValue('currency',item.currencyCode)}}</td>
+                            <td>{{getValue('currency',item.currencyCode)}} {{numberFormat(item.amountMoney)}}</td>
+                            <td>{{item.createUserNm}}</td>
+                            <td> {{$lang(getValue('turnOver',item.state))}}</td>
+                            <td>
+                                <span v-if="item.state != 'N001940100'">-</span>
+                                <span v-if="item.state == 'N001940100'">{{item.ETC3 || '-'}}</span>
+                            </td>
+                            <td>{{item.createTime}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="use-row">
+            <div class="col-100 text-right">
+                <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="form.pageIndex" :page-sizes="[20, 50, 100, 200,300]" :page-size="form.pageSize" layout="sizes, prev, pager, next,jumper" :total="totalCount"></el-pagination>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript" src="../Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="../Public/utils/utils.js"></script>
+    <script src="../Public/js/H-ui.js"></script>
+    <script src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="../Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="../Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="../Public/js/element-ui-2.2.js"></script>
+    <script src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script>    
+        if(getCookie('think_language') !== "zh-cn" ){
+            ELEMENT.locale(ELEMENT.lang.en)
+        }
+        var trans = new Vue({
+            el: '#transfer',
+            data: {
+                labelPosition: 'left',
+                totalCount: 10,
+                formLabelWidth: 80,
+                totalAmountMoney: '',
+                totalAmountMoneyCurrency: '',
+                form: {
+                    accountTransferType: '',
+                    state: '',
+                    auditor: '',
+                    payCompanyCode: '',
+                    payOpenBank: '',
+                    payAccountBank: '',
+                    recCompanyCode: '',
+                    recOpenBank: '',
+                    recAccountBank: '',
+                    currencyCode: '',
+                    minAmountMoney: '',
+                    maxAmountMoney: '',
+                    createStartTime: '',
+                    createEndTime: '',
+                    pageIndex: 1,
+                    pageSize: 20,
+                    times: [],
+                    paymentAuditNo: '', // 付款单号
+                },
+                createData: {
+                    companyCode: '',
+                    accountType: '',
+                    openBank: '',
+                    accountBank: '',
+                    currencyCode: '',
+                    swiftCode: '',
+                    bsbNo: '',
+                    reason: '',
+                    state: '1'
+                },
+                baseData: {},
+                dataList: [],
+                storageKey:'storage0002',
+                fixedNum: function(param, num) {
+                    num = num || 0;
+                    var floatNum = parseFloat(param);
+                    if (!isNaN(floatNum)) {
+                        return floatNum.toFixed(num);
+                    }
+                },
+                numberFormat: utils.numberFormat.bind(utils),
+                pickerOptions: {
+                    shortcuts: [{
+                        text: '<{$Think.lang.最近一周}>',
+                        onClick: function(picker) {
+                            var end = new Date(),
+                                start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: '<{$Think.lang.最近一个月}>',
+                        onClick: function(picker) {
+                            var end = new Date(),
+                                start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: '<{$Think.lang.最近三个月}>',
+                        onClick: function(picker) {
+                            var end = new Date(),
+                                start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }]
+                },
+                getValue: function(dataName, key) {
+                    var result = '';
+                    for (var i in this.baseData[dataName]) {
+                        if (this.baseData[dataName][i].cd == key) {
+                            result = this.baseData[dataName][i].cdVal
+                            break;
+                        }
+                    }
+                    return result ? result : '-';
+                }
+            },
+            created: function() {
+                this.search();
+                this.monitorStorage();
+            },
+            methods: {
+                monitorStorage:function(){
+                    var _this = this;
+                    window.onstorage = function(storage){
+                        if(storage.key == _this.storageKey){
+                            _this.search();
+                            localStorage.removeItem(storage.key);
+                        }
+                    }
+                },
+                search: function() {
+                    var param = {
+                        "data": {
+                            "query": {
+                                "company_open": "true",
+                                "currency": "true",
+                                "accountListState": "true",
+                                "account": "true",
+                                "turnOver": "true",
+                                "currentAuditor": "true",
+                                "account_transfer_type": "true",
+                                "supplier": "true"
+                            }
+                        }
+                    }
+                    axios.post("/index.php?m=finance&a=commonData", param).then(function(res) {
+                        if (res.data.code == 2000) {
+                            trans.baseData = res.data.data;
+                            res.data.data.supplier.map(item => {
+                                trans.baseData.company_open.push({
+                                        cd: item.ID,
+                                        cdVal: item.SP_NAME
+                                    })
+                                })
+                            trans.getData();
+                        }
+                    })
+                },
+                getData: function() {
+                    var param = {
+                        data: {
+                            query: {
+                                accountTransferType: this.form.accountTransferType,
+                                state: this.form.state,
+                                currentAuditor: this.form.auditor,
+                                payCompanyCode: this.form.payCompanyCode,
+                                payOpenBank: $.trim(this.form.payOpenBank),
+                                payAccountBank: $.trim(this.form.payAccountBank),
+                                recCompanyCode: this.form.recCompanyCode,
+                                recOpenBank: $.trim(this.form.recOpenBank),
+                                recAccountBank: $.trim(this.form.recAccountBank),
+                                currencyCode: this.form.currencyCode,
+                                minAmountMoney: $.trim(this.form.minAmountMoney),
+                                maxAmountMoney: $.trim(this.form.maxAmountMoney),
+                                transferNo: $.trim(this.form.transferNo),
+                                createUser: $.trim(this.form.createUser),
+                                paymentAuditNo: $.trim(this.form.paymentAuditNo),
+                                createStartTime: this.form.times.length ? utils.dateFormat(this.form.times[0], 'yyyy-MM-dd') : null,
+                                createEndTime: this.form.times.length ? utils.dateFormat(this.form.times[1], 'yyyy-MM-dd') : null,
+                                pageIndex: this.form.pageIndex,
+                                pageSize: this.form.pageSize
+                            }
+                        }
+                    };
+
+                    axios.post("/index.php?m=finance&a=transfer", param).then(function(res) {
+                        var result = res.data;
+                        if (result.code == 2000) {
+                            trans.dataList = result ? result.data.pageData : []
+                            trans.totalCount = +result.data.totalCount;
+                            trans.totalAmountMoney = result.data.totalAmountMoney;
+                            trans.totalAmountMoneyCurrency = result.data.totalAmountMoneyCurrency;
+                        } else {
+                            trans.$message({
+                                message: '订单数据查询失败',
+                                type: 'warning'
+                            });
+                        }
+                    })
+                },
+                handleSizeChange: function(size) {
+                    this.form.pageSize = size;
+                    this.search();
+                },
+                handleCurrentChange: function(currentPage) {
+                    this.form.pageIndex = currentPage;
+                    this.search();
+                },
+                //新账户
+                createDemand: function() {
+                    var href = "/index.php?m=finance&a=transferApp",
+                        a = document.createElement("a");
+                    a.setAttribute("style", "display: none");
+                    a.setAttribute("onclick", "opennewtab(this,'" + this.$lang('转账申请') + "')");
+                    a.setAttribute("_href", href);
+                    a.onclick();
+                },
+                //账户详情
+                transferDetail: function(item) {
+                    Vue.set(item, 'click', true)
+                    var href = "/index.php?m=finance&a=transferApp&storageKey=storage0002&id=" + item.id,
+                        a = document.createElement("a");
+                    a.setAttribute("style", "display: none");
+                    a.setAttribute("onclick", "opennewtab(this,'" + this.$lang('转账换汇详情') + "')");
+                    a.setAttribute("_href", href);
+                    a.onclick();
+                },
+                checkState: function(val) {
+                    this.form.state = val;
+                    if (!val) {
+                        // 流程状态切换到全部的时候，清除审批人
+                        this.form.auditor = ''
+                    }
+                },
+                checkAuditor: function(val) {
+                    this.form.auditor = val;
+                },
+                reset: function() {
+                    for (var k in this.form) {
+                        switch(k){
+                            case 'pageIndex':
+                                this.form.pageIndex = 1;
+                                break;
+                            case 'pageSize':
+                                this.form.pageSize = 20;
+                                break;
+                            case 'times':
+                                this.form.times = [];
+                                break;
+                            default:
+                                this.form[k] = '';
+                        }
+                    }
+                },
+                checkTransferType: function(val) {
+                    this.form.accountTransferType = val
+                }
+            },
+            watch: {
+                form: {
+                    handler:function(newValue, oldValue) {
+                        this.getData();
+                    },
+                    deep: true
+                }
+            }
+        })
+    </script>
+</body>
+
+</html>

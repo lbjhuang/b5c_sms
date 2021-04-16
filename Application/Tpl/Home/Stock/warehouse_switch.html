@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.13.0.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.config.VER_NUM}>">
+    <title>$lang('出入库管理')</title>
+    <style>
+        .el-colPadd .el-input {
+            width: 96% !important;
+        }
+
+        .el-form-item__label {
+            text-align: center !important;
+        }
+
+        .shortLabel .el-form-item__label {
+            width: 90px !important;
+        }
+
+        .shortLabel .el-form-item__content {
+            margin-left: 90px !important;
+        }
+
+        .num-bold {
+            margin-right: 40px;
+        }
+
+        .table-common .el-table__header-wrapper {
+            overflow: initial;
+        }
+
+        .input-with-select .el-input-group__prepend {
+            background-color: #fff;
+        }
+
+        .imgStyle {
+            width: 80px !important;
+            height: 80px !important;
+            cursor: pointer;
+        }
+
+        .excel-delivery {
+            width: 100px;
+            display: inline-block;
+            margin-right: 20px;
+        }
+
+        #error-tips .el-dialog__header {
+            display: none;
+        }
+
+        #error-tips .el-dialog__body {
+            height: 100%;
+        }
+
+        .content {
+            width: 100%;
+            height: 100%;
+            border-top: 1px solid #eee;
+            margin: 30px 30px 0 30px;
+        }
+
+        .error-msg {
+            margin-top: 30px;
+        }
+
+        .el-date-editor .el-range__close-icon {
+            margin-left: -5px;
+            width: 20px;
+        }
+        .clickable-item-child{
+            text-decoration: underline;
+            color:#1E7EB4;
+            cursor: pointer;
+        }
+        #pop .el-dialog__header{
+            display: block;
+        }
+        #pop .has-gutter{
+            display: none;
+        }
+        .downloadDialog .el-dialog__header{
+            display: block;
+        }
+        .downloadDialog .el-dialog--center .el-dialog__body{
+            text-align: center;
+        }
+        
+        .tag-item{
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            border: 1px solid rgb(38, 148, 120) ;
+            color: rgb(255, 255, 255);
+            background-color: rgb(85, 124, 114);
+            border-radius: 2px 0 0 0;
+        }
+    </style>
+</head>
+
+<body style="height: 100%; overflow: auto;">
+    <div id="rkWrap" v-cloak class="list-common">
+        <el-dialog id="pop" title="Product Key" :visible.sync="dialogTableVisible" width="900">
+            <table style="border:1px #cccccc solid;border-collapse: collapse;text-align: center;width:100%">
+                <tr v-for="(v,k) in ProductKeyData" style="border:1px #cccccc solid">
+                    <td style="border:1px #cccccc solid;padding: 10px;width: 20%;">{{v[0]?v[0].product_key:''}}</td>
+                    <td style="border:1px #cccccc solid;padding: 10px;width: 20%;">{{v[1]?v[1].product_key:''}}</td>
+                    <td style="border:1px #cccccc solid;padding: 10px;width: 20%;">{{v[2]?v[2].product_key:''}}</td>
+                    <td style="border:1px #cccccc solid;padding: 10px;width: 20%;">{{v[3]?v[3].product_key:''}}</td>
+                    <td style="border:1px #cccccc solid;padding: 10px;width: 20%;">{{v[4]?v[4].product_key:''}}</td>
+                </tr>
+            </table>
+            <div v-if="ProductKeyData.length === 0" style="line-height: 60px;text-align: center">
+                {{$lang('暂无数据')}}
+            </div>
+        </el-dialog>
+        <!-- 搜索条件 start -->
+        <el-form ref="form" label-width="140px" :label-position="labelPosition">
+            <el-row>
+                <el-col :span="6" class="el-colPadd">
+                    <el-form-item :label="$lang('出入库编号')">
+                        <el-input v-model="form.childBillId" :placeholder="$lang('请输入')" style="width:100%;"></el-input>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6" class="el-colPadd">
+                    <el-form-item :label="$lang('出入库&收发类别')">
+                        <el-cascader v-model="cascaderOptions" expand-trigger="hover" :options="linkageOptions" :props="linkageProps" collapse-tags clearable filterable @change="handleChange" style="width:100%;" >
+                        </el-cascader>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6" class="el-colPadd shortLabel">
+                    <el-form-item :label="$lang('仓库')">
+                        <el-select v-model="form.warehouse" style="width:100%;padding:0;" multiple collapse-tags clearable filterable>
+                            <el-option v-for="item in generalData.warehouses" :key="item.CD" :label="$lang(item.CD_VAL)" :value="item.CD"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6" class="el-colPadd">
+                    <el-input :placeholder="$lang('请输入')" v-model="form.skuUpcValue" class="input-with-select" style="margin-left: 1%;">
+                        <el-select v-model="form.skuUpcType" slot="prepend">
+                            <el-option v-for="(value, key) in generalData.upcSku" :key="key" :label="value" :value="key"></el-option>
+                        </el-select>
+                    </el-input>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="6" class="el-colPadd">
+                    <el-form-item :label="$lang('商品名称')">
+                        <el-input v-model="form.GUDSNM" :placeholder="$lang('请输入商品名称')"></el-input>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6" class="el-colPadd">
+                    <el-form-item :label="$lang('操作人')">
+                        <el-input v-model="form.zdUser" :placeholder="$lang('请输入操作人')"></el-input>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6" class="el-colPadd shortLabel">
+                    <el-form-item :label="$lang('操作时间')">
+                        <el-date-picker style="width:96%;height: 40px;" value-format="yyyy-MM-dd" size="small" v-model="form.zdDate" type="daterange" align="right" unlink-panels :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')"></el-date-picker>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6" class="el-colPadd">
+                    <el-form-item :label="$lang('归属销售团队')">
+                        <el-select v-model="form.saleTeam" style="width:100%;padding:0;" multiple  clearable filterable>
+                            <el-option v-for="(value, key) in generalData.saleTeams" :key="key" :label="value" :value="key"></el-option>
+                        </el-select>
+                    </el-form-item>
+
+                </el-col>
+            </el-row>
+
+            <el-row>
+                <el-col :span="6" class="el-colPadd">
+                    <el-form-item :label="$lang('关联单据')">
+                        <el-select v-model="form.relationType" style="width:100%;padding:0;" multiple  clearable filterable>
+                            <el-option v-for="item in generalData.relationType" :key="item.cd" :label="$lang(item.cdVal)" :value="item.cd"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6" class="el-colPadd">
+                    <el-form-item :label="$lang('关联单据号')">
+                        <el-input v-model="form.linkBillId" :placeholder="$lang('请输入关联单据号')"></el-input>
+                    </el-form-item>
+                </el-col>
+                <!-- <el-col :span="6" class="el-colPadd">
+                    <el-form-item label="在库类型">
+                        <el-select v-model="form.virType" multiple collapse-tags placeholder="请选择" style="width:100%;padding:0;">
+                            <el-option v-for="item in generalData.virType" :key="item.cd" :label="item.cdVal" :value="item.cd"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col> -->
+                <el-col :span="6" class="el-colPadd">
+                    <el-form-item :label="$lang('商品类型')">
+                        <el-select v-model="form.productType" clearable style="width:100%;padding:0;">
+                            <el-option :label="$lang('正品')" value="1"></el-option>
+                            <el-option :label="$lang('残次品')" value="2"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6" class="el-colPadd">
+                    <el-form-item :label="$lang('批次号')">
+                        <el-input v-model="form.batchCode" :placeholder="$lang('请输入')"></el-input>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row>
+              <el-col :span="10">
+                  <el-form-item :label="$lang('归属我方公司')">
+                      <el-select v-model="form.ourCompany" style="width:100%;padding:0;" multiple
+                          filterable>
+                          <el-option v-for="item in generalData.company" :key="item.cd" :label="$lang(item.cdVal)"
+                              :value="item.cd"></el-option>
+                      </el-select>
+                  </el-form-item>
+              </el-col>
+                <!-- <el-col :span="5">
+                    <el-form-item :label="$lang('归属店铺')">
+                        <el-select v-model="form.ascription_store" style="width:100%;padding:0;" multiple
+                                   filterable>
+                            <el-option v-for="item in generalData.stores"  :key="item.ID" :label="$lang(item.STORE_NAME)" :value="item.ID"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col> -->
+                <el-col :span="5">
+                    <el-form-item :label="$lang('销售小团队')">
+                        <el-select v-model="form.small_sale_team" style="width:100%;padding:0;" collapse-tags multiple filterable>
+                            <el-option v-for="(item,index) in sell_small_team" :key="index" :label="$lang(item)" :value="index"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="4" class="el-colPadd">
+                    <el-form-item label="Product Key">
+                        <el-input v-model="form.product_key" placeholder=""></el-input>
+                    </el-form-item>
+
+                </el-col>
+                <el-col :span="4" class="el-colPadd">
+                    <el-form-item :label="$lang('品牌类型')">
+                        <el-select v-model="form.is_oem_brand[0]" style="width:100%;padding:0;" collapse-tags  filterable>
+                            <el-option v-for="(v,k) in odm" :key="k" :label="$lang(v.v)" :value="v.k"></el-option>
+                        </el-select>
+                    </el-form-item>
+
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="6" class="el-colPadd">
+                    <el-form-item :label="$lang('归属仓库类型')">
+                        <el-select :popper-append-to-body=false filterable :multiple-limit=10 v-model="selectedType" multiple collapse-tags :placeholder="$lang('选择仓库')" style="width:100%;padding:0;" @change="filterWarehouses">
+                            <el-option v-for="item in warehouse_type" :key="item.cd" :label="$lang(item.cdVal)" :value="item.cd">
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6" class="el-colPadd">
+                    <el-form-item :label="$lang('是否excel导入')">
+                        <el-select :popper-append-to-body=false v-model="form.is_import" :placeholder="$lang('请选择')" style="width:100%;padding:0;" @change="slelctChange" clearable>
+                            <el-option  :label="$lang('是')" value="1"></el-option>
+                            <el-option  :label="$lang('否')" value="0"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6" class="el-colPadd" v-if="form.is_import == '1'">
+                    <el-form-item :label="$lang('是否一件代发')">
+                        <el-select :popper-append-to-body=false v-model="form.is_replace" :placeholder="$lang('请选择')" style="width:100%;padding:0;" clearable>
+                            <el-option :label="$lang('是')" value="1"></el-option>
+                            <el-option :label="$lang('否')" value="0"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="4">
+                    <el-button type="primary" @click="doQuery" style="margin-right: 20px;">{{$lang('查询')}}</el-button>
+                    <el-button type="primary" @click="doRest" plain>{{$lang('重置')}}</el-button>
+                </el-col>
+            </el-row>
+        </el-form>
+        <!-- 搜索条件 end -->
+
+
+        <!-- 分割线 start-->
+        <div class="orderList-line line-split"></div>
+        <!-- 分割线 end-->
+
+        <!-- 订单表格主体 start-->
+        <el-row type="flex" class="row-bg" justify="space-around">
+            <el-col :span="12" v-if="btnSummury">
+                <el-button type="text" @click="getSummury">{{$lang('展示汇总数据')}}</el-button>
+            </el-col>
+            <el-col :span="12" v-else>
+                <el-row>
+                    {{$lang('SKU数')}}：<span class="num-bold">{{skuTotal}}</span> <br />
+                </el-row>
+                <el-row>
+                    <el-col :span="8">{{$lang('出库数量统计')}}：<span class="num-bold">{{outgoingNum}}</span></el-col>
+                    <el-col :span="8">{{$lang('出库成本统计（USD，含增值税）')}}：<span class="num-bold">{{currency + outgoingCost}}</span></el-col>
+                    <el-col :span="8">{{$lang('出库成本统计（USD，不含增值税）')}}：<span class="num-bold">{{currency + outgoingCostNoTax}}</span></el-col>
+
+                </el-row>
+                <el-row>
+                    <el-col :span="8">{{$lang('入库数量统计')}}：<span class="num-bold">{{instorageNum}}</span></el-col>
+                    <el-col :span="8">{{$lang('入库成本统计（USD，含增值税）')}}：<span class="num-bold">{{currency + instorageCost}}</span></el-col>
+                    <el-col :span="8">{{$lang('入库成本统计（USD，不含增值税）')}}：<span class="num-bold">{{currency + instorageCostNoTax}}</span></el-col>
+
+                </el-row>
+                <!--<el-row>
+                    <el-col :span="8">在途数量统计：<span class="num-bold">{{onwayNum}}</span></el-col>
+                    <el-col :span="16">在途成本统计：<span class="num-bold">{{currency + onway}}</span></el-col>
+                </el-row>-->
+            </el-col>
+            <el-col :span="12" class="text-right">
+                <span v-if="!btnSummury">
+                    <br />
+                    <br />
+                    <br />
+                    <br />
+                </span>
+                <el-button @click="downIn" type="info" style="margin-right: 10px;display: inline;" plain>{{$lang('入库模板下载')}}</el-button>
+                <el-button @click="downOut" type="info" style="margin-right: 10px;display: inline;" plain>{{$lang('出库模板下载')}}</el-button>
+                <form action="import" class="excel-delivery" @click="putOrder" style="z-index:1;">
+                    <?php if(ButtonAction::hidden('Stock/import_bill')){ ?>
+                        <el-button type="primary" style="margin-right: 20px;display: inline;">{{$lang('EXCEL入库')}}</el-button>
+                    <?php }?>
+                    <input type="file" id="update-file-content" @change="exportInOrderIn" style="display: none">
+                </form>
+                <form action="import" class="excel-delivery" @click="outOrder" style="z-index:1;">
+                    <?php if(ButtonAction::hidden('Stock/import_bill')){ ?>
+                        <el-button type="primary" style="margin-right: 20px;display: inline;">{{$lang('EXCEL出库')}}</el-button>
+                    <?php }?>
+                    <input type="file" id="update-file-out" @change="exportInOrderOut" style="display: none">
+                </form>
+                <el-button @click="exportTemp" type="primary" style="margin-right: 20px;display: inline;">{{$lang('导出')}}</el-button>
+            </el-col>
+        </el-row>
+        <div class="orderList-Main list-common-main">
+            <el-table border show-header tooltip-effect="dark" :data="tableDatas" style="width: 100%" class="order-list-table table-common" v-loading="loading">
+                <el-table-column type="index" :index="serialNumber" :label="$lang('序号')" width="66"></el-table-column>
+                <el-table-column :label="$lang('出入库编号')" width="120">
+                    <template slot-scope="scope">
+                        <p>{{scope.row.childBillId ? scope.row.childBillId.replace('_', '-') : ''}}</p>
+                            
+                        <el-tag size="mini" class="tag-item" v-if="scope.row.is_replace == '1'">{{$lang('一件代发')}}</el-tag>
+                    </template>
+                </el-table-column>
+                <!-- <el-table-column prop="virType" label="在库类型"></el-table-column> -->
+                <el-table-column :label="$lang('商品类型')">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.productType)}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="type" :label="$lang('出入库类别')"></el-table-column>
+                <el-table-column prop="procurementNumber" :label="$lang('采购单号')"></el-table-column>
+                <el-table-column :label="$lang('仓库')" width="100">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.warehouseId)}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('归属我方公司')" width="100">
+                    <template slot-scope=scope>
+                        <div>{{$lang(scope.row.ourCompany)}} </div>
+                    </template>
+                </el-table-column>
+                <!-- <el-table-column prop="ascription_store_val" :label="$lang('归属店铺')" width="100"></el-table-column> -->
+                <el-table-column prop="GSKU" :label="$lang('SKU编码')" width="100"></el-table-column>
+                <el-table-column prop="isOemBrand" :label="$lang('品牌类型')" width="100">
+                    <template slot-scope="scope">
+                        <span style="white-space: pre-line">{{scope.row.isOemBrand === '0'?$lang('非ODM品牌'):$lang('ODM品牌')}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="GUDSOPTUPCID" :label="$lang('条形码')" width="120">
+                    <template slot-scope="scope">
+                        <span style="white-space: pre-line">{{scope.row.GUDSOPTUPCID}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="GUDSNM" :label="$lang('商品名称')" width="150">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.GUDSNM)}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="GUDSOPTVALMPNG" :label="$lang('属性')"></el-table-column>
+                <el-table-column prop="GUDSIMGCDNADDR" :label="$lang('图片')" width="100">
+                    <template slot-scope="scope">
+                        <img :class="{imgStyle: scope.row.GUDSIMGCDNADDR}" :src="scope.row.GUDSIMGCDNADDR" @mouseenter="showImg(scope.$index)"
+                            @mouseleave="hiddenImg">
+                        <div style="position: absolute; top: -10px; left: 100px; box-shadow: 0 0 5px #536d7a;z-index:99999"
+                            v-show="imgShowIndex === scope.$index">
+                            <img :src="scope.row.GUDSIMGCDNADDR" width="300" height="300">
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="batchCode" :label="$lang('批次号')"></el-table-column>
+                <el-table-column prop="deadlineDateForUse" :label="$lang('到期日')" width="150"></el-table-column>
+                <el-table-column prop="sendNum" :label="$lang('数量')"></el-table-column>
+                <el-table-column :label="$lang('单位')">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.VALUATIONUNIT)}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="unitPriceLast" :label="$lang('采购币种')" width="120">
+                    <template slot-scope=scope>
+                        {{currency + scope.row.currency}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="unitPriceLast" :label="$lang('采购单价（采购币种，含增值税）')" width="120">
+                    <template slot-scope=scope>
+                        {{scope.row.currency}} {{currency + scope.row.unitPriceLast}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="unitPriceNoTaxLast" :label="$lang('采购单价（采购币种，不含增值税）')" width="120">
+                    <template slot-scope=scope>
+                        {{scope.row.currency}} {{currency + scope.row.unitPriceNoTaxLast}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="amountPriceLast" :label="$lang('采购成本（采购币种，含增值税）')" width="120">
+                    <template slot-scope=scope>
+                        {{scope.row.currency}} {{currency + scope.row.amountPriceLast}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="amountPriceNoTaxLast" :label="$lang('采购成本（采购币种，不含增值税）')" width="120">
+                    <template slot-scope=scope>
+                        {{scope.row.currency}} {{currency + scope.row.amountPriceNoTaxLast}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="unitPrice" :label="$lang('采购单价（CNY,含增值税）')" width="120">
+                    <template slot-scope=scope>
+                        CNY {{currency + scope.row.unitPrice}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="amountPrice" :label="$lang('采购成本（CNY,含增值税）')" width="120">
+                    <template slot-scope=scope>
+                        CNY {{currency + scope.row.amountPrice}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="unitPriceNoTax" :label="$lang('采购单价（CNY,不含增值税）')" width="120">
+                    <template slot-scope=scope>
+                        CNY {{currency + scope.row.unitPriceNoTax}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="amountPriceNoTax" :label="$lang('采购成本（CNY,不含增值税）')" width="120">
+                    <template slot-scope=scope>
+                        CNY {{currency + scope.row.amountPriceNoTax}}
+                    </template>
+                </el-table-column>
+
+                <el-table-column prop="unitPriceUSD" :label="$lang('采购单价（USD，含增值税）')" width="120">
+                    <template slot-scope=scope>
+                        USD {{currency + scope.row.unitPriceUSD}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="unitPriceNoTaxUSD" :label="$lang('采购单价（USD，不含增值税）')" width="120">
+                    <template slot-scope=scope>
+                        USD {{currency + scope.row.unitPriceNoTaxUSD}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="amountPriceUSD" :label="$lang('采购成本（USD，含增值税）')" width="120">
+                    <template slot-scope=scope>
+                        USD {{currency + scope.row.amountPriceUSD}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="amountPriceNoTaxUSD" :label="$lang('采购成本（USD，不含增值税）')" width="120">
+                    <template slot-scope=scope>
+                        USD {{currency + scope.row.amountPriceNoTaxUSD}}
+                    </template>
+                </el-table-column>
+
+                <el-table-column prop="poCost" :label="$lang('PO内物流成本')"></el-table-column>
+                <el-table-column :label="$lang('服务费用') + '（CNY）'">
+                    <template slot-scope=scope>
+                        CNY {{currency + scope.row.logServiceCost}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('物流费用') + '(CNY)' ">
+                    <template slot-scope=scope>
+                        CNY {{currency + scope.row.carryCost}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('关税') + '(CNY)'" width="75">
+                    <template slot-scope="scope">
+                        <div >CNY {{scope.row.tariffCostSum}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="zdUser" :label="$lang('操作人')"></el-table-column>
+                <el-table-column prop="zdDate" :label="$lang('操作时间')" width="150"></el-table-column>
+                <el-table-column :label="$lang('收发类别')" width="100">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.billType)}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="SALETEAM" :label="$lang('归属销售团队')" width="100"></el-table-column>
+                <el-table-column prop="SMALLSALETEAM" :label="$lang('销售小团队')" width="100"></el-table-column>
+                <el-table-column :label="$lang('关联单据')">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.relationType)}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="linkBillId" :label="$lang('关联单据号')" width="150"></el-table-column>
+                <el-table-column label="Product Key">
+                    <template slot-scope="scope">
+                        <el-button type="primary" @click="searchProductKey(scope.row)" style="margin-right: 20px;" size="mini">{{$lang('查看')}}</el-button>
+                    </template>
+                </el-table-column>
+                <el-table-column width="180px" :label="$lang('备注')">
+                    <template slot-scope="scope">
+                        <el-input
+                            :disabled="true"
+                            autosize
+                            type="textarea"
+                            :placeholder="$lang('备注')"
+                            :maxlength='200'
+                            v-model="scope.row.importRemark">
+                        </el-input>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <!-- 错误信息提示 -->
+            <el-dialog id="error-tips" :visible.sync="errorMsgPop" width="100%" height="100%" :fullscreen=true>
+                <el-button type="primary" @click="errorMsgPop = false" style="background: #409EFF;margin-left: 30px;margin-top: 40px;">
+                    {{$lang('返回')}}
+                </el-button>
+                <div class="content">
+                    <template>
+                        <el-table :data="errorData" style="width: 95%" border ref="singleTable" highlight-current-row
+                            max-height="600">
+                            <el-table-column prop="index" :label="$lang('坐标')" width="180">
+                            </el-table-column>
+                            <el-table-column prop="msg" :label="$lang('异常信息')" min-width>
+                            </el-table-column>
+                        </el-table>
+                    </template>
+                </div>
+            </el-dialog>
+            <el-pagination background @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="form.pageIndex" :page-sizes="[10, 30, 50, 100]" :page-size="form.pageSize" layout="sizes, prev, pager, next, jumper" :total="totalCount"></el-pagination>
+        </div>
+
+        <el-dialog
+            title="提示"
+            :visible.sync="downloadDialog"
+            width="30%"
+            class="downloadDialog"
+            center>
+            <span>{{$lang('正在下载中，请前往“下载列表”页面查看')}}</span>
+            <span slot="footer" class="dialog-footer">
+                <el-button @click="downloadDialog = false">{{$lang('知道了')}}</el-button>
+                <el-button type="primary" @click="toDownload">{{$lang('前往')}}</el-button>
+            </span>
+        </el-dialog>
+    </div>
+
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.13.0.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script src="./Application/Tpl/Home/Public/js/lodash-4.17.15.js"></script>
+
+    <script>
+        var OPTION = {
+            lock: true
+        };
+        if (getCookie('think_language') !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en)
+        }
+        var vm = new Vue({
+            el: '#rkWrap',
+            data: {
+               odm:[{
+                 k:'1',
+                 v:'ODM品牌'
+               },{
+                 k:'0',
+                 v:'非ODM品牌'
+               }],
+                prouductUrl:location.host === 'erp.gshopper.com'? '//data.gshopper.com/search/outInStockProductKey':'//data.gshopper.stage.com/search/outInStockProductKey',
+                dialogTableVisible:false,
+                ProductKeyData:[],
+                relationType:[],
+                warehouse_type:[],
+                selectedType:[],
+                stores:[],
+                sell_small_team:[],
+                labelPosition: 'left',
+                tableLoading: true,
+                loading: true,
+                imgShowIndex: '',
+                generalData: {
+                    warehouses:{}
+                },
+                tableDatas: [],
+                totalCount: 50,
+                currency: '',
+                errorData: '',
+                linkageOptions: [],
+                cascaderOptions: [],
+                errorMsgPop: false,
+                linkageProps: {
+                    value: 'cd',
+                    label: 'cdVal',
+                    multiple: true
+                },
+                putUpLoadData: {
+                    outgo_state: ''
+                },
+                outUpLoadData: {
+                    outgo_state: '-'
+                },
+                //list表格合计数据
+                skuTotal: '',
+                outgoingNum: '',
+                instorageNum: '',
+                outgoingCost: '',
+                outgoingCostNoTax:'',
+                instorageCost: '',
+                instorageCostNoTax:'',
+                onway: '',
+                onwayNum: '',
+                downloadDialog: false,
+                //请求参数
+                form: {
+                  is_oem_brand:[],
+                    product_key:'',
+                    childBillId: '',
+                    type: [],
+                    billType: [],
+                    warehouse: '',
+                    skuUpcType: '',
+                    skuUpcValue: '',
+                    GUDSNM: '',
+                    zdUser: '',
+                    zdDate: '',
+                    saleTeam: '',
+                    relationType: '',
+                    linkBillId: '',
+                    pageIndex: 1,
+                    pageSize: 10,
+                    // virType: ['N002440100'],
+                    productType: '',
+                    ourCompany: [],
+                    small_sale_team:[],
+                    is_import: '',
+                    is_replace: ''
+                },
+                btnSummury: true,
+            },
+            created: function() {
+                this.getGeneralData();
+                this.getsellSmallTeam();
+                this.getList(false);
+            },
+            methods: {
+                slelctChange() {
+                    this.form.is_replace = "";
+                },
+                /**
+                 * 数组分割方法
+                 */
+                spilt:function(arr){
+                    var result = [];
+                    for(var i=0,len=arr.length;i<len;i+=5){
+                        result.push(arr.slice(i,i+5));
+                    }
+                    return result
+                },
+                /**
+                 *  查询ProductKey
+                 */
+                searchProductKey:function(data){
+                    var _this = this;
+                    var  relationType= _this.getrelationType(data.relationType)
+                    axios.post(this.prouductUrl,{
+                        "search":{
+                            "sku_id":data.GSKU,
+                            "bill_id":data.billId,
+                            "batch_id":data.batchId,
+                            "relation_type":relationType
+                        }}).then(function(res) {
+                        if(res.data.code === 200){
+                            _this.dialogTableVisible = true;
+                            var arr = res.data.data.product_keys
+                            _this.ProductKeyData = _this.spilt(arr)
+                        }else{
+                            _this.$message.error(res.data.msg);
+                        }
+                    })
+                },
+                existingList:function(row){
+                    console.log(row)
+                    var data = {
+                        stream_id:"1225696",
+                        bill_id:row.billId,
+                        sku_id: row.GSKU,
+                        batch_id: row.batchCode
+                    }
+                  /*  axios.post('/index.php?m=Stock&a=existingList', data).then(function(response) {
+                        if (response.data.code == 2000) {
+
+                        } else {
+                        }
+                    }).catch(function(err) {
+                    });*/
+                },
+                handleCurrentChange: function(val) {
+                    this.currentRow = val;
+                },
+                getSummury: function() {
+                    var _this = this;
+                    var data = {
+                        data: {
+                            query: this.form
+                        }
+                    };
+                    _this.loading = true;
+                    axios.post('/index.php?m=Stock&a=statData', data).then(function(response) {
+                        if (response.data.code == 2000) {
+                            _this.btnSummury = false;
+                            var _listData = response.data.data;
+                            // list合计字段获取
+                            _this.skuTotal = _listData.skuTotal;
+                            _this.outgoingNum = _listData.outgoingNum;
+                            _this.instorageNum = _listData.instorageNum;
+                            _this.outgoingCost = _listData.outgoingCost;
+                            _this.outgoingCostNoTax = _listData.outgoingCostNoTax;
+                            _this.instorageCost = _listData.instorageCost;
+                            _this.instorageCostNoTax = _listData.instorageCostNoTax;
+                            _this.currency = _listData.currency;
+                            _this.onway = _listData.onway;
+                            _this.onwayNum = _listData.onwayNum;
+                        } else {
+                            _this.$message.error(response.data.msg);
+                        }
+                        _this.loading = false;
+                    }).catch(function(err) {
+                        console.log(err);
+                    });
+                },
+                getsellSmallTeam:function(){
+                    var _this = this
+                    var data = {
+                        "field" : "",
+                        "CD" : "",
+                        "need_open" : "",
+                        "need_default" : "Y"
+                    };
+
+                    axios.post('/index.php?g=universal&m=dictionary&a=getListByField', data).then(function(res) {
+                        console.log('res',res);
+                        if(res.data.code == 200){
+                            _this.sell_small_team = res.data.data
+                        }
+                    }).catch(function(err) {
+                        console.log(err);
+                    });
+                },
+                filterWarehouses: function(){
+                    this.form.warehouse = '';
+                    let data = {
+                        type_cd: this.selectedType,
+                    };
+                    axios.post('/index.php?m=warehouse&a=filterWarehouse', data).then((response) =>{
+                        if (response.data.code === 2000) {
+                            console.log("出入库归属仓库",response);
+                            this.generalData.warehouses = response.data.list ? response.data.list : {
+                                CD: 'as',
+                                CD_VAL: '无数据'
+                            };
+                            if(this.selectedType.length!==0){
+                                this.form.warehouse =  this.form.warehouse.length!==0?this.form.warehouse:Object.keys(this.generalData.warehouses)
+                            }else {
+                                this.form.warehouse=''
+                            }
+
+                            this.doSearch();
+                            console.log("筛选的仓库数据",this.generalData.warehouses);
+
+                        } else {
+                            this.$message.error(this.$lang(response.data.msg));
+                        }
+
+                    }).catch((err)=> {
+                        console.log(err);
+                    });
+                },
+                getGeneralData: function() {
+                    var _this = this,
+                        params = {
+                            data: {
+                                query: {
+                                    warehouses: true,
+                                    upcSku: true,
+                                    relationType: true,
+                                    saleTeams: true,
+                                    outgoingType: true,
+                                    inStorage: true,
+                                    outStorage: true,
+                                    company: true,
+                                    stores:true,
+                                    warehouse_type: true
+                                    // virType: true
+                                }
+                            }
+                        }
+                    axios.post('/index.php?g=oms&m=CommonData&a=commonData', params).then(function(res) {
+                        _this.form.skuUpcType = "t1.GSKU";
+                        var _data = res.data;
+                        _this.generalData = _data.data;
+                        _this.relationType = _data.data.relationType
+                        _this.warehouse_type = _data.data.warehouse_type;
+
+                        var outgoingType = _data.data.outgoingType;
+                        var inStorage = _data.data.inStorage.map(item=> {
+                                return {
+                                    cd: item.cd,
+                                    cdVal: _this.$lang(item.cdVal) // 添加翻译
+                                }
+                            });
+                        var onway = _data.data.onway;
+                        var onwayNum = _data.data.onwayNum;
+                        var outStorage = _data.data.outStorage.map(item=> {
+                                return {
+                                    cd: item.cd,
+                                    cdVal: _this.$lang(item.cdVal) // 添加翻译
+                                }
+                            });
+
+                        inStorage.unshift({
+                            cd: "入库",
+                            cdVal: _this.$lang('全部')
+                        });
+                        outStorage.unshift({
+                            cd: "出库",
+                            cdVal: _this.$lang('全部')
+                        });
+
+                        // 二级联动数据聚合
+                        // var _arr = [];
+                        // for (var i = 0, len = outgoingType.length; i < len; i++) {
+                        //     var _obj = {
+                        //         cd: '',
+                        //         cdVal: '',
+                        //         children: []
+                        //     };
+                        //     _obj.cd = i + "";
+                        //     _obj.cdVal = outgoingType[i];
+
+                        //     if (outgoingType[i] === "入库" || outgoingType[i] ==='Stock-in') {
+                        //         _obj.children = inStorage;
+                        //     } else if (outgoingType[i] === "出库" || outgoingType[i] ==='Stock-out' || outgoingType[i] ==='Warehouse-out') {
+                        //         _obj.children = outStorage;
+                        //     };
+                        //     _arr.push(_obj);
+                        // };
+
+                        var _arr = [
+                            {
+                                cd: "1",
+                                cdVal:_this.$lang('入库'),
+                                children:inStorage
+                            },
+                            {
+                                cd: "0",
+                                cdVal:_this.$lang('出库'),
+                                children:outStorage
+                            }
+                        ];
+
+                        _this.linkageOptions = _arr;
+                    });
+                },
+                getrelationType:function(code){
+                    for(var x = 0 ; x<this.relationType.length;x++){
+                        if(code === this.relationType[x].cdVal){
+                            return this.relationType[x].cd
+                        }
+                    }
+                },
+                getList: function(init) {
+                    var _this = this;
+                    // let form = _.cloneDeep(this.form);
+                    // form.warehouse =  form.warehouse.length!==0?form.warehouse:Object.keys(this.generalData.warehouses)
+                    // console.log("查询表单",form)
+                    var data = {
+                        data: {
+                            query: this.form
+                        }
+                    };
+                    _this.loading = true;
+                    axios.post('/index.php?m=Stock&a=pageData', data).then(function(response) {
+                        if (response.data.code == 2000) {
+                            var _listData = response.data.data;
+                            _this.btnSummury = init || true;
+                            // list合计字段获取
+                            // _this.skuTotal = _listData.skuTotal;
+                            // _this.outgoingNum = _listData.outgoingNum;
+                            // _this.instorageNum = _listData.instorageNum;
+                            // _this.outgoingCost = _listData.outgoingCost;
+                            // _this.instorageCost = _listData.instorageCost;
+                            // _this.currency = _listData.currency;
+                            // _this.onway = _listData.onway;
+                            // _this.onwayNum = _listData.onwayNum;
+                            //表格数据获取
+                            _this.tableDatas = _listData.pageData;
+                            _this.totalCount = _listData.totalCount - 0;
+                        } else {
+                            _this.$message.error(response.data.msg);
+                        }
+                        _this.loading = false;
+                    }).catch(function(err) {
+                        console.log(err);
+                    });
+                },
+                handleChange: function(item) {
+                    console.log("item出入库",item)
+                    this.form.billType=[];
+                    this.form.type=[];
+                    item.forEach((array,index)=>{
+                        if(array.length!==0){
+                           this.form.billType.push(item[index][1])
+                            this.form.type.push(item[index][0]);
+                        }
+                    });
+
+                    //去重
+                    let arrs = [];
+                    for(let i = 0; i < this.form.type.length; i++){
+                        if (arrs.indexOf(this.form.type[i]) === -1){
+                            arrs.push(this.form.type[i])
+                        }
+                    }
+                    this.form.type = arrs;
+                    console.log("参数",this.form.billType);
+                    console.log("参数1",this.form.type);
+
+                    // if (item.length > 0) {
+                    //     this.form.type = item[0];
+                    //     this.form.billType = item[1];
+                    //     if (item[1] === "出库" || item[1] === "入库") {
+                    //         this.form.billType = "";
+                    //     };
+                    // } else {
+                    //     this.form.type = '';
+                    //     this.form.billType = '';
+                    // }
+
+                },
+                handleCurrentChange: function(val) {
+                    this.form.pageIndex = val;
+                    this.getList();
+                },
+                handleSizeChange: function(val) {
+                    this.form.pageSize = val;
+                    this.getList();
+                },
+                showImg: function(index) {
+                    this.imgShowIndex = index;
+                },
+                hiddenImg: function() {
+                    this.imgShowIndex = '';
+                },
+                serialNumber: function(i) {
+                    return this.form.pageSize * (this.form.pageIndex - 1) + i + 1;
+                },
+                doQuery: function() {
+                    this.getList();
+                },
+                doRest: function() {
+                    this.cascaderOptions = [];
+                    this.selectedType = []
+                    this.form = {
+                        is_oem_brand:[],
+                        ascription_store:[],
+                        small_sale_team:[],
+                        childBillId: '',
+                        type: [],
+                        billType: [],
+                        warehouse: '',
+                        skuUpcType: 't1.GSKU',
+                        skuUpcValue: '',
+                        GUDSNM: '',
+                        zdUser: '',
+                        zdDate: '',
+                        saleTeam: '',
+                        relationType: '',
+                        linkBillId: '',
+                        pageIndex: 1,
+                        pageSize: 10,
+                        // virType: ['N002440100'],
+                        productType: '',
+                        ourCompany: []
+                    };
+
+                    this.getList();
+                    this.filterWarehouses();
+                },
+                downTemp: function() {
+                    location.href = "/index.php?m=Stock&a=download&name=outgo.xlsx";
+                },
+                downIn: function() {
+                    location.href = "/index.php?m=Stock&a=download&name=in.xlsx";
+                },
+                downOut: function() {
+                    location.href = "/index.php?m=Stock&a=download&name=out.xlsx";
+                },
+                putOrder: function() {
+                    // document.getElementById("#update-file-content").click();
+                    $('.excel-delivery').find('#update-file-content').click();
+                    // document.getElementById("formFile").click();
+                    // var tmep = document.createElement('form');
+                    // tmep.action = '/index.php?m=Stock&a=import_bill';
+                    // tmep.method = "post";
+                    // var opt = document.createElement("input");
+                    // opt.name = 'file';
+                    // opt.type="file";
+                    // tmep.appendChild(opt);
+                    // document.body.appendChild(tmep);
+                    // tmep.submit();
+                    // $(tmep).remove();
+                    // console.log(tmep)
+                },
+                exportInOrderIn: function() {
+                    //创建FormData对象
+                    var data = new FormData();
+                    var _this = this;
+                    //为FormData对象添加数据
+                    data.append('file', $(event.currentTarget)[0]['files'][0]);
+                    data.append('type', 1);
+                    $.ajax({
+                        url: '/index.php?m=Stock&a=import_bill',
+                        type: 'POST',
+                        dataType: 'JSON',
+                        contentType: false,
+                        processData: false,
+                        data: data,
+                        cache: false
+                    }).success(function(data) {
+                        var errorData = [];
+                        if (data.code == 3000) {
+                            data.data.forEach(function(item) {
+                                for (var i in item) {
+                                    var err = {
+                                        'index': i,
+                                        'msg': item[i]
+                                    };
+                                    //errorData.push(i + ':' + item[i]  + '<br/>' )
+                                    errorData.push(err);
+                                }
+                            });
+                            _this.errorData = errorData;
+                            //_this.errorData = errorData.join().replace(/\,/g, '');
+                            _this.errorMsgPop = true;
+                            $('#update-file-content').val('');
+                        }
+                        if (data.code == 40050000) {
+                            _this.$message.error(data.msg);
+                            $('#update-file-content').val('')
+                        }
+                        if (data.code == 2000) {
+                            $('#update-file-content').val('')
+                            _this.$message.success(data.msg);
+                            // _this.doSearch();
+                        }
+                    }).error(function() {
+                        console.log('error');
+                    }).complete(function() {
+                        $('#update-file-content').val('')
+                    });
+                },
+                outOrder: function() {
+                    // document.getElementById("formFileOut").click();
+                    $('.excel-delivery').find('#update-file-out').click();
+                },
+                exportInOrderOut: function() {
+                    //创建FormData对象
+                    var data = new FormData();
+                    var _this = this;
+                    //为FormData对象添加数据
+                    data.append('file', $(event.currentTarget)[0]['files'][0]);
+                    data.append('type', 2);
+                    $.ajax({
+                        url: '/index.php?m=Stock&a=import_bill',
+                        type: 'POST',
+                        dataType: 'JSON',
+                        contentType: false,
+                        processData: false,
+                        data: data,
+                        cache: false
+                    }).success(function(data) {
+                        var errorData = [];
+                        if (data.code == 3000) {
+                            data.data.forEach(function(item) {
+                                    for (var i in item) {
+                                        var err = {
+                                                'index': i,
+                                                'msg': item[i]
+                                            }
+                                            //errorData.push(i + ':' + item[i]  + '<br/>' )
+                                        errorData.push(err);
+                                    }
+                                })
+                                // _this.$message.error(errorData.join());
+                            _this.errorData = errorData;
+                            //_this.errorData = errorData.join().replace(/\,/g, '');
+                            _this.errorMsgPop = true;
+                            $('#update-file-content').val('');
+                        }
+                        if (data.code == 40050000) {
+                            _this.$message.error(data.msg);
+                            $('#update-file-out').val('');
+                        }
+                        if (data.code == 2000) {
+                            $('#update-file-content').val('')
+                            _this.$message.success(data.msg);
+                            // VM.doSearch();
+                        } else {
+                            _this.$message.error(data.msg);
+                            $('#update-file-out').val('')
+                        }
+                    }).error(function() {
+                        console.log('error');
+                    }).complete(function() {
+                        $('#update-file-out').val('')
+                    });
+                },
+                //前往下载列表
+                toDownload: function toDownload() {
+                    this.downloadDialog = false;
+                    var dom = document.createElement('a');
+                    var _href = "/index.php?g=Home&m=Excel&a=excel_list";
+                    dom.setAttribute("onclick", "opennewtab(this,'" + this.$lang('下载列表') + "')");
+                    dom.setAttribute("_href", _href);
+                    dom.click();
+                },
+                exportTemp: function() {
+                    var data_ = {
+                        data: {
+                            query: this.form
+                        }
+                    };
+                    var _this = this;
+                    axios.post('/index.php?m=Stock&a=checkPageDataExport', data_).then(function(res) {
+                        _this.loading = false;
+                        if (res.data.code == 200) {
+                            if (res.data.is_hint) {
+                                _this.downloadDialog = true;
+                            } else {
+                                var tmep = document.createElement('form');
+                                tmep.action = '/index.php?m=Stock&a=pageDataExport';
+                                tmep.method = "post";
+                                var opt = document.createElement("input");
+                                opt.name = 'post_data';
+                                opt.value = JSON.stringify(data_);
+                                tmep.appendChild(opt);
+                                document.body.appendChild(tmep);
+                                tmep.submit();
+                                $(tmep).remove();
+                                console.log(tmep)
+                            }
+                        } else {
+                            _this.$message.error(_this.$lang(res.data.msg));
+                        }
+                    }).catch(function(err) {
+                        console.log(err);
+                    });
+                },
+            },
+            filters: {
+                separatNum: function(num) { //千分位方法
+                    if (!num) {
+                        return
+                    };
+                    num = (num - 0).toFixed(2) + "";
+                    var _arr = num.split(".");
+                    return _arr[1] === "00" ? (num - 0).toLocaleString() + ".00" : (num - 0).toLocaleString();
+                },
+            }
+        });
+
+
+        /*
+         *js函数方法
+         */
+
+        //判断数据类型
+        function type(o) {
+            var s = Object.prototype.toString.call(o);
+            return s.slice(s.indexOf(" ") + 1, s.length - 1).toLowerCase();
+        };
+
+        /**
+         * 对axios的简单二次封装
+         * @param _data 必传  请求参数 
+         * @param v     必传  vue实例对象
+         * @param flag  可传  是否开启table加载loading
+         * @returns {*}
+         */
+        function ajax(_data, v, flag) {
+            if (type(_data) !== "object") {
+                return;
+            };
+
+            if (flag) {
+                v.tableLoading = true;
+            };
+            var errData = "服务器开小差了-_-!";
+
+            // 添加返回拦截器
+            axios.interceptors.response.use(
+                function(res) {
+                    if (flag) {
+                        v.tableLoading = false;
+                    };
+                    var _re = res && res.data;
+                    if (_re.code !== 2000) {
+                        v.$message.error(_re.msg);
+                    };
+                    return res;
+                },
+                function(error) {
+                    console.log(errData);
+                }
+            );
+
+            // 对象赋值,兼容ie
+            if (_data.data) {
+                var data_ = _data.data;
+                _data.data = JSON.stringify(data_)
+            };
+            _data.timeout = 2000;
+            _data.responsetype = 'json';
+            _data.headers = {
+                'Content-Type': 'application/json'
+            };
+            _data.validateStatus = function(status) {
+                if (status < 200 || status >= 300) {
+                    console.log(errData);
+                };
+                return status >= 200 && status < 300;
+            };
+            return axios(_data);
+        };
+    </script>
+</body>
+
+</html>

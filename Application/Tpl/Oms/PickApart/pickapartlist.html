@@ -1,0 +1,1984 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.const.V}>">
+    <!--[if IE 9]> <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/style.css"/><![endif]-->
+    <title>{{$lang('待分拣123')}}</title>
+</head>
+<style>
+        @media screen and (-ms-high-contrast: active),
+    (-ms-high-contrast: none) {
+        .el-step {
+            width: 230px !important;
+        }
+        .el-step__icon {
+            display: inline-block
+        }
+        .el-step__icon-inner {
+            margin-top: 3px !important;
+        }
+    }
+    
+    [v-cloak] {
+        display: none;
+    }
+    
+    .el-table .cell {
+        padding-left: 5px;
+    }
+    
+    .el-pagination {
+        margin: 20px 0px 200px;
+    }
+    
+    #picking-list {
+        visibility: hidden;
+    }
+    
+    button.border-btn.border-btn-color {
+        color: #fff;
+        background-color: #1e7eb4;
+    }
+    
+    button.border-btn.border-btn-color {
+        color: #ffffff;
+    }
+    
+    span.spanRight a {
+        float: right;
+        padding: 0 10px;
+        text-decoration: underline;
+        color: #1e7eb4;
+    }
+    
+    span.shopTag>span {
+        position: absolute !important;
+        top: 0px;
+        left: 0px;
+        border-radius: 0px;
+        background-color: #f99c64;
+        border: 1px solid rgb(231, 156, 116) !important;
+    }
+    
+    .el-scrollbar__wrap {
+        overflow: scroll !important;
+    }
+    
+    .selectStatus .el-dialog {
+        padding: 10px 20px;
+    }
+    
+    .tableStatus .el-dialog {
+        padding: 20px;
+    }
+    
+    .selectStatus .el-dialog__header {
+        display: inline-block;
+        margin-bottom: 12px;
+    }
+    
+    .selectStatus .el-button.el-button--default {
+        background-color: #fff !important;
+    }
+    
+    .selectStatus .el-button,
+    .tableStatus .el-button {
+        padding: 8px 12px !important;
+    }
+    
+    .isError {
+        color: red;
+    }
+    
+    .isOnlyOne .el-table__body-wrapper table {
+        padding-bottom: 100px;
+    }
+    
+    .el-popover {
+        text-align: center;
+    }
+    
+    .sale-team {
+        width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        cursor: pointer;
+    }
+    
+    .orderLogo {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+    }
+
+    
+    .title-min{
+        width: 155px !important;
+        text-align: center;
+        padding-left: 0 !important;
+        color: #000 !important;
+    }
+    .el-select{
+        padding: 0 !important;
+    }
+    .btn-search{
+        background-color: #0375DE !important;
+    }
+    
+    .orderLogo span {
+        margin-left: 1px;
+        background: #f99c64;
+        color: #FFF;
+        padding: 2px 4px;
+    }
+    .dialog_wrap .el-dialog {
+        padding: 20px;
+    }
+    .dialog_inner {
+        text-align: center;
+        margin-top: 10px;
+    }
+    .third-order{
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    .third-order a{
+        width: fit-content;
+    }
+    .el-loading-spinner{
+        top:300px;
+        margin-top: -21px;
+        position: fixed;
+    }
+</style>
+
+<body class="pickingList">
+    <span style="display: none" class="msg"><?php echo $msg; ?></span>
+    <div id="picking-list" class="list-common" v-cloak style="margin-bottom:220px;" v-loading="tableLoading" >
+        <div class="step-content">
+            <el-steps :active="active" align-center>
+                <el-step :title="$lang('派单推荐')"></el-step>
+                <el-step :title="$lang('待派单')"></el-step>
+                <el-step :title="$lang('待获取运单号')"></el-step>
+                <el-step :title="$lang('待拣货')"></el-step>
+                <el-step :title="$lang('待分拣')"></el-step>
+                <el-step :title="$lang('待核单')"></el-step>
+                <el-step :title="$lang('待出库')"></el-step>
+                <el-step :title="$lang('已出库')"></el-step>
+            </el-steps>
+        </div>
+        <!-- 搜索查询 start-->
+        <div class="pickingList-search search-common">
+            <!-- 平台 start-->
+            <div class="search-toggle">
+                <el-row>
+                    <el-col :span="4" class="title-info-container">
+                        <div class="title-info">
+                            {{$lang('平台渠道')}}
+                        </div>
+                    </el-col>
+                    <el-col :span="22" class="search-item-i">
+                        <span :class="{active:isChannelALL}" @click="channelALL">
+                            {{$lang('全部')}}
+                        </span>
+                        <span class="channel-item" v-for="channel in channels" :data-cd="channel.cd" @click="selectChannel(channel.cd)">{{$lang(channel.cdVal)}}</span>
+                    </el-col>
+                </el-row>
+                <!-- 平台 end-->
+                <!--站点 start-->
+                <el-row type="flex" style="background-color: #F5F5F5;margin-left: 87px; padding: 15px 0px 15px 0px;border-radius:4px;">
+                    <el-col :span="4" class="title-info-container title-min">
+                        <div class="title-info" style="color:#000">{{$lang('站点')}}</div>
+                    </el-col>
+                    <el-col :span="22" class="search-item-i">
+                        <span :class="{active:isSiteAll}" @click="siteAll()" class="tab-item-border" style="float: left;">{{$lang('全部')}}</span>
+                        <div class="search-item-i" style="padding-right: 140px;">
+
+                            <el-button v-show="sites.length>= 8" @click="showMore = !showMore" style="position: absolute;right: 75px;" type="text">{{showMore ?'收起' : '展开'}}<i :class="showMore ? 'el-icon-arrow-up' : 'el-icon-arrow-down'" class="el-icon--right"></i>
+                            </el-button>
+
+                            <span :class="{'site-item':true,active:site.checked}" v-for="site in sites.slice(0,7)" :data-cd="site.CD" @click="selectSite(site.CD)" class="tab-item-border">{{$lang(site.CD_VAL)}}</span>
+                            
+                            <span v-show="showMore" :class="{'site-item':true,active:site.checked}" v-for="site in sites.slice(7)" :data-cd="site.CD" @click="selectSite(site.CD)" class="tab-item-border">{{$lang(site.CD_VAL)}}</span>
+                        </div>
+                        <!-- <div class="search-item-i" v-show="showMore">
+                        </div> -->
+
+                    </el-col>
+                </el-row>
+                <!--站点 end-->
+                <!-- 售后类型 start-->
+                <el-row type="flex">
+                    <el-col :span="4" class="title-info-container">
+                        <div class="title-info">{{$lang('售后类型')}}</div>
+                    </el-col>
+                    <el-col :span="22" class="search-item-i">
+                        <span :class="{active:selectaftersalesTypeStatus == ''}" class="tab-item-min" @click="selectaftersalesType('')">{{$lang('全部')}}</span>
+                        <span :class="{active:selectaftersalesTypeStatus == '1'}" class="tab-item-min" @click="selectaftersalesType('1')">{{$lang('补发')}}</span>
+                        <span :class="{active:selectaftersalesTypeStatus == '2'}" class="tab-item-min" @click="selectaftersalesType('2')">{{$lang('换货')}}</span>
+                    </el-col>
+                </el-row>
+                <!-- 售后类型 end -->
+                <!-- 包裹类型 start-->
+                <el-row>
+                    <el-col :span="4" class="title-info-container">
+                        <div class="title-info">
+                            {{$lang('包裹类型')}}
+                        </div>
+                    </el-col>
+                    <el-col :span="22" class="search-item-i">
+                        <span :class="{active:isPackALL}" class="tab-item-min" @click="packALL">
+                            {{$lang('全部')}}
+                        </span>
+                        <span class="pack-item tab-item-min" v-for="(pack,key,index) in packStatus" :data-cd="key" @click="selectPack(key)">{{$lang(pack)}}</span>
+                    </el-col>
+                </el-row>
+                <!-- 包裹类型 end-->
+
+            </div>
+            <!-- 排序方式 start-->
+            <el-row>
+                <el-col :span="4" class="title-info-container">
+                    <div class="title-info">
+                        {{$lang('排序方式')}}
+                    </div>
+                </el-col>
+                <el-col :span="22" class="search-item-i">
+                    <span class="sort-type tab-item-min" v-for="(item,key) in sort_type" :data-CD="key" :class="{active: key == 'orderTime'}" @click="selectSort(key)">{{$lang(item)}}</span>
+                    <span class="contain-remark" @click="toggleRemark">
+                        {{$lang('含备注')}}
+                    </span>
+                    <span class="contain-error" @click="toggleError">
+                        {{$lang('分拣异常')}}
+                    </span>
+                </el-col>
+            </el-row>
+            <!-- 排序方式 end-->
+            <div class='cls' style="height:auto;">
+                <el-col :span="4" class="title-info-container" style="height:100%;">
+                    <div class="title-info">
+                        {{$lang('条件筛选')}}
+                    </div>
+                </el-col>
+                <el-col :span="22" class="search-item-i">
+                    <div class="fl sort-item">
+                        <el-select :popper-append-to-body=false filterable size="small" :multiple-limit=10 v-model="selectedCountries" multiple collapse-tags :placeholder="$lang('国家')" style="width:300px">
+                            <el-option v-for="(countryItem,key) in countryStatus" :key="key" :label="$lang(countryItem.NAME)" :value="countryItem.id">
+                            </el-option>
+                        </el-select>
+                    </div>
+                    <div class="fl sort-item">
+                        <el-select :popper-append-to-body=false filterable size="small" :multiple-limit=10 v-model="selectedShops" multiple collapse-tags :placeholder="$lang('店铺')" style="width:300px">
+                            <el-option v-for="(shopItem,key) in shopStatus" :key="key" :label="$lang(shopItem.STORE_NAME)" :value="shopItem.ID">
+                            </el-option>
+                        </el-select>
+                    </div>
+                    <div class="fl sort-item">
+                        <el-select :popper-append-to-body=false filterable size="small" :multiple-limit=10 v-model="selectedWarehouses" multiple collapse-tags :placeholder="$lang('仓库')" style="width:300px">
+                            <el-option v-for="(warehouseItem,key) in warehouseStatus" :key="key" :label="$lang(warehouseItem.CD_VAL)" :value="warehouseItem.CD">
+                            </el-option>
+                        </el-select>
+                    </div>
+                    <div class="fl sort-item">
+                        <el-select :popper-append-to-body=false @change="selectCompany" filterable size="small" :multiple-limit=10 v-model="selectedLogisticsCompanys" multiple collapse-tags :placeholder="$lang('物流公司')" @change=logisticsCompany(selectedLogisticsCompanys) style="width:300px">
+                            <el-option v-for="(logisticsCompanyItem,key) in logisticsCompanyStatus" :key="key" :label="$lang(logisticsCompanyItem.cdVal)" v-bind:value="logisticsCompanyItem.cd">
+                            </el-option>
+                        </el-select>
+                    </div>
+                    <div class="fl sort-item">
+                        <el-select :popper-append-to-body=false filterable size="small" :multiple-limit=10 v-model="selectedShippingMethods" multiple collapse-tags :placeholder="$lang('物流方式')" style="width:300px">
+                            <el-option v-for="(shippingMethodsItem,key) in shippingMethodsStatus" :key="key" :label="$lang(shippingMethodsItem.logisticsMode)" v-bind:value="shippingMethodsItem.id">
+                            </el-option>
+                        </el-select>
+                    </div>
+                    <div class="fl sort-item">
+                        <!-- <el-select :popper-append-to-body=false filterable size="small" :multiple-limit=10 v-model="selectedSalesTeam" multiple collapse-tags
+                            placeholder="<{$Think.lang.销售团队}>" style="width:300px">
+                            <el-option v-for="(salesTeamItem,key) in salesTeamStatus" :key="key" :label="salesTeamItem" :value="key">
+                            </el-option>
+                        </el-select> -->
+                        <el-select :popper-append-to-body=false filterable size="small" v-model="selectedSurface" collapse-tags :placeholder="$lang('面单获取方式')" style="width:300px">
+                            <el-option v-for="(e,k) in surfaceWayStatus" :key="e.cd" :label="$lang(e.cdVal)" :value="e.cd"> </el-option>
+                        </el-select>
+                    </div>
+                    <div class="fl sort-item">
+                        <div>
+                            <el-select :popper-append-to-body=false filterable size="small" v-model="timeSort">
+                                <el-option v-for="(timeItem,key) in time" :key="key" :label="$lang(timeItem)" :value="key">
+                                </el-option>
+                            </el-select>
+                            <el-date-picker value-format="yyyy-MM-dd HH:mm:ss" size="small" v-model="dateRange" type="datetimerange" :default-time="['00:00:00', '23:59:59']" align="right" unlink-panels :range-separator="$lang('至')" :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')" :picker-options="pickerOptions">
+                            </el-date-picker>
+
+                        </div>
+                    </div>
+                </el-col>
+            </div>
+            <div class="search-btn-container">
+                <div class="btns" style="padding-left:80px;">
+                    <el-select :popper-append-to-body=false filterable size="small" v-model="selectedDownQuery" :placeholder="$lang('请选择')" style="width:150px">
+                        <el-option v-for="(downQueryItem,key) in downQueryStatus" :key="key" :label="$lang(downQueryItem)" :value="key">
+                        </el-option>
+                    </el-select>
+                    <el-input size="small" class="search-keywords" v-model="searchKeywords"></el-input>
+                    <button @click="doSearch" class="btn-search" name="search">
+                        {{$lang('搜索')}}
+                    </button>
+                    <button @click="doReset" class="btn-reset" name="reset">
+                        {{$lang('重置')}}
+                    </button>
+                </div>
+            </div>
+
+            <!-- 搜索查询 end-->
+        </div>
+        <!-- 分割线 start-->
+        <div class="orderList-line line-split"></div>
+        <!-- 分割线 end-->
+        <!-- 订单表格主体 start-->
+        <div class="orderList-Main list-common-main">
+            <header>
+                {{$lang('搜索结果:共')}}
+                <span class="num-bold">{{totalCount}}</span> {{$lang('条记录')}}
+                <span>
+                    <?php if (checkPermissions('Oms/Patch', 'sort_recommend')) { ?>
+                    <el-button style="margin-left:20px" @click="importOrder" type="text">
+                        {{$lang('Excel编辑模板')}}
+                    </el-button>
+                    <form id="otherImport" action="/index.php?g=OMS&m=Patch&a=sort_recommend" method="post"
+                        enctype="multipart/form-data" style="display:none">
+                        <input type="submit" name="expe" id="activeImport" onclick="">
+                    </form>
+                    <?php } ?>
+                    <?php if (checkPermissions('Oms/order', 'logisicsSortEdit')) { ?>
+                    <el-button style="margin-left:20px" @click="doExcelEdit" type="text">
+                        {{$lang('物流Excel编辑')}}
+                    </el-button>
+                    <form id="importEditExcel" action="/index.php?g=oms&m=order&a=logisicsSortEdit" method="post"
+                        enctype="multipart/form-data" style="display:none">
+                        <input type="file" name="expe" id="excelFile" onchange="$('#importEditExcel').submit()">
+                    </form>
+                    <?php } ?>
+                    <?php if (checkPermissions('Oms/Patch', 'logisticsUpdate')) { ?>
+                    <el-button v-if="!isEditState" style="margin-left:20px" @click="batchFn('edit')" type="text">
+                        {{$lang('物流编辑')}}
+                    </el-button>
+                    <?php } ?>
+                    <el-button v-if="isEditState" style="margin-left:20px" @click="batchFn('cancelTear')" type="text">
+                        {{$lang('批量取消')}}
+                    </el-button>
+                    <el-button v-if="isEditState" style="margin-left:20px" @click="batchFn('save')" type="text">
+                        {{$lang('批量保存')}}
+                    </el-button>
+                    <?php if (checkPermissions('Oms/Patch', 'electronicOrder')) { ?>
+                    <el-button style="margin-left:20px" @click="getList" type="text">
+                        {{$lang('面单重新获取')}}
+                    </el-button>
+                    <?php } ?>
+                </span>
+                <span class="spanRight btns-content btns">
+                    <?php if (checkPermissions('Oms/commonData', 'orderReBack')) { ?>
+                    <button class="btn-reset "
+                        style="width:auto;padding:0 12px;height:28px;display:inline-block;margin-top:0px;background:#b0b0b0;color:#fff;margin-right:0px;"
+                        @click='showDoBack'> {{$lang('退回')}} </button>
+                    <?php } ?>
+                    <?php if (checkPermissions('Oms/commonData', 'oneKeyThrough')) { ?>
+                    <button class="border-btn " @click="oneKeyToPass"
+                        style="padding:0 12px;height:28px;display:inline-block;margin-top:0px;width:auto;">
+                        {{$lang('一键通过')}}
+                    </button>
+                    <?php } ?>
+                    <button class="blue-btn " @click="toInvoice"
+                        style="padding:0 12px;height:28px;display:inline-block;margin-top:0px;width:auto">
+                        {{$lang('发票')}}
+                    </button>
+
+                    <button class="blue-btn " @click="printPartOrder"
+                        style="padding:0 12px;height:28px;display:inline-block;margin-top:0px;width:auto;">
+                        {{$lang('打印分拣单')}}
+                    </button>
+
+                    <?php if(ButtonAction::hidden()){ ?>
+                    <button style="width:auto" v-if="!isEditState" class="common-btn " @click="printList">
+                        {{$lang('打印面单')}}
+                    </button>
+                    <?php } ?>
+                </span>
+                <el-dialog :title="$lang('一键通过结果')" :visible.sync="dialogTableVisible01" class="tableStatus">
+                    <el-table :data="gridData01" border>
+                        <el-table-column :label="$lang('订单号')">
+                            <template slot-scope="scope">
+                                <div :class="{'isError':(scope.row.code != '2000')}">{{scope.row.b5cOrderNo}}</div>
+                            </template>
+                        </el-table-column>
+                        <el-table-column :label="$lang('回退状态')">
+                            <template slot-scope="scope">
+                                <div :class="{'isError':(scope.row.code != '2000')}">{{$lang(scope.row.msg)}}</div>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                    <span slot="footer" class="dialog-footer">
+                        <el-button size="small" type="primary" @click="finishedStatus01">{{$lang('确 定')}}</el-button>
+                    </span>
+                </el-dialog>
+
+                <el-dialog :title="$lang('收货地址')" :visible.sync="dialogTableVisible" class="dialog-table-content">
+                    <header>
+                        <{$Think.lang.拣货号：}>{{gridDataTemp.pickingNo}}
+                    </header>
+                    <div style="float:right;margin-bottom:10px">{{gridDataTemp.pickingTime}}</div>
+                    <el-table border show-headegujir :data="gridData">
+                        <el-table-column property="locationCode" :label="$lang('货位')"></el-table-column>
+                        <el-table-column property="locationCodeBack" :label="$lang('备用货位')"></el-table-column>
+                        <el-table-column property="skuId" :label="$lang('SKU编码')" width="120"></el-table-column>
+                        <el-table-column property="gudsOptUpcId" :label="$lang('条形码')"></el-table-column>
+                        <el-table-column property="gudsNm" :label="$lang('商品名称')"></el-table-column>
+                        <el-table-column property="deadlineDateForUse" :label="$lang('到期日')"></el-table-column>
+                        <el-table-column property="nums" :label="$lang('需求数量')"></el-table-column>
+                        <el-table-column property="address" :label="$lang('标注')"></el-table-column>
+                    </el-table>
+
+                </el-dialog>
+            </header>
+
+            <el-dialog class="selectStatus" :title="$lang('订单退回')" :visible.sync="dialogVisible01" width="40%" :before-close="handleClose">
+                <el-radio-group v-model="backToStatus" size="medium">
+                    <el-radio label="N001821000">{{$lang('待派单')}}</el-radio>
+                    <el-radio label="N001820500">{{$lang('待拣货')}}</el-radio>
+                    <el-radio disabled label="N001820600">{{$lang('待分拣')}}</el-radio>
+                    <el-radio disabled label="N001820700">{{$lang('待核单')}}</el-radio>
+                </el-radio-group>
+                <el-dialog title="提示" :visible.sync="innerVisible" width="30%" append-to-body class="dialog_wrap">
+                    <span style="display: flex; justify-content: center;">只有实际仓库没有发货的订单才可以退回</span>
+                    <div style="display: flex;justify-content: space-around;margin-top: 10px;padding: 10px 20px 20px;" class="dialog_inner">
+                        <el-button @click="backPatch()">未发货</el-button>
+                        <el-button type="primary" @click="innerVisible = false">已发货</el-button>
+                    </div>
+                </el-dialog>
+                <span slot="footer" class="dialog-footer">
+                    <el-button size="small" @click="cancelStatus">{{$lang('取 消')}}</el-button>
+                    <el-button size="small" type="primary" @click="doStatus">{{$lang('确 定')}}</el-button>
+                </span>
+            </el-dialog>
+            <el-dialog :title="$lang('回退结果')" :visible.sync="dialogTableVisible" class="tableStatus">
+                <el-table :data="gridData" border>
+                    <el-table-column :label="$lang('订单号')">
+                        <template slot-scope="scope">
+                            <div :class="{'isError':(scope.row.code != '2000')}">{{scope.row.b5cOrderNo}}</div>
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('回退状态')">
+                        <template slot-scope="scope">
+                            <div :class="{'isError':(scope.row.code != '2000')}">{{scope.row.msg}}</div>
+                        </template>
+                    </el-table-column>
+                </el-table>
+                <span slot="footer" class="dialog-footer">
+                    <el-button size="small" type="primary" @click="finishedStatus">{{$lang('确 定')}}</el-button>
+                </span>
+            </el-dialog>
+
+            <el-table border show-header ref="multipleTable" :data="tableData" tooltip-effect="dark" style="width: 100%" @selection-change="handleSelectionChange" class="picking-list-table table-common">
+                <el-table-column type="selection" width="55">
+                </el-table-column>
+                <el-table-column :label="$lang('站点&店铺')" prop="platName" width="100">
+                    <template slot-scope="scope">
+                        <!-- <span class="shopTag" v-if="(scope.row.operationType==0)?true:false">
+                            <el-tag size="mini" style="color: #FFFFFF;">B2C</el-tag>
+                        </span>
+                        <span class="shopTag" v-if="(scope.row.operationType==1)?true:false">
+                            <el-tag size="mini" style="color: #FFFFFF;">B2B2C</el-tag>
+                        </span>
+                        <span class="shopTag" v-if="(scope.row.operationType==2)?true:false">
+                            <el-tag size="mini" style="color: #FFFFFF;">B5C</el-tag>
+                        </span> -->
+                        <div style="margin-bottom: 5px">{{$lang(scope.row.platName)}}</div>
+                        <div>{{$lang(scope.row.storeName)}}</div>
+                    </template>skuidf
+                </el-table-column>
+                <el-table-column :label="$lang('订单号')" width="110" prop="b5cOrderNo">
+                </el-table-column>
+                <el-table-column :label="$lang('平台订单号')" width="110" prop="third_id">
+                    <template slot-scope="scope">
+                        <!-- v-bind:_href="'/index.php?g=OMS&m=Order&a=orderDetail&thrId='+scope.row.third_id+'&platCode='+scope.row.platCd" -->
+                        <div class="third-order">
+                            <span>{{scope.row.orderNo?scope.row.orderNo:scope.row.third_id}}</span>
+                            <a class="to-detail-btn" @click="toOrderDetail(scope.row.orderNo,scope.row.third_id, scope.row.platCd)">{{$lang('查看')}}</a>
+                        </div>
+                        <div class="orderLogo">
+                            <span v-if="scope.row.after_sale_type == '1'">{{$lang('补发')}}</span>
+                            <span v-if="scope.row.after_sale_type == '2'">{{$lang('换货')}}</span>
+                            <span v-if="scope.row.after_sale_type == ''"></span>
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('拣货号')" prop="pickingNo">
+                </el-table-column>
+                <el-table-column :label="$lang('商品编码')" width="110">
+                    <template slot-scope="scope">
+                        <div v-if="scope.row.skuid.length < 2">{{scope.row.skuid[0]}}</div>
+                        <el-popover placement="bottom" width="150" trigger="hover" v-if="scope.row.skuid.length > 1">
+                            <div v-for="(item,index) in scope.row.skuid">{{item}}</div>
+                            <div slot="reference" class="name-wrapper">
+                                <div>{{scope.row.skuid[0]}}</div>
+                                <i class='el-icon-d-arrow-left' slot="reference"></i>
+                            </div>
+                        </el-popover>
+                    </template>
+                </el-table-column>
+                <!-- <el-table-column :label="$lang('包裹类型')" prop="gudsTypeNm">
+                </el-table-column> -->
+                <el-table-column :label="$lang('包裹类型')">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.gudsTypeNm)}}
+                    </template>
+                </el-table-column>
+                <!-- <el-table-column :label="$lang('销售团队')" width="100" prop="saleTeamCdNm">
+                </el-table-column> -->
+                <el-table-column :label="$lang('销售团队')">
+                    <template slot-scope=scope>
+                        <div class="sale-team" :title="$lang(scope.row.saleTeamCdNm)">
+                            {{scope.row.saleTeamCdNm}}
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('时间')" width='220'>
+                    <template slot-scope="scope">
+                        <div v-if="!!scope.row.orderTime">{{$lang('下单时间')}} ：{{scope.row.orderTime | formatDate}}</div>
+                        <div v-if="!!scope.row.payment_time">{{$lang('付款时间')}} ：{{scope.row.payment_time | formatDate}}</div>
+                        <div v-if="!!scope.row.shipping_time">{{$lang('平台发货时间')}}：{{scope.row.shipping_time | formatDate}}</div>
+                        <div v-if="!!scope.row.send_ord_time">{{$lang('派单时间')}}：{{scope.row.send_ord_time | formatDate}}</div>
+                    </template>
+                </el-table-column>
+                <!-- <el-table-column :label="$lang('下发仓库')" prop="warehouseNm">
+                </el-table-column> -->
+                <el-table-column :label="$lang('下发仓库')" width='120'>
+                    <template slot-scope="scope">
+                        <div>{{$lang(scope.row.warehouseNm)}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('物流公司')" width="120">
+                    <template slot-scope="scope">
+                        <div v-if="!scope.row.edit">{{$lang(scope.row.logisticCdNm)}}</div>
+                        <el-select :popper-append-to-body=false size="small" v-if="scope.row.edit"
+                            v-model="scope.row.logisticCd" :placeholder="$lang('请选择')"
+                            @focus="changeWay('company',scope.row)" @change="changeHouse(scope.row)">
+                            <el-option v-for="(item,key) in scope.row.json_info" :key="key"
+                                :label="$lang(item.logisticsName)" :value="item.logisticsCode">
+                            </el-option>
+                        </el-select>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('物流方式')" width="130">
+                    <template slot-scope="scope">
+                        <div v-if="!scope.row.edit">{{$lang(scope.row.logisticModelIdNm)}}</div>
+                        <el-select :popper-append-to-body=false size="small" v-if="scope.row.edit"
+                            v-model="scope.row.logisticModelId" placeholder="<{$Think.lang.请选择}>"
+                            @focus='batchCompany(scope.row)' @change="changeWay('method',scope.row)">
+                            <el-option v-for="item in scope.row.Company" :key="item.id"
+                                :label="$lang(item.logisticsMode)" v-bind:value="item.id">
+                                {{$lang(item.logisticsMode)}}
+                            </el-option>
+                        </el-select>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('运单号')" width="100">
+                    <template slot-scope="scope">
+                        <div v-if="!scope.row.edit">{{scope.row.trackingNumber}}</div>
+                        <el-input size="small" v-if="scope.row.edit" :disabled="scope.row.oneGet"
+                            :placeholder="$lang('请输入内容')" v-model="scope.row.trackingNumber"></el-input>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('面单')" width="130">
+                    <template slot-scope="scope">
+                        <div v-if="!scope.row.edit">
+                            <p>{{$lang(scope.row.surfaceWayGetCdNm)}}</p>
+                            <p v-if="scope.row.surfaceWayGetCd == 'N002010100'">
+                                {{$lang(scope.row.logisticsSingleStatuCdNm)}}</p>
+                        </div>
+                        <el-select :popper-append-to-body=false size="small" v-if="scope.row.edit"
+                            v-model="scope.row.surfaceWayGetCd" :placeholder="$lang('请选择')" @focus='batchWay(scope.row)'
+                            @change="batchang(scope.row)">
+                            <el-option v-for="item in scope.row.faceOrderGet" :key="item.id" :label="$lang(item.CD_VAL)"
+                                v-bind:value="item.CD">
+                                {{$lang(item.CD_VAL)}}
+                            </el-option>
+                        </el-select>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="remarkMsg" :label="$lang('备注')">
+                    <template slot-scope="scope">
+                        <div v-show="scope.row.use_remarks" @click="doRemark(scope.row)" class="remarks-content">
+                            {{$lang(scope.row.use_remarks)}}</div>
+                        <div v-show="scope.row.remarkMsg && !scope.row.use_remarks" @click="doRemark(scope.row)"
+                            class="remarks-content">{{$lang(scope.row.remarkMsg)}}</div>
+                        <div v-show="!scope.row.remarkMsg && !scope.row.use_remarks" class="do-remark"
+                            @click="doRemark(scope.row)">{{$lang('备注')}}</div>
+                        <el-dialog :visible.sync="dialogVisible" :show-close="false" width="420px" id="remark-dialog">
+                            <el-tabs type="border-card">
+                                <el-tab-pane :label="$lang('用户备注')">
+                                    <div class="use_remarks_content">{{$lang(form.use_remarks)}}</div>
+                                </el-tab-pane>
+                                <el-tab-pane :label="$lang('运营备注')">
+                                    <textarea class="operate-remark" name="" id="" cols="40" rows="10"
+                                        v-model="form.remarkMsg" :data-order="scope.row.third_id"
+                                        :data-plat="scope.row.platCd"></textarea>
+                                    <div class="btns remark-btn">
+                                        <?php if(ButtonAction::hidden()){ ?>
+                                        <button class="save-remark-btn"
+                                            @click="saveRemark(scope.$index, scope.row)">{{$lang('保存')}}</button>
+                                        <?php } ?>
+                                        <button class="cancel-remark-btn" @click='cancelRemark'>{{$lang('取消')}}</button>
+                                    </div>
+                                </el-tab-pane>
+                            </el-tabs>
+
+                        </el-dialog>
+                    </template>
+                </el-table-column>
+
+                <!-- <el-table-column v-if="!isEditState" :label="$lang('分拣异常')" prop="history_msg" width="100">
+                </el-table-column> -->
+                <el-table-column v-if="!isEditState" :label="$lang('分拣异常')" width="100">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.history_msg)}}
+                    </template>
+                </el-table-column>
+
+                <!--  <el-table-column v-if="isEditState" :label="$lang('历史记录')" prop="history_msg" width="100">
+                </el-table-column> -->
+                <el-table-column v-if="isEditState" :label="$lang('历史记录')" width="100">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.history_msg)}}
+                    </template>
+                </el-table-column>
+
+            </el-table>
+        </div>
+        <!-- <el-pagination background @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="currentPage"
+			 :page-size="20" layout="prev, pager, next, jumper" :total="totalCount">
+			</el-pagination> -->
+        <el-pagination background @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="currentPage" :page-sizes="[15,30,50,100]" :page-size="searchData.data.condition.page_size" layout="sizes,prev, pager, next, jumper" :total="totalCount"></el-pagination>
+    </div>
+    <!-- 订单表格主体 end-->
+    </div>
+    <!--引入js-->
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.6.3.js">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js">
+    </script>
+    <script>
+        'use strict';
+
+        var _data;
+
+        function _defineProperty(obj, key, value) {
+            if (key in obj) {
+                Object.defineProperty(obj, key, {
+                    value: value,
+                    enumerable: true,
+                    configurable: true,
+                    writable: true
+                });
+            } else {
+                obj[key] = value;
+            }
+            return obj;
+        }
+
+        if (getCookie('think_language') !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en)
+        }
+        var VM = new Vue({
+            el: '#picking-list',
+            components: {},
+            data: (_data = {
+                form: {},
+                active: 4,
+                oneGet: false, //一键获取状态
+                isListnull: '',
+                isEditState: false,
+                tableLoading: false,
+                dialogTableVisible: false,
+                dialogTableVisible01: false,
+
+                gridData: [],
+                gridData01: [],
+
+                printData: {},
+                gridDataTemp: {},
+                searchData: {
+                    data: {
+                        condition: {
+                            plat_cd: [],
+                            store_id: "",
+                            sort_type: '',
+                            warehouse_cd: "",
+                            logistics_company_cd: "",
+                            logistics_mode: "",
+                            sale_team_cd: "",
+                            page_size: 15,
+                            time_type: 'orderTime',
+                            search_condition: 'orderNo',
+                            after_sale_type: ''
+                        }
+                    }
+                }, //查询条件
+                channels: {}, //平台渠道
+                channelData: [],
+                siteData: [],
+                sites: [],
+                showMore: false,
+                isSiteAll: true,
+                isChannelALL: true,
+                packStatus: {}, //订单状态
+                packData: [],
+                isPackALL: true,
+                sort_type: {}, //排序方式
+                sortData: '',
+                countryStatus: {}, //国家
+                selectedCountries: [],
+                shopStatus: {}, //店铺
+                selectedShops: [],
+                warehouseStatus: {}, //仓库
+                selectedWarehouses: [],
+                logisticsCompanyStatus: {}, //物流公司
+                selectedLogisticsCompanys: [],
+                shippingMethodsStatus: [], //物流方式
+                shippingMethodsStatusTemp: [], //物流方式
+
+                selectedShippingMethods: [],
+                salesTeamStatus: {}, //销售团队
+                selectedSalesTeam: [],
+                surfaceWayStatus: [], //面单获取方式
+                selectedSurface: '',
+                downQueryStatus: {}, //查询条件
+                selectedDownQueryTemp: 'orderNo', //查询条件 临时
+                selectedDownQuery: 'orderNo',
+                searchKeywords: '',
+                searchKeywordsTemp: '',
+                timeSort: 'orderTime',
+                remarkHave: 0, //含备注
+                errorHave: 0, // 拣货异常
+                time: '',
+                currentPage: 1, //当前页数
+                totalCount: 0, //总条数
+                tableData: [], //查询返回数据
+                multipleSelection: [],
+                dialogVisible: false,
+                operateRemark: '', //运营备注
+                // 日期选择
+                dateRange: '',
+                selectaftersalesTypeStatus: '',
+                innerVisible: false,
+                faceOrderGet: []
+            }, _defineProperty(_data, 'dialogTableVisible', false), _defineProperty(_data,
+                'dialogVisible01', false), _defineProperty(_data, 'backToStatus', '')),
+            methods: {
+                getSite: function getSite(type, val) {
+                    var _this = this;
+                    axios.post("/index.php?g=oms&m=order&a=getSite", {
+                        plat_cd: type === 'search' ? val : []
+                    }).then(function(res) {
+                        if (res.data && res.data.code == 2000) {
+                            _this.sites = res.data.data ? res.data.data : [];
+                        } else {
+                            _this.$message.error(res.data.msg || '获取站点异常');
+                        }
+                        _this.getPlatformShop('notFirst');
+                        if (type === 'search') {
+                            _this.getPickingList(_this.searchData, 'all')
+                        }
+                    }).catch(function (error) {
+                        _this.$message.error('获取站点异常');
+                        _this.getPlatformShop('notFirst');
+                        if (type === 'search') {
+                            _this.getPickingList(_this.searchData, 'all')
+                        }
+                    });
+                },
+                finishedStatus01: function finishedStatus01() {
+                    this.dialogTableVisible01 = false;
+                    setTimeout(function() {
+                        // VM.getPickingList(VM.searchData);
+                        VM.doSearch()
+                    }, 800);
+                },
+                //打印分拣单
+                printPartOrder: function() {
+                    var _this = this;
+                    if (this.multipleSelection.length > 0) {
+                        var partOrderData = [];
+                        var preCheckParam = {
+                            data: {
+                                query: {
+                                    ordId: []
+                                }
+                            }
+                        }
+
+                        this.multipleSelection.forEach(function(item) {
+                            partOrderData.push({
+                                b5cOrderNo: item.b5cOrderNo,
+                                orderNo: item.orderNo,
+                                logisticModelIdNm: item.logisticModelIdNm,
+                                trackingNumber: item.trackingNumber,
+                                packing_no: item.packing_no,
+                                is_qoo: item.is_qoo,
+                                addressUserName: item.addressUserName,
+                            })
+                            preCheckParam.data.query.ordId.push(item.b5cOrderNo)
+                        })
+                        axios.post('/index.php?g=oms&m=commonData&a=preCheckAndDone', preCheckParam)
+                            .then(function(res) {
+                                if (res.data.code === 3000) {
+                                    _this.$alert(res.data.msg, '分拣提示', {
+                                        showCancelButton: true,
+                                        cancelButtonText: '取消',
+                                        confirmButtonText: '确定',
+                                        callback: function(action) {
+                                            if (action == 'confirm') {
+                                                preCheckParam.data.query.preDone = 1
+                                                axios.post(
+                                                        '/index.php?g=oms&m=commonData&a=preCheckAndDone',
+                                                        preCheckParam)
+                                                    .then(function(response) {
+                                                        if (response.data.code ===
+                                                            2000) {
+                                                            sessionStorage.setItem(
+                                                                'pickingResult',
+                                                                JSON.stringify(
+                                                                    response.data
+                                                                    .data));
+                                                            var route = document
+                                                                .createElement('a');
+                                                            route.setAttribute('style',
+                                                                'display: none');
+                                                            route.setAttribute(
+                                                                'onclick',
+                                                                "opennewtab(this,'" +
+                                                                _this.$lang(
+                                                                    '拣货单结果页') + "')"
+                                                            );
+                                                            route.setAttribute('_href',
+                                                                '/index.php?g=oms&m=picking&a=pickingResult'
+                                                            );
+                                                            route.onclick();
+                                                        }
+                                                    })
+                                            }
+                                        }
+                                    });
+                                } else {
+                                    sessionStorage.setItem('partOrderData', JSON.stringify(
+                                        partOrderData))
+                                    newTab('/index.php?g=oms&m=pick_apart&a=printPartOrder', _this
+                                        .$lang('打印分拣单'));
+                                }
+                            })
+                    } else {
+                        this.$message.warning(this.$lang('请先选择订单'));
+                    }
+                },
+                //一键通过
+                oneKeyToPass: function oneKeyToPass() {
+                    var _this = this;
+                    if (this.multipleSelection.length < 1) {
+                        this.$message.error(this.$lang('请先选择要一键通过的订单'));
+                    } else {
+                        _this.$confirm(this.$lang('确认将选中订单当前步骤一键通过吗？'), this.$lang('一键通过'), {
+                            confirmButtonText: this.$lang('确定'),
+                            cancelButtonText: this.$lang('取消')
+                        }).then(function() {
+                            var ordIdArr = [];
+                            _this.multipleSelection.forEach(function(ele) {
+                                ordIdArr.push(ele.b5cOrderNo);
+                            });
+                            var postData = {
+                                "data": {
+                                    "query": {
+                                        "ordId": ordIdArr,
+                                        from: 'N001820600'
+                                    }
+                                }
+                            };
+                            axios.post('/index.php?g=oms&m=commonData&a=oneKeyThrough', postData)
+                                .then(function(response) {
+                                    if (response.data.code == 2000) {
+                                        _this.dialogTableVisible01 = true;
+                                        _this.gridData01 = response.data.data.pageData;
+                                    } else {
+                                        _this.$message.error(_this.$lang(response.data.msg));
+                                    }
+                                }).catch(function(err) {
+                                    console.log(err);
+                                });
+                        }).catch(function() {
+                            _this.$message({
+                                type: 'info',
+                                message: _this.$lang('已取消一键通过')
+                            });
+                        });
+                    }
+                },
+                showDoBack: function showDoBack() {
+                    if (this.multipleSelection.length < 1) {
+                        this.$message.error(this.$lang('请先选择要退回的订单'));
+                    } else {
+                        this.dialogVisible01 = true;
+                    }
+                },
+                cancelStatus: function cancelStatus() {
+                    this.dialogVisible01 = false;
+                },
+                finishedStatus: function finishedStatus() {
+                    this.dialogTableVisible = false;
+                    this.dialogVisible01 = false;
+                    setTimeout(function() {
+                        // VM.getPickingList(VM.searchData);
+                        VM.doSearch()
+                    }, 800);
+                },
+                doStatus: function doStatus() {
+                    var _this = this;
+                    var ordIdArr = [];
+                    _this.multipleSelection.forEach(function(ele) {
+                        ordIdArr.push(ele.b5cOrderNo);
+                    });
+                    var postData = {
+                        "data": {
+                            "query": {
+                                "ordId": ordIdArr,
+                                "state": _this.backToStatus,
+                                from: 'N001820600'
+                            }
+                        }
+                    };
+                    // console.log(_this.backToStatus)
+                    if (!_this.backToStatus) {
+                        _this.$message.error(this.$lang('请先选择要退回的状态'));
+                    } else if (_this.backToStatus == 'N001821000') {
+                        _this.innerVisible = true
+                    } else {
+                        axios.post('/index.php?g=oms&m=commonData&a=orderReBack', postData).then(function(
+                            response) {
+                            if (response.data.code == 2000) {
+                                var result = response.data.data.pageData;
+                                _this.dialogTableVisible = true;
+                                _this.gridData = [];
+                                for (var i in result) {
+                                    _this.gridData.push(result[i])
+                                }
+                            } else {
+                                _this.$message.error(_this.$lang(response.data.msg));
+                            }
+                        }).catch(function(err) {
+                            console.log(err);
+                        });
+                    }
+                },
+                backPatch: function() {
+                    var _this = this;
+                    var ordIdArr = [];
+                    _this.multipleSelection.forEach(function(ele) {
+                        ordIdArr.push(ele.b5cOrderNo);
+                    });
+                    var postData = {
+                        "data": {
+                            "query": {
+                                "ordId": ordIdArr,
+                                "state": _this.backToStatus,
+                                from: 'N001820600'
+                            }
+                        }
+                    };
+                    axios.post('/index.php?g=oms&m=commonData&a=orderReBack', postData).then(function(
+                        response) {
+                        if (response.data.code == 2000) {
+                            var result = response.data.data.pageData;
+                            _this.dialogTableVisible = true;
+                            _this.innerVisible = false;
+                            _this.gridData = [];
+                            for (var i in result) {
+                                _this.gridData.push(result[i])
+                            }
+                        } else {
+                            _this.$message.error(_this.$lang(response.data.msg));
+                        }
+                    }).catch(function(err) {
+                        console.log(err);
+                    });
+                },
+                handleClose: function handleClose(done) {
+                    done();
+                },
+
+                //搜索条件数据
+                getPickingListMenu: function getPickingListMenu() {
+                    var _query;
+
+                    var _this = this;
+                    _this.tableData = []
+                    var postData = {
+                        data: {
+                            query: (_query = {
+                                    platform: true,
+                                    gudsType: true,
+                                    site_cd: true,
+                                    countries: true
+                                }, _defineProperty(_query, 'countries', true), _defineProperty(
+                                    _query, 'stores', true), _defineProperty(_query, 'warehouses',
+                                    true), _defineProperty(_query, 'logisticsCompany', true),
+                                _defineProperty(_query, 'logisticsType', true), _defineProperty(
+                                    _query, 'saleTeams', true), _defineProperty(_query,
+                                    'pickingSortType', true), _defineProperty(_query,
+                                    'pickingTimeRangeIndex', true), _defineProperty(_query,
+                                    'surfaceWayGet', true), _query)
+                        }
+                    };
+                    axios.post('/index.php?g=oms&m=CommonData&a=commonData', postData).then(function(
+                        response) {
+                        var data = response.data;
+                        if (data.code != 2000) {
+                            this.$message.error($this.$lang(data.msg));
+                        } else {
+                            _this.channels = data.data.site_cd; //平台渠道
+                            _this.packStatus = data.data.gudsType; //订单状态
+                            var country = [];
+                            _this.countryStatus = country;
+                            for (var x in data.data.countries) {
+                                if (data.data.countries[x].NAME !== null) {
+                                    country.push(data.data.countries[x]); //国家
+                                }
+                            };
+                            _this.shopStatus = data.data.stores; //店铺
+                            _this.warehouseStatus = data.data.warehouses; //仓库
+                            _this.logisticsCompanyStatus = data.data.logisticsCompany; //物流公司
+                            _this.shippingMethodsStatus = data.data.logisticsType; //物流方式
+                            _this.shippingMethodsStatusTemp = JSON.parse(JSON.stringify(_this
+                                .shippingMethodsStatus));
+                            _this.salesTeamStatus = data.data.saleTeams; //销售团队
+                            _this.downQueryStatus = data.data.pickingTimeRangeIndex
+                                .keyWordInputApart[0]; //查询条件
+                            _this.time = data.data.pickingTimeRangeIndex.keyWordRange[0]; //查询条件
+                            _this.sort_type = data.data.pickingSortType; //排序方式
+                            _this.surfaceWayStatus = data.data.surfaceWayGet; //排序方式
+                            $('#picking-list').css('visibility', 'visible');
+                        }
+                    }).catch(function(err) {
+                        console.log(err);
+                    });
+                },
+                changeArr: function changeArr(arr) {
+                    var newAObj = {};
+                    arr.forEach(function(el) {
+                        if (!newAObj.hasOwnProperty(el)) {
+                            newAObj[el] = 1;
+                        } else {
+                            newAObj[el]++;
+                        }
+                    });
+                    var newArr = [];
+                    for (var key in newAObj) {
+                        newArr.push({
+                            sku: key,
+                            num: newAObj[key]
+                        });
+                    }
+                    return newArr;
+                },
+                // 选择售后类型
+                selectaftersalesType: function(item) {
+                    var _this = this;
+                    _this.selectaftersalesTypeStatus = item
+                    _this.searchData.data.condition.after_sale_type = item
+                },
+                getPickingList: function getPickingList(data, type) {
+                    var _this = this;
+                    var data = JSON.parse(JSON.stringify(data))
+                    data.data.condition.page_now = this.currentPage;
+                    if (type == 'all') {
+                        data.data.condition.plat_cd = [];
+                        this.sites.forEach(function(element) {
+                            data.data.condition.plat_cd.push(element.CD)
+                        })
+                    }
+                    _this.tableLoading = true;
+                    axios.post('/index.php?g=Oms&m=PickApart&a=apart_list_data', data).then(function(
+                        response) {
+                        console.log(response)
+                        if (response.data.code == 200) {
+                            _this.tableData = _this.sites.length || !type ? response.data.data : [];
+                            _this.totalCount = _this.sites.length || !type ? parseInt(response.data
+                                .total) : 0;
+                            setTimeout(function() {
+                                _this.tableLoading = false;
+                            }, 1000);
+                        } else {
+                            _this.$message.error(_this.$lang(response.data.msg));
+                        }
+                    }).catch(function(err) {
+                        console.log(err);
+                    });
+                },
+                channelALL: function channelALL() {
+                    $('.channel-item').each(function() {
+                        $(this).removeClass('active');
+                    });
+                    this.isChannelALL = true;
+                    this.channelData = [];
+                },
+                siteAll: function siteAll(type) {
+                    $('.site-item').each(function() {
+                        $(this).removeClass('active');
+                    });
+                    this.isSiteAll = true;
+                    this.siteData = [];
+                    if (!type) {
+                        this.getPlatformShop('notFirst');
+                        this.getPickingList(this.searchData, 'all');
+                    }
+
+                },
+                selectSite: function selectChannel(key) {
+                    this.isSiteAll = false;
+                    $(event.srcElement).toggleClass('active');
+                    if (this.isNone($('.site-item'))) {
+                        this.isSiteAll = true;
+                        this.siteData = [];
+                        this.getPickingList(this.searchData, 'all');
+
+                    } else {
+                        this.doCheck(this.siteData, key);
+                        this.searchData.data.condition.plat_cd = this.siteData;
+                    }
+                    this.getPlatformShop('notFirst');
+
+                },
+                selectChannel: function selectChannel(key) {
+                    // var channel = event.currentTarget.getAttribute('data-cd');
+                    this.isChannelALL = false;
+                    $(event.srcElement).toggleClass('active');
+                    if (this.isNone($('.channel-item'))) {
+                        this.isChannelALL = true;
+                        this.channelData = [];
+                    } else {
+                        this.doCheck(this.channelData, key);
+                    }
+                },
+                getPlatformShop: function getPlatformShop(type) {
+                    var _this = this;
+
+                    var postData = {
+                        "plat_form": []
+                    };
+                    if (type == "first") {
+                        postData.plat_form = [];
+                    } else if (type == "notFirst") {
+                        postData.plat_form = this.siteData;
+                    }
+                    if (!this.siteData.length) {
+                        postData.plat_form = [];
+                        this.sites.forEach(function(element) {
+                            postData.plat_form.push(element.CD)
+                        })
+                    } else {
+                        postData.plat_form = this.siteData
+                    }
+                    axios.post('/index.php?g=Oms&m=Order&a=storesGet', postData).then(function(response) {
+                        if (response.data.status == 200000) {
+                            VM.shopStatus = response.data.data;
+                        } else {
+                            VM.$message.error(_this.$lang(response.data.info));
+                        }
+                    }).catch(function(err) {
+                        console.log(err);
+                    });
+                },
+                packALL: function packALL() {
+                    $('.pack-item').each(function() {
+                        $(this).removeClass('active');
+                    });
+                    this.isPackALL = true;
+                    this.packData = [];
+                },
+                selectPack: function selectPack(key) {
+                    // var pack = event.currentTarget.getAttribute('data-cd');
+                    this.isPackALL = false;
+                    $(event.srcElement).toggleClass('active');
+                    if (this.isNone($('.pack-item'))) {
+                        this.isPackALL = true;
+                        this.packData = [];
+                    } else {
+                        this.doCheck(this.packData, key);
+                    }
+                },
+                selectSort: function selectSort(key) {
+                    $(event.srcElement).siblings().removeClass('active').end().addClass("active");
+                    this.sortData = key;
+                },
+                toggleRemark: function toggleRemark() {
+                    $(event.srcElement).toggleClass('isActive');
+                    this.remarkHave = this.remarkHave == 0 ? 1 : 0;
+                },
+                toggleError: function toggleError() {
+                    $(event.srcElement).toggleClass('isActive');
+                    this.errorHave = this.errorHave == 0 ? 1 : 0;
+                },
+
+                // 查询功能
+                doSearch: function doSearch() {
+                    this.$set(this.searchData.data.condition, 'search_condition', this.selectedDownQuery);
+                    this.$set(this.searchData.data.condition, "search_value", $.trim(this.searchKeywords));
+                    if (this.siteData.length) {
+                        this.getPickingList(this.searchData);
+                    } else {
+                        this.getPickingList(this.searchData, 'all');
+                    }
+                    this.isEditState = false;
+                },
+
+                //重置功能
+                doReset: function doReset() {
+                    window.location.reload()
+                        // this.packALL();
+                        // this.channelALL();
+                        // this.siteAll();
+                        // this.$set(this.searchData.data.condition, 'search_condition', 'orderNo');
+                        // this.$set(this.searchData.data.condition, "search_value", '');
+                        // this.selectedCountries = [];
+                        // this.selectedShops = [];
+                        // this.selectedWarehouses = [];
+                        // this.selectedLogisticsCompanys = [];
+                        // this.selectedShippingMethods = [];
+                        // this.selectedSalesTeam = [];
+                        // this.selectedSurface = '';
+                        // this.remarkHave = 0;
+                        // this.errorHave = 0;
+                        // this.timeSort = 'orderTime';
+                        // this.searchKeywords = '';
+                        // this.dateRange = '';
+                        // this.selectedDownQuery = 'orderNo';
+                        // $('.contain-remark').removeClass("isActive");
+                        // $('.contain-error').removeClass("isActive");
+                        // $('.sort-type')[0].click();
+                        // this.getPickingListMenu();
+                        // this.shippingMethodsStatus = JSON.parse(JSON.stringify(this.shippingMethodsStatusTemp));
+                },
+                //备注
+                doRemark: function doRemark(row) {
+                    this.form = JSON.parse(JSON.stringify(row));
+                    this.formTemp = JSON.parse(JSON.stringify(this.form));
+                    this.dialogVisible = !this.dialogVisible;
+                },
+                saveRemark: function saveRemark(ind, row) {
+                    var _this = this;
+                    var data = {
+                        'thr_order_id': _this.form.third_id,
+                        'plat_cd': _this.form.platCd,
+                        'remarks_type': 'operate',
+                        'remarks_msg': _this.form.remarkMsg
+                    };
+
+                    axios.post('/index.php?g=oms&m=order&a=orderRemarks', data).then(function(response) {
+                        if (response.data.status == 200000) {
+                            _this.dialogVisible = !_this.dialogVisible;
+                            _this.getPickingList(_this.searchData);
+                        } else {
+                            _this.$message.error(_this.$lang(response.data.msg));
+                        }
+                    }).catch(function(err) {
+                        console.log(err);
+                    });
+                },
+                cancelRemark: function cancelRemark() {
+
+                    this.dialogVisible = !this.dialogVisible;
+                    // this.form = JSON.parse(JSON.stringify(this.formTemp))
+                    this.form = Object.assign({}, this.formTemp);
+                },
+                //是否为空
+                isNone: function isNone(dom) {
+                    var num = 0;
+                    dom.each(function() {
+                        if ($(this).hasClass('active')) num += 1;
+                    });
+                    return num == 0 ? true : false;
+                },
+                //是否在数组中
+                isInArray: function isInArray(arr, value) {
+                    var index = $.inArray(value, arr);
+                    if (index >= 0) {
+                        return true;
+                    }
+                    return false;
+                },
+                //删除未知下标元素
+                deleteEle: function deleteEle(arr, value) {
+                    arr.splice(arr.indexOf(value), 1);
+                },
+
+                // 搜索条件选择
+                doCheck: function doCheck(arr, val) {
+                    //如果有删除，没有则添加
+                    if (this.isInArray(arr, val)) {
+                        this.deleteEle(arr, val);
+                    } else {
+                        arr.push(val);
+                    }
+                },
+                selectCompany: function selectCompany() {
+                    var _this = this;
+                    axios.post("index.php?g=Oms&m=OrderPresent&a=get_log_company", {
+                        company_code: _this.selectedLogisticsCompanys
+                    }).then(function(res) {
+                        if (res.data.code == 200) {
+                            if (res.data.data == null) {
+                                _this.shippingMethodsStatus = _this.shippingMethodsStatusTemp;
+                            } else {
+                                res.data.data.forEach(function(ele) {
+                                    ele.id = ele.ID;
+                                    ele.logisticsMode = ele.CD_VAL;
+                                });
+                                _this.shippingMethodsStatus = res.data.data;
+                            }
+                        } else {
+                            _this.shippingMethodsStatus = _this.shippingMethodsStatusTemp;
+                        }
+                    });
+                },
+                /**
+                 *  批量操作
+                 *  edit    批量编辑
+                 *  save    批量保存
+                 *  cancelTear 批量取消
+                 **/
+
+                batchFn: function batchFn(type) {
+                    if (this.multipleSelection.length) {
+                        switch (type) {
+                            case 'edit':
+                                this.isEditState = true;
+                                VM.tableLoading = true;
+                                var param = {
+                                    datas: []
+                                };
+                                var _this = this;
+                                this.tableData.forEach(function(value) {
+                                    VM.multipleSelection.forEach(function(item) {
+                                        if (item == value) {
+                                            param.datas.push({
+                                                thr_order_id: value.third_id,
+                                                plat_cd: value.platCd,
+                                                warehouse_cd: value.warehouse
+                                            });
+                                            Vue.set(value, 'oneGet', item.surfaceWayGetCd ==
+                                                "N002010100");
+                                            Vue.set(item, 'Company', [{
+                                                logisticsMode: item
+                                                    .logisticModelIdNm,
+                                                id: item.logisticModelId
+                                            }]);
+                                            Vue.set(item, 'faceOrderGet', [{
+                                                CD: item.surfaceWayGetCd,
+                                                CD_VAL: item.surfaceWayGetCdNm
+                                            }]);
+                                            var res = false;
+                                            item.json_info = item.json_info || [];
+                                            for (var v in item.json_info) {
+                                                if (item.json_info[v].logisticsCode == item
+                                                    .logisticCd) {
+                                                    res = true;
+                                                    break;
+                                                };
+                                            }
+
+                                            if (!res) {
+                                                item.json_info.push({
+                                                    logisticsCode: item.logisticCd,
+                                                    logisticsName: item.logisticCdNm
+                                                });
+                                            }
+                                        }
+                                    });
+                                });
+
+                                axios.post("/index.php?g=OMS&m=Patch&a=logisticsGet", param).then(function(
+                                    res) {
+                                    var response = res.data;
+                                    if (response.status == 200000 && response.data) {
+                                        VM.tableLoading = false;
+                                        var edit = true;
+                                        response.data.forEach(function(item) {
+                                            VM.tableData.forEach(function(value) {
+                                                if (item.orderId == value
+                                                    .third_id && item.code === 2000
+                                                ) {
+                                                    Vue.set(value, 'edit', true);
+                                                    if (item.data.warehouse.length >
+                                                        0) {
+                                                        Vue.set(value, 'json_info',
+                                                            item.data.warehouse[
+                                                                0]['lgtModel']);
+
+                                                    }
+                                                    edit = false;
+                                                } else if (item.orderId == value
+                                                    .third_order_number && item
+                                                    .code !== 2000) {
+                                                    VM.$refs.multipleTable
+                                                        .toggleRowSelection(value);
+                                                    !VM.multipleSelection.length &&
+                                                        (VM.batchEdit = false);
+                                                }
+                                            });
+                                        });
+                                        edit && VM.$message.error(_this.$lang('已选择订单无可编辑内容'));
+                                    } else {
+                                        vm.$message.error(_this.$lang('已选择订单无可编辑内容'));
+                                    }
+                                });
+                                break;
+                            case 'save':
+                                var param = {
+                                    orders: []
+                                };
+                                var _this = this;
+                                this.tableData.forEach(function(value) {
+                                    VM.multipleSelection.forEach(function(item) {
+                                        if (item == value) {
+                                            Vue.set(value, 'edit', true);
+                                            param.orders.push({
+                                                thr_order_id: item.third_id,
+                                                plat_cd: item.platCd,
+                                                delivery_warehouse_code: item
+                                                    .warehouse,
+                                                logistics_company_code: item
+                                                    .logisticCd,
+                                                shipping_methods_code: item
+                                                    .logisticModelId,
+                                                electronic_single_code: item
+                                                    .surfaceWayGetCd,
+                                                waybill_number: item.trackingNumber,
+                                                patch_freight: item.fright,
+                                                b5c_order_no:item.b5cOrderNo
+                                            });
+                                        }
+                                    });
+                                });
+                                axios.post("/index.php?g=OMS&m=Patch&a=logisticsUpdate", param).then(
+                                    function(res) {
+                                        if (res.data.status == 200000) {
+                                            VM.$message.warning(_this.$lang("成功保存 ：") + res.data.data
+                                                .order + _this.$lang("条，保存失败 ： ") + res.data.data
+                                                .error + _this.$lang("条"));
+                                            setTimeout(function() {
+                                                VM.getPickingList(_this.searchData);
+                                                VM.isEditState = false;
+                                            }, 2000);
+                                        } else {
+                                            VM.$message.warning(_this.$lang("保存失败"));
+                                        }
+                                    });
+                                break;
+                            case 'cancelTear':
+                                this.$confirm(this.$lang('确认取消单吗？'), this.$lang('取消订单')).then(function() {
+                                    VM.tableData.forEach(function(value) {
+                                        VM.multipleSelection.forEach(function(item) {
+                                            if (item == value) {
+                                                Vue.set(value, 'edit', false);
+                                            }
+                                        });
+                                    });
+                                    VM.$refs.multipleTable.clearSelection();
+                                    VM.isEditState = false;
+                                });
+                                break;
+                        }
+                    } else {
+                        this.$message.warning(this.$lang("请先勾选条目"));
+                    }
+                },
+                //批量编辑保存操作
+                batchCompany: function batchCompany(row) {
+                    row.json_info.forEach(function(item) {
+                        if (item.logisticsCode == row.logisticCd) {
+                            Vue.set(row, 'Company', item.logisticsMethod);
+                        }
+                    });
+                },
+                toOrderDetail: function toOrderDetail(order_no, thirdId, platCD) {
+                    var dom = document.createElement('a');
+                    var _href = "/index.php?g=OMS&m=Order&a=orderDetail&order_no=" + order_no + "&thrId=" + thirdId + "&platCode=" +
+                        platCD+"&isShowEditButtonByOmsListEntry="+false;
+                    dom.setAttribute("onclick", "opennewtab(this,'" + this.$lang('订单详情') + "')");
+                    dom.setAttribute("_href", _href);
+                    dom.click();
+                },
+                route: function route(title, url) {
+                    var dom = document.createElement("a");
+                    dom.setAttribute("onclick", "opennewtab(this,'" + title + "')");
+                    dom.setAttribute("_href", url);
+                    dom.onclick();
+                },
+                batchWay: function batchWay(row) {
+                    var modeid = row.logisticModelId;
+                    var flag = false;
+                    axios.post("index.php?g=OMS&m=Patch&a=faceOrderGet", {
+                        logistic_model_id: modeid
+                    }).then(function(res) {
+                        if (res.data.status == 200000) {
+                            row.faceOrderGet = res.data.data;
+                            row.faceOrderGet.forEach(function(el) {
+                                if (el.CD == row.surfaceWayGetCd) {
+                                    flag = true
+                                }
+                            })
+                            if (!flag) {
+                                row.surfaceWayGetCd = '';
+                            }
+                        } else {
+                            row.faceOrderGet = [];
+                            row.surfaceWayGetCd = '';
+                        }
+                    });
+                },
+                changeWay: function changeWay(type, row) {
+                    Vue.set(row, "isListnull", row.trackingNumber = "");
+                    if (type == "method") {
+                        axios.post("index.php?g=OMS&m=Patch&a=faceOrderGet", {
+                            logistic_model_id: row.logisticModelId
+                        }).then(function(res) {
+
+                            if (res.data.status == 200000) {
+                                var data = res.data;
+                                if (data.data.length) {
+                                    Vue.set(row, 'surfaceWayGetCdNm', data.data[0].CD_VAL);
+                                    Vue.set(row, 'surfaceWayGetCd', data.data[0].CD);
+                                } else {
+                                    Vue.set(row, 'surfaceWayGetCdNm', '');
+                                    Vue.set(row, 'surfaceWayGetCd', '');
+                                }
+                                row.faceOrderGet = res.data.data;
+                                row.faceOrderGet.forEach(function(el) {
+                                    if (el.CD == "N002010100") {
+                                        row.surfaceWayGetCd = "N002010100"
+                                    }
+                                })
+                            } else {
+                                row.faceOrderGet = [];
+                                row.surfaceWayGetCd = ""
+                            }
+                        });
+                    }
+                },
+                changeHouse: function changeHouse(row) {
+                    row.logisticModelId = ''
+                },
+                batchang: function batchang(row) {
+                    Vue.set(row, "oneGet", row.surfaceWayGetCd == "N002010100");
+                },
+                //获取面单
+                getList: function getList() {
+                    var getList = {
+                        data: {
+                            orders: []
+                        }
+                    };
+                    var _this = this;
+                    if (this.multipleSelection.length) {
+                        this.tableData.forEach(function(value) {
+                            VM.multipleSelection.forEach(function(item) {
+                                if (item == value) {
+                                    Vue.set(value, 'print', true);
+                                    getList.data.orders.push({
+                                        thr_order_id: item.third_id,
+                                        b5c_logistics_cd: item.logisticCd,
+                                        plat_cd: item.platCd,
+                                        service_code: item.logisticModelId
+                                    });
+                                }
+                            });
+                        });
+                        axios.post('/index.php?g=OMS&m=Patch&a=electronicOrder', getList).then(function(
+                            response) {
+                            if (response.data.status == 200000) {
+                                VM.$message.warning(_this.$lang("面单获取中…"));
+                            }
+                        }).catch(function(err) {
+                            console.log(err);
+                        });
+                    } else {
+                        this.$message.warning(this.$lang("请先勾选条目"));
+                    }
+                },
+                //打印面单
+                printList: function printList() {
+                    var _this = this;
+
+                    if (this.multipleSelection.length) {
+                        var param = {
+                            data: {
+                                orders: []
+                            },
+                            show: 1
+                        };
+
+                        this.multipleSelection.forEach(function(item) {
+                            param.data.orders.push({
+                                thr_order_id: item.third_id,
+                                plat_from: item.platCd,
+                                surfaceWayGetCd: item.surfaceWayGetCd
+                            });
+                        });
+
+                        axios.post("/index.php?g=OMS&m=Order&a=faceAlonePath", param).then(function(res) {
+                            if (res.data.data.count) {
+                                sessionStorage.setItem("queryPrintData", JSON.stringify(param));
+                                _this.route(_this.$lang("打印预览"),
+                                    "/index.php?g=OMS&m=Order&a=printShow");
+                            } else {
+                                _this.$message.warning(_this.$lang("没有可打印的面单"));
+                            }
+                        });
+                    } else {
+                        this.$message.warning(this.$lang("请勾选打印的条目"));
+                    }
+                },
+                handleSizeChange: function handleSizeChange(val) {
+                    this.searchData.data.condition.page_size = val;
+                },
+                handleCurrentChange: function handleCurrentChange(val) {
+                    this.currentPage = val;
+                    if (this.channelData.length) {
+                        this.getPickingList(this.searchData, 'all');
+                    } else if (this.channelData.length && this.siteData.length) {
+                        this.getPickingList(this.searchData);
+                    } else {
+                        this.getPickingList(this.searchData);
+                    }
+                },
+                handleSelectionChange: function handleSelectionChange(val) {
+                    this.multipleSelection = val;
+                },
+                doExcelEdit: function doExcelEdit() {
+                    document.getElementById('excelFile').click();
+                },
+                importOrder: function importOrder() {
+                    document.getElementById('activeImport').click();
+                },
+                flowJump: function flowJump(e) {
+                    var _this3 = this;
+
+                    var path = [{
+                        m: 'order_present',
+                        a: 'OrderPresentList',
+                        title: this.$lang('待预派')
+                    }, {
+                        m: 'patch',
+                        a: 'lists',
+                        title: this.$lang('待派单')
+                    }, {
+                        m: 'pending_order',
+                        a: 'pending_list',
+                        title: this.$lang('待获取运单号')
+                    }, {
+                        m: 'picking',
+                        a: 'pickingList',
+                        title: this.$lang('待拣货')
+                    }, {
+                        m: 'pick_apart',
+                        a: 'PickApartList',
+                        title: this.$lang('待分拣')
+                    }, {
+                        m: 'check_order',
+                        a: 'checkingList',
+                        title: this.$lang('待核单')
+                    }, {
+                        m: 'out_going',
+                        a: 'outList',
+                        title: this.$lang('待出库')
+                    }, {
+                        m: 'out_storage',
+                        a: 'listPage',
+                        title: this.$lang('已出库')
+                    }];
+
+                    setTimeout(function() {
+                        var url = 'index.php?g=oms&m=order_present&a=OrderPresentList';
+                        $('.el-step__head').each(function(i, e) {
+                            $(e).click(function() {
+                                if (_this3.active == i) {
+                                    window.location.reload();
+                                } else {
+                                    url = '/index.php?g=oms&m=' + path[i].m +
+                                        '&a=' + path[i].a;
+                                    newTab(url, path[i].title);
+                                }
+                            });
+                        });
+                    }, 1000);
+                },
+                toInvoice: function() {
+                    var flag = true;
+                    var orderArr = [];
+                    this.multipleSelection.forEach(function(el) {
+                        if (el.storeName.indexOf('Lazada') == -1 && el.storeName.indexOf(
+                                'lazada') == -1) {
+                            flag = false;
+                            VM.$message.error(VM.$lang("只有Lazada的订单可以生成发票"));
+                        }
+                    });
+                    if (this.multipleSelection.length == 0) {
+                        flag = false;
+                        VM.$message.error(VM.$lang("请选择Lazada的订单"));
+                    }
+                    if (flag) {
+                        this.multipleSelection.forEach(function(el) {
+                            orderArr.push(el.b5cOrderNo)
+                            sessionStorage.setItem('invoiceItems', JSON.stringify(orderArr));
+                            var route = document.createElement("a");
+                            route.setAttribute("style", "display: none");
+                            route.setAttribute("onclick", "opennewtab(this,'发票打印预览')");
+                            route.setAttribute("_href",
+                                '/index.php?g=oms&m=pick_apart&a=invoicepreview');
+                            route.onclick();
+
+                        });
+                    }
+                }
+            },
+            created: function created() {
+                // window.onscroll = function() {
+                //     if(document.documentElement.scrollTop != 0){
+                //         sessionStorage.setItem("PickApartListOffsetTop", document.documentElement.scrollTop);
+                //     }
+                // }
+                this.pickerOptions = {
+                    shortcuts: [{
+                        text: this.$lang('最近一周'),
+                        onClick: function onClick(picker) {
+                            var end = new Date();
+                            var start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: this.$lang('最近一个月'),
+                        onClick: function onClick(picker) {
+                            var end = new Date();
+                            var start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: this.$lang('最近三个月'),
+                        onClick: function onClick(picker) {
+                            var end = new Date();
+                            var start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }]
+                };
+                this.flowJump();
+                this.getSite();
+                this.getPickingListMenu();
+                this.getPickingList(this.searchData);
+            },
+            watch: {
+
+                //自动监测搜索条件的修改
+                channelData: {
+                    handler: function handler(newValue, oldValue) {
+                        // VM.$set(VM.searchData.data.condition, "plat_cd", newValue);
+                        this.sites = [];
+                        this.getSite('search', newValue)
+                        this.siteAll('notClick');
+                    },
+                },
+                packData: {
+                    handler: function handler(newValue, oldValue) {
+                        this.$set(this.searchData.data.condition, "package_type", newValue);
+                    },
+
+                    deep: true
+                },
+                sortData: {
+                    handler: function handler(newValue, oldValue) {
+                        this.$set(this.searchData.data.condition, "sort_type", newValue);
+                    },
+
+                    deep: true
+                },
+                remarkHave: {
+                    handler: function handler(newValue, oldValue) {
+                        this.$set(this.searchData.data.condition, "remarkMsg", newValue);
+                    },
+
+                    deep: true
+                },
+                errorHave: {
+                    handler: function handler(newValue, oldValue) {
+                        this.$set(this.searchData.data.condition, "apart_error", newValue);
+                    },
+
+                    deep: true
+                },
+                selectedCountries: {
+                    handler: function handler(newValue, oldValue) {
+                        this.$set(this.searchData.data.condition, "country_id", newValue);
+                    },
+
+                    deep: true
+                },
+                selectedShops: {
+                    handler: function handler(newValue, oldValue) {
+                        this.$set(this.searchData.data.condition, "store_id", newValue);
+                    },
+
+                    deep: true
+                },
+                selectedWarehouses: {
+                    handler: function handler(newValue, oldValue) {
+                        this.$set(this.searchData.data.condition, "warehouse_cd", newValue);
+                    },
+
+                    deep: true
+                },
+                selectedLogisticsCompanys: {
+                    handler: function handler(newValue, oldValue) {
+                        this.$set(this.searchData.data.condition, "logistics_company_cd", newValue);
+                    },
+
+                    deep: true
+                },
+                selectedShippingMethods: {
+                    handler: function handler(newValue, oldValue) {
+                        this.$set(this.searchData.data.condition, "logistics_mode", newValue);
+                    },
+
+                    deep: true
+                },
+                selectedSalesTeam: {
+                    handler: function handler(newValue, oldValue) {
+                        this.$set(this.searchData.data.condition, "sale_team_cd", newValue);
+                    },
+
+                    deep: true
+                },
+                selectedSurface: {
+                    handler: function handler(newValue, oldValue) {
+                        this.$set(this.searchData.data.condition, "surface_method", newValue);
+                    },
+
+                    deep: true
+                },
+                timeSort: {
+                    handler: function handler(newValue, oldValue) {
+                        this.$set(this.searchData.data.condition, "search_time_type", newValue);
+                    },
+
+                    deep: true
+                },
+                dateRange: {
+                    handler: function handler(newValue, oldValue) {
+                        newValue = newValue || [];
+                        this.$set(this.searchData.data.condition, "start_time", newValue[0]);
+                        this.$set(this.searchData.data.condition, "end_time", newValue[1]);
+                    },
+
+                    deep: true
+                },
+                //搜索条件数据修改，自动请求接口
+                searchData: {
+                    handler: function handler(newValue, oldValue) {
+                        this.currentPage = 1;
+                        if (!this.siteData.length) {
+                            this.getPickingList(newValue, 'all');
+                        } else if (this.channelData.length && this.siteData.length) {
+                            clearTimeout(VM.iTimer)
+                            VM.iTimer = setTimeout(function() {
+                                VM.getPickingList(newValue);
+                            }, 500)
+                        } else {
+                            clearTimeout(VM.iTimer)
+                            VM.iTimer = setTimeout(function() {
+                                VM.getPickingList(newValue);
+                            }, 500)
+                        }
+                        this.isEditState = false;
+                    },
+
+                    deep: true
+                }
+
+            },
+            filters: {
+                formatDate: function formatDate(time) {
+                    var date = new Date(time);
+                    return _formatDate(date, 'yyyy-MM-dd hh:mm:ss');
+                }
+            },
+            computed: {
+                ids: function ids() {
+                    var orderIds = [];
+                    this.multipleSelection.forEach(function(ele, index) {
+                        if (ele.b5cOrderNo) {
+                            orderIds.push(ele.b5cOrderNo);
+                        }
+                    });
+                    return orderIds.join('-');
+                }
+
+            }
+        });
+
+        //时间戳转日期
+        function _formatDate(date, fmt) {
+            if (/(y+)/.test(fmt)) {
+                fmt = fmt.replace(RegExp.$1, (date.getFullYear() + '').substr(4 - RegExp.$1.length));
+            }
+            var o = {
+                'M+': date.getMonth() + 1,
+                'd+': date.getDate(),
+                'h+': date.getHours(),
+                'm+': date.getMinutes(),
+                's+': date.getSeconds()
+            };
+            for (var k in o) {
+                if (new RegExp('(' + k + ')').test(fmt)) {
+                    var str = o[k] + '';
+                    fmt = fmt.replace(RegExp.$1, RegExp.$1.length === 1 ? str : padLeftZero(str));
+                }
+            }
+            return fmt;
+        }
+
+        function padLeftZero(str) {
+            return ('00' + str).substr(str.length);
+        };
+    </script>
+
+</body>
+
+</html>

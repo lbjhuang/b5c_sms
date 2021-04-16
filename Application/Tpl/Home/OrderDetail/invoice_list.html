@@ -1,0 +1,532 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8"/>
+	<title>发票列表</title>
+	<link rel="stylesheet" href="../Public/lib/bootstrap/css/bootstrap.min.css">
+	<link rel="stylesheet" href="../Public/lib/icon/css/font-awesome.min.css">
+	<script type="text/javascript" src="../Public/lib/My97DatePicker/WdatePicker.js"></script>
+	<script type="text/javascript" src="../Public/lib/jquery/1.9.1/jquery.min.js"></script>
+	<script type="text/javascript" src="../Public/lib/bootstrap/js/tether.min.js"></script>
+	<script type="text/javascript" src="../Public/lib/bootstrap/js/bootstrap.min.js"></script>
+
+	<link rel="stylesheet" href="../Public/css/purchase.css?=20170508"/>
+	<link rel="stylesheet" href="../Public/css/purchaseDetail.css?=201705026"/>
+    <link rel="stylesheet" href="../Public/css/common.css?=20170508"/>
+    <link rel="stylesheet" href="../Public/css/default.css"/>
+    <link rel="stylesheet" href="../Public/css/default.css?v=<{$Think.const.V}>">
+    <style>
+        #payableList {
+            margin-bottom: 60px;
+        }
+        ul.search {
+			display: none;
+			list-style: none;
+			text-align: left;
+			border: 1px solid #E0E0E0;
+			padding: 5px 0;
+			border-radius: 3px;
+			max-height: 160px;
+			overflow: auto;
+			position: absolute;
+			z-index: 999;
+			background: white;
+			min-width: 200px;
+		}
+		ul.search li{
+			height: 30px;
+			line-height: 30px;
+			padding-left: 10px;
+		}
+		ul.search li:hover{
+			cursor: pointer;
+			background: #EEEEEE;
+		}
+		input.search{
+			border: 1px solid #d9d9d9;
+			border-radius: 3px;
+			height: 34px;
+    		width: 100%;
+		}
+        .hidden{
+			display: none;
+		}
+        .row_menu a{
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap" id="payableList">
+        <div class="enter-line">
+            <form method="get" id="thisform" action="" class="invoice_list_form">
+                <div class="row row_menu">
+                    <a class="purchase_type status_check <if condition='$param["purchase_type"] === "" or
+                    $param["purchase_type"] === null'>active</if>" value ><{$Think.lang.全部}></a>
+                    <a class="purchase_type status_check <if condition='$param["purchase_type"] == "N001890100"'>active</if>" value="N001890100"><{$Think.lang.普通采购}></a>
+                    <a class="purchase_type status_check <if condition='$param["purchase_type"] == "N001890200"'>active</if>" value="N001890200"><{$Think.lang.线上采购}></a>
+                    <input type="hidden" name="purchase_type" id="purchase_type" value="<{$param["purchase_type"]}>">
+                </div>
+                <div class="row row_menu">
+                    <a class="payment_status status_check <if condition='$payment_status === "" or
+                    $param["payment_status"] === null'>active</if>" value ><{$Think.lang.全部}></a>
+                    <a class="payment_status status_check <if condition='$param["payment_status"] === "0"'>active</if>" value="0"><{$Think.lang.待付款}></a>
+                    <a class="payment_status status_check <if condition='$param["payment_status"] == 1'>active</if>" value="1"><{$Think.lang.部分付款}></a>
+                    <a class="payment_status status_check <if condition='$param["payment_status"] == 2'>active</if>" value="2"><{$Think.lang.完成付款}></a>
+                    <input type="hidden" name="payment_status" id="payment_status" value="<{$param.payment_status}>">
+                </div>
+                <!-- <div class="row row_menu">
+                    <a class="invoice_status_check <if condition='$param["invoice_status"] === "" or $param["invoice_status"] === null'>active</if>"><{$Think.lang.全部}></a>
+                    <a class="invoice_status_check <if condition='$param["invoice_status"] === "0" or $param["invoice_status"] === "0,1" or $param["invoice_status"] === "0,2"'>active</if>" value='0'><{$Think.lang.未开票}></a>
+                    <a class="invoice_status_check <if condition='$param["invoice_status"] === "1" or $param["invoice_status"] === "0,1" or $param["invoice_status"] === "1,2"'>active</if>" value='1'><{$Think.lang.部分开票}></a>
+                    <a class="invoice_status_check <if condition='$param["invoice_status"] === "2" or $param["invoice_status"] === "0,2" or $param["invoice_status"] === "1,2"'>active</if>" value='2'><{$Think.lang.已开票}></a>
+                    <input type="hidden" name="invoice_status" id="invoice_status" value="<{$param.invoice_status}>">
+                </div> -->
+                <div class="row row_menu invoice_status_wrap">
+                    <a class="invoice_status all <if condition='$param["invoice_status"] === "" or $param["invoice_status"] === null'>active</if>"><{$Think.lang.全部}></a>
+                    <a class="invoice_status <if condition='$param["invoice_status"] === "0" or $param["invoice_status"] === "0,1" or $param["invoice_status"] === "0,2"'>active</if>" value='0'><{$Think.lang.未开票}></a>
+                    <a class="invoice_status <if condition='$param["invoice_status"] === "1" or $param["invoice_status"] === "0,1" or $param["invoice_status"] === "1,2"'>active</if>" value='1'><{$Think.lang.部分开票}></a>
+                    <a class="invoice_status <if condition='$param["invoice_status"] === "2" or $param["invoice_status"] === "0,2" or $param["invoice_status"] === "1,2"'>active</if>" value='2'><{$Think.lang.已开票}></a>
+                    <input type="hidden" name="invoice_status" id="invoice_status" value="<{$param.invoice_status}>">
+                </div>
+                <div class="row row_menu has_invoice_unconfirmed_check_wrap">
+                    <a class="has_invoice_unconfirmed_check all <if condition='$param["has_invoice_unconfirmed"] === "" or $param["has_invoice_unconfirmed"] === null'>active</if>"><{$Think.lang.全部}></a>
+                    <a class="has_invoice_unconfirmed_check <if condition='$param["has_invoice_unconfirmed"] === "0" or $param["has_invoice_unconfirmed"] === "0,1" or $param["has_invoice_unconfirmed"] === "0,2"'>active</if>" value='0'><{$Think.lang.无待办}></a>
+                    <a class="has_invoice_unconfirmed_check <if condition='$param["has_invoice_unconfirmed"] === "1" or $param["has_invoice_unconfirmed"] === "0,1" or $param["has_invoice_unconfirmed"] === "1,2"'>active</if>" value='1'><{$Think.lang.有待确认}></a>
+                    <a class="has_invoice_unconfirmed_check <if condition='$param["has_invoice_unconfirmed"] === "2" or $param["has_invoice_unconfirmed"] === "0,2" or $param["has_invoice_unconfirmed"] === "1,2"'>active</if>" value='2'><{$Think.lang.有已退回}></a>
+                    <input type="hidden" name="has_invoice_unconfirmed" id="has_invoice_unconfirmed" value="<{$param.has_invoice_unconfirmed}>">
+                </div>
+                    <div class="card order_list_row_top_input">
+                        <div class="card-block" >
+                            <blockquote class="card-blockquote">
+                                <div class="table-responsive">
+                                    <table class="table invoice_list_table">
+                                        <tbody>
+                                        <tr>
+                                            <td width="2%">
+                                                <!-- <select name="number_type">
+                                                    <option value="0" <if condition='$param["number_type"] == 0'>selected</if>><{$Think.lang.PO单号}></option>
+                                                    <option value="1" <if condition='$param["number_type"] == 1'>selected</if>><{$Think.lang.采购单号}></option>
+                                                </select> -->
+                                                <{$Think.lang.采购单号/采购PO单号}>
+                                            </td>
+                                            <td width="21%"><input type="text" class="form-control trimInput" placeholder="<{$Think.lang.请输入采购单号/采购PO单号}>" name="procurement_number" value="<{$param.procurement_number}>"></td>
+                                            <td width="2%"></td>
+                                            <td width="2%"><{$Think.lang.供应商名称}></td>
+                                            <td width="21%"><input type="text" name="supplier_id" id="supplier_id"  placeholder="<{$Think.lang.供应商}>" class="form-control trimInput" value="<{$param.supplier_id}>"></td>
+                                            <td width="2%"></td>
+                                            <td width="2%"><{$Think.lang.供应商名称（EN）}></td>
+                                            <td width="21%"><input type="text" name="supplier_id_en" id="supplier_id_en"  placeholder="<{$Think.lang.供应商}>" class="form-control trimInput" value="<{$param.supplier_id_en}>"></td>
+                                            <td width="2%"></td>
+                                            <td width="2%"><{$Think.lang.我方公司}></td>
+                                            <td width="21%">
+                                                <div>
+                                                    <input class="search" type="text" oninput="checkField(this,'#ourCompany','our_company','company')" id="ourCompany" placeholder="请选择" onfocus="teamInputFocus(this)" onblur="teamInputBlur(this,'our_company')">
+                                                    <ul class="search">
+                                                        <volist name="our_company" id="v">
+                                                            <li onclick="pickTeam(this,'#ourCompany','our_company')" data-cd="<{$v.CD}>"><{$v.CD_VAL}></li>
+                                                        </volist>
+                                                    </ul>
+                                                </div>
+                                                <fieldset class="form-group perchase_list_select hidden">
+                                                    <select class="form-control" name="our_company"  >
+                                                        <option value=""><{$Think.lang.请选择}></option>
+                                                        <volist name="our_company" id="v">
+                                                            <option value="<{$v.CD}>" <if condition='$param["our_company"] == $v["CD"]'>selected</if>><{$v.CD_VAL}></option>
+                                                        </volist>
+                                                    </select>
+                                                </fieldset>
+                                            </td>
+
+                                        </tr>
+                                        <tr>
+                                            <td width="2%"><{$Think.lang.采购团队}></td>
+                                            <td width="21%">
+                                                <div>
+                                                    <input class="search" type="text" oninput="checkField(this,'#purchaseTeam','payment_company','team')" id="purchaseTeam" placeholder="请选择" onfocus="teamInputFocus(this)" onblur="teamInputBlur(this,'payment_company')">
+                                                    <ul class="search">
+                                                        <volist name="purchase_team" id="v">
+                                                            <li onclick="pickTeam(this,'#purchaseTeam','payment_company')" data-cd="<{$v.CD}>"><{$v.CD_VAL}></li>
+                                                        </volist>
+                                                    </ul>
+                                                </div>
+                                                <fieldset class="form-group perchase_list_select hidden">
+                                                    <select class="form-control" name="payment_company">
+                                                        <option value=""><{$Think.lang.请选择}></option>
+                                                        <volist name="purchase_team" id="v">
+                                                            <option value="<{$v.CD}>" <if condition='$param["payment_company"] == $v["CD"]'>selected</if>><{$v.CD_VAL}></option>
+                                                        </volist>
+                                                    </select>
+                                                </fieldset>
+                                            </td>
+                                            <td width="2%"></td>
+                                            <td><{$Think.lang.采购同事}></td>
+                                            <td><input type="text" class="form-control trimInput" placeholder="<{$Think.lang.采购同事}>" name="prepared_by" value="<{$param.prepared_by}>"></td>
+                                            <td></td>
+                                            <td><{$Think.lang.发票类型}></td>
+                                            <td>
+                                                <fieldset class="form-group perchase_list_select">
+                                                    <select class="form-control" name="invoice_type" >
+                                                        <option value=""><{$Think.lang.请选择发票类型}></option>
+                                                        <volist name="invoice_type" id="v">
+                                                            <option value="<{$v.CD}>"><if condition='$param["invoice_type"] == $v["CD"]'>selected</if><?= L($v['CD_VAL']) ?></option>
+                                                        </volist>
+                                                    </select>
+                                                </fieldset>
+                                            </td>
+                                            <td></td>
+                                            <td><{$Think.lang.发票号}></td>
+                                            <td><input type="text" class="form-control trimInput" placeholder="<{$Think.lang.发票号}>" name="invoice_no" value="<{$param.invoice_no}>"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class=""> <{$Think.lang.采购单创建时间}> </td>
+                                            <td class="common_data">
+                                                <input type="text" name="start_time" id="start_time"  value="<{$param.start_time}>" onfocus="WdatePicker({firstDayOfWeek:1})" placeholder="<{$Think.lang.起始日期}>" class="form-control">
+                                                <span class="input-group-btn">
+                                                    <button class="btn btn-secondary" type="button"><i ></i></button>
+                                                </span>
+                                            </td>
+                                            <td colspan="2" class="text-center"><div class="col-data_l">一</div></td>
+                                            <td class="common_data">
+                                                <input type="text" name="end_time" id="end_time" value="<{$param.end_time}>" onfocus="WdatePicker({firstDayOfWeek:1})" placeholder="<{$Think.lang.结束时间}>" class="form-control">
+                                                <span class="input-group-btn">
+                                                    <button class="btn btn-secondary" type="button"><i></i></button>
+                                                </span>
+                                            </td>
+                                            <td colspan="2">
+                                                <{$Think.lang.发票确认负责人}>
+                                            </td>
+                                            <td><input type="text" class="form-control trimInput"
+                                                    placeholder="<{$Think.lang.发票确认负责人}>" name="invoice_affirm_by"
+                                                    value="<{$param.invoice_affirm_by}>">
+                                            </td>
+                                            <td colspan="2"></td>
+                                            <td colspan="5">
+                                                <div class="row row_search">
+                                                    <div class="col-lg-12 text-left col-md-12 col-sm-12">
+                                                        <input name="search" value="1" type="hidden">
+                                                        <button type="button" class="btn-search" id="search">
+                                                            <{$Think.lang.查询}>
+                                                        </button>
+                                                        <button type="button" class="btn-reset" id="resetForm">
+                                                            <{$Think.lang.重置}>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </blockquote>
+                        </div>
+                    </div>
+                </form>
+            <p class="purchase_list_p"></p>
+            <div class="card purchase_list_card invoice_list_card">
+                <div class="invoice_list_head">
+                    <b><{$Think.lang.发票列表}></b>
+                    <div>
+                        <span><{$Think.lang.共}> <i><{$count}></i><{$Think.lang.条记录}></span>
+			            <button id="export" class="btn btn-edit btn-sm" style="margin-left:20px;position:absolute;right:0;" type="button"><{$Think.lang.导出}></button>
+                        <!--
+                        <div>
+                            <button type="button">下载导入模板</button>
+                            <button type="button">导入线上发票信息</button>
+                        </div>
+                        -->
+                    </div>
+                </div>
+                <div class="card-block">
+                    <blockquote class="card-blockquote">
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                <tr class="text-center">
+                                    <!--<th width=""><input type="checkbox"></th>-->
+                                    <th width=""><{$Think.lang.采购单号/采购PO单号}></th>
+                                    <th width=""><{$Think.lang.供应商名称}></th>
+                                    <th width=""><{$Think.lang.供应商名称（EN）}></th>
+                                    <th width=""><{$Think.lang.我方公司}></th>
+                                    <th width=""><{$Think.lang.采购金额}></th>
+                                    <th width=""><{$Think.lang.采购团队}></th>
+                                    <th width=""><{$Think.lang.开票情况}></th>
+                                    <th width=""><{$Think.lang.采购发票确认情况}></th>
+                                    <th width=""><{$Think.lang.操作}></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <volist name="list" id="v">
+                                    <tr>
+                                        <td><{$v.procurement_number}><br>
+                                            <{$v.online_purchase_order_number}></td>
+                                        <td><{$v.supplier_id}></td>
+                                        <td><{$v.supplier_id_en}></td>
+                                        <td><{:L(cdVal($v['our_company']))}></td>
+                                        <td><{:cdVal($v['amount_currency'])}> <{:number_format($v['amount'],2)}></td>
+                                        <td><{$v.prepared_by}>(<{:cdVal($v['payment_company'])}>)</td>
+                                        <td>
+                                            <switch name="v.invoice_status">
+                                                <case value="0"><{$Think.lang.未开票}></case>
+                                                <case value="1"><{$Think.lang.部分开票}></case>
+                                                <case value="2"><{$Think.lang.已开票}></case>
+                                            </switch>
+                                        </td>
+                                        <td>
+                                            <if condition="$v.has_invoice_unconfirmed eq '0'">
+                                                <{$Think.lang.无待办}>
+                                            <elseif condition="$v.has_invoice_unconfirmed eq '1'" />
+                                                <{$Think.lang.有待确认}>
+                                            <else />
+                                                <{$Think.lang.有已退回}>
+                                            </if>
+                                        </td>
+                                        <td class="invoice_list_cor" style="white-space: nowrap;"><a onclick="opennewtab(this,'<{$Think.lang.发票详情}>')" _href="<{:U('invoice_info',['relevance_id'=>$v['relevance_id']])}>" class="btn-check"><{$Think.lang.查看}></a>
+                                        </td>
+                                    </tr>
+                                </volist>
+                                </tbody>
+                            </table>
+                            <ul class="pagination" style="margin: 0;">
+                                <{$page}>
+                            </ul>
+                        </div>
+                    </blockquote>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script>
+  var getList ={
+        company:'',
+        team:'',
+    }
+    getList.company = '<volist name="our_company" id="v">{"cd":"<{$v.CD}>","val":"<{$v.CD_VAL}>"},</volist>';
+    getList.team = '<volist name="purchase_team" id="v">{"cd":"<{$v.CD}>","val":"<{$v.CD_VAL}>"},</volist>';
+	$("#ourCompany").val($("select[name=our_company]").find("option:selected").text());
+	$("#purchaseTeam").val($("select[name=payment_company]").find("option:selected").text());
+
+  /**
+   *  sessionStorage  RefreshInvoiceList 改变的时候 重新查询
+   */
+  $(window).on("storage", function (e) {
+      if(e.originalEvent.key === 'RefreshInvoiceList'){
+          if(e.originalEvent.newValue === 'yes'){
+              $('#search').click()
+              sessionStorage.removeItem('RefreshInvoiceList')
+          }
+      }
+  });
+	function checkField(e,id,name,field) {
+        teams = "[" + getList[field].substring(0,getList[field].length - 1) +"]";
+		teams = JSON.parse(teams);
+		$(e).next().hide().children().remove();
+		var list = ''
+		teams.forEach(function(item){
+			if(item.val.indexOf(e.value) > -1){
+				list += '<li onclick="pickTeam(this,\''+ id +'\',\'' + name +'\')" data-cd="'+ item.cd+'">' + item.val +'</li>';
+			}
+		})
+		if(list.length){
+			$(e).next().show().append(list);
+		}
+	}
+
+	function pickTeam(e,id,name){
+		$("select[name=" + name + "]").children().each(function(index,item){
+			if($(item).text() == $(e).text()){
+				$(item).prop("selected", 'selected');
+			}
+		})
+		$(id).val($(e).text());
+		$(id).data("cd",$(e).data('cd'));
+		$(id).next().hide().children().remove();
+	}
+
+	function teamInputFocus(e){
+        if($(e).val() == '请选择'){
+			$(e).val('')
+        };
+
+		if($(e).next().children().length){
+			$(e).next().show();
+		}
+    }
+
+    function teamInputBlur(e,name){
+		if($(e).val()){
+			$(e).val($("select[name=" + name + "]").find("option:selected").text());
+		}else{
+            $(e).val($("select[name=" + name + "]").find('option').first().prop("selected", 'selected'));
+			$(e).val("请选择");
+		}
+		setTimeout(function(){
+			$(e).next().hide()
+		},500)
+	}
+
+
+    $(function(){
+        // 开票情况
+        $('.invoice_status').click(function(){
+			var active_status = $(this).attr('class');
+			var invoice_status = $('#invoice_status').val();
+			var invoice_status_wrap = $('.invoice_status_wrap a')
+			var arr = [];
+			if(active_status.indexOf('all') != -1 && active_status.indexOf('active') == -1){
+				$(this).siblings().removeClass('active');
+				$(this).addClass('active');
+				$('#invoice_status').attr('value', '')
+			}else if (active_status.indexOf('all') == -1 && active_status.indexOf('active') == -1) {
+				$(this).addClass('active');
+				$('.invoice_status_wrap .all').removeClass('active');
+				if($('.invoice_status_wrap .active').length == 3){
+					$('.invoice_status_wrap a').removeClass('active');
+					$('.invoice_status_wrap .all').addClass('active');
+					$('#invoice_status').attr('value', '')
+				}else{
+					for (var i = 0; i < invoice_status_wrap.length; i++) {
+						if (invoice_status_wrap[i].getAttribute('class').indexOf('active') != -1) {
+							arr.push(invoice_status_wrap[i].getAttribute('value'))
+						}
+					}
+				}
+			}else if (active_status.indexOf('all') == -1 && active_status.indexOf('active') != -1) {
+				var invoice_status2 = $('#invoice_status').val();
+				$(this).removeClass('active');
+				if($('.invoice_status_wrap .active').length == 0){
+					$('.invoice_status_wrap a').removeClass('active');
+					$('.invoice_status_wrap .all').addClass('active');
+					$('#invoice_status').attr('value', '')
+				}else{
+					for (var i = 0; i < invoice_status_wrap.length; i++) {
+						if (invoice_status_wrap[i].getAttribute('class').indexOf('active') != -1) {
+							arr.push(invoice_status_wrap[i].getAttribute('value'))
+						}
+					}
+				}
+			}
+			var stringVal = arr.toString()
+			$('#invoice_status').attr('value', stringVal)
+			console.log($('#invoice_status').val())
+		})
+
+
+
+        //付款状态筛选
+        $('.purchase_type').click(function () {
+            var purchase_type = $(this).attr('value');
+            $('#purchase_type').val(purchase_type);
+            $('.purchase_type').removeClass('active');
+            $(this).addClass('active');
+            return false;
+        })
+        //付款状态筛选
+        $('.payment_status').click(function () {
+            var payment_status = $(this).attr('value');
+            $('#payment_status').val(payment_status);
+            $('.payment_status').removeClass('active');
+            $(this).addClass('active');
+            return false;
+        })
+
+        //发货状态筛选
+        $('.invoice_status_check').click(function () {
+            var invoice_status = $(this).attr('value');
+            $('#invoice_status').val(invoice_status);
+            $('.invoice_status_check').removeClass('active');
+            $(this).addClass('active');
+            return false;
+        })
+
+        //是否有待确认筛选
+        $('.has_invoice_unconfirmed_check').click(function () {
+			var active_status = $(this).attr('class');
+			var invoice_status = $('#has_invoice_unconfirmed').val();
+			var has_invoice_unconfirmed_check_wrap = $('.has_invoice_unconfirmed_check_wrap a')
+			var arr = [];
+            if(active_status.indexOf('all') != -1 && active_status.indexOf('active') == -1){
+				$(this).siblings().removeClass('active');
+				$(this).addClass('active');
+				$('#has_invoice_unconfirmed').attr('value', '')
+			}else if (active_status.indexOf('all') == -1 && active_status.indexOf('active') == -1) {
+				$(this).addClass('active');
+				$('.has_invoice_unconfirmed_check_wrap .all').removeClass('active');
+				if($('.has_invoice_unconfirmed_check_wrap .active').length == 3){
+					$('.has_invoice_unconfirmed_check_wrap a').removeClass('active');
+					$('.has_invoice_unconfirmed_check_wrap .all').addClass('active');
+					$('#has_invoice_unconfirmed').attr('value', '')
+				}else{
+					for (var i = 0; i < has_invoice_unconfirmed_check_wrap.length; i++) {
+						if (has_invoice_unconfirmed_check_wrap[i].getAttribute('class').indexOf('active') != -1) {
+							arr.push(has_invoice_unconfirmed_check_wrap[i].getAttribute('value'))
+						}
+					}
+				}
+			}else if (active_status.indexOf('all') == -1 && active_status.indexOf('active') != -1) {
+				var invoice_status2 = $('#has_invoice_unconfirmed').val();
+				$(this).removeClass('active');
+				if($('.has_invoice_unconfirmed_check_wrap .active').length == 0){
+					$('.has_invoice_unconfirmed_check_wrap a').removeClass('active');
+					$('.has_invoice_unconfirmed_check_wrap .all').addClass('active');
+					$('#has_invoice_unconfirmed').attr('value', '')
+				}else{
+					for (var i = 0; i < has_invoice_unconfirmed_check_wrap.length; i++) {
+						if (has_invoice_unconfirmed_check_wrap[i].getAttribute('class').indexOf('active') != -1) {
+							arr.push(has_invoice_unconfirmed_check_wrap[i].getAttribute('value'))
+						}
+					}
+				}
+			}
+
+
+			var stringVal = arr.toString()
+			$('#has_invoice_unconfirmed').attr('value', stringVal)
+			console.log($('#has_invoice_unconfirmed').val())
+
+
+            // var has_invoice_unconfirmed = $(this).attr('value');
+            // $('#has_invoice_unconfirmed').val(has_invoice_unconfirmed);
+            // $('.has_invoice_unconfirmed_check').removeClass('active');
+            // $(this).addClass('active');
+            // return false;
+        })
+
+        //搜索按钮
+        $('#search').click(function () {
+            var i = 0, len = $('.trimInput').length;
+            for (; i< len; i++) {
+                $('.trimInput')[i].value = $.trim($('.trimInput')[i].value);
+            };
+            var data = $('#thisform').serialize();
+            var url = "<{:U('invoice_list')}>&"+data;
+            location = url;
+            console.log(url)
+        })
+        //导出按钮
+        $('#export').click(function () {
+            var data = $('#thisform').serialize();
+            var url = "<{:U('invoice_export')}>&"+data;
+            location = url;
+        })
+        $('#resetForm').click(function() {
+            $('#thisform :input').val('');
+            $('.purchase_type:eq(0)').click();
+            $('.payment_status:eq(0)').click();
+            $('.invoice_status_check:eq(0)').click();
+            $('.has_invoice_unconfirmed_check:eq(0)').click();
+            $('.invoice_status:eq(0)').click();
+            $('#search').click();
+        })
+        // 日期右侧图标点击加载日历插件/
+        $(".common_data .input-group-btn button").click(function () {
+            $(this).parents(".common_data").find("input").focus()
+        })
+
+    })
+</script>
+</html>

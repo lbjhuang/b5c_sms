@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="renderer" content="webkit|ie-comp|ie-stand">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport"
+        content="width=device-width,initial-scale=1,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+  <meta http-equiv="Cache-Control" content="no-siteapp"/>
+  <title>更新日志列表</title>
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+  <link rel="stylesheet"
+        href="./Application/Tpl/Home/Public/css/element-ui-2.8.2.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+
+  <style>
+    html {
+    }
+
+    #main {
+      height: 100%;
+      padding-top: 15px;
+    }
+
+    .list {
+      padding: 0px 30px;
+    }
+
+    .divider__line {
+      display: inline-block;
+      height: 1px;
+      background-color: #dddddd;
+      width: 100%;
+    }
+
+    .log__list {
+      padding-left: 0px !important;
+    }
+
+    .log {
+      display: flex;
+      justify-content: space-between;
+      height: 45px;
+      align-items: center;
+      cursor: pointer;
+
+    }
+    .log__info-dot{
+      width: 10px;
+      height: 10px;
+      display: inline-block;
+      background: red;
+      border-radius: 50%;
+    }
+
+    .log__info-created-time {
+      width: 240px;
+      display: inline-block;
+      margin-right: 20px;
+    }
+    .current__row{
+      cursor: pointer;
+    }
+    /*
+      element-ui样式
+     */
+    .el-form-item {
+      margin-bottom: 0px !important;
+    }
+
+    .el-input__inner {
+      height: 60px;
+      line-height: 60px;
+    }
+
+    .el-pagination {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body id="content">
+
+<div id="main">
+  <div class="list">
+    <div data-test="data" class="list__data">
+      <el-table :highlight-current-row="true" row-class-name="current__row" :border="false" show-header @row-click="onView" ref="multipleTable" :data="pagedLogs.list">
+        <el-table-column width="50px">
+          <template slot-scope="scope">
+            <span class="log__info-dot" v-show="scope.row.is_red === 1"></span>
+          </template>
+        </el-table-column>
+        <el-table-column :label="$lang('上传时间')">
+          <template slot-scope="scope">
+            {{scope.row.created_log_at}}
+          </template>
+        </el-table-column>
+        <el-table-column :label="$lang('标题')">
+          <template slot-scope="scope">
+            {{scope.row.log_name}}
+          </template>
+        </el-table-column>
+        <el-table-column :label="$lang('上传人')">
+          <template slot-scope="scope">
+            {{scope.row.created_by}}
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
+    <div v-if="pagedLogs.total>10" data-test="pagination" class="list__pagination">
+      <el-pagination
+          @current-change="onPageChange"
+          :current-page="pagination.page"
+          :page-size="pagination.size"
+          layout="prev, pager, next, jumper"
+          :total="pagedLogs.total"
+      />
+    </div>
+  </div>
+</div>
+
+
+<script src="/Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.8.2.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.js"></script>
+<a href="javascript:void(0)" class="Hui-iconfont toTop" title="返回顶部" alt="返回顶部"
+   style="width:40px;height:40px;display:none;position:fixed;right:50px;bottom:30px;z-index:999999"><img
+    src="/Application/Tpl/Home/Public/images/top.png" style="width:42px;height:42px;margin-left:-1px;"></a>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js?v=201907011048"></script>
+<script>
+    if (getCookie('think_language') !== "zh-cn") {
+        ELEMENT.locale(ELEMENT.lang.en)
+    }
+</script>
+<script>
+    let vueApp = new Vue({
+        el: '#main',
+        data() {
+            return {
+                OPEN_HOST: '<{$OPEN_HOST}>',
+                user_name: '<{$user_name}>',
+                filter: {log_name: ""},
+                pagination: {
+                    page: 1,
+                    size: 10,
+                    sort: {prop: "", order: "desc"}
+                },
+                pagedLogs: {list: [], total: 0},
+                searching: false,
+            }
+        },
+        created() {
+            this.search();
+        },
+        methods: {
+            onSearch() {
+                this.pagination.page = 1;
+                this.search();
+            },
+            onPageChange(page) {
+                this.pagination.page = page;
+                this.search();
+            },
+            onSort(e) {
+                if (!e.prop || !e.order) return;
+                this.pagination.page = 1;
+                this.pagination.sort = {prop: e.prop, order: e.order};
+                this.search();
+            },
+            onView(row) {
+                console.log("当前行",row);
+                // sessionStorage.setItem('updateLogListItem', JSON.stringify(item));
+                axios.post(`${this.OPEN_HOST}/api/logDetail`, {
+                    id: row.uuid,
+                    M_NAME:this.user_name
+                }).then((res) => {
+                   if(res.data.code===200){
+                       this.search();
+                       let href = "/index.php?m=update_log&a=updateLogView&id=" + row.uuid;
+                       let a = document.createElement('a');
+                       a.setAttribute("style", "display: none");
+                       a.setAttribute("onclick", "opennewtab(this,'" + this.$lang('更新日志详情') + "')");
+                       a.setAttribute("_href", href);
+                       a.onclick();
+                   }
+                })
+
+            },
+            search() {
+                console.log("执行了");
+                this.searching = true;
+                axios.post(`${this.OPEN_HOST}/api/queryLog`, { //sort:this.pagination.sort.prop,sort_type:this.pagination.sort.order
+                    M_NAME:this.user_name,
+                    page: {page_count: this.pagination.size, this_page: this.pagination.page}
+                }).then((res) => {
+                    this.searching = false;
+                    this.pagedLogs = res.data.data;
+                    console.log("请求成功", this.pagedLogs)
+                    if (this.pagedLogs.list.length === 0 && this.pagination.page > 1) {
+                        this.pagination.page = 1;
+                        this.search();
+                    }
+                })
+            },
+        }
+    });
+</script>
+</body>
+</html>

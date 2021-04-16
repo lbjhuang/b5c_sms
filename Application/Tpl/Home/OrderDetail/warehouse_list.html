@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8"/>
+	<title>待入库单</title>
+	<link rel="stylesheet" href="../Public/lib/bootstrap/css/bootstrap.min.css">
+	<link rel="stylesheet" href="../Public/lib/icon/css/font-awesome.min.css">
+	<script type="text/javascript" src="../Public/lib/My97DatePicker/WdatePicker.js"></script>
+	<script type="text/javascript" src="../Public/lib/jquery/1.9.1/jquery.min.js"></script>
+	<script type="text/javascript" src="../Public/lib/bootstrap/js/tether.min.js"></script>
+	<script type="text/javascript" src="../Public/lib/bootstrap/js/bootstrap.min.js"></script>
+
+	<link rel="stylesheet" href="../Public/css/purchase.css?=20170508"/>
+	<link rel="stylesheet" href="../Public/css/purchaseDetail.css"/>
+	<link rel="stylesheet" href="../Public/css/default.css"/>
+	<link rel="stylesheet" href="../Public/lib/webuploader/0.1.5/webuploader.css"/>
+	<link rel="stylesheet" href="../Public/css/common.css?=20170508"/>
+	<link rel="stylesheet" href="../Public/lib/layui/css/layui.css?v=20181008"/>
+	<style>
+		.layui-layer-content{width:500px;background:white !important;border:1px solid #cccccc;}
+		#tableExcelAll{display: none}
+		#tableExcel{display: none}
+		.layui-laydate-content td.laydate-selected {
+			background-color: #f2f6fc !important;
+		}
+		.layui-input{
+			height: 34px;
+			border: 1px solid rgba(0,0,0,.15);
+			border-radius: 4px;
+		}
+		.order_list_row_top_input .card-block tbody td .form-control{
+			float: left;
+			width: 100%;
+		}
+		.hidden{
+			display: none;
+		}
+		ul.search {
+			display: none;
+			list-style: none;
+			text-align: left;
+			border: 1px solid #E0E0E0;
+			padding: 5px 0;
+			border-radius: 3px;
+			max-height: 160px;
+			overflow: auto;
+			position: absolute;
+			z-index: 999;
+			background: white;
+			min-width: 200px;
+		}
+		ul.search li{
+			height: 30px;
+			line-height: 30px;
+			padding-left: 10px;
+		}
+		ul.search li:hover{
+			cursor: pointer;
+			background: #EEEEEE;
+		}
+		input.search{
+			border: 1px solid #d9d9d9;
+			border-radius: 3px;
+			height: 34px;
+    		width: 100%;
+		}
+		.row_menu a{
+			margin-right: 5px;
+		}
+	</style>
+</head>
+<body>
+<div class="wrap commom_wrap" id="warehouseList">
+	<div class="enter-line">
+		<form action="" method="post" id="thisform">
+			<!-- <div class="row row_menu">
+				<a class="warehouse_status_check <if condition='$param["warehouse_status"] === "" or $param["warehouse_status"] === null'>active</if>"><{$Think.lang.全部}></a>
+				<a class="warehouse_status_check <if condition='$param["warehouse_status"] === "0" or $param["warehouse_status"] === "0,1" or $param["warehouse_status"] === "0,2"'>active</if>" value='0'><{$Think.lang.待入库}></a>
+				<a class="warehouse_status_check <if condition='$param["warehouse_status"] === 2 or $param["warehouse_status"] === "0,2" or $param["warehouse_status"] === "1,2"'>active</if>" value='2'><{$Think.lang.部分入库}></a>
+				<a class="warehouse_status_check <if condition='$param["warehouse_status"] === 1 or $param["warehouse_status"] === "0,1" or $param["warehouse_status"] === "1,2"'>active</if>" value='1'><{$Think.lang.已入库}></a>
+				<input type="hidden" name="warehouse_status" id="warehouse_status" value="<{$param.warehouse_status}>">
+			</div> -->
+
+			<div class="row row_menu Warehoused_status_wrap">
+				<a class="Warehoused_status all <if condition='$param["warehouse_status"] === "" or $param["warehouse_status"] === null'>active</if>"><{$Think.lang.全部}></a>
+				<a class="Warehoused_status <if condition='$param["warehouse_status"] === "0" or $param["warehouse_status"] === "0,1" or $param["warehouse_status"] === "0,2"'>active</if>" value='0'><{$Think.lang.待入库}></a>
+				<a class="Warehoused_status <if condition='$param["warehouse_status"] === "2" or $param["warehouse_status"] === "0,2" or $param["warehouse_status"] === "2,1"'>active</if>" value='2'><{$Think.lang.部分入库}></a>
+				<a class="Warehoused_status <if condition='$param["warehouse_status"] === "1" or $param["warehouse_status"] === "0,1" or $param["warehouse_status"] === "2,1"'>active</if>" value='1'><{$Think.lang.已入库}></a>
+				<input type="hidden" name="warehouse_status" id="warehouse_status" value="<{$param.warehouse_status}>">
+			</div>
+
+
+			<div class="card order_list_row_top_input">
+				<div class="card-block" >
+					<blockquote class="card-blockquote">
+						<div class="table-responsive">
+							<table class="table">
+								</thead>
+								<tbody>
+								<tr>
+									<td width="2%"><{$Think.lang.SKU/条形码}></td>
+									<td width="21%"><input type="text" name="sku_or_upc" id="sku_or_upc"  placeholder="<{$Think.lang.SKU/条形码}>" class="form-control" value="<{$param.sku_or_upc}>"></td>
+									<td width="2%"></td>
+									<td width="2%"><{$Think.lang.仓库}></td>
+									<td width="21%">
+										<div>
+											<input class="search" type="text" oninput="checkField(this,'#warehouseTeam','warehouse','warehouse')" id="warehouseTeam" placeholder="请选择" onfocus="teamInputFocus(this)" onblur="teamInputBlur(this,'warehouse')">
+											<ul class="search">
+												<volist name="warehouses" id="v">
+													<li onclick="pickTeam(this,'#warehouseTeam','warehouse')" data-cd="<{$key}>"><{$v}></li>
+												</volist>
+											</ul>
+										</div>
+										<fieldset class="form-group hidden">
+											<select class="form-control" name="warehouse" id="warehouse">
+												<option value=""><{$Think.lang.请选择}></option>
+												<volist name="warehouses" id="v">
+													<option value="<{$key}>" <if condition='$param["warehouse"] == $key'>selected</if>><{$v}></option>
+												</volist>
+											</select>
+										</fieldset>
+									</td>
+									<td width="2%"></td>
+									<td width="2%"><{$Think.lang.供应商}></td>
+									<td width="21%"><input type="text" name="supplier_id" id="supplier_id"  placeholder="<{$Think.lang.供应商}>" class="form-control" value="<{$param.supplier_id}>"></td>
+									<td width="2%"></td>
+									<td width="2%">
+										<!-- <select name="number_type">
+											<option value="0" <if condition='$param["number_type"] == 0'>selected</if>><{$Think.lang.PO单号}></option>
+											<option value="1" <if condition='$param["number_type"] == 1'>selected</if>><{$Think.lang.采购单号}></option>
+										</select> -->
+										<{$Think.lang.采购单号/采购PO单号}>
+									</td>
+									<td width="21%"><input type="text" class="form-control" placeholder="<{$Think.lang.请输入采购单号/采购PO单号}>" name="number" value="<{$param.number}>"></td>
+								</tr>
+								<tr>
+									<td width="2%"><{$Think.lang.提单号}></td>
+									<td width="21%"><input type="text" class="form-control" placeholder="<{$Think.lang.提单号}>" name="bill_of_landing" value="<{$param.bill_of_landing}>"></td>
+									<td width="2%"></td>
+									<td width="2%"><{$Think.lang.采购人}></td>
+									<td width="21%"><input type="text" class="form-control" placeholder="<{$Think.lang.采购人}>" name="prepared_by" value="<{$param.prepared_by}>"></td>
+									<td width="2%"></td>
+									<td><{$Think.lang.采购团队}></td>
+									<td>
+										<div>
+											<input class="search" type="text" oninput="checkField(this,'#purchaseTeam','payment_company','team')" id="purchaseTeam" placeholder="请选择" onfocus="teamInputFocus(this)" onblur="teamInputBlur(this,'payment_company')">
+											<ul class="search">
+												<volist name="purchase_teams" id="v">
+													<li onclick="pickTeam(this,'#purchaseTeam','payment_company')" data-cd="<{$v.CD}>"><{$v.CD_VAL}></li>
+												</volist>
+											</ul>
+										</div>
+										<fieldset class="form-group hidden">
+											<select class="form-control" name="payment_company">
+												<option value=""><{$Think.lang.请选择}></option>
+												<volist name="purchase_teams" id="v">
+													<option value="<{$v.CD}>" <if condition='$param["payment_company"] == $v["CD"]'>selected</if>><{$v.CD_VAL}></option>
+												</volist>
+											</select>
+										</fieldset>
+									</td>
+									<td></td>
+									<td><{$Think.lang.发货时间}></td>
+									<td>
+										<input type="text" class="layui-input" id="date-range" placeholder="<{$Think.lang.开始日期}> ~ <{$Think.lang.结束日期}>">
+										<input type="text" name="start_time" value="<{$param.start_time}>" class="hidden">
+										<input type="text" name="end_time" value="<{$param.end_time}>"  class="hidden">
+									</td>
+								</tr>
+								<tr>
+									<td width="2%"><{$Think.lang.入库负责人}></td>
+									<td width="21%"><input type="text" class="form-control" placeholder="<{$Think.lang.入库负责人}>" name="purchase_warehousing_by" value="<{$param.purchase_warehousing_by}>"></td>
+								</tr>
+								</tbody>
+							</table>
+						</div>
+					</blockquote>
+				</div>
+			</div>
+			<div class="row row_search">
+				<div class="col-lg-12 text-left col-md-12 col-sm-12">
+					<input name="search" value="1" type="hidden">
+					<button type="button" class="btn-search " id="search"><{$Think.lang.查询}></button>
+					<button type="button" class="btn-reset" id="resetForm"><{$Think.lang.重置}></button>
+				</div>
+			</div>
+		</form>
+	</div>
+	<p class="commom_p"></p>
+	<div class="card commom_card">
+		<div class="commom_card_head">
+			<span><{$Think.lang.结果}>:<{$Think.lang.共}> <{$count}> <{$Think.lang.条记录}></span>
+			<!--
+			<button id="export"  class="btn btn-edit btn-sm" type="button"><{$Think.lang.导出}></button>
+			<button type="button" class="btn btn-white" onclick="location='<{:U(\'CommonFile/download\',[\'name\'=>\'warehouse_template.xlsx\'])}>'"><i class="fa fa-download"></i><{$Think.lang.下载模板}></button>
+			-->
+			 <?php if(ButtonAction::hidden()){ ?>
+			<button type="button" class="btn btn-yellow" id="import-goods" data-toggle="modal" data-target="#fileModal" style="padding: 0"><i class="fa fa-plus"></i><{$Think.lang.执行导入}></button>
+			 <?php } ?>
+		</div>
+		<div class="card-block">
+			<blockquote class="card-blockquote">
+				<div class="table-responsive">
+					<table class="table table-bordered">
+						<thead>
+						<tr>
+							<!--<th width=""><input type="checkbox"></th>-->
+							<th width=""><{$Think.lang.序号}></th>
+							<th width=""><{$Think.lang.发货编号}></th>
+							<th width=""><{$Think.lang.采购单号}>/<{$Think.lang.PO单号}></th>
+							<th width=""><{$Think.lang.提单号}></th>
+							<th width=""><{$Think.lang.商品名称}></th>
+							<th width=""><{$Think.lang.发货数量}></th>
+							<th width=""><{$Think.lang.已入库数量}></th>
+							<th width=""><{$Think.lang.供应商}></th>
+							<th width=""><{$Think.lang.采购人}></th>
+							<th width=""><{$Think.lang.发货时间}></th>
+							<th width=""><{$Think.lang.到货/到港时间}></th>
+							<th width=""><{$Think.lang.入我方库}></th>
+							<th width=""><{$Think.lang.入库仓库}></th>
+							<th width=""><{$Think.lang.入库状态}></th>
+							<th width=""><{$Think.lang.操作}></th>
+						</tr>
+						</thead>
+						<tbody>
+						<volist name="list" key="k" id="v">
+							<tr>
+								<td><{$k}></td>
+								<td><{$v.warehouse_id}></td>
+								<td>
+									<{$v.procurement_number}>
+									<br>
+									<{$v.online_purchase_order_number}>
+								</td>
+								<td><{$v.bill_of_landing}></td>
+								<td><{$v.goods_name}></td>
+								<td><{:number_format($v['shipping_number'])}></td>
+								<td><{:number_format($v['warehouse_number']+$v['warehouse_number_broken'])}></td>
+								<td><{:L($v[supplier_id])}></td>
+								<!-- <td><{:L($v[supplier_id])}></td> -->
+								<td><{$v.prepared_by}></td>
+								<td><{$v.shipment_date}></td>
+								<td><{$v.arrival_date}></td>
+								<td>
+									<if condition="$v['need_warehousing'] == 1">
+										<{$Think.lang.是}>
+										<else />
+										<{$Think.lang.否}>
+									</if>
+								</td>
+								<td><{$v.warehouse}></td>
+								<td>
+									<switch name="v.warehouse_status">
+										<case value="0"><{$Think.lang.待入库}></case>
+										<case value="1"><{$Think.lang.已入库}></case>
+										<case value="2"><{$Think.lang.部分入库}></case>
+										<default />
+									</switch>
+								</td>
+								<td class="td_operation" style="white-space: nowrap;">
+									<a class="btn-check" onclick="opennewtab(this,'入库详情页')" _href='<{:U("warehouse_detail",['id'=>$v['id']])}>'><{$Think.lang.查看}></a><br>
+
+									<if condition="$v['warehouse_status'] neq 1">
+										<?php if(ButtonAction::hidden()){ ?>
+                                        <a class="btn-operate" onclick="opennewtab(this,'入库操作页')" _href='<{:U("warehouse",['id'=>$v['id']])}>'><{$Think.lang.入库}></a><br>
+										 <?php } ?>
+									</if>
+								</td>
+							</tr>
+						</volist>
+						</tbody>
+					</table>
+					<ul class="pagination" style="margin: 0;">
+						<?php echo $show;?>
+					</ul>
+				</div>
+			</blockquote>
+		</div>
+	</div>
+</div>
+<div id="ImportErrorPop" class="ImportErrorPopHtml">
+	<div class="ImportErrorPopMain">
+		<a href="javascript:void(0)"> <i onclick="document.getElementById('ImportErrorPop').style.display= 'none'">×</i></a>
+		<p><span><{$Think.lang.部分入库数据导入失败，你可以下载错误报告，查看具体原因}>。</span></p>
+		<button type="button"  id="btnExport" ><{$Think.lang.下载错误报告}></button>
+	</div>
+</div>
+<div id="ImportErrorPopAll" class="ImportErrorPopHtml">
+	<div class="ImportErrorPopMain">
+		<a href="javascript:void(0)"> <i onclick="document.getElementById('ImportErrorPopAll').style.display= 'none'">×</i></a>
+		<p><span><{$Think.lang.导入失败，你可以下载错误报告，查看具体原因}>。</span></p>
+		<button type="button"  id="btnExportAll" ><{$Think.lang.下载错误报告}></button>
+	</div>
+</div>
+<script type="text/javascript" src="../Public/lib/webuploader/0.1.5/webuploader.js"></script>
+<script type="text/javascript" src="../Public/lib/jquery.table2excel.js"></script>
+<script src="../Public/lib/layer/1.9.3/layer.js" type="text/javascript"></script>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="../Public/utils/utils.js"></script>
+<script type="text/javascript" src="../Public/lib/layui/layui.all.js?v=20181008"></script>
+<script>
+
+var getList ={
+        warehouse:'',
+        team:'',
+    }
+    getList.warehouse = '<volist name="warehouses" id="v">{"cd":"<{$key}>","val":"<{$v}>"},</volist>';
+    getList.team = '<volist name="purchase_teams" id="v">{"cd":"<{$v.CD}>","val":"<{$v.CD_VAL}>"},</volist>';
+	$("#warehouseTeam").val($("select[name=warehouse]").find("option:selected").text());
+	$("#purchaseTeam").val($("select[name=payment_company]").find("option:selected").text());
+
+	function checkField(e,id,name,field) {
+        teams = "[" + getList[field].substring(0,getList[field].length - 1) +"]";
+		teams = JSON.parse(teams);
+		$(e).next().hide().children().remove();
+		var list = ''
+		teams.forEach(function(item){
+			if(item.val.indexOf(e.value) > -1){
+				list += '<li onclick="pickTeam(this,\''+ id +'\',\'' + name +'\')" data-cd="'+ item.cd+'">' + item.val +'</li>';
+			}
+		})
+		if(list.length){
+			$(e).next().show().append(list);
+		}
+	}
+
+	function pickTeam(e,id,name){
+		$("select[name=" + name + "]").children().each(function(index,item){
+			if($(item).text() == $(e).text()){
+				$(item).prop("selected", 'selected');
+			}
+		})
+		$(id).val($(e).text());
+		$(id).data("cd",$(e).data('cd'));
+		$(id).next().hide().children().remove();
+	}
+
+	function teamInputFocus(e){
+        if($(e).val() == '请选择'){
+			$(e).val('') 
+        };
+        
+		if($(e).next().children().length){
+			$(e).next().show();
+		}
+    }
+
+    function teamInputBlur(e,name){
+		if($(e).val()){
+			$(e).val($("select[name=" + name + "]").find("option:selected").text());
+		}else{
+            $(e).val($("select[name=" + name + "]").find('option').first().prop("selected", 'selected'));
+			$(e).val("请选择");
+		}
+		setTimeout(function(){
+			$(e).next().hide()
+		},500)
+	}
+
+    $(document).ready(function(){
+
+		// 入库状态
+		$('.Warehoused_status').click(function(){
+			var active_status = $(this).attr('class');
+			var warehouse_status = $('#warehouse_status').val();
+			var Warehoused_status_wrap = $('.Warehoused_status_wrap a')
+			var arr = [];
+			var aLen = $('.Warehoused_status_wrap a').length-1
+			if(active_status.indexOf('all') != -1 && active_status.indexOf('active') == -1){
+				$(this).siblings().removeClass('active');
+				$(this).addClass('active');
+				$('#warehouse_status').attr('value', '')
+			}else if (active_status.indexOf('all') == -1 && active_status.indexOf('active') == -1) {
+				$(this).addClass('active');
+				$('.Warehoused_status_wrap .all').removeClass('active');
+				if($('.Warehoused_status_wrap .active').length == aLen){
+					$('.Warehoused_status_wrap a').removeClass('active');
+					$('.Warehoused_status_wrap .all').addClass('active');
+					$('#warehouse_status').attr('value', '')
+				}else{
+					for (var i = 0; i < Warehoused_status_wrap.length; i++) {
+						if (Warehoused_status_wrap[i].getAttribute('class').indexOf('active') != -1) {
+							arr.push(Warehoused_status_wrap[i].getAttribute('value'))
+						}
+					}
+				}
+			}else if (active_status.indexOf('all') == -1 && active_status.indexOf('active') != -1) {
+				var warehouse_status2 = $('#warehouse_status').val();
+				$(this).removeClass('active');
+				if($('.Warehoused_status_wrap .active').length == 0){
+					$('.Warehoused_status_wrap a').removeClass('active');
+					$('.Warehoused_status_wrap .all').addClass('active');
+					$('#warehouse_status').attr('value', '')
+				}else{
+					for (var i = 0; i < Warehoused_status_wrap.length; i++) {
+						if (Warehoused_status_wrap[i].getAttribute('class').indexOf('active') != -1) {
+							arr.push(Warehoused_status_wrap[i].getAttribute('value'))
+						}
+					}
+				}
+			}
+			var stringVal = arr.toString()
+			$('#warehouse_status').attr('value', stringVal)
+			// console.log($('#warehouse_status').val())
+		})
+
+
+        // 日期右侧图标点击加载日历插件/
+        $(".common_data .input-group-btn button").click(function () {
+            $(this).parents(".common_data").find("input").focus()
+        })
+        $(".goods_name_td").each(function(){
+            var goods_name_length=$(this).find(".goods_name").length;
+            if(goods_name_length > 1){
+                $(this).find(".goods_name_img").show();
+                $(this).find(".goods_name").hide();
+                $(this).find(".goods_name:nth-child(1)").show();
+            }
+            else{
+                $(this).find(".goods_name_img").hide();
+            }
+        })
+        //发货状态筛选
+        $('.warehouse_status_check').click(function () {
+            var warehouse_status = $(this).attr('value');
+            $('#warehouse_status').val(warehouse_status);
+            $('.warehouse_status_check').removeClass('active');
+            $(this).addClass('active');
+            return false;
+        })
+        //搜索按钮
+        $('#search').click(function () {
+            var data = $('#thisform').serialize();
+            var url = "<{:U('warehouse_list')}>&"+data;
+			location = url;
+			console.log(data)
+			console.log(url)
+        })
+        $('#resetForm').click(function() {
+            $('#thisform').find(':input').val('');
+            $('.warehouse_status_check:eq(0)').click();
+        })
+		//excel导入文件
+        uploader = WebUploader.create({
+            swf: '../Public/lib/webuploader/0.1.5/Uploader.swf',
+            server: '<{:U("warehouse_by_excel")}>',
+            pick: {id:'#import-goods'},
+            auto : true,
+            duplicate:true,
+        });
+        uploader.on('uploadSuccess',function (file,res) {
+            utils.lazy_loading();
+            if(res.status == 1) {
+                if(res.has_failure){
+                    var data = res.failure_data;
+                    var dataHtml = '<table id="tableExcel" width="100%" border="1" cellspacing="0" cellpadding="0"><tr><td>SKUID</td><td>PO No.</td> <td><{$Think.lang.数量}>/Amount</td><td><{$Think.lang.提示}>/Notice</td></tr>'
+                     for(key in data){
+                        for(keyChild in data[key]){
+                            var error_tip=''
+                            if(data[key][keyChild].error_info){
+                                error_tip = data[key][keyChild].error_info;
+							}
+							else{
+                                error_tip = "<{$Think.lang.连带失败}>"
+							}
+                           dataHtml +=' <tr><td>'+data[key][keyChild].sku_id+'</td><td>'+data[key][keyChild].procurement_number+'</td><td>'+data[key][keyChild].number+'</td><td>'+error_tip+'</td></tr>'
+                         }
+                      }
+                        dataHtml +='</table>'
+                    $('#warehouseList').append(dataHtml);
+                    $("#ImportErrorPop").show();
+				}else{
+                    layer.msg("<span class='invoice_detail_bomb_tip'><i>√</i><{$Think.lang.入库数据已成功导入}></span>");
+				}
+            }else {
+                var data = res.failure_data;
+                var dataHtml = '<table id="tableExcelAll" width="100%" border="1" cellspacing="0" cellpadding="0"><tr><td>SKUID</td><td>PO No.</td> <td><{$Think.lang.数量}>/Amount</td><td><{$Think.lang.提示}>/Notice</td></tr>'
+                for(key in data){
+                    for(keyChild in data[key]){
+                        var error_tip=''
+                        if(data[key][keyChild].error_info){
+                            error_tip = data[key][keyChild].error_info;
+                        }
+                        else{
+                            error_tip = "<{$Think.lang.连带失败}>"
+                        }
+                        dataHtml +=' <tr><td>'+data[key][keyChild].sku_id+'</td><td>'+data[key][keyChild].procurement_number+'</td><td>'+data[key][keyChild].number+'</td><td>'+error_tip+'</td></tr>'
+                    }
+                }
+                dataHtml +='</table>'
+                $('#warehouseList').append(dataHtml);
+                $("#ImportErrorPopAll").show();
+//                utils.modal(true, {width:500,title:"<{$Think.lang.导入失败}>",content:res.info},false)
+           }
+        })
+        uploader.on('uploadStart',function (file) {
+			utils.lazy_loading("show");
+        })
+		//部分失败
+        $("#btnExport").click(function () {
+            $("#tableExcel").table2excel({
+                exclude  : ".noExl", //过滤位置的 css 类名
+                filename : "<{$Think.lang.错误报告}>"+utils.CurentTime()+".xls", //文件名称
+                name: "Excel Document Name.xlsx",
+                exclude_img: true,
+                exclude_links: true,
+                exclude_inputs: true
+            });
+            $("#ImportErrorPop").hide();
+            $("#tableExcel").remove()
+        });
+        //全部失败
+        $("#btnExportAll").click(function () {
+            $("#tableExcelAll").table2excel({
+                exclude  : ".noExl", //过滤位置的 css 类名
+                filename : "<{$Think.lang.错误报告}>"+utils.CurentTime()+".xls", //文件名称
+                name: "Excel Document Name.xlsx",
+                exclude_img: true,
+                exclude_links: true,
+                exclude_inputs: true
+            });
+            $("#ImportErrorPopAll").hide();
+            $("#tableExcelAll").remove()
+        });
+        //搜索按钮
+        $('#export').click(function () {
+            var data = $('#thisform').serialize();
+            var url = "<{:U('warehouse_export')}>&"+data;
+            location = url;
+        })
+
+    })
+    function number_format(e) {
+        var k = e.toString().split('.')
+        if(e.toString().indexOf('.') > 0){
+            var s = '.'+k[1]
+        }else{
+            var s = ''
+        }
+        return k[0].toString().replace(/\d{1,3}(?=(\d{3})+(\.\d*)?$)/g, '$&,')+s;
+    }
+
+	startDate = '<{$param.start_time}>';
+	endDate = '<{$param.end_time}>';
+	layui.use('laydate', function () {
+		var laydate = layui.laydate;
+		laydate.render({
+			elem: '#date-range',
+			range: '~',
+			theme: '#1E7EB4',
+			value: startDate ? startDate + ' ~ ' + endDate : '',
+			done: function(value){
+				dates = value.split('~');
+				$('input[name="start_time"]').val(dates[0]);
+				$('input[name="end_time"]').val(dates[1]);
+			}
+		});
+	})
+</script>
+</body>
+</html>

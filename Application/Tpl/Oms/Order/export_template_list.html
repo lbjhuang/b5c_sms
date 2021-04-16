@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.13.0.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css">
+    <title>订单导出模板</title>
+    <style>
+        [v-cloak]{
+            display: none;
+        }
+        html ::-webkit-scrollbar {
+            width: 4px;
+        }
+        html ::-webkit-scrollbar-button {
+            display: none;
+        }
+        html ::-webkit-scrollbar-thumb {
+            background-color: rgba(0, 0, 0, 0.35);
+            border-radius: 2px;
+            height: 50px;
+        }
+        html ::-webkit-scrollbar-track {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        #template-list{
+            padding: 20px;
+        }
+        #template-list .table-box {
+            margin-top: 25px;
+        }
+        #template-list .template-box {
+            display: flex;
+        }
+        #template-list .template-box .template-left{
+            padding-right: 20px;
+            width: 435px;
+        }
+        #template-list .template-box .template-left .name-box {
+            display: flex;
+            line-height: 32px;
+            margin-bottom: 15px;
+            justify-content: space-between;
+        }
+        #template-list .template-box .template-left .name-box .required{
+            color: #F56C6C;
+            margin-right: 4px;
+        }
+        #template-list .template-box .template-left .search-box {
+            padding-left: 6px;
+            line-height: 32px;
+            display: flex;
+            justify-content: space-between;
+        }
+        #template-list .template-box .template-left .search-box .el-input__icon{
+            cursor: pointer;
+        }
+        #template-list .template-box .template-left .check-box {
+            margin-top: 25px;
+            height: 430px;
+            overflow-y: auto;
+        }
+        #template-list .template-box .template-left .check-box .check-box-title {
+            margin-bottom: 10px;
+        }
+        #template-list .template-box .template-left .check-box .check-box-content {
+            margin-bottom: 15px;
+            padding: 8px 5px;
+            background: #F2F2F2;
+            border-radius: 4px;
+        }
+        #template-list .template-box .template-right {
+            width: 610px;
+            border:  1px solid #DCDFE6;
+            padding: 10px 15px;
+        }
+        #template-list .template-box .template-right .template-right-title {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px 14px 5px;
+        }
+        #template-list .template-box .template-right .template-right-title .clean-text{
+            cursor: pointer;
+            color: #409eff;
+        }
+        #template-list .template-box .template-right .draggable-wrap {
+            background: #F2F2F2;
+            padding: 10px 5px;
+            border-radius: 4px;
+            height: 460px;
+            overflow-y: auto;
+        }
+        #template-list .template-box .template-right .draggable-wrap .draggable-item {
+            width: 130px;
+            height: 32px;
+            line-height: 32px;
+            text-align: center;
+            background: #FFFFFF;
+            border: 1px solid #666;
+            border-radius: 2px;
+            display: inline-block;
+            margin: 0 8px 6px 0;
+            cursor: move;
+            position: relative;
+            overflow: hidden;
+            text-overflow:ellipsis;
+            white-space: nowrap;
+            font-size: 12px;
+        }
+        #template-list .template-box .template-right .draggable-wrap .draggable-item:hover>.el-icon-circle-close{
+            display: block;
+        }
+        #template-list .template-box .template-right .draggable-wrap .draggable-item .el-icon-circle-close {
+            color: #C0C4CC;
+            position: absolute;
+            top: 9px;
+            right: 3px;
+            font-size: 15px;
+            display: none;
+            cursor: pointer;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div id="template-list" v-cloak>
+        <el-button type="primary" @click="createTemplate">{{$lang('新建')}}</el-button>
+        <div class="table-box">
+            <el-table :data="tableData" border v-loading="table_loading">
+                <el-table-column prop="name" :label="$lang('模板名称')" width="280" align="center"></el-table-column>
+                <el-table-column prop="field_str" :label="$lang('字段信息')" align="center">
+                    <template slot-scope="scope">
+                        <span v-for="(item,index) in scope.row.field_json">{{$lang(item.name_cn)}} <i v-show="index<scope.row.field_json.length - 1">，</i></span>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="create_by" :label="$lang('创建人')" width="180" align="center"></el-table-column>
+                <el-table-column prop="create_at" :label="$lang('创建时间')" width="220" align="center"></el-table-column>
+                <el-table-column prop="update_at" :label="$lang('修改时间')" width="220" align="center"></el-table-column>
+                <el-table-column :label="$lang('操作')" width="200" align="center">
+                    <template slot-scope="scope">
+                        <el-button type="primary" size="mini" icon="el-icon-edit" @click="editTemplate(scope.row)">{{$lang('编辑')}}</el-button>
+                        <el-button type="danger" size="mini" icon="el-icon-delete" @click="deleteTemplate(scope.row)">{{$lang('删除')}}</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </div>
+        <el-dialog :title="dialog_title" :visible.sync="template_dialog" width="1080px" class="template-dialog" top="8vh"  :close-on-click-modal="false" @close="dialogClose">
+            <div class="template-box">
+                <div class="template-left">
+                    <div class="name-box">
+                        <span>
+                            <span class="required">*</span>
+                            <span>{{$lang('模板名称')}}：</span>
+                        </span>
+                        <el-input style="width: 274px;" size="small" v-model="template_name" :placeholder="$lang('模板名称')"></el-input>
+                    </div>
+                    <div class="search-box">
+                        <span>{{$lang('可选字段')}}：</span>
+                        <el-input style="width: 250px;" size="small" v-model="search_name" :placeholder="$lang('输入检索字段')" @keyup.enter.native="getFieldData">
+                            <i slot="suffix" class="el-input__icon el-icon-search" @click="getFieldData"></i>
+                        </el-input>
+                    </div>
+                    <div class="check-box">
+                        <div v-if="package_info.length > 0">
+                            <div class="check-box-title">
+                                <el-checkbox :indeterminate="package_indeterminate" v-model="package_check_all" @change="packageAllChange">{{$lang('包裹信息')}}</el-checkbox>
+                            </div>
+                            <div class="check-box-content">
+                                <el-checkbox-group v-model="package_check" @change="packageGroupChange">
+                                    <el-checkbox v-for="(item,index) in package_info" :label="item.name_cn" :key="index" @change="changeRadio($event,item)">{{$lang(item.name_cn)}}</el-checkbox>
+                                </el-checkbox-group>
+                            </div>
+                        </div>
+                        <div v-if="date_info.length > 0">
+                            <div class="check-box-title">
+                                <el-checkbox :indeterminate="date_indeterminate" v-model="date_check_all" @change="dateAllChange">{{$lang('时间信息')}}</el-checkbox>
+                            </div>
+                            <div class="check-box-content">
+                                <el-checkbox-group v-model="date_check" @change="dateGroupChange">
+                                    <el-checkbox v-for="(item,index) in date_info" :label="item.name_cn" :key="index" @change="changeRadio($event,item)">{{$lang(item.name_cn)}}</el-checkbox>
+                                </el-checkbox-group>
+                            </div>
+                        </div>
+                        <div v-if="amount_info.length > 0">
+                            <div class="check-box-title">
+                                <el-checkbox :indeterminate="amount_indeterminate" v-model="amount_check_all" @change="amountAllChange">{{$lang('金额信息')}}</el-checkbox>
+                            </div>
+                            <div class="check-box-content">
+                                <el-checkbox-group v-model="amount_check" @change="amountGroupChange">
+                                    <el-checkbox v-for="(item,index) in amount_info" :label="item.name_cn" :key="index" @change="changeRadio($event,item)">{{$lang(item.name_cn)}}</el-checkbox>
+                                </el-checkbox-group>
+                            </div>
+                        </div>
+                        <div v-if="product_info.length > 0">
+                            <div class="check-box-title">
+                                <el-checkbox :indeterminate="product_indeterminate" v-model="product_check_all" @change="productAllChange">{{$lang('商品信息')}}</el-checkbox>
+                            </div>
+                            <div class="check-box-content">
+                                <el-checkbox-group v-model="product_check" @change="productGroupChange">
+                                    <el-checkbox v-for="(item,index) in product_info" :label="item.name_cn" :key="index" @change="changeRadio($event,item)">{{$lang(item.name_cn)}}</el-checkbox>
+                                </el-checkbox-group>
+                            </div>
+                        </div>
+                        <div v-if="buyer_info.length > 0">
+                            <div class="check-box-title">
+                                <el-checkbox :indeterminate="buyer_indeterminate" v-model="buyer_check_all" @change="buyerAllChange">{{$lang('买家信息')}}</el-checkbox>
+                            </div>
+                            <div class="check-box-content">
+                                <el-checkbox-group v-model="buyer_check" @change="buyerGroupChange">
+                                    <el-checkbox v-for="(item,index) in buyer_info" :label="item.name_cn" :key="index" @change="changeRadio($event,item)">{{$lang(item.name_cn)}}</el-checkbox>
+                                </el-checkbox-group>
+                            </div>
+                        </div>
+                        <div v-if="logistics_info.length > 0">
+                            <div class="check-box-title">
+                                <el-checkbox :indeterminate="logistics_indeterminate" v-model="logistics_check_all" @change="logisticsAllChange">{{$lang('物流报关')}}</el-checkbox>
+                            </div>
+                            <div class="check-box-content">
+                                <el-checkbox-group v-model="logistics_check" @change="logisticsGroupChange">
+                                    <el-checkbox v-for="(item,index) in logistics_info" :label="item.name_cn" :key="index" @change="changeRadio($event,item)">{{$lang(item.name_cn)}}</el-checkbox>
+                                </el-checkbox-group>
+                            </div>
+                        </div>
+                        <div v-if="business_info.length > 0">
+                            <div class="check-box-title">
+                                <el-checkbox :indeterminate="business_indeterminate" v-model="business_check_all" @change="businessAllChange">{{$lang('业务信息')}}</el-checkbox>
+                            </div>
+                            <div class="check-box-content">
+                                <el-checkbox-group v-model="business_check" @change="businessGroupChange">
+                                    <el-checkbox v-for="(item,index) in business_info" :label="item.name_cn" :key="index" @change="changeRadio($event,item)">{{$lang(item.name_cn)}}</el-checkbox>
+                                </el-checkbox-group>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="template-right">
+                    <div class="template-right-title">
+                        <span>{{$lang('已选字段')}}：({{$lang('拖动字段可调整位置')}})</span>
+                        <span class="clean-text" @click="clearAll">{{$lang('清空')}}</span>
+                    </div>
+                    <div class="draggable-wrap">
+                        <draggable v-model="field_array" group="people" animation="1000">
+                            <transition-group>
+                                <div class="draggable-item" v-for="(item,key) in field_array" :key="key">{{$lang(item.name_cn)}}
+                                    <i class="el-icon-circle-close" @click.stop="closeField(key,item.name_cn)"></i>
+                                </div>
+                            </transition-group>
+                        </draggable>
+                    </div>
+                </div>
+                
+            </div>
+            <span slot="footer" class="dialog-footer">
+                <el-button @click="template_dialog = false" size="small">{{$lang('取消')}}</el-button>
+                <el-button type="primary" @click="onSave" size="small">{{$lang('保存')}}</el-button>
+            </span>
+        </el-dialog>
+    </div>
+</body>
+</html>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.13.0.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Oms/Public/js/Sortable.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Oms/Public/js/vuedraggable.umd.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script>
+    if (getCookie('think_language') !== "zh-cn") {
+        ELEMENT.locale(ELEMENT.lang.en)
+    }
+    const VM = new Vue({
+        el: '#template-list',
+        data() {
+            return {
+                user: "<{:$_SESSION['m_loginname']}>", // 获取当前登录人
+                tableData: [],
+                table_loading: false,
+                dialog_title: this.$lang('新建模板'),
+                template_dialog: false,
+                list_type: false,  // 是否需要打开新增弹窗
+                isSaveAdd: true, // 是否新增
+                template_id: '', // 需要编辑的ID
+                field_array: [],  // 全部已选字段
+                template_name: '', // 模板名称
+                search_name: '', // 检索字段
+                package_indeterminate: false,
+                package_check_all: false,
+                package_check: [],  // 已选中包裹信息
+                package_info: [], // 包裹信息
+                date_indeterminate: false,
+                date_check_all: false,
+                date_check: [],  // 已选中时间信息
+                date_info: [], // 时间信息
+                product_indeterminate: false,
+                product_check_all: false,
+                product_check: [],  // 已选中商品信息
+                product_info: [], // 商品信息
+                buyer_indeterminate: false,
+                buyer_check_all: false,
+                buyer_check: [],  // 已选中买家信息
+                buyer_info: [], // 买家信息
+                logistics_indeterminate: false,
+                logistics_check_all: false,
+                logistics_check: [],  // 已选中买家信息
+                logistics_info: [], // 物流信息
+                amount_indeterminate: false,
+                amount_check_all: false,
+                amount_check: [],  // 已选中金额信息
+                amount_info: [], // 金额信息
+                business_indeterminate: false,
+                business_check_all: false,
+                business_check: [],  // 已选中业务信息
+                business_info: [], // 业务信息
+                
+            }
+        },
+        components: {
+                vuedraggable: window.vuedraggable,//注册拖动组件
+            },
+        created() {
+            let query = window.location.href.split('?')[1].split('&')[3];
+            this.getList();
+            this.getFieldData();
+            if(query) { // 是否从订单列表通过新增按钮进入，打开新增弹窗
+                this.list_type = true;
+                this.template_dialog = true; 
+            }
+        },
+        methods: {
+            // 新建模板
+            createTemplate() {
+                this.template_dialog = true;
+                this.dialog_title = this.$lang('新建模板');
+            },
+            // 编辑模板
+            editTemplate(row) {
+                if(row.create_by !== this.user) {
+                    this.$message.warning(this.$lang('不允许编辑他人创建的模板'));
+                    return false;
+                }
+                this.isSaveAdd = false;
+                this.template_dialog = true;
+                this.dialog_title = this.$lang('编辑模板');
+                this.template_name = row.name;
+                this.field_array = row.field_json;
+                this.template_id = row.id;
+                let check_array = row.field_str.split(',')
+                check_array.forEach(val => {
+                    if(this.package_info.find(item => item.name_cn == val)) {
+                        this.package_check.push(val)
+                    }
+                    if(this.date_info.find(item => item.name_cn == val)) {
+                        this.date_check.push(val)
+                    }
+                    if(this.product_info.find(item => item.name_cn == val)) {
+                        this.product_check.push(val)
+                    }
+                    if(this.buyer_info.find(item => item.name_cn == val)) {
+                        this.buyer_check.push(val)
+                    }
+                    if(this.logistics_info.find(item => item.name_cn == val)) {
+                        this.logistics_check.push(val)
+                    }
+                    if(this.amount_info.find(item => item.name_cn == val)) {
+                        this.amount_check.push(val)
+                    }
+                    if(this.business_info.find(item => item.name_cn == val)) {
+                        this.business_check.push(val)
+                    }
+                    
+                })
+            },
+            // 删除模板
+            deleteTemplate(row) {
+                if(row.create_by !== this.user) {
+                    this.$message.warning(this.$lang('不允许删除他人创建的模板'));
+                    return false;
+                }
+                this.$confirm(this.$lang('是否确认删除'), this.$lang('提示'), {
+                    confirmButtonText: this.$lang('确定'),
+                    cancelButtonText: this.$lang('取消'),
+                    type: 'warning'
+                }).then(() => {
+                    axios.post('/index.php?g=OMS&m=OrderExportTemplate&a=del',{id: row.id}).then(res => {
+                        if(res.data.code == 2000) {
+                            this.$message.success(this.$lang('删除成功'));
+                            this.getList();
+                        } else {
+                            this.$message.error(res.data.msg);
+                        }
+                    })
+                }).catch(() => {});
+            },
+            // 关闭弹窗回调
+            dialogClose() {
+                this.template_name = "";
+                this.template_id = "";
+                this.clearAll(); // 清空数据
+            },
+            // 保存模板
+            onSave() {
+                if(!this.template_name) {
+                    this.$message.warning(this.$lang('请输入模板名称'));
+                    return false
+                }
+                if(this.field_array.length == 0) {
+                    this.$message.warning(this.$lang('请选择模板字段'));
+                    return false
+                }
+                let url = this.isSaveAdd ? '/index.php?g=OMS&m=OrderExportTemplate&a=add' : '/index.php?g=OMS&m=OrderExportTemplate&a=update'
+                let param = {
+                    name: this.template_name,
+                    field_json: this.field_array
+                }
+                if(!this.isSaveAdd) {
+                    param.id = this.template_id
+                }
+                axios.post(url, param).then(res => {
+                    if(res.data.code == 2000) {
+                        if(this.list_type) {
+                            this.closeTab();
+                            // newTab('/index.php?g=oms&m=order&a=orderList',this.$lang('订单列表'))
+                        }
+                        this.$message.success(this.$lang('保存成功'));
+                        this.template_dialog = false;
+                        this.getList();
+                    } else {
+                        this.$message.error(this.$lang(res.data.msg));
+                    }
+                }).catch(err => {
+                    console.log(err)
+                })
+            },
+            // 移除当前标签页，显示上一个标签
+            closeTab() {
+                var topWindow = $(window.parent.document),
+                    iframs = $(topWindow).find("#iframe_box .show_iframe"),
+                    tabList = $(topWindow).find("#min_title_list li"),
+                    currentUrl = "/index.php?g=oms&m=order&a=export_template_list&type=1"; //获取当前激活的URL
+                
+                //移除对应的iframe
+                $(iframs).each(function (key, item) {
+                    var iframWarp = $(item).find("iframe")[0].src;
+                    if (iframWarp.indexOf(currentUrl) > -1) {
+                        setTimeout(function () {//兼容ie
+                            $(item).prev().css("visibility","visible");
+                            item.parentNode.removeChild(item);
+                        }, 0);
+                    }
+                });
+                // //移除对应的li标签
+                $(tabList).each(function (key, item) {
+                    var herf = $(item).find("span").data("href");
+                    if (herf.indexOf(currentUrl) > -1) {
+                        $(item).prev().addClass("active");
+                        $(item).remove();
+                    }
+                });
+
+                if($(topWindow).find("#min_title_list li").length === 1){
+                    $('#homePage').addClass('active')
+                }
+            },
+            // 获取列表数据
+            getList() {
+                this.table_loading = true;
+                axios.post('/index.php?g=OMS&m=OrderExportTemplate&a=lists').then(res => {
+                    this.table_loading = false;
+                    if(res.data.code == 2000) {
+                        this.tableData = res.data.data
+                    } else {
+                        this.$message.error(this.$lang(res.data.msg));
+                    }
+                }).catch(err => {
+                    this.table_loading = false;
+                    console.log(err)
+                })
+            },
+            // 包裹信息字段全选
+            packageAllChange(val) {
+                if(val) {
+                    let arr = [];
+                    this.package_info.forEach(item => {
+                        let index = this.field_array.findIndex(field => field.name_cn == item.name_cn);
+                        if( index == -1) {
+                            this.field_array.push(item);
+                        }
+                        arr.push(item.name_cn);
+                    })
+                    this.package_check = arr;
+                } else {
+                    this.package_check = [];
+                    this.package_info.forEach(item => {
+                        let index = this.field_array.findIndex(field => field.name_cn == item.name_cn);
+                        if( index != -1) {
+                            this.field_array.splice(index, 1);
+                        }
+                    })
+                }
+                this.package_indeterminate = false;
+            },
+            //
+            packageGroupChange(value) {
+                console.log(value)
+                this.package_check_all = value.length === this.package_info.length;
+                this.package_indeterminate = value.length > 0 && value.length < this.package_info.length;
+            },
+            // 字段单个选中
+            changeRadio(val,item) {
+                if(val) {
+                    let index = this.field_array.findIndex(field => field.name_cn == item.name_cn);
+                    if( index == -1) {
+                        this.field_array.push(item);
+                    }
+                } else {
+                    let index = this.field_array.findIndex(field => field.name_cn == item.name_cn);
+                    if( index != -1) {
+                        this.field_array.splice(index, 1);
+                    }
+                }
+            },
+
+            // 时间信息字段全选
+            dateAllChange(val) {
+                if(val) {
+                    let arr = [];
+                    this.date_info.forEach(item => {
+                        let index = this.field_array.findIndex(field => field.name_cn == item.name_cn);
+                        if( index == -1) {
+                            this.field_array.push(item);
+                        }
+                        arr.push(item.name_cn);
+                    })
+                    this.date_check = arr;
+                } else {
+                    this.date_check = [];
+                    this.date_info.forEach(item => {
+                        let index = this.field_array.findIndex(field => field.name_cn == item.name_cn);
+                        if( index != -1) {
+                            this.field_array.splice(index, 1);
+                        }
+                    })
+                }
+                this.date_indeterminate = false;
+            },
+            //
+            dateGroupChange(value) {
+                this.date_check_all = value.length === this.date_info.length;
+                this.date_indeterminate = value.length > 0 && value.length < this.date_info.length;
+            },
+            // 商品信息字段全选
+            productAllChange(val) {
+                if(val) {
+                    let arr = [];
+                    this.product_info.forEach(item => {
+                        let index = this.field_array.findIndex(field => field.name_cn == item.name_cn);
+                        if( index == -1) {
+                            this.field_array.push(item);
+                        }
+                        arr.push(item.name_cn);
+                    })
+                    this.product_check = arr;
+                } else {
+                    this.product_check = [];
+                    this.product_info.forEach(item => {
+                        let index = this.field_array.findIndex(field => field.name_cn == item.name_cn);
+                        if( index != -1) {
+                            this.field_array.splice(index, 1);
+                        }
+                    })
+                }
+                this.product_indeterminate = false;
+            },
+            //
+            productGroupChange(value) {
+                this.product_check_all = value.length === this.product_info.length;
+                this.product_indeterminate = value.length > 0 && value.length < this.product_info.length;
+            },
+            // 买家信息字段全选
+            buyerAllChange(val) {
+                if(val) {
+                    let arr = [];
+                    this.buyer_info.forEach(item => {
+                        let index = this.field_array.findIndex(field => field.name_cn == item.name_cn);
+                        if( index == -1) {
+                            this.field_array.push(item);
+                        }
+                        arr.push(item.name_cn);
+                    })
+                    this.buyer_check = arr;
+                } else {
+                    this.buyer_check = [];
+                    this.buyer_info.forEach(item => {
+                        let index = this.field_array.findIndex(field => field.name_cn == item.name_cn);
+                        if( index != -1) {
+                            this.field_array.splice(index, 1);
+                        }
+                    })
+                }
+                this.buyer_indeterminate = false;
+            },
+            //
+            buyerGroupChange(value) {
+                this.buyer_check_all = value.length === this.buyer_info.length;
+                this.buyer_indeterminate = value.length > 0 && value.length < this.buyer_info.length;
+            },
+            // 物流报关字段全选
+            logisticsAllChange(val) {
+                if(val) {
+                    let arr = [];
+                    this.logistics_info.forEach(item => {
+                        let index = this.field_array.findIndex(field => field.name_cn == item.name_cn);
+                        if( index == -1) {
+                            this.field_array.push(item);
+                        }
+                        arr.push(item.name_cn);
+                    })
+                    this.logistics_check = arr;
+                } else {
+                    this.logistics_check = [];
+                    this.logistics_info.forEach(item => {
+                        let index = this.field_array.findIndex(field => field.name_cn == item.name_cn);
+                        if( index != -1) {
+                            this.field_array.splice(index, 1);
+                        }
+                    })
+                }
+                this.logistics_indeterminate = false;
+            },
+            //
+            logisticsGroupChange(value) {
+                this.logistics_check_all = value.length === this.logistics_info.length;
+                this.logistics_indeterminate = value.length > 0 && value.length < this.logistics_info.length;
+            },
+            // 金额信息字段全选
+            amountAllChange(val) {
+                if(val) {
+                    let arr = [];
+                    this.amount_info.forEach(item => {
+                        let index = this.field_array.findIndex(field => field.name_cn == item.name_cn);
+                        if( index == -1) {
+                            this.field_array.push(item);
+                        }
+                        arr.push(item.name_cn);
+                    })
+                    this.amount_check = arr;
+                } else {
+                    this.amount_check = [];
+                    this.amount_info.forEach(item => {
+                        let index = this.field_array.findIndex(field => field.name_cn == item.name_cn);
+                        if( index != -1) {
+                            this.field_array.splice(index, 1);
+                        }
+                    })
+                }
+                this.amount_indeterminate = false;
+            },
+            //
+            amountGroupChange(value) {
+                this.amount_check_all = value.length === this.amount_info.length;
+                this.amount_indeterminate = value.length > 0 && value.length < this.amount_info.length;
+            },
+            // 业务信息字段全选
+            businessAllChange(val) {
+                if(val) {
+                    let arr = [];
+                    this.business_info.forEach(item => {
+                        let index = this.field_array.findIndex(field => field.name_cn == item.name_cn);
+                        if( index == -1) {
+                            this.field_array.push(item);
+                        }
+                        arr.push(item.name_cn);
+                    })
+                    this.business_check = arr;
+                } else {
+                    this.business_check = [];
+                    this.business_info.forEach(item => {
+                        let index = this.field_array.findIndex(field => field.name_cn == item.name_cn);
+                        if( index != -1) {
+                            this.field_array.splice(index, 1);
+                        }
+                    })
+                }
+                this.business_indeterminate = false;
+            },
+            //
+            businessGroupChange(value) {
+                this.business_check_all = value.length === this.business_info.length;
+                this.business_indeterminate = value.length > 0 && value.length < this.business_info.length;
+            },
+            
+            // 单个删除已选字段
+            closeField(key,name) {
+                this.field_array.splice(key, 1);
+                let package_index = this.package_check.findIndex(item => item == name);
+                let date_index = this.date_check.findIndex(item => item == name);
+                let product_index = this.product_check.findIndex(item => item == name);
+                let buyer_index = this.buyer_check.findIndex(item => item == name);
+                let logistics_index = this.logistics_check.findIndex(item => item == name);
+                let amount_index = this.amount_check.findIndex(item => item == name);
+                let business_index = this.business_check.findIndex(item => item == name);
+                if(package_index !== -1) {
+                    this.package_check.splice(package_index, 1);
+                    this.package_check_all = false;
+                    this.package_indeterminate = this.package_check.length !== 0
+                }
+                if(date_index !== -1) {
+                    this.date_check.splice(date_index, 1);
+                    this.date_check_all = false;
+                    this.date_indeterminate = this.date_check.length !== 0
+                }
+                if(product_index !== -1) {
+                    this.product_check.splice(product_index, 1);
+                    this.product_check_all = false;
+                    this.product_indeterminate = this.product_check.length !== 0
+                }
+                if(buyer_index !== -1) {
+                    this.buyer_check.splice(buyer_index, 1);
+                    this.buyer_check_all = false;
+                    this.buyer_indeterminate = this.buyer_check.length !== 0
+                }
+                if(logistics_index !== -1) {
+                    this.logistics_check.splice(logistics_index, 1);
+                    this.logistics_check_all = false;
+                    this.logistics_indeterminate = this.logistics_check.length !== 0
+                }
+                if(amount_index !== -1) {
+                    this.amount_check.splice(amount_index, 1);
+                    this.amount_check_all = false;
+                    this.amount_indeterminate = this.amount_check.length !== 0
+                }
+                if(business_index !== -1) {
+                    this.business_check.splice(business_index, 1);
+                    this.business_check_all = false;
+                    this.business_indeterminate = this.business_check.length !== 0
+                }
+                
+                
+            },
+            // 清空全部已选字段
+            clearAll() {
+                this.field_array = [];
+                this.package_check_all = false;
+                this.package_indeterminate = false;
+                this.package_check = [];
+                this.date_check_all = false;
+                this.date_indeterminate = false;
+                this.date_check = [];
+                this.product_check_all = false;
+                this.product_indeterminate = false;
+                this.product_check = [];
+                this.buyer_check_all = false;
+                this.buyer_indeterminate = false;
+                this.buyer_check = [];
+                this.logistics_check_all = false;
+                this.logistics_indeterminate = false;
+                this.logistics_check = [];
+                this.amount_check_all = false;
+                this.amount_indeterminate = false;
+                this.amount_check = [];
+                this.business_check_all = false;
+                this.business_indeterminate = false;
+                this.business_check = [];
+            },
+            // 获取字段信息
+            getFieldData() {
+                axios.get('/index.php?g=OMS&m=OrderExportTemplate&a=get_field&search=' + this.search_name).then(res => {
+                    console.log(res)
+                    if(res.data.code == 2000) {
+                        let data = res.data.data;
+                        this.package_info = data.package_info || []; // 包裹信息
+                        this.date_info = data.date_info || []; // 时间信息
+                        this.product_info = data.product_info || []; // 商品信息
+                        this.buyer_info = data.buyer_info || []; // 卖家信息
+                        this.logistics_info = data.logistics_info || []; // 物流信息
+                        this.amount_info = data.amount_info || []; // 金额信息
+                        this.business_info = data.business_info || []; // 业务信息
+                        
+                        // 清空多选框数据
+                        this.package_check_all = false;
+                        this.package_indeterminate = false;
+                        this.package_check = [];
+                        this.date_check_all = false;
+                        this.date_indeterminate = false;
+                        this.date_check = [];
+                        this.product_check_all = false;
+                        this.product_indeterminate = false;
+                        this.product_check = [];
+                        this.buyer_check_all = false;
+                        this.buyer_indeterminate = false;
+                        this.buyer_check = [];
+                        this.logistics_check_all = false;
+                        this.logistics_indeterminate = false;
+                        this.logistics_check = [];
+                        this.amount_check_all = false;
+                        this.amount_indeterminate = false;
+                        this.amount_check = [];
+                        this.business_check_all = false;
+                        this.business_indeterminate = false;
+                        this.business_check = [];
+                    } else {
+                        this.$message.err(res.data.msg)
+                    }
+                })
+            }
+        },
+    })
+</script>

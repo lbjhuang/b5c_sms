@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html lang="en">
+
+<head>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.8.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/lib/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <title>
+        <{$Think.lang.认领推广需求}>
+    </title>
+    <style>
+        [v-cloak]{
+            display: none;
+        }
+        #createPromotionDemand{
+            box-sizing: border-box;
+            padding: 20px;
+            margin: 0;
+        }
+       
+        .el-table__header thead th{
+            background: #F6F9FA;
+            color: #566F7B;
+            border-bottom: 1px solid #cadee7;
+            border-right: 1px solid #cadee7;
+            text-align: center;
+        }
+        
+        .table_wrap>.title{
+            font-size: 16px;
+            line-height: 40px;
+            height: 40px;
+            margin-top: 20px;
+            padding-left: 20px;
+            text-align: left;
+            color: #fff;
+            background: #546e7a;
+        }
+        .table_wrap .basic_information{
+            width: 100%;
+        }
+        .table_wrap .basic_information tr{
+            display: flex;
+            border-left: 1px solid #cadee7;
+        }
+        .table_wrap .basic_information td{
+            display: flex;
+            flex:1;
+            /* width: 16.67%; */
+            word-break: break-word;
+            align-items: center;
+            padding: 15px 10px;
+            font-size: 13px;
+            border-bottom: 1px solid #cadee7;
+            border-right: 1px solid #cadee7;
+            justify-content: center;
+        }
+        .table_wrap .basic_information td:nth-child(odd){
+            color: #546e7a;
+            background: #f7f9fb;
+        }
+        .content_information .el-select,
+        .content_information .el-input{
+            width: 130px;
+        }
+        .el-table__body td{
+            text-align: center;
+        }
+        .el-table__body td img{
+            width: 100%;
+        }
+        .submit_btn{
+            display: block;
+            margin: 30px auto;
+            width: 150px;
+        }
+        .operating_data{
+            cursor: pointer;
+            display: flex;
+            justify-content: space-around;
+        }
+        .operating_data i{
+            font-size: 30px;
+        }
+        .tagUrl>span{
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+    </style>
+</head>
+
+<body>
+    <div v-cloak id="createPromotionDemand">
+        <b style="font-size: 24px;">{{$lang('认领推广需求')}}</b>
+        <!-- 认领信息 -->
+        <div v-if="demandType == 'multiple'" class="table_wrap">
+            <div class="title">{{$lang('认领信息')}}</div>
+            <table class="basic_information">
+                <tr>
+                    <td>
+                        <span>{{$lang('认领推广平台')}}</span>
+                        <span style="color: red;">*</span>
+                    </td>
+                    <td>
+                        <el-select v-model="basic.platform_name" value-key="id" @change="sponsoredLinks_multiple(basic.platform_name,'platform')" filterable :placeholder="$lang('请选择')">
+                            <el-option
+                                v-for="(val,key) in channel_platform"
+                                :key="val.id"
+                                :label="val.platform_name"
+                                :value="val">
+                            </el-option>
+                        </el-select>
+                    </td>
+                    <td>
+                        <span>{{$lang('认领推广媒介')}}</span>
+                        <span style="color: red;">*</span>
+                    </td>
+                    <td>
+                        <el-select v-model="basic.medium_name" value-key="id" @change="sponsoredLinks_multiple(basic.medium_name,'medium')" value-key="id" filterable :placeholder="$lang('请选择')">
+                            <el-option
+                                v-for="(val,key) in channel_medium"
+                                :key="val.id"
+                                :label="val.medium_name"
+                                :value="val">
+                            </el-option>
+                        </el-select>
+                    </td>
+                    <td>
+                        <!-- <span>活动标签</span> -->
+                    </td>
+                    <td>
+                        <!-- <el-input @change="sponsoredLinks_multiple" v-model="basic.activity_tag"></el-input> -->
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <!-- 关联需求信息 -->
+        <div v-if="demandType == 'single'" class="table_wrap">
+            <div class="title">{{$lang('关联需求信息')}}</div>
+            <table class="basic_information">
+                <tr>
+                    <td>
+                        <span>{{$lang('推广需求ID')}}</span>
+                    </td>
+                    <td>
+                        <span>{{singleBasicInformation.promotion_demand_no}}</span>
+                    </td>
+                    <td>
+                        <span>{{$lang('推广内容类型')}}</span>
+                    </td>
+                    <td>
+                        <span>{{singleBasicInformation.promotion_type_cd_val}}</span>
+                    </td>
+                    <td>
+                        <span>{{$lang('SKU（ERP的SKU编码）')}}</span>
+                    </td>
+                    <td>
+                        <span>{{singleBasicInformation.sku_id}}</span>
+                    </td>
+                </tr>
+                <!-- 11273需求修改--简化字段展示 -->
+                <!-- <tr>
+                    <td>
+                        <span>{{$lang('站点')}}</span>
+                    </td>
+                    <td>
+                        <span>{{singleBasicInformation.site_cd_val}}</span>
+                    </td>
+                    <td>
+                        <span>{{$lang('平台')}}</span>
+                    </td>
+                    <td>
+                        <span>{{singleBasicInformation.platform_cd_val}}</span>
+                    </td>
+                    <td>
+                        <span>{{$lang('优惠前商品价格（页面币种）')}}</span>
+                    </td>
+                    <td>
+                        <span v-if="singleBasicInformation.dis_product_pirce">{{singleBasicInformation.currency_cd_val ? singleBasicInformation.currency_cd_val : 'USD'}}</span>
+                        &nbsp;
+                        <span>{{singleBasicInformation.dis_product_pirce}}</span>
+                    </td>
+                </tr> -->
+                <tr>
+                    <td>
+                        <span>{{$lang('商品名称')}}</span>
+                    </td>
+                    <td>
+                        <span>{{singleBasicInformation.product_name}}</span>
+                    </td>
+                    <td>
+                        <span>{{$lang('商品属性')}}</span>
+                    </td>
+                    <td>
+                        <span>{{singleBasicInformation.product_attribute}}</span>
+                    </td>
+                    <td>
+                        <span>{{$lang('商品链接/活动页链接/站点链接')}}</span>
+                    </td>
+                    <td>
+                        <span>{{singleBasicInformation.link}}</span>
+                    </td>
+                </tr>
+                <!-- 11273需求修改--简化字段展示 -->
+                <tr>
+                    <td>
+                        <span>{{$lang('推广国家')}}</span>
+                    </td>
+                    <td>{{singleBasicInformation.area_name}}</td>
+                    <td>
+                        <span>{{$lang('推广价格')}}</span>
+                    </td>
+                    <td>
+                        <span v-if="singleBasicInformation.promotion_pirce">{{singleBasicInformation.currency_cd_val}} </span>
+                        <span v-if="singleBasicInformation.promotion_pirce">{{singleBasicInformation.promotion_pirce}}</span>
+                    </td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <!-- <tr>
+                    <td>
+                        <span>{{$lang('优惠后商品价格范围（页面币种）')}}</span>
+                    </td>
+                    <td>
+                        <span v-if="singleBasicInformation.dis_product_pirce_front">{{singleBasicInformation.currency_cd_val ? singleBasicInformation.currency_cd_val : 'USD'}}</span>
+                        &nbsp;
+                        <span>{{singleBasicInformation.dis_product_pirce_front}}</span>
+                        &nbsp;{{$lang('至')}}&nbsp;
+                        <span v-if="singleBasicInformation.dis_product_pirce_back">{{singleBasicInformation.currency_cd_val ? singleBasicInformation.currency_cd_val : 'USD'}}</span>
+                        &nbsp;
+                        <span>{{singleBasicInformation.dis_product_pirce_back}}</span>
+                    </td>
+                    <td>
+                        <span>{{$lang('利润率范围')}}</span>
+                    </td>
+                    <td>
+                        <span v-if="singleBasicInformation.profit_front && singleBasicInformation.profit_back">{{singleBasicInformation.profit_front}}% - {{singleBasicInformation.profit_back}}%</span>
+                    </td>
+                    <td>
+                        <span>{{$lang('推广标签')}}</span>
+                    </td>
+                    <td style="flex-direction: column;">
+                        <div>{{$lang('标签类型')}}:{{singleBasicInformation.type_cd_val}}</div>
+                        <div>{{$lang('标签名称')}}:{{singleBasicInformation.tag_name}}</div>
+                    </td>
+                </tr> -->
+            </table>
+        </div>
+        <!-- 关联需求信息 -->
+        <div v-if="demandType == 'multiple'" class="table_wrap content_information">
+            <div class="title">关联需求信息</div>
+            <el-table :data="tableData" border style="width: 100%;" :height="500">
+                <el-table-column width="100" fixed="left">
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('推广需求ID')}}</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <span>{{scope.row.promotion_demand_no}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column width="200" fixed="left">
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('活动标签')}}</span>
+                        <span style="color: red;">*</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <div>
+                            <el-input @change="sponsoredLinks_multiple" v-model="scope.row.activity_tag"></el-input>
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column width="110"> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('推广内容类型')}}</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <span>{{scope.row.promotion_type_cd_val}}</span>
+                    </template>
+                </el-table-column>
+
+                <!-- 11273需求修改--简化字段展示 -->
+                <!-- <el-table-column width="100"> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('平台')}}</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <span>{{scope.row.platform_cd_val}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column width="100"> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('站点')}}</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <span>{{scope.row.site_cd_val}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column width="180">
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('推广标签')}}</span>
+                    </template>
+                    <template slot-scope="scope">
+                        <div>{{$lang('标签类型')}}:{{scope.row.type_cd_val}}</div>
+                        <div>{{$lang('标签名称')}}:{{scope.row.tag_name}}</div>
+                    </template>
+                </el-table-column> -->
+                <el-table-column width="120"> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('SKU（ERP的SKU编码）')}}</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <span>{{scope.row.sku_id}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column width="165"> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('商品名称')}}</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <span>{{scope.row.product_name}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column width="120"> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('商品图片')}}</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <img :src="scope.row.product_image" >
+                    </template>
+                </el-table-column>
+                <el-table-column width="165"> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('商品属性')}}</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <span>{{scope.row.product_attribute}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column width="165"> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('商品链接/活动页链接/站点链接')}}</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <el-tooltip placement="top-end">
+                            <div slot="content"><div style="width: 350px;word-break: break-all;">{{scope.row.link}}</div><br/><span style="float: right;cursor: pointer;" @click="openCopy(scope.row.link)">{{$lang('复制')}}</span></div>
+                            <div class="tagUrl">
+                                <span>{{scope.row.link}}</span>
+                            </div>
+                        </el-tooltip>
+                    </template>
+                </el-table-column>
+                
+                <el-table-column width="180"> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('推广价')}}</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <span v-if="scope.row.promotion_pirce">{{scope.row.currency_cd_val}} </span>
+                        <span v-if="scope.row.promotion_pirce">{{scope.row.promotion_pirce}}</span>
+                    </template>
+                </el-table-column>
+                <!-- 11273需求修改--简化字段展示 -->
+                <!-- <el-table-column width="120"> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('优惠前商品价格（页面币种）')}}</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <span v-if="scope.row.dis_product_pirce">{{scope.row.currency_cd_val ? scope.row.currency_cd_val : 'USD'}}</span>
+                        &nbsp;
+                        <span>{{scope.row.dis_product_pirce}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column width="120"> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('优惠后商品价格范围（页面币种）')}}</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <span v-if="scope.row.dis_product_pirce_front">{{scope.row.currency_cd_val ? scope.row.currency_cd_val : 'USD'}}</span>
+                        &nbsp;
+                        <span>{{scope.row.dis_product_pirce_front}}</span>
+                        &nbsp;{{$lang('至')}}&nbsp;
+                        <span v-if="scope.row.dis_product_pirce_back">{{scope.row.currency_cd_val ? scope.row.currency_cd_val : 'USD'}}</span>
+                        &nbsp;
+                        <span>{{scope.row.dis_product_pirce_back}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column width="120"> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('利润率范围')}}</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <span v-if="scope.row.profit_front && scope.row.profit_back">{{scope.row.profit_front}}% - {{scope.row.profit_back}}%</span>
+                    </template>
+                </el-table-column>
+                <el-table-column width="200"> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('推广价（页面币种）')}}</span>
+                        <span style="color: red;">*</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <div>
+                            <span v-if="scope.row.promotion_type_cd == 'N003610003'">{{scope.row.currency_cd_val ? scope.row.currency_cd_val : 'USD'}}</span>
+                            <el-input :disabled="scope.row.dis_product_pirce_back == ''" v-model="scope.row.promontion_price"></el-input>
+                        </div>
+                    </template>
+                </el-table-column> -->
+                <el-table-column width="180"> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('商品/活动页/站点链接（带Tracking Code）')}}</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <span>{{scope.row.sponsored_links}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column width="300"> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('预估总花费')}}</span>
+                        <span style="color: red;">*</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <div>
+                            <el-select v-model="scope.row.forecast_sum_currency_cd" filterable :placeholder="$lang('请选择')">
+                                <el-option
+                                    v-for="(val,key) in currency"
+                                    :key="val.CD"
+                                    :label="val.CD_VAL"
+                                    :value="val.CD">
+                                </el-option>
+                            </el-select>
+                            <el-input v-model="scope.row.forecast_sum_price"></el-input>
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column width="250"> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('预估ROI')}}</span>
+                        <span style="color: red;">*</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <div>
+                            <el-input style="width: 210px;" :placeholder="$lang('带来的利润金额/投入的金额')" v-model="scope.row.forecast_rol"></el-input>
+                        </div>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </div>
+
+        <!-- 认领信息 -->
+        <div v-if="demandType == 'single'" class="table_wrap content_information">
+            <div class="title">认领信息</div>
+            <el-table :data="singleTableData" border style="width: 100%;">
+                <el-table-column> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('认领推广平台')}}</span>
+                        <span style="color: red;">*</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <el-select v-model="scope.row.platform_name" value-key="id" @change="sponsoredLinks_single(scope.row,scope.$index,'platform')" filterable :placeholder="$lang('请选择')">
+                            <el-option
+                                v-for="(val,key) in channel_platform"
+                                :key="val.id"
+                                :label="val.platform_name"
+                                :value="val">
+                            </el-option>
+                        </el-select>
+                    </template>
+                </el-table-column>
+                <el-table-column> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('认领推广媒介')}}</span>
+                        <span style="color: red;">*</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <el-select v-model="scope.row.medium_name" value-key="id" @change="sponsoredLinks_single(scope.row,scope.$index,'medium')" filterable :placeholder="$lang('请选择')">
+                            <el-option
+                                v-for="(val,key) in channel_medium"
+                                :key="val.id"
+                                :label="val.medium_name"
+                                :value="val">
+                            </el-option>
+                        </el-select>
+                    </template>
+                </el-table-column>
+                <el-table-column> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('活动标签')}}</span>
+                        <span style="color: red;">*</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <el-input @change="sponsoredLinks_single(scope.row,scope.$index)" v-model="scope.row.activity_tag"></el-input>
+                    </template>
+                </el-table-column>
+                <el-table-column> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('商品/活动页/站点链接（带Tracking Code）')}}</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <span>{{scope.row.sponsored_links}}</span>
+                    </template>
+                </el-table-column>
+                <!-- 11273需求修改--简化字段展示 -->
+                <!-- <el-table-column> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('推广价（页面币种）')}}</span>
+                        <span v-if="singleBasicInformation.dis_product_pirce_back != ''" style="color: red;">*</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <div>
+                            <span v-if="singleBasicInformation.promotion_type_cd == 'N003610003'">{{singleBasicInformation.currency_cd_val ? singleBasicInformation.currency_cd_val : 'USD'}}</span>
+                            <el-input :disabled="singleBasicInformation.dis_product_pirce_back == ''" v-model="scope.row.promontion_price"></el-input>
+                        </div>
+                    </template>
+                </el-table-column> -->
+                <el-table-column width="300"> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('预估总花费')}}</span>
+                        <span style="color: red;">*</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <div>
+                            <el-select v-model="scope.row.forecast_sum_currency_cd" filterable :placeholder="$lang('请选择')">
+                                <el-option
+                                    v-for="(val,key) in currency"
+                                    :key="val.CD"
+                                    :label="val.CD_VAL"
+                                    :value="val.CD">
+                                </el-option>
+                            </el-select>
+                            <el-input v-model="scope.row.forecast_sum_price"></el-input>
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column width="250"> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('预估ROI')}}</span>
+                        <span style="color: red;">*</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <el-input style="width: 210px;" :placeholder="$lang('带来的利润金额/投入的金额')" v-model="scope.row.forecast_rol"></el-input>
+                    </template>
+                </el-table-column>
+                <el-table-column width="165"> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('操作')}}</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <div class="operating_data">
+                            <i @click="addData" class="el-icon-circle-plus-outline"></i>
+                            <el-button size="mini" @click="copy(scope.row)">{{$lang('复制')}}</el-button>
+                            <i @click="deleteData(scope.$index)" class="el-icon-remove-outline"></i>
+                        </div>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </div>
+
+
+        <el-button class="submit_btn" :disabled="isdisabled" type="primary" @click="submit">{{$lang('提交')}}</el-button>
+
+    </div>
+</body>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.8.2.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script>
+    if (getCookie('think_language') !== "zh-cn") {
+        ELEMENT.locale(ELEMENT.lang.en)
+    };
+    var Vm = new Vue({
+        el: '#createPromotionDemand',
+        data: {
+            tableData:[],
+            singleTableData:[{
+                channel_platform_id:'',
+                channel_platform_name:'',
+                channel_platform_tag:'',
+                channel_medium_id:'',
+                channel_medium_name:'',
+                channel_medium_tag:'',
+                activity_tag:'',
+                link_tracking:'',
+                promontion_price:'',
+                promontion_currency_cd:'',
+                forecast_sum_price:'',
+                forecast_sum_currency_cd:'',
+                forecast_rol:'',
+                medium_name:{},
+                platform_name:{},
+            }],
+            basic:{
+                medium_name:{},
+                platform_name:{},
+                channel_platform_id:'',
+                channel_platform_name:'',
+                channel_platform_tag:'',
+                channel_medium_id:'',
+                channel_medium_name:'',
+                channel_medium_tag:'',
+                activity_tag:'',
+            },
+            singleBasicInformation:{},
+            currency:[],
+            channel_platform:[],
+            channel_medium:[],
+            demandType:'',
+            isdisabled:false,
+            source:''
+        },
+        created() {
+            this.getCommonData();
+        },
+        methods: {
+          comput:function(row){
+            if(this.singleBasicInformation.dis_product_pirce_front === this.singleBasicInformation.dis_product_pirce_back){
+              row.promontion_price = this.singleBasicInformation.dis_product_pirce_front
+            }
+          },
+          copy:function(data){
+            var d = JSON.parse(JSON.stringify(data))
+            this.singleTableData.push(d)
+          },
+            getCommonData:function(){
+                var _this = this;
+                var demandArr = _this.getQueryVariable('idd')
+                _this.source = _this.getQueryVariable('source')
+
+
+                var post_data = []
+                demandArr = demandArr.split(",")
+                // if(demandArr.length > 1){
+                //     _this.demandType = 'multiple'
+                // }else{
+                //     _this.demandType = 'single'
+                // }
+
+                for (var item in demandArr) {
+                    var obj = {}
+                    obj.promotion_demand_no = demandArr[item]
+                    post_data.push(obj)
+                }
+
+
+
+                if(_this.source == 'task'){
+                    var taskid = _this.getQueryVariable('taskid')
+                    console.log('taskid',taskid);
+
+                    var taskidArr = taskid.split(",")
+                    if(taskidArr.length > 1){
+                        _this.demandType = 'multiple'
+                    }else{
+                        _this.demandType = 'single'
+                    }
+
+                    axios.post('/index.php?g=Marketing&m=PromotionTask&a=getTaskInfo', {
+                        search:{
+                            promotion_task_no:taskid,
+                        }
+                    }).then(function (res) {
+
+                        if (res.data.code === 2000) {
+                            if(_this.demandType == 'multiple'){
+                                _this.tableData = res.data.data
+                            }else{
+                                _this.singleTableData = res.data.data
+                                axios.post('/index.php?g=Marketing&m=PromotionDemand&a=getMultiDetail', {
+                                    post_data: post_data
+                                }).then(function (res) {
+                                    if (res.data.code === 2000) {
+                                        _this.singleBasicInformation = res.data.data[0]
+                                    }
+                                })
+
+                            }
+
+                        }
+                    })
+
+
+                }else{
+
+                    // var post_data = []
+                    // demandArr = demandArr.split(",")
+                    if(demandArr.length > 1){
+                        _this.demandType = 'multiple'
+                    }else{
+                        _this.demandType = 'single'
+                    }
+                    // for (var item in demandArr) {
+                    //     var obj = {}
+                    //     obj.promotion_demand_no = demandArr[item]
+                    //     post_data.push(obj)
+                    // }
+
+
+                    axios.post('/index.php?g=Marketing&m=PromotionDemand&a=getMultiDetail', {
+                        post_data: post_data
+                    }).then(function (res) {
+                        if (res.data.code === 2000) {
+                            if(_this.demandType == 'multiple'){
+                                _this.tableData = res.data.data
+                            }else{
+                                _this.singleBasicInformation = res.data.data[0]
+
+                            }
+                            _this.singleTableData.forEach(function(row){
+                            _this.comput(row)
+                            })
+
+                        }
+                    })
+
+                }
+                
+                
+
+                axios.post('/index.php?g=common&m=index&a=get_cd', {
+                    cd_type: {
+                        currency: false,
+                    }
+                }).then(function (res) {
+                    if (res.data.code === 2000) {
+                        _this.currency = res.data.data.currency
+                    }
+                })
+
+                axios.get('/index.php?g=Marketing&m=PromotionTask&a=getChannelData').then(function (res) {
+                    if (res.data.code === 2000) {
+                        console.log('res',res.data.data.channel_platform);
+                        console.log('res',res.data.data.channel_medium);
+                        _this.channel_platform = res.data.data.channel_platform
+                        _this.channel_medium = res.data.data.channel_medium
+
+                        // _this.currency = res.data.data.currency
+                    }
+                })
+
+                
+
+          
+            },
+            getQueryVariable:function(variable){
+                var query = window.location.search.substring(1);
+                var vars = query.split("&");
+                for (var i=0;i<vars.length;i++) {
+                        var pair = vars[i].split("=");
+                        if(pair[0] == variable){return pair[1];}
+                }
+                return(false);
+            },
+            submit:function(){
+                var _this = this
+                // console.log(_this.demandType);
+                // console.log(_this.singleTableData);
+                _this.isdisabled = true
+                var post_data = []
+                var request_type = ''
+                if(_this.demandType == 'single'){
+                    var singleTableDataArr = _this.singleTableData
+                    console.log('singleTableDataArr',singleTableDataArr);
+                    for (var item in singleTableDataArr) {
+                        var obj = {}
+                        obj.promotion_demand_no = _this.singleBasicInformation.promotion_demand_no
+                        obj.channel_platform_id = singleTableDataArr[item].channel_platform_id ? singleTableDataArr[item].channel_platform_id.toString() : ''
+                        obj.channel_platform_name = singleTableDataArr[item].channel_platform_name
+                        obj.channel_platform_tag = singleTableDataArr[item].channel_platform_tag
+                        obj.channel_medium_id = singleTableDataArr[item].channel_medium_id ? singleTableDataArr[item].channel_medium_id.toString() : ''
+                        obj.channel_medium_name = singleTableDataArr[item].channel_medium_name
+                        obj.channel_medium_tag = singleTableDataArr[item].channel_medium_tag
+                        obj.activity_tag = singleTableDataArr[item].activity_tag
+                        obj.link_tracking = singleTableDataArr[item].sponsored_links
+                        obj.promontion_price = singleTableDataArr[item].promontion_price
+                        obj.promontion_currency_cd = _this.singleBasicInformation.currency_cd ? _this.singleBasicInformation.currency_cd : 'N000590100'
+                        obj.forecast_sum_price = singleTableDataArr[item].forecast_sum_price
+                        obj.forecast_sum_currency_cd = singleTableDataArr[item].forecast_sum_currency_cd
+                        obj.forecast_rol = singleTableDataArr[item].forecast_rol
+                        post_data.push(obj)
+                    }
+                    // request_type = 'one_to_many'
+                    console.log(post_data);
+
+                }else{
+                    var tableDataArr = _this.tableData
+                    console.log('tableData',_this.tableData);
+                    // console.log(_this.basic);
+                    for (var item in tableDataArr) {
+                       var obj = {}
+                        obj.promotion_demand_no = tableDataArr[item].promotion_demand_no
+                        obj.channel_platform_id = _this.basic.channel_platform_id ? _this.basic.channel_platform_id.toString() : ''
+                        obj.channel_platform_name = _this.basic.channel_platform_name
+                        obj.channel_platform_tag = _this.basic.channel_platform_tag
+                        obj.channel_medium_id = _this.basic.channel_medium_id ? _this.basic.channel_medium_id.toString() : ''
+                        obj.channel_medium_name = _this.basic.channel_medium_name
+                        obj.channel_medium_tag = _this.basic.channel_medium_tag
+                        obj.activity_tag = tableDataArr[item].activity_tag
+                        obj.link_tracking = tableDataArr[item].sponsored_links
+                        obj.promontion_price = tableDataArr[item].promontion_price
+                        obj.promontion_currency_cd = tableDataArr[item].currency_cd ? tableDataArr[item].currency_cd : 'N000590100'
+                        obj.forecast_sum_price = tableDataArr[item].forecast_sum_price
+                        obj.forecast_sum_currency_cd = tableDataArr[item].forecast_sum_currency_cd
+                        obj.forecast_rol = tableDataArr[item].forecast_rol
+                        post_data.push(obj)
+                    }
+                    // request_type = 'several_for_one'
+
+                }
+                console.log('post_data',post_data);
+                axios.post("/index.php?g=Marketing&m=PromotionTask&a=create", {
+                    post_data:post_data
+                    // request_type:request_type
+                }).then(function(res){
+                    console.log(res);
+                    if (res.data.code == 2000) {
+                        _this.$message({
+                            type: 'success',
+                            message: _this.$lang('需求认领成功')
+                        });
+                        if(_this.source == 'task'){
+                            setTimeout(function(){
+                                backTab('/index.php?m=management&a=promotion_task_list',_this.$lang('推广任务列表'))
+                            },500)
+                        }else{
+                            setTimeout(function(){
+                                backTab('/index.php?m=management&a=promotion_demand_list',_this.$lang('推广需求列表'))
+                            },500)
+                        }
+                    }else {
+                        _this.$message.warning(res.data.msg);
+                        _this.isdisabled = false
+                    }
+                })
+                
+
+            },
+            sponsoredLinks_multiple:function(val,type){
+                console.log(val);
+                var _this = this
+                if(type == 'platform'){
+                    _this.basic.channel_platform_id = val.id
+                    _this.basic.channel_platform_name = val.platform_name
+                    _this.basic.channel_platform_tag = val.platform_tag
+                }else if(type == 'medium'){
+                    _this.basic.channel_medium_id = val.id
+                    _this.basic.channel_medium_name = val.medium_name
+                    _this.basic.channel_medium_tag = val.medium_tag
+                }
+                var tableDataArr = _this.tableData
+                var channel_platform_tag = _this.basic.channel_platform_tag ? '?hmsr=' + _this.basic.channel_platform_tag : ''
+                var channel_medium_tag = _this.basic.channel_medium_tag ? '&hmmd=' + _this.basic.channel_medium_tag : ''
+                // var activity_tag = _this.basic.activity_tag ? '&hmci=' + _this.basic.activity_tag : ''
+
+                for (var item in tableDataArr) {
+                    var activity_tag = tableDataArr[item].activity_tag ? '&hmci=' + tableDataArr[item].activity_tag : ''
+                    _this.$set(_this.tableData[item],'sponsored_links',tableDataArr[item].link + channel_platform_tag + channel_medium_tag + activity_tag);
+                }
+
+            },
+            sponsoredLinks_single:function(val,index,type){
+                console.log(val);
+                if(type == 'platform'){
+                    this.singleTableData[index].channel_platform_id = val.platform_name.id
+                    this.singleTableData[index].channel_platform_name = val.platform_name.platform_name
+                    this.singleTableData[index].channel_platform_tag = val.platform_name.platform_tag
+                }else if(type == 'medium'){
+                    this.singleTableData[index].channel_medium_id = val.medium_name.id
+                    this.singleTableData[index].channel_medium_name = val.medium_name.medium_name
+                    this.singleTableData[index].channel_medium_tag = val.medium_name.medium_tag
+                }
+                console.log(this.singleTableData);
+
+                var channel_platform_tag = this.singleTableData[index].channel_platform_tag ? '?hmsr=' + this.singleTableData[index].channel_platform_tag : ''
+                var channel_medium_tag = this.singleTableData[index].channel_medium_tag ? '&hmmd=' + this.singleTableData[index].channel_medium_tag : ''
+                var activity_tag = this.singleTableData[index].activity_tag ? '&hmci=' + this.singleTableData[index].activity_tag : ''
+                this.$set(this.singleTableData[index],'sponsored_links',this.singleBasicInformation.link + channel_platform_tag + channel_medium_tag + activity_tag);
+
+            },
+            addData:function(){
+                var obj = {
+                    channel_platform_id:'',
+                    channel_platform_name:'',
+                    channel_platform_tag:'',
+                    channel_medium_id:'',
+                    channel_medium_name:'',
+                    channel_medium_tag:'',
+                    activity_tag:'',
+                    link_tracking:'',
+                    promontion_price:'',
+                    promontion_currency_cd:'',
+                    forecast_sum_price:'',
+                    forecast_sum_currency_cd:'',
+                    forecast_rol:'',
+                }
+                this.comput(obj)
+                this.singleTableData.push(obj)
+            },
+            deleteData:function(index){
+                if(this.singleTableData.length > 1){
+                    this.singleTableData.splice(index,1);
+                }
+            },
+            openCopy:function(val){
+                let url = val;
+                let oInput = document.createElement('input');
+                oInput.value = url;
+                document.body.appendChild(oInput);
+                oInput.select();
+                document.execCommand("Copy");
+                this.$message({
+                message: this.$lang('已成功复制到剪切板'),
+                type: 'success'
+                });
+                oInput.remove()
+            },
+
+        },
+    })
+</script>
+
+</html>

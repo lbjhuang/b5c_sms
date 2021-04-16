@@ -1,0 +1,1931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="/Application/Tpl/Home/B2b/css/detail.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <title>编辑付款</title>
+</head>
+<style>
+    [v-cloak]{
+        display: none;
+    }
+    h4{
+        margin: 0;
+        line-height: 40px;
+    }
+    .entry-info{
+        width: 100%;
+        text-align: center;
+        border-left: 1px solid #E0E0E0;
+        border-bottom: 1px solid #E0E0E0;
+        font-size: 15px;
+        margin-bottom:20px;
+    }
+    .entry-info caption{
+        height: 40px;
+        background-color: #546E7A;
+        color: white;
+        text-align: left;
+        font-size: 15px;
+        line-height: 40px;
+        padding-left: 20px;
+    }
+    .entry-info tr td{ 
+        border-right: 1px solid #E0E0E0;
+        border-top: 1px solid #E0E0E0;
+        padding: 10px 15px;
+        font-size: 14px;
+    }
+    .entry-info tr td:nth-child(odd){
+        width: 13.333%;
+        background: #f5fafe;
+    }
+    .entry-info tr td:nth-child(even){
+        width: 20%;
+        /* background: #f5fafe; */
+    }
+    .recipt-entry-info tr td:nth-child(odd){
+        width: 9.333%;
+    }
+    .recipt-entry-info tr td:nth-child(even){
+        width: 17%;
+    }
+    .entry-info tr td .el-input__inner{
+        height: 35px;
+    }
+    .input-with-select .el-input-group__prepend {
+        background-color: #fff;
+    }
+    .currency{
+        width: 90px;
+    }
+    .el-select .el-input__inner{
+        width: 100%;
+    }
+    .width-100{
+        width: 100% !important;
+    }
+    .required::after{
+        content: "*";
+        color:red;
+        margin-left: 5px;
+    }
+    .order-list{
+        width: 100%;
+        text-align: center;
+        border-left: 1px solid #E0E0E0;
+        border-bottom: 1px solid #E0E0E0;
+        font-size: 15px;
+        margin-top: -20px
+    }
+    .order-list tr th{
+        border-right: 1px solid #E0E0E0;
+        border-top: 1px solid #E0E0E0;
+        padding: 10px 15px;
+        font-size: 14px;
+        background: #546E7A;
+        color: white;
+    }
+    .order-list tr td{
+        border-right: 1px solid #E0E0E0;
+        border-top: 1px solid #E0E0E0;
+        padding: 10px 15px;
+        font-size: 14px;
+    }
+
+    .el-tabs__nav-wrap::after, .el-tabs__active-bar {
+        height: 0;
+    }
+
+    .el-tabs__nav div {
+        font-size: 26px;
+        font-weight: 600;
+    }
+
+    .right-btn {
+        float: right;
+        margin-right: 20px;
+    }
+
+    .main-basic-table td, .child-basic-table td {
+        padding: 4px 10px;
+        white-space: normal;
+        line-height: 20px;
+    }
+
+    .el-pagination {
+        margin-top: 20px;
+        margin-bottom: 120px;
+    }
+
+    .log-table td {
+        padding: 12px 0 !important;
+    }
+
+    .deductible-demo{
+        display: flex;
+        text-align: left;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .deductible-demo .el-upload-list{
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .deductible-demo .el-upload-list .el-upload-list__item {
+        margin-top: 0;
+        width: auto;
+    }
+    .attachmentLink{
+        padding: 0 10px;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+</style>
+<body>
+<div id="receipt" v-cloak style="padding: 20px;">
+    <el-container>
+        <el-header style="padding:0;">
+            <el-row>
+                <el-col :span="12">
+                    <h4>{{$lang('编辑付款')}}</h4>
+                </el-col>
+            </el-row>
+        </el-header>
+        <el-main style="padding: 0;">
+            <!-- 基本信息 -->
+            <table class="entry-info" border="0" cellpadding="0" cellspacing="0">
+                <caption>{{$lang('基本信息')}}</caption>
+                <tbody>
+                <tr>
+                    <td>{{$lang('付款性质')}}<span class="required"></span></td>
+                    <td><template>
+                        <el-radio v-model="form.payment_nature" label="1">{{$lang('对公')}}</el-radio>
+                        <el-radio v-model="form.payment_nature" label="2">{{$lang('对私')}}</el-radio>
+                        </template>
+                    </td>
+                    <td>{{$lang('我方公司')}}<span class="required"></span></td>
+                    <td>
+                        <el-select :placeholder="$lang('请选择')" v-model="form.our_company_cd" clearable filterable @change="getContract_info('company')">
+                            <el-option v-for="(item) in companyData" :key="item.cd" :label="item.cdVal" :value="item.cd"></el-option>
+                        </el-select>
+                    </td>
+                    <td>{{$lang('供应商')}}<span class="required" v-if="form.payment_nature == '1'"></span></td>
+                    <td>
+                        <el-select :placeholder="$lang('请选择')" v-model="form.supplier" clearable filterable @change="getContract_info('vendor')">
+                            <el-option v-for="(item) in supplierData" :key="item.ID" :label="item.SP_NAME" :value="item.ID"></el-option>
+                        </el-select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>{{$lang('合同信息')}}<span class="required"></span></td>
+                    <td><template>
+                        <el-radio v-model="form.contract_information" label="1" @change="setContract">{{$lang('有合同')}}</el-radio>
+                        <el-radio v-model="form.contract_information" label="-1" @change="setContract">{{$lang('无合同')}}</el-radio>
+                        </template>
+                    </td>
+                    <td>{{$lang('合同编号')}}<span class="required" v-if="form.contract_information == '1' && form.payment_nature == '1'"></span></td>
+                    <td>
+                        <el-select :placeholder="$lang('请选择')" :disabled="form.contract_information == -1" v-model="form.contract_no" clearable filterable @change="getPaymentInfo(form.contract_no)">
+                            <el-option v-for="(item) in contractData" :key="item.CON_NO" :label="getContract(item)" :value="item.CON_NO"></el-option>
+                        </el-select>
+                    </td>
+                    <td>{{$lang('结算类型')}}<span class="required"></span></td>
+                    <td>
+                        <el-select :placeholder="$lang('请选择')" v-model="form.settlement_type" clearable filterable>
+                            <el-option v-for="(item) in settlementData" :key="item.cd" :label="$lang(item.cdVal)" :value="item.cd"></el-option>
+                        </el-select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>{{$lang('采购性质')}}<span class="required"></span></td>
+                    <td>
+                        <el-select :placeholder="$lang('请选择')" v-model="form.procurement_nature" clearable filterable>
+                            <el-option v-for="(item) in procurementData" :key="item.cd" :label="$lang(item.cdVal)" :value="item.cd"></el-option>
+                        </el-select>
+                    </td>
+                    <td>{{$lang('发票信息')}}<span class="required"></span></td>
+                    <td>
+                        <el-select :placeholder="$lang('请选择')" v-model="form.invoice_information" clearable filterable>
+                            <el-option v-for="(item) in invoice_informationData" :key="item.cd" :label="$lang(item.cdVal)" :value="item.cd"></el-option>
+                        </el-select>
+                    </td>
+                    <td>{{$lang('发票类型')}}<span class="required" v-if="form.invoice_information != 'N003290003'"></span></td>
+                    <td>
+                        <el-select :placeholder="$lang('请选择')" :disabled="form.invoice_information == 'N003290003'" v-model="form.invoice_type" clearable filterable>
+                            <el-option v-for="(item) in invoice_typeData" :key="item.cd" :label="$lang(item.cdVal)" :value="item.cd"></el-option>
+                        </el-select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>{{$lang('账单信息')}}<span class="required"></span></td>
+                    <td>
+                        <el-select :placeholder="$lang('请选择')" v-model="form.bill_information" clearable filterable>
+                            <el-option v-for="(item) in bill_informationData" :key="item.cd" :label="$lang(item.cdVal)" :value="item.cd"></el-option>
+                        </el-select>
+                    </td>
+                    <td>{{$lang('付款类型')}}<span class="required"></span></td>
+                    <td>
+                        <el-select :placeholder="$lang('请选择')" v-model="form.payment_type" clearable filterable @change="getSubdivision_type">
+                            <el-option v-for="(item) in payment_typeData" :key="item.cd" :label="$lang(item.cdVal)" :value="{value:item.cd,comment2:item.comment2}"></el-option>
+                        </el-select>
+                    </td>
+                    <td>{{$lang('付款币种')}}<span class="required"></span></td>
+                    <td>
+                        <el-select :placeholder="$lang('请选择')" v-model="form.payment_currency_cd" clearable filterable>
+                            <el-option v-for="(item) in currencyData" :key="item.cd" :label="item.cdVal" :value="item.cd"></el-option>
+                        </el-select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>{{$lang('预计付款日期')}}<span class="required"></span></td>
+                    <td>
+                        <el-date-picker v-model="form.payable_date" type="date" align="right" value-format="yyyy-MM-dd">
+                        </el-date-picker>
+                    </td>
+                    <td>{{$lang('审批部门')}}<span class="required"></span></td>
+                    <td>
+                        <el-select :placeholder="$lang('请选择')" :disabled="isdept" v-model="form.dept_id">
+                            <el-option v-for="(item) in deptData" :key="item.ID" :label="item.DEPT_NM" :value="item.ID"></el-option>
+                        </el-select>
+                    </td>
+                    <td>{{$lang('付款需求备注')}}</td>
+                    <td>
+                        <el-input v-model="form.payment_remark"></el-input>
+                    </td>
+                </tr>
+                <tr>
+                    <td>{{$lang('发票附件')}}<span class="required" v-if="form.invoice_information == 'N003290001'"></span></td>
+                    <td colSpan="5">
+                        <el-upload
+                            class="deductible-demo"
+                            action="/index.php?m=order_detail&a=file_upload"
+                            :on-success="(response, file, fileList)=>handleSuccessPay1(response, file, fileList)"
+                            :on-remove="(file, fileList)=>handleRemovePay1(file, fileList)"
+                            :data="{is_keep_last_name: true}"
+                            multiple
+                            :file-list="form.invoice_attachment">
+                            <el-button size="small" type="primary">{{$lang('上传文件')}}</el-button>
+                            <div class="attachmentLink" slot="tip" v-for="(item,index) in form.invoice_attachment1">
+                                <a class="file_type" :href="'/index.php?m=order_detail&a=download&file='+item.saveName+'&origin_file_name='+item.lastName">{{item.lastName}}</a>
+                                <i class="el-icon-close" @click="fileclose(1,index)"></i>
+                            </div>
+                        </el-upload>
+                    </td>
+                </tr>
+                <tr>
+                    <td>{{$lang('账单附件')}}<span class="required" v-if="form.bill_information == 'N003300001'"></span></td>
+                    <td colSpan="5">
+                        <el-upload
+                            class="deductible-demo"
+                            action="/index.php?m=order_detail&a=file_upload"
+                            :on-success="(response, file, fileList)=>handleSuccessPay2(response, file, fileList)"
+                            :on-remove="(file, fileList)=>handleRemovePay2(file, fileList)"
+                            :data="{is_keep_last_name: true}"
+                            multiple
+                            :file-list="form.bill_attachment">
+                            <el-button size="small" type="primary">{{$lang('上传文件')}}</el-button>
+                            <div class="attachmentLink" slot="tip" v-for="(item,index) in form.bill_attachment1">
+                                <a class="file_type" :href="'/index.php?m=order_detail&a=download&file='+item.saveName+'&origin_file_name='+item.lastName">{{item.lastName}}</a>
+                                <i class="el-icon-close" @click="fileclose(2,index)"></i>
+                            </div>
+                        </el-upload>
+                    </td>
+                </tr>
+                <tr>
+                    <td>{{$lang('其他附件')}}</td>
+                    <td colSpan="5">
+                        <el-upload
+                            class="deductible-demo"
+                            action="/index.php?m=order_detail&a=file_upload"
+                            :on-success="(response, file, fileList)=>handleSuccessPay3(response, file, fileList)"
+                            :on-remove="(file, fileList)=>handleRemovePay3(file, fileList)"
+                            :data="{is_keep_last_name: true}"
+                            multiple
+                            :file-list="form.other_attachment">
+                            <el-button size="small" type="primary">{{$lang('上传文件')}}</el-button>
+                            <div class="attachmentLink" slot="tip" v-for="(item,index) in form.other_attachment1">
+                                <a class="file_type" :href="'/index.php?m=order_detail&a=download&file='+item.saveName+'&origin_file_name='+item.lastName">{{item.lastName}}</a>
+                                <i class="el-icon-close" @click="fileclose(3,index)"></i>
+                            </div>
+                        </el-upload>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <!-- 付款明细 -->
+            <div class="main-basic-info" style="margin-bottom:20px;">
+                <header style="margin-bottom:20px;">
+                    {{$lang('付款明细')}}
+                </header>
+                <table border="0" cellpadding="0" cellspacing="0" class="order-list" style="display:block;min-width:1000px;overflow:auto;">
+                    <thead>
+                    <tr>
+                        <!-- 批量输入 -->
+                        <tr>
+                            <td>
+                                <el-input size="small" @change="batchReplaceData('project_summary')" :placeholder="$lang('批量输入')" v-model="general_payment_form.project_summary"></el-input>
+                            </td>
+                            <td>
+                                <el-select v-model="general_payment_form.subdivision_type" @click.native="batchReplaceData('subdivision_type')" @change="batchReplaceData('subdivision_type')" filterable :placeholder="$lang('批量输入')">
+                                    <el-option v-for="type in subdivision_typeData" :label="$lang(type.cdVal)" :value="type.cd"
+                                        :key="type.cd"></el-option>
+                                </el-select>
+                            </td>
+                            <td>
+                                <el-input :placeholder="$lang('批量输入')" @change="batchReplaceData('amount')" size="small" v-model="general_payment_form.amount"></el-input>
+                            </td>
+                            <td>
+                                <el-input size="small" :placeholder="$lang('批量输入')" @change="batchReplaceData('vat_rate')" v-model="general_payment_form.vat_rate"></el-input>
+                            </td>
+                            <td>{{general_payment_form.subtotal = addNum(parseFloat(general_payment_form.amount || 0),parseFloat(general_payment_form.vat_rate || 0)) | format}}
+                            </td>
+                            <td style="min-width:250px">
+                                <el-select :placeholder="$lang('批量输入')" style="width:33%;float:left;" disabled
+                                    v-model="general_payment_form.actual_fee_Department0">
+                                    <el-option label="Gshopper" value="75"></el-option>
+                                </el-select>
+                                <el-select :placeholder="$lang('批量输入')" @change="batchReplaceData('actual_fee_Department1')" style="width:33%;float:left;"
+                                    v-model="general_payment_form.actual_fee_Department1" clearable filterable>
+                                    <el-option v-for="item2 in depData1" :key="item2.ID" :label="item2.DEPT_NM"
+                                    :value="{value:item2.ID,label:item2.DEPT_NM}"></el-option>
+                                </el-select>
+                                <el-select :placeholder="$lang('批量输入')" @change="batchReplaceData('actual_fee_Department2')" style="width:33%;float:left;"
+                                    v-model="general_payment_form.actual_fee_Department2" clearable filterable>
+                                    <el-option v-for="item2 in general_payment_form.depData2" :key="item2.ID" :label="item2.DEPT_NM"
+                                    :value="{value:item2.ID,label:item2.DEPT_NM}"></el-option>
+                                </el-select>
+                            </td>
+                            <td>
+                                <el-select v-model="general_payment_form.actual_fee_applicant" filterable clearable @change="batchReplaceData('actual_fee_applicant')" @click.native="batchReplaceData('actual_fee_applicant')">
+                                    <el-option v-for="(item) in users" :key="item.mId" :label="item.mName" :value="item.mName"></el-option>
+                                </el-select>
+                            </td>
+                            <td>
+                                <el-select v-model="general_payment_form.relation_bill_type" @change="batchReplaceData('relation_bill_type')" @click.native="batchReplaceData('relation_bill_type')" filterable :placeholder="$lang('批量输入')">
+                                    <el-option v-for="it in relation_bill_typeData" :label="$lang(it.cdVal)" :value="it.cd" :key="it.cd"></el-option>
+                                    </el-option>
+                                </el-select>
+                            </td>
+                            <td>
+                                <el-select filterable remote :loading="billNoSeleLoading"
+                                    @change="batchReplaceData('relation_bill_no')"
+                                    :placeholder="$lang('批量输入')"
+                                    reserve-keyword
+                                    multiple
+                                    :remote-method="(query)=>{getRelationBillNoByBatch(query,general_payment_form)}"
+                                    :disabled="general_payment_form.relation_bill_type == 'N003310005'"
+                                    v-model="general_payment_form.relation_bill_no">
+                                    <el-option v-for="(it,index) in general_payment_form.relation_bill_noData" :label="it.relation_bill_no"
+                                        :value="it.relation_bill_no" :key="index"></el-option>
+                                </el-select>
+                            </td>
+                        </tr>
+                        <th style="min-width:100px">{{$lang('项目摘要')}}<span class="required"></span></th>
+                        <th style="min-width:100px">{{$lang('细分类型')}}<span class="required"></span></th>
+                        <th style="min-width:100px">{{$lang('支付金额（不含增值税）')}}<span class="required"></span></th>
+                        <th style="min-width:100px">{{$lang('增值税')}}<span class="required"></span></th>
+                        <th>{{$lang('小计')}}</th>
+                        <th>{{$lang('实际费用归属部门')}}</th>
+                        <th>{{$lang('实际费用申请人')}}<span class="required"></span></th>
+                        <th style="min-width:100px">{{$lang('关联单据类型')}}<span class="required"></span></th>
+                        <th style="min-width:200px">{{$lang('关联单据号')}}<span class="required"></span></th>
+                        <th style="min-width:128px">{{$lang('操作')}}</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr v-for="(item,ind) in general_payment_detail">
+                        <td>
+                        <el-input size="small" v-model="item.project_summary"></el-input>
+                        </td>
+                        <td>
+                            <el-select v-model="item.subdivision_type" filterable>
+                                <el-option v-for="(item) in subdivision_typeData" :label="$lang(item.cdVal)" :value="item.cd" :key="item.cd"></el-option>
+                            </el-select>
+                        </td>
+                        <td><el-input size="small" v-model="item.amount" @blur="getAmount(item.amount, ind)"></el-input></td>
+                        <td><el-input size="small" v-model="item.vat_rate" @blur="getVat_rate(item.vat_rate, ind)"></el-input></td>
+                        <td>{{item.subtotal = addNum(delcommafy(item.amount),delcommafy(item.vat_rate)) | format}}</td>
+                        <td style="min-width:250px">
+                            <el-select :placeholder="$lang('请选择')" style="width:33%;float:left;" disabled  v-model="item.actual_fee_Department0">
+                                <el-option label="Gshopper" value="75"></el-option>
+                            </el-select>
+                            <el-select :placeholder="$lang('请选择')" style="width:33%;float:left;" v-model="item.actual_fee_Department1" clearable filterable @clear="clearDept2(ind)" @change="getDep2(item.actual_fee_Department1,ind)">
+                                <el-option v-for="(item5) in depData1" :key="item5.ID" :label="item5.DEPT_NM" :value="{value: item5.ID, label:item5.DEPT_NM,index: ind}"></el-option>
+                            </el-select>
+                            <el-select :placeholder="$lang('请选择')" style="width:33%;float:left;" v-model="item.actual_fee_Department2" clearable filterable @change="getDep3(item.actual_fee_Department2, ind)">
+                                <el-option v-for="(item2) in item.depData2" :key="item2.ID" :label="item2.DEPT_NM" :value="{value:item2.ID,label:item2.DEPT_NM,index:ind}"></el-option>
+                            </el-select>
+                        </td>
+                        <td>
+                            <el-select v-model="item.actual_fee_applicant" filterable clearable>
+                                <el-option v-for="user in users" :key="user.mId" :label="user.mName" :value="user.mName"></el-option>
+                            </el-select>
+                        </td>
+                        <td>
+                            <el-select v-model="item.relation_bill_type" filterable>
+                                <el-option v-for="(it) in relation_bill_typeData" :label="$lang(it.cdVal)" :value="it.cd" :key="item.cd"></el-option>
+                            </el-select>
+                        </td>
+                        <td>
+                            <el-select filterable
+                                        remote
+                                        multiple
+                                        :loading="billNoSeleLoading"
+                                        :remote-method="(query)=>{getRelation_bill_no(query,item,ind)}"
+                                        reserve-keyword
+                                        :disabled="item.relation_bill_type == 'N003310005'"
+                                        :placeholder="$lang('请搜索')"
+                                        v-model="item.relation_bill_no">
+                                <el-option v-for="(it,index) in item.relation_bill_noData" :label="it.relation_bill_no" :value="it.relation_bill_no"
+                                        :key="index"></el-option>
+                            </el-select>
+                        </td>
+                        <td>
+                            <el-button size="small" type="primary" @click="addGeneral_payment">{{$lang('添加')}}</el-button>
+                            <el-button size="small" type="primary" @click="deleteGeneral_payment(ind)">{{$lang('移除')}}</el-button>
+                        </td>
+                    </tr>
+                    <!-- 合计 -->
+                    <tr class="total-amount">
+                        <td></td>
+                        <td></td>
+                        <td><div class="total-amount">{{totalPaymentAmount | format}}</div></td>
+                        <td><div class="total-amount">{{totalTaxRate | format}}</div></td>
+                        <td><div>{{totalAmount | format}}</div></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    </tbody>
+                </table>
+                <!-- 支付信息 -->
+                <table class="entry-info" border="0" cellpadding="0" cellspacing="0">
+                    <caption>{{$lang('支付信息')}}</caption>
+                    <tbody>
+                        <tr>
+                            <td>{{$lang('支付渠道')}}<span class="required"></span></td>
+                            <td>
+                                <el-select :placeholder="$lang('请选择')" v-model="form.payment_channel_cd" clearable filterable @change="showPayment(form.payment_channel_cd,'select')">
+                                    <el-option v-for="(item) in payment_channelData" :key="item.cd" :label="$lang(item.cdVal)" :value="item.cd"></el-option>
+                                </el-select>
+                            </td>
+                            <td>{{$lang('支付方式')}}<span class="required"></span></td>
+                            <td>
+                                <el-select :placeholder="$lang('请选择')" v-model="form.payment_way_cd" clearable filterable>
+                                    <el-option v-for="(item) in payment_methodData" :key="item.cd" :label="$lang(item.cdVal)" :value="item.cd"></el-option>
+                                </el-select>
+                            </td>
+                            
+                            <td>{{$lang('币种')}}</td>
+                            <td>
+                                {{getCurrency(form.payment_currency_cd)}}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>{{$lang('支付金额')}}</td>
+                            <td>
+                                {{getTotalAmount()}}        
+                            </td>
+                            <td></td>
+                            <td>    
+                            </td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <!-- 收款方账户/订单信息 -->
+                <table class="entry-info" border="0" cellpadding="0" cellspacing="0" v-if="form.payment_channel_cd != 'N001000300' && beneficiaryAccount">
+                    <caption>{{$lang('收款方账户/订单信息')}}</caption>
+                    <tbody>
+                        <tr v-if="form.payment_channel_cd == 'N001000301'">
+                            <td>{{$lang('收款账户名')}}<span class="required"></span></td>
+                            <td>
+                                <el-input v-model="form.supplier_collection_account"></el-input>
+                                <span style="color:#dddddd;font-size: 12px">{{$lang('境外付款需要输入英文')}}</span>
+                            </td>
+                            <td>{{$lang('收款账户开户行')}}<span class="required"></span></td>
+                            <td>
+                                <el-input v-model="form.supplier_opening_bank"></el-input>
+                                <span style="color:#dddddd;font-size: 12px">{{$lang('境外付款需要输入英文')}}</span>
+                            </td>
+                            <td>{{$lang('收款银行账号')}}<span class="required"></span></td>
+                            <td>
+                                <el-input v-model="form.supplier_card_number"></el-input>
+                            </td>
+                        </tr>
+                        <tr v-if="form.payment_channel_cd == 'N001000301'">
+                            <td>{{$lang('收款银行SWIFT CODE')}}<span></span></td>
+                            <td>
+                                <el-input v-model="form.supplier_swift_code"></el-input>
+                                <span style="color:#dddddd;font-size: 12px"><{$Think.lang.跨境支付SWIFT CODE必填，非跨境支付本地结算代码必填}></span>
+                            </td>
+                            <td>{{$lang('收款银行本地结算代码')}}<span></span></td>
+                            <td>
+                                <el-input v-model="form.bank_settlement_code"></el-input>
+                                <span style="color:#dddddd;font-size: 12px"><{$Think.lang.跨境支付SWIFT CODE必填，非跨境支付本地结算代码必填}></span>
+                            </td>
+                            <td>{{$lang('收款银行地址')}}<span class="required"></span></td>
+                            <td>
+                                <el-select v-model="selectCountry"  filterable @change="selectCountryChange"
+                                        placeholder="<{$Think.lang.国家}>">
+                                    <el-option v-for="item in country" :key="item.id" :label="$lang(item.zh_name)"
+                                                :value="item.id"></el-option>
+                                </el-select>
+                            </td>
+                        </tr>
+                        <tr v-if="form.payment_channel_cd == 'N001000301'">
+                            <td>{{$lang('收款账号币种')}}<span class="required"></span></td>
+                            <td>
+                                <el-select :filterable="true" :placeholder="$lang('请选择币种')" v-model="form.account_currency" clearable>
+                                    <el-option :key="item.cd" :label="item.cdVal" :value="item.cd" v-for="item in currencyData"></el-option>
+                                </el-select>
+                            </td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        <tr v-if="form.payment_channel_cd != 'N001000301' && form.payment_way_cd == 'N003020001'">
+                            <td>{{$lang('该渠道收款账户名')}}<span class="required"></span></td>
+                            <td>
+                                <el-input v-model="form.collection_user_name"></el-input>
+                            </td>
+                            <td>{{$lang('该渠道收款账号')}}<span class="required"></span></td>
+                            <td>
+                                <el-input v-model="form.collection_account"></el-input>
+                            </td>
+                            <td></td><td></td>
+                        </tr>
+                        <tr v-if="form.payment_channel_cd != 'N001000301' && form.payment_way_cd == 'N003020002'">
+                            <td>{{$lang('平台名称')}}<span class="required"></span></td>
+                            <td>
+                                <el-select :placeholder="$lang('请选择')" v-model="form.platform_cd_val" clearable filterable @change="getStoreName(form.platform_cd_val)">
+                                    <el-option v-for="(item,index) in platformData" :key="index" :label="item" :value="index"></el-option>
+                                </el-select>
+                            </td>
+                            <td>{{$lang('店铺名称')}}<span class="required"></span></td>
+                            <td>
+                                <el-select :placeholder="$lang('请选择')" v-model="form.store_name" clearable filterable>
+                                    <el-option v-for="(item) in storesData" :key="item.ID" :label="item.STORE_NAME" :value="item.STORE_NAME"></el-option>
+                                </el-select>
+                            </td>
+                            <td>{{$lang('平台订单号')}}<span class="required"></span></td>
+                            <td>
+                                <el-input v-model="form.platform_order_no"></el-input>
+                            </td>
+                        </tr>
+                        <tr v-if="form.payment_channel_cd != 'N001000301' && form.payment_way_cd == 'N003020005'">
+                            <td>{{$lang('交易号')}}<span class="required"></span></td>
+                            <td>
+                                <el-input v-model="form.trade_no"></el-input>
+                            </td>
+                            <td></td><td></td><td></td><td></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </el-main>
+    </el-container>
+    <div class="text-center">
+        <el-button type="primary" @click="createGeneralPayment(2)" :disabled="submitBtnDisabled">{{$lang('提 交')}}</el-button>
+        <el-button type="default" @click="createGeneralPayment(1)" :disabled="submitBtnDisabled">{{$lang('保存草稿')}}</el-button>
+    </div>
+</div>
+
+<!--引入js-->
+<script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+<script>
+    if (getCookie('think_language') !== "zh-cn") {
+        ELEMENT.locale(ELEMENT.lang.en)
+    }
+
+    var  vm = new Vue({
+        el:'#receipt',
+        data:{
+            userName:'<{$user_name}>',
+            billNoSeleLoading: false,
+            submitBtnDisabled: false,
+            payment_audit_id: '',//付款单id
+            form:{
+                payment_nature: '',//付款性质
+                contract_information: '',//合同信息
+                our_company_cd: '',//我方公司
+                supplier: '',//供应商
+                supplier_name:'',
+                contract_no: '',//合同编号
+                settlement_type: '',//结算类型
+                procurement_nature: '',//采购性质
+                invoice_information: '',//发票信息
+                invoice_type: '',//发票类型
+                bill_information: '',//账单信息
+                payment_type: {},//付款类型
+                actual_fee_applicant: '',//实际费用申请人
+                actual_fee_Department0:'75',
+                actual_fee_Department1: '',
+                actual_fee_Department2: '',//实际部门归属
+                payable_date: '',//预计付款日期
+                payment_currency_cd: '',//提交付款币种
+                dept_id:'',//审批部门
+                payment_remark: '',//付款需求备注
+                invoice_attachment: [],
+                bill_attachment: [],
+                other_attachment: [],
+                invoice_attachment1: [],
+                bill_attachment1: [],
+                other_attachment1: [],
+                payment_channel_cd: '',//支付渠道
+                payment_way_cd: '',//支付方式
+                payable_amount: '',//支付金额
+                supplier_collection_account: '',//收款账户名
+                supplier_opening_bank: '',//收款银行
+                supplier_card_number: '',//银行账号
+                supplier_swift_code: '',//swift_code
+                bank_settlement_code: '',//收款银行本地结算代码
+                bank_address: '',//收款银行地址
+                city: '',//收款银行地址id
+                bank_address_detail: '',//收款银行详细地址
+                bank_postal_code: '',//收款银行邮编
+                account_currency: '',//收款账号币种CD
+                account_type: '',//收款账户种类CD
+                collection_user_name: '',//支付渠道账户名
+                collection_account: '',//支付渠道收款账号
+                store_name: '',//店铺名称
+                platform_cd_val: '',//平台名称
+                platform_order_no: '',//平台订单号
+                trade_no: '',//交易号
+                actual_fee_Department:'Gshopper',
+                actual_fee_department_id:'75',
+                payment_voucher: [],//付款凭证
+                billing_voucher: [],//付款水单
+            },
+            general_payment_detail:[{
+                project_summary: '',
+                subdivision_type: '',
+                amount: 0,
+                vat_rate: 0,
+                subtotal: 0,
+                relation_bill_type: '',
+                relation_bill_no: [],
+                relation_bill_noData: [],//关联单据号
+                actual_fee_Department:'Gshopper',
+                actual_fee_department_id:'75',
+                actual_fee_Department0:'75',
+                actual_fee_Department1:'',
+                actual_fee_Department2:'',
+                depData2:[],
+                actual_fee_applicant: ''    // 实际费用申请人， 一条付款明细对应一个负责人
+            }],
+            general_payment_form: {
+                project_summary: '',
+                subdivision_type: '',
+                amount: '',
+                vat_rate: '',
+                subtotal: 0,
+                relation_bill_type: '',
+                relation_bill_no: [],
+                relation_bill_noData: [],//关联单据号
+                actual_fee_Department:'Gshopper',
+                actual_fee_department_id:'75',
+                actual_fee_Department0:'75',
+                actual_fee_Department1:'',
+                actual_fee_Department2:'',
+                depData2:[],
+                actual_fee_applicant: '' // 实际费用申请人， 一条付款明细对应一个负责人
+            },
+            companyData: [], //我方公司
+            supplierData: [], //供应商
+            contractData: [], //合同编号
+            supplier_data:{},
+            settlementData: [], //结算类型
+            procurementData: [], // 采购性质
+            invoice_informationData: [],//发票信息
+            invoice_typeData: [],//发票类型
+            bill_informationData: [],//账单信息
+            payment_typeData: [],//付款类型
+            users: [], //实际费用申请人
+            depData1: [], //部门1
+            depData2: [],//部门2
+            subdivision_typeData: [],//细分类型
+            relation_bill_typeData: [],//关联单据类型
+            payment_channelData: [],//支付渠道
+            payment_methodData:[], //支付方式
+            storesData: [],//店铺名称
+            platformData: [],//平台名称
+            
+            currencyData: [],//币种
+            deptData:[],
+            isdept:false,
+            country:[],
+            province:[],
+            county:[],
+            selectCountryVal:'',
+            selectProvinceVal:'',
+            selectCountyVal:'',
+            selectCountry:'',
+            selectProvince:'',
+            selectCounty:'',
+            beneficiaryAccount:false,
+            upload_param: {
+                is_original_name: true
+            }
+        },
+        created:function(){
+            this.getDep();
+            this.getCommonCode();
+            this.getSupplier();
+            this.getCommonData();
+        },
+        computed: {
+            // 支付金额总计
+            totalPaymentAmount() {
+                var total = 0;
+                this.general_payment_detail.forEach(item => {
+                    total = this.addNum(total, item.amount.toString().replace(',', ''));
+                })
+                return total;
+            },
+            // 增值税总计
+            totalTaxRate() {
+                var total = 0;
+                this.general_payment_detail.forEach(item => {
+                    // total = total + parseFloat(item.vat_rate || 0);
+                    total = this.addNum(total, item.vat_rate.toString().replace(',',''));
+                });
+                return total;
+            },
+            totalAmount() {
+                var total = 0;
+                this.general_payment_detail.forEach(item => {
+                    // amount = amount + parseFloat(item.subtotal || 0);
+                    total = this.addNum(total, item.subtotal);
+                })
+                return total;
+            }
+        },
+        filters: {
+            // 数字加上千分位
+            format :function format(num) {
+                num = Number(num).toFixed(2)
+                var num1=num.split('.')[0]+'';//数字转字符串  
+                var str="";//字符串累加  
+                for(var i=num1.length- 1,j=1;i>=0;i--,j++){  
+                    if(j%3==0 && i!=0 && num1[i-1] != '-'){//每隔三位加逗号，过滤正好在第一个数字的情况 过滤负数情况 
+                        str+=num1[i]+",";//加千分位逗号  
+                        continue;  
+                    }  
+                    str+=num1[i];//倒着累加数字
+                }
+                return str.split('').reverse().join("") + '.' + num.split('.')[1];//字符串=>数组=>反转=>字符串  
+            },
+        },
+        methods: {
+            // 批量输入，替换
+            batchReplaceData(column) {
+                var value = this.general_payment_form[column];
+                this.general_payment_detail.forEach(item => {
+                    if (column === 'amount' || column === 'vat_rate') {
+                        item[column] = value;
+                        this.general_payment_form[column] = value;
+                    } else {
+                        item[column] = value;
+                    }
+                })
+                // 获取联动部门数据
+                if (column === 'actual_fee_Department1') {
+                    if (!value) {
+                        this.general_payment_form.depData2 = [];
+                        this.general_payment_form.actual_fee_Department2 = '';
+                        this.general_payment_detail.forEach(item => {
+                            item.actual_fee_Department2 = '';
+                            item.depData2 = [];
+                        })
+                        return;
+                    }
+                    var param = {
+                        level: 2,
+                        p_id: value.value
+                    }
+                    axios.post('/index.php?m=api&a=hr_dept_list_by_level', param).then(res => {
+                        if (res.data.code === 200) {
+                            this.general_payment_form.depData2 = res.data.data;
+                            this.general_payment_detail.forEach(item => {
+                                item.depData2 = res.data.data;
+                                item.actual_fee_Department2 = ''
+                            })
+                        } else {
+                            this.$message.warning(this.$lang('部门获取失败'));
+                        }
+                    })
+                }
+            },
+            // 去掉千位符号
+            delcommafy(num) {
+                if (num != undefined) {
+                    num = num.toString();
+                    num = num.replace(/[ ]/g, ""); //去除空格  
+                    num = num.replace(/,/gi, '');
+                    return Number(num);
+                }
+            },
+            /** 
+             * 解决小数相加精度丢失
+             */
+            addNum (arg1, arg2) {
+                var r1, r2, m, c;
+                try {
+                    r1 = arg1.toString().split(".")[1].length;
+                }
+                catch (e) {
+                    r1 = 0;
+                }
+                try {
+                    r2 = arg2.toString().split(".")[1].length;
+                }
+                catch (e) {
+                    r2 = 0;
+                }
+                c = Math.abs(r1 - r2);
+                m = Math.pow(10, Math.max(r1, r2));
+                if (c > 0) {
+                    var cm = Math.pow(10, c);
+                    if (r1 > r2) {
+                        arg1 = Number(arg1.toString().replace(".", ""));
+                        arg2 = Number(arg2.toString().replace(".", "")) * cm;
+                    } else {
+                        arg1 = Number(arg1.toString().replace(".", "")) * cm;
+                        arg2 = Number(arg2.toString().replace(".", ""));
+                    }
+                } else {
+                    arg1 = Number(arg1.toString().replace(".", ""));
+                    arg2 = Number(arg2.toString().replace(".", ""));
+                }
+                return (arg1 + arg2) / m;
+            },
+            digitFormat(num) {
+                num = parseFloat(num.replace(/,/g, '')).toFixed(2);
+                var num1=num.split('.')[0]+'';//数字转字符串  
+                var str="";//字符串累加  
+                for(var i=num1.length- 1,j=1;i>=0;i--,j++){  
+                    if(j%3==0 && i!=0 && num1[i-1] != '-'){//每隔三位加逗号，过滤正好在第一个数字的情况 过滤负数情况 
+                        str+=num1[i]+",";//加千分位逗号  
+                        continue;  
+                    }  
+                    str+=num1[i];//倒着累加数字
+                }
+                return str.split('').reverse().join("") + '.' + num.split('.')[1];
+            },
+            //获取付款单详情
+            // getCommonData: async function(){
+            getCommonData: function (){
+                //付款单id
+                this.payment_audit_id = utils.parseQuery(window.location.search).payment_audit_id;
+                var _this = this;
+                var data = {
+                    payment_audit_id: _this.payment_audit_id,
+                }
+                
+                axios.post("index.php?m=finance&a=generalPaymentDetail", data)
+                    .then(function(res) {
+                        var result = res.data;
+                        if (result.code == 2000) {
+                            _this.detail = result.data;
+                            _this.form.payment_nature = _this.detail.base_info.payment_nature;//付款性质
+                            _this.form.contract_information= _this.detail.base_info.contract_information=='0' ? '-1':_this.detail.base_info.contract_information ;//合同信息
+                            _this.form.our_company_cd= _this.detail.base_info.our_company_cd;//我方公司
+                            _this.form.supplier= _this.detail.base_info.supplier_id;//供应商
+                            _this.form.supplier_name= _this.detail.base_info.supplier;//供应商
+                            _this.form.general_payment_id = _this.detail.base_info.general_payment_id; //一般付款单ID号
+                            async function processArray2() {
+                                await _this.getSupplier()
+                                await _this.getContract_info()
+                                // console.log(_this.contractData);
+                                // await _this.showPayment(_this.detail.payment_info.payment_channel_cd,'init');
+                            }
+                            processArray2()
+                            _this.form.contract_no= _this.detail.base_info.contract_no;//合同编号
+                            _this.form.settlement_type= _this.detail.base_info.settlement_type;//结算类型
+                            _this.form.procurement_nature= _this.detail.base_info.procurement_nature;//采购性质
+                            _this.form.invoice_information= _this.detail.base_info.invoice_information;//发票信息
+                            _this.form.invoice_type= _this.detail.base_info.invoice_type;//发票类型
+                            _this.form.bill_information= _this.detail.base_info.bill_information;//账单信息
+                            _this.form.payment_type.value = _this.detail.base_info.payment_type;//付款类型value
+                            _this.form.payment_type.comment2 = _this.detail.base_info.payment_type_comment2;//付款类型comment2
+                            
+                            _this.getSubdivision_type();
+                            _this.form.actual_fee_applicant= _this.detail.base_info.actual_fee_applicant;//实际费用申请人
+                                
+                            _this.form.payable_date= _this.detail.base_info.payable_date_after;//预计付款日期
+                            // _this.form.dept_id= _this.detail.base_info.dept_id;//预计付款日期
+                            _this.form.payment_currency_cd= _this.detail.base_info.payment_currency_cd;//提交付款币种
+                            _this.form.payment_remark= _this.detail.base_info.payment_remark;//付款需求备注
+                            _this.form.invoice_attachment1= _this.detail.base_info.invoice_attachment;//发票附件
+                            _this.form.bill_attachment1= _this.detail.base_info.bill_attachment;//账单附件
+                            _this.form.other_attachment1= _this.detail.base_info.other_attachment;//其他附件
+
+                            _this.form.payment_channel_cd=_this.detail.payment_info.payment_channel_cd;//支付渠道
+                            _this.form.payment_way_cd=_this.detail.payment_info.payment_way_cd;//支付方式
+                            _this.form.payable_amount=_this.detail.payment_info.payable_amount;//支付金额
+                            _this.form.supplier_collection_account=_this.detail.receipt_info.supplier_collection_account;//收款账户名
+                            console.log(_this.form.supplier_collection_account)
+                            _this.form.supplier_opening_bank=_this.detail.receipt_info.supplier_opening_bank;//收款银行
+                            _this.form.supplier_card_number=_this.detail.receipt_info.supplier_card_number;//银行账号
+                            _this.form.supplier_swift_code=_this.detail.receipt_info.supplier_swift_code;//swift_code
+                            _this.form.bank_settlement_code=_this.detail.receipt_info.bank_settlement_code;//收款银行本地结算代码
+                            _this.form.bank_address=_this.detail.receipt_info.bank_address;//收款银行地址
+                            _this.form.city=_this.detail.receipt_info.city;//收款银行地址id
+                            _this.form.bank_address_detail=_this.detail.receipt_info.bank_address_detail;//收款银行详细地址
+                            _this.form.bank_postal_code=_this.detail.receipt_info.bank_postal_code;//收款银行邮编
+                            _this.form.account_currency=_this.detail.receipt_info.account_currency;//收款账号币种CD
+                            _this.form.account_type=_this.detail.receipt_info.account_type;//收款账户种类CD
+                       
+                            _this.form.collection_user_name=_this.detail.receipt_info.collection_user_name;//支付渠道账户名
+                            _this.form.collection_account=_this.detail.receipt_info.collection_account;//支付渠道收款账号
+                            _this.form.store_name=_this.detail.receipt_info.store_name;//店铺名称
+                            _this.form.platform_cd_val=_this.detail.receipt_info.platform_cd;//平台名称
+                            _this.form.platform_order_no=_this.detail.receipt_info.platform_order_no;//平台订单号
+                            _this.form.trade_no=_this.detail.receipt_info.trade_no;//交易号
+                            _this.general_payment_detail = _this.detail.payable_info;
+                            var isSetNull = true;
+                            _this.deptData.forEach(item => {
+                                if (item.ID == _this.form.dept_id) {
+                                    isSetNull = false;
+                                }
+                            })
+                            if (isSetNull) {
+                                _this.form.dept_id = '';
+                            }
+                            if(_this.form.city){
+                                var areaSel = _this.form.city.split(',');
+                                _this.selectCountry = areaSel[0] || '';
+                                _this.selectProvince = areaSel[1] || '';
+                                _this.selectCounty = areaSel[2] || '';
+                                
+                            }
+                            
+                            if(_this.form.bank_address){
+                                var areaSelVal = _this.form.bank_address.split('-');
+                                _this.selectCountryVal = areaSelVal[0] || '';
+                                _this.selectProvinceVal = areaSelVal[1] || '';
+                                _this.selectCountyVal = areaSelVal[2] || '';
+                                
+                            }
+                            if( _this.form.payment_type.comment2 == '员工个人账户' && _this.form.payment_channel_cd == 'N001000301'){
+                                _this.beneficiaryAccount = false
+                                _this.showPayment(_this.form.payment_channel_cd,'init');
+                            }else{
+                                _this.beneficiaryAccount = true
+                                _this.showPayment(_this.form.payment_channel_cd,'init');
+                            }
+                                        
+                            var generalpaymentdetail = _this.general_payment_detail
+                            for (let index = 0; index < generalpaymentdetail.length; index++) {
+                                var item = generalpaymentdetail[index];
+                                item.relation_bill_no = item.relation_bill_no.split(',');
+                                item.amount = _this.digitFormat(item.amount);
+                                item.amount = item.amount.replace(',', '');
+                                item.vat_rate = _this.digitFormat(item.vat_rate);
+                                item.vat_rate = item.vat_rate.replace(',', '');
+                                if (Number(item.amount) == 0) {
+                                    item.amount = 0;
+                                }
+                                if (Number(item.vat_rate) == 0) {
+                                    item.vat_rate = 0;
+                                }
+                                var dept = item.actual_fee_department_id.split(',');
+                                var deptNameArray = item.actual_fee_Department.split('>');
+                                item.actual_fee_Department0 = dept[0]
+                                item.actual_fee_Department1 = '';
+                                // 二级部门以及获取三级部门列表
+                                if (dept.length > 1) {
+                                    item.actual_fee_Department1 = {
+                                        value: dept[1],
+                                        label: deptNameArray[1],
+                                        index: index
+                                    }
+                                    _this.getDep2(item.actual_fee_Department1, index);
+                                    item.actual_fee_Department2 = ''
+                                    if (dept.length === 3) {
+                                        item.actual_fee_Department2 = {
+                                            value: dept[2],
+                                            label: deptNameArray[2],
+                                            index: index
+                                        }
+                                    }
+                                }
+                                _this.$forceUpdate()
+
+                            }
+                        } else {
+                            _this.$message.warning(_this.$lang("详情查询失败"));
+                        }
+                    });
+            },
+            getSupplier: function(){
+                var _this = this;
+                var data = {
+                    all:true,
+                    type: 0,
+                    supplier_id: ''
+                }
+                axios.post("/index.php?g=common&m=index&a=search_customer_or_supplier", data)
+                    .then(function(res) {
+                        var result = res.data;
+                        if (result.code == 2000) {
+                            _this.supplierData = result.data;
+                            // _this.getContract_info()
+                        } else {
+                            _this.$message.warning(_this.$lang("供应商获取失败"));
+                        }
+                    });
+            },
+            getStoreName: function(code){
+                this.form.store_name = '';
+                var _this = this;
+                var data = {
+                    data:{
+                        plat_code: code
+                    },
+                }
+                axios.post("/index.php?m=finance&a=get_store", data)
+                    .then(function(res) {
+                        var result = res.data;
+                        if (result.code == 2000) {
+                            _this.storesData = result.data;
+                        } else {
+                            _this.$message.warning(_this.$lang("店铺获取失败"));
+                        }
+                    });
+            },
+            getContract: function(item){
+                return item.CON_NO + '(' +item.CON_NAME + ')';
+            },
+            setContract: function(){
+                this.form.contract_no = '';
+            },
+            getDep: function(){
+                var _this = this;
+                var data = {
+                    level:'1',
+                }
+                axios.post("index.php?m=api&a=hr_dept_list_by_level", data)
+                    .then(function(res) {
+                        var result = res.data;
+                        if (result.code == 200) {
+                            _this.depData1 = result.data;
+                        } else {
+                            _this.$message.warning(_this.$lang("部门获取失败"));
+                        }
+                    });
+            },
+            clearDept2(idx) {
+                var general_payment_detail = this.general_payment_detail[idx];
+                general_payment_detail.actual_fee_Department2 = '';
+                general_payment_detail.depData2 = [];
+                this.general_payment_detail[idx] = general_payment_detail;
+            },
+            getDep2: async function (params, type) {
+                var _this = this;
+                if (params) {
+                    var data = {
+                        level: '2',
+                        p_id: params.value
+                    }
+                    await axios.post("index.php?m=api&a=hr_dept_list_by_level", data)
+                        .then(function (res) {
+                            var result = res.data;
+                            if (result.code == 200) {
+                                _this.general_payment_detail[type].depData2 = result.data;
+                                if (result.data.length === 0) {
+                                    _this.general_payment_detail[type].actual_fee_Department2 = '';
+                                }
+                                _this.general_payment_detail[type].actual_fee_Department1 = params
+                                _this.$forceUpdate();
+                            } else {
+                                _this.$message.warning(_this.$lang("部门获取失败"));
+                            }
+                        });
+                } else {
+                    _this.general_payment_detail[type].actual_fee_Department2 = '';
+                    _this.$forceUpdate();
+                }
+            },
+            getDep3: function (params, ind) {
+                if (!params) {
+                    this.general_payment_detail[ind].actual_fee_Department2 = '';
+                } else {
+                    this.general_payment_detail[ind].actual_fee_Department2 = params
+                }
+                this.$forceUpdate();
+
+            },
+            getSubdivision_type: function(val){
+                var _this = this;
+
+                if(val){
+                    var { value, comment2 } = val;
+                }else{
+                    var value = _this.form.payment_type.value
+                    var comment2 = _this.form.payment_type.comment2
+                }
+                
+                
+                
+                if( comment2 == '员工个人账户' && _this.form.payment_channel_cd == 'N001000301'){
+                    _this.beneficiaryAccount = false
+                }else{
+                    _this.beneficiaryAccount = true
+                }
+                
+                
+                _this.general_payment_detail.forEach(function(item){
+                    item.subdivision_type = '';
+                })
+                var data = {
+                    "code": [value],
+                    "column": "ETC"
+                }
+                axios.post("/index.php?g=common&m=index&a=sub_basis", data)
+                    .then(function(res) {
+                        var result = res.data;
+                        if (result.code == 2000) {
+                            _this.subdivision_typeData = result.data;
+                        } else {
+                            _this.$message.warning(_this.$lang("获取细分类型失败"));
+                        }
+                    });
+            },
+            getRelationBillNoByBatch(query, form) {
+                var _this = this;
+                _this.billNoSeleLoading = true;
+                _this.general_payment_form.relation_bill_noData = [];
+                // if (query.length < 8) return [];  // 如果小于8位不执行搜索
+                var param = {
+                    relation_bill_type: form.relation_bill_type,
+                    order_no: query
+                }
+                axios.post('/index.php?g=common&m=index&a=order_info', param).then(res => {
+                    _this.billNoSeleLoading = false;
+                    if (res.data.code === 2000) {
+                        _this.general_payment_form.relation_bill_noData = res.data.data;
+                    } else {
+                        _this.$message.warning(_this.$lang('获取单据号失败'))
+                    }
+                })
+            },
+            getRelation_bill_no: function(query,item,ind){
+                var _this = this;
+                _this.billNoSeleLoading = true;
+                _this.general_payment_detail[ind].relation_bill_noData = [];
+                var data = {
+                    relation_bill_type: item.relation_bill_type,
+                    order_no: query
+                }
+                axios.post("/index.php?g=common&m=index&a=order_info", data)
+                    .then(function(res) {
+                        var result = res.data;
+                        if (result.code == 2000) {
+                            _this.billNoSeleLoading = false;
+                            _this.general_payment_detail[ind].relation_bill_noData = result.data;
+                        } else {
+                            _this.$message.warning(_this.$lang("获取单据号失败"));
+                        }
+                    });
+            },
+
+            // 获取币种
+            getCommonCode: function(){
+                var _this = this;
+                var data = {
+                    data:{
+                        query: {
+                            currency: true,
+                            company: true,
+                            settlement_type: true,
+                            procurement_nature: true,
+                            invoice_information: true,
+                            invoice_type: true,
+                            bill_information:true,
+                            payment_type: true,
+                            users: true,
+                            relation_bill_type: true,
+                            payment_channel: true,
+                            platform: true,
+                            collection_account_type: true,
+                        }
+                    }
+                }
+                axios.post("/index.php?g=oms&m=CommonData&a=commonData", data)
+                    .then(function(res) {
+                        var result = res.data;
+                        if (result.code == 2000) {
+                            _this.currencyData = result.data.currency;
+                            _this.companyData = result.data.company;
+                            _this.settlementData = result.data.settlement_type;
+                            _this.procurementData = result.data.procurement_nature;
+                            _this.invoice_informationData = result.data.invoice_information;
+                            _this.invoice_typeData = result.data.invoice_type;
+                            _this.bill_informationData = result.data.bill_information;
+                            _this.payment_typeData = result.data.payment_type;
+                            _this.users = result.data.users;
+                            _this.relation_bill_typeData = result.data.relation_bill_type;
+                            _this.payment_channelData = result.data.payment_channel;
+                            _this.platformData = result.data.platform;
+                            _this.collection_account_type = result.data.collection_account_type;
+                        } else {
+                            _this.$message.warning(_this.$lang("币种获取失败"));
+                        }
+                    });
+
+                    axios.post('/index.php?g=common&m=index&a=get_area', {
+                        "parent_no": 0,
+                        "is_id":''
+                    }).then(function (res) {
+                        if (res.data.code == 2000) {
+                            _this.country = res.data.data;
+                        } else {
+                            _this.$message({
+                                message: data.msg,
+                                type: 'error'
+                            });
+                        }
+                    })
+
+                    axios.post('/index.php?m=api&a=hr_dept_list_by_user', {
+                    }).then(function (res) {
+                        if (res.data.code == 200) {
+                            _this.deptData = res.data.data || [];
+                            _this.form.dept_id = '';
+                            if(_this.deptData && _this.deptData.length > 1){
+                                _this.isdept = false
+                            }else{
+                                _this.isdept = true
+                                if(_this.deptData.length == 1){
+                                   _this.form.dept_id =  res.data.data[0].ID
+                                }
+                            }
+                        } else {
+                            _this.$message({
+                                message: data.msg,
+                                type: 'error'
+                            });
+                        }
+                    })
+            },
+            addGeneral_payment: function(){
+                this.general_payment_detail.push({
+                    project_summary: '',
+                    subdivision_type: '',
+                    amount: '',
+                    vat_rate: '',
+                    subtotal: 0,
+                    invoice_attachment: [],
+                    bill_attachment: [],
+                    other_attachment: [],
+                    relation_bill_type: '',
+                    relation_bill_no: [],
+                    actual_fee_Department:'Gshopper',
+                    actual_fee_department_id:'75',
+                    actual_fee_Department0:'75',
+                    actual_fee_Department1:'',
+                    actual_fee_Department2:'',
+                    depData2:[]
+                });
+            },
+            selectCountryChange:function(val){
+                let obj = {};
+                obj = this.country.find((item)=>{
+                    return item.id === val;
+                });
+                this.selectCountryVal = obj.zh_name
+                this.form.bank_address = obj.zh_name
+            },
+            selectProvinceChange:function(val){
+                let obj = {};
+                obj = this.province.find((item)=>{
+                    return item.id === val;
+                });
+                this.selectProvinceVal = obj.zh_name
+            },
+            selectCountyChange:function(val){
+                let obj = {};
+                obj = this.county.find((item)=>{
+                    return item.id === val;
+                });
+                this.selectCountyVal = obj.zh_name
+            },
+            deleteGeneral_payment: function(ind){
+                if(this.general_payment_detail.length > 1){
+                    this.general_payment_detail.splice(ind, 1);
+                }else{
+                    this.$message.error(this.$lang('至少保留一行'));
+                }
+            },
+            getAmount: function (obj,ind) {
+                var val = Number(obj)
+                if(!obj || !Number.isFinite(val)){
+                    this.$set(this.general_payment_detail[ind],'amount',0);
+                }              
+
+　　　　　　 },
+            getVat_rate: function (obj,ind) { 
+                var val = Number(obj)
+                if(!obj || !Number.isFinite(val)){
+                    this.$set(this.general_payment_detail[ind],'vat_rate',0);
+                }
+
+　　　　　　 },
+            //获取合同编号
+            getContract_info: function(val){
+                var _this = this;
+                if(val){
+                    _this.form.contract_no = '';
+                }
+                _this.contractData = [];
+                _this.supplier_data = {};
+                var supplierName = '';
+                if(_this.form.supplier && val){
+                    _this.supplierData.forEach(function(item){
+                        if(item.ID == _this.form.supplier){
+                            supplierName = item.SP_NAME;
+                            _this.form.supplier_name = item.SP_NAME;
+                        }
+                    })
+                }else if(_this.form.supplier && !val){
+                    supplierName = _this.form.supplier_name
+                    // _this.supplierData.forEach(function(item){
+                    //     if(item.ID == _this.form.supplier){
+                    //         supplierName = item.SP_NAME;
+                    //     }
+                    // })
+                }
+                else if(!_this.form.supplier && !val){
+                    // supplierName = _this.form.supplier_name
+                }else {
+                    _this.form.bank_settlement_code = '';
+                    _this.selectCountry = '';
+                    _this.form.account_currency = '';
+                    _this.form.bank_address = '';
+                }
+                
+                var data = {
+                    data:{
+                        SP_NAME: supplierName,
+                        CON_COMPANY_CD: _this.form.our_company_cd
+                    }
+                }
+
+                if(_this.form.supplier != '' && val=='vendor'){
+                    axios.post("/index.php?g=common&m=index&a=supplier_info", data)
+                    .then(function(res) {
+                        var result = res.data;
+                        if (result.code == 2000) {
+                            _this.supplier_data = result.data;
+                            if(_this.form.payment_channel_cd == 'N001000301'){
+                                _this.form.bank_settlement_code = _this.supplier_data.BANK_SETTLEMENT_CODE;
+                                _this.selectCountry = _this.supplier_data.CITY ? ((_this.supplier_data.CITY).split(','))[0] : '';
+                                _this.form.account_currency = _this.supplier_data.ACCOUNT_CURRENCY;
+                                _this.form.bank_address = _this.supplier_data.BANK_ADDRESS;
+                            }
+
+                        } else {
+                            _this.$message.warning(_this.$lang("获取供应商信息失败"));
+                        }
+                    });
+                }
+
+                if(_this.form.supplier != '' && _this.form.our_company_cd != ''){
+                    axios.post("/index.php?g=common&m=index&a=contract_info", data)
+                    .then(function(res) {
+                        var result = res.data;
+                        if (result.code == 2000) {
+                            _this.contractData = result.data;
+                            _this.showPayment(_this.form.payment_channel_cd,'init');
+                        } else {
+                            _this.$message.warning(_this.$lang("获取合同编号失败"));
+                        }
+                    });
+                }
+            },
+            getPaymentInfo: function(info){
+                var _this = this;
+                if(info == ''){
+                    _this.form.supplier_collection_account = '';
+                    _this.form.supplier_opening_bank = ''
+                    _this.form.supplier_card_number = '';
+                    _this.form.supplier_swift_code = '';
+                    // _this.form.bank_settlement_code = '';
+                    _this.form.bank_address = '';
+                    _this.form.city = '';
+                    // _this.selectCountry = ''
+                    _this.form.bank_address_detail = '';
+                    _this.form.bank_postal_code = '';
+                    // _this.form.account_currency = '';
+                    _this.form.account_type = '';
+                    return;
+                }else{
+                    _this.contractData.forEach(function(item){
+                        if(item.CON_NO == info){
+                            _this.form.supplier_collection_account = item.collection_account_name;
+                            _this.form.supplier_opening_bank = item.SP_BANK_CD;
+                            _this.form.supplier_card_number = item.BANK_ACCOUNT;
+                            _this.form.supplier_swift_code = item.SWIFT_CODE;
+                            // _this.form.bank_settlement_code = item.BANK_SETTLEMENT_CODE;
+                            // _this.selectCountry = item.CITY ? ((item.CITY).split(','))[0] : '';
+                            _this.form.bank_address = item.BANK_ADDRESS;
+                            _this.form.city = item.CITY;
+                            _this.form.bank_address_detail = item.BANK_ADDRESS_DETAIL;
+                            _this.form.bank_postal_code = item.BANK_POSTAL_CODE;
+                            // _this.form.account_currency = item.ACCOUNT_CURRENCY;
+                            _this.form.account_type = item.ACCOUNT_TYPE;
+                        }
+                    })
+                }
+            },
+            fileclose(type,index) {
+                if(type == 1) {
+                    this.form.invoice_attachment1.splice(index,1)
+                } else if(type == 2) {
+                    this.form.bill_attachment1.splice(index,1)
+                } else {
+                    this.form.other_attachment1.splice(index,1)
+                }
+            },
+            // 上传文件去重取最后上传
+            unique(arr){
+                var newArr = [];
+                for(var i = 0; i < arr.length; i++){
+                    for(var j = i+1; j < arr.length; j++){
+                        if(arr[i].name == arr[j].name){
+                            ++i;
+                        }
+                    }
+                    newArr.push(arr[i]);
+                }
+                return newArr;
+            },
+            // 上传文件回调函数
+            handleSuccessPay1: function(res, file, fileList) {
+                var arr = [];
+                // 判断是否上传成功
+                if(res.status !== 1) {
+                    this.$message.warning(this.$lang('上传文件中有类型不允许文件，请重新上传'));
+                    for(var i = 0; i<fileList.length;i++) {
+                        if(fileList[i].response &&  fileList[i].response.status == 1) {
+                            arr.push(fileList[i]);
+                        }
+                    }
+                } else {
+                    arr = fileList;
+                    var arr1 = JSON.parse(JSON.stringify(this.form.invoice_attachment1))
+                    for(var i = 0;i<arr1.length;i++) {
+                        for(var j = 0; j<fileList.length;j++) {
+                            if(arr1[i].lastName === fileList[j].name) {
+                                this.form.invoice_attachment1.splice(i,1)
+                            }
+                        }
+                    }
+                }
+                console.log(arr)
+                fileList = this.unique(arr);
+                console.log(fileList)
+                this.form.invoice_attachment = fileList;
+            },
+            handleSuccessPay2: function(res, file, fileList) {
+                var arr = [];
+                // 判断是否上传成功
+                if(res.status !== 1) {
+                    this.$message.warning(this.$lang('上传文件中有类型不允许文件，请重新上传'));
+                    for(var i = 0; i<fileList.length;i++) {
+                        if(fileList[i].response &&  fileList[i].response.status == 1) {
+                            arr.push(fileList[i]);
+                        }
+                    }
+                } else {
+                    arr = fileList;
+                    var arr1 = JSON.parse(JSON.stringify(this.form.bill_attachment1))
+                    for(var i = 0;i<arr1.length;i++) {
+                        for(var j = 0; j<fileList.length;j++) {
+                            if(arr1[i].lastName === fileList[j].name) {
+                                this.form.bill_attachment1.splice(i,1)
+                            }
+                        }
+                    }
+                }
+                console.log(arr)
+                fileList = this.unique(arr);
+                console.log(fileList)
+                this.form.bill_attachment = fileList;
+
+            },
+            handleSuccessPay3: function(res, file, fileList) {
+                var arr = [];
+                // 判断是否上传成功
+                if(res.status !== 1) {
+                    this.$message.warning(this.$lang('上传文件中有类型不允许文件，请重新上传'));
+                    for(var i = 0; i<fileList.length;i++) {
+                        if(fileList[i].response &&  fileList[i].response.status == 1) {
+                            arr.push(fileList[i]);
+                        }
+                    }
+                } else {
+                    arr = fileList;
+                    var arr1 = JSON.parse(JSON.stringify(this.form.other_attachment1))
+                    for(var i = 0;i<arr1.length;i++) {
+                        for(var j = 0; j<fileList.length;j++) {
+                            if(arr1[i].lastName === fileList[j].name) {
+                                this.form.other_attachment1.splice(i,1)
+                            }
+                        }
+                    }
+                }
+                console.log(arr)
+                fileList = this.unique(arr);
+                console.log(fileList)
+                this.form.other_attachment = fileList;
+            },
+            handleRemovePay1: function(file, fileList) {
+                this.form.invoice_attachment = fileList;
+            },
+            handleRemovePay2: function(file, fileList) {
+                this.form.bill_attachment = fileList;
+            },
+            handleRemovePay3: function(file, fileList) {
+                this.form.other_attachment = fileList;
+            },
+            getCurrency: function (value) {
+                var temp = '';
+                var _this = this;
+                this.currencyData.forEach(function(item){
+                    if(value == item.cd){
+                        temp = item.cdVal;
+                    }
+                })
+                return temp
+            },
+            getTotalAmount: function(){
+                var _this = this;
+                var totalAmount = 0;
+                this.general_payment_detail.forEach(function(item){
+                    totalAmount = _this.addNum(totalAmount, item.subtotal);
+                })
+                _this.form.payable_amount = totalAmount;
+                return totalAmount;
+            },
+            showPayment: function(val,type){
+
+
+                var _this = this;                
+                var data = {
+                    data:{
+                        query: {
+                            payment_method: true,
+                        }
+                    }
+                }
+                axios.post("/index.php?g=oms&m=CommonData&a=commonData", data)
+                    .then(function(res) {
+                        _this.payment_methodData = [];
+                        var comment = '';
+                        _this.payment_channelData.forEach(function(item){
+                            if(item.cd == _this.form.payment_channel_cd){
+                                comment = item.comment;
+                            }
+                        })
+                        var result = res.data;
+                        if (result.code == 2000) {
+                            result.data.payment_method.forEach(function(item){
+                                if(comment.indexOf(item.cd) != -1){
+                                    _this.payment_methodData.push({
+                                        cd: item.cd,
+                                        cdVal: item.cdVal
+                                    })
+                                }
+                            })
+                        } else {
+                            _this.$message.warning(_this.$lang("支付方式获取失败"));
+                        }
+                    });
+
+                if( this.form.payment_type.comment2 == '员工个人账户' && val == 'N001000301'){
+                    this.beneficiaryAccount = false
+                }else{
+                    this.beneficiaryAccount = true
+                }
+
+                if(type == 'select'){
+                    this.form.payment_way_cd = '';
+                    
+                    this.form.store_name= '';//店铺名称
+                    this.form.platform_cd_val= '';//平台名称
+                    this.form.platform_order_no= '';//平台订单号
+                    this.form.collection_user_name= '';//支付渠道账户名
+                    this.form.collection_account= '';//支付渠道收款账号
+                    this.form.trade_no= '';//交易号
+                    if(val == 'N001000301' && this.form.contract_no){
+                        console.log('contract_no',this.form.contract_no);
+                        console.log('contractData',this.contractData);
+                        var index =this.contractData.findIndex(items =>{
+                            if(items.CON_NO==this.form.contract_no){
+                                return true
+                            }
+                        })
+                        this.form.supplier_collection_account = this.contractData[index].collection_account_name;
+                        this.form.supplier_opening_bank = this.contractData[index].SP_BANK_CD;
+                        this.form.supplier_card_number = this.contractData[index].BANK_ACCOUNT;
+                        this.form.supplier_swift_code = this.contractData[index].SWIFT_CODE;
+                        // this.form.bank_settlement_code = this.contractData[index].BANK_SETTLEMENT_CODE;
+                        // this.selectCountry = this.contractData[index].CITY ? ((this.contractData[index].CITY).split(','))[0] : '';
+                        this.form.bank_address = this.contractData[index].BANK_ADDRESS;
+                        this.form.city = this.contractData[index].CITY;
+                        this.form.bank_address_detail = this.contractData[index].BANK_ADDRESS_DETAIL;
+                        this.form.bank_postal_code = this.contractData[index].BANK_POSTAL_CODE;
+                        // this.form.account_currency = this.contractData[index].ACCOUNT_CURRENCY;
+                        this.form.account_type = this.contractData[index].ACCOUNT_TYPE;
+
+                    }else{
+                        this.form.supplier_collection_account='';//收款账户名
+                        this.form.supplier_opening_bank='';//收款银行
+                        this.form.supplier_card_number= '';//银行账号
+                        this.form.supplier_swift_code= '';//swift_code
+                        // this.form.bank_settlement_code = '';
+                        // this.form.account_currency = '';   
+                        // this.selectCountry = ''
+                    }
+
+                    if(val == 'N001000301' && this.form.supplier){
+                        this.form.bank_settlement_code = this.supplier_data.BANK_SETTLEMENT_CODE;
+                        this.selectCountry = this.supplier_data.CITY ? ((this.supplier_data.CITY).split(','))[0] : '';
+                        this.form.account_currency = this.supplier_data.ACCOUNT_CURRENCY;
+                        this.form.bank_address = this.supplier_data.BANK_ADDRESS;
+                    }else{
+                        this.form.bank_settlement_code = '';
+                        this.form.account_currency = '';   
+                        this.selectCountry = ''
+                        this.form.bank_address = '';
+                    }
+
+                    
+                }
+                // this.form.supplier_collection_account='';//收款账户名
+                // this.form.supplier_opening_bank='';//收款银行
+                // this.form.supplier_card_number= '';//银行账号
+                // this.form.supplier_swift_code= '';//swift_code
+                // this.form.store_name= '';//店铺名称
+                // this.form.platform_cd_val= '';//平台名称
+                // this.form.platform_order_no= '';//平台订单号
+                // this.form.bank_settlement_code = '';
+                // this.form.bank_address = '';
+                this.form.city = '';
+                this.form.bank_address_detail = '';
+                this.form.bank_postal_code = '';
+                // this.form.account_currency = '';
+                this.form.account_type = '';
+        
+            },
+            createGeneralPayment:function(type){
+                var _this = this;
+                _this.submitBtnDisabled = true;
+
+                var general_payment_detail = [];
+                this.general_payment_detail.forEach(function(item){
+                    var actual_fee_department_id = '75';
+                    var actual_fee_Department = 'Gshopper';
+                    if (item.actual_fee_Department1) {
+                        actual_fee_department_id = actual_fee_department_id + ',' + item.actual_fee_Department1.value;
+                        actual_fee_Department = actual_fee_Department + '>' + item.actual_fee_Department1.label;
+                    }
+                    if (item.actual_fee_Department2) {
+                        // 三级部门
+                        actual_fee_department_id = actual_fee_department_id + ',' + item.actual_fee_Department2.value;
+                        actual_fee_Department = actual_fee_Department + '>' + item.actual_fee_Department2.label;
+                    }
+                    general_payment_detail.push({
+                        general_detail_id:item.general_detail_id,
+                        project_summary: item.project_summary,
+                        subdivision_type: item.subdivision_type,
+                        amount: item.amount == 0 ? item.amount:item.amount.replace(/,/g,''),
+                        vat_rate: item.vat_rate == 0 ? item.vat_rate:item.vat_rate.replace(/,/g,''),
+                        subtotal: item.subtotal,
+                        invoice_attachment: tempInvoice,
+                        bill_attachment: tempBill,
+                        other_attachment: tempOther,
+                        relation_bill_type: item.relation_bill_type,
+                        relation_bill_no: item.relation_bill_no ? item.relation_bill_no.join(',') : item.relation_bill_no,
+                        actual_fee_Department: actual_fee_Department,
+                        actual_fee_department_id: actual_fee_department_id,
+                        actual_fee_applicant: item.actual_fee_applicant
+                    });
+                })
+
+                if(this.selectCountry) {
+                    this.form.city = this.selectCountry;
+                    this.form.bank_address = this.selectCountryVal;
+                }
+                var tempInvoice = [];
+                var tempBill = [];
+                var tempOther = [];
+                if(this.form.invoice_attachment){
+                    this.form.invoice_attachment.forEach(function(el){
+                        tempInvoice.push({saveName: el.response.info.savename,lastName:el.response.info.name})
+                    })
+                }
+
+                if(this.form.invoice_attachment1){
+                    this.form.invoice_attachment1.forEach(function(el){
+                        tempInvoice.push(el)
+                    })
+                }
+                if(this.form.bill_attachment){
+                    this.form.bill_attachment.forEach(function(el){
+                        tempBill.push({saveName: el.response.info.savename,lastName:el.response.info.name})
+                    })
+                }
+                
+                if(this.form.bill_attachment1){
+                    this.form.bill_attachment1.forEach(function(el){
+                        tempBill.push(el)
+                    })
+                }
+                if(this.form.other_attachment){
+                    this.form.other_attachment.forEach(function(el){
+                        tempOther.push({saveName: el.response.info.savename,lastName:el.response.info.name})
+                    })
+                }
+                
+                if(this.form.other_attachment1){
+                    this.form.other_attachment1.forEach(function(el){
+                        tempOther.push(el)
+                    })
+                }
+                var data = {
+                    payment_audit:{
+                        payment_audit_id:_this.payment_audit_id,
+                        supplier_collection_account:_this.form.supplier_collection_account,
+                        supplier_opening_bank:_this.form.supplier_opening_bank,
+                        supplier_card_number:_this.form.supplier_card_number,
+                        supplier_swift_code:_this.form.supplier_swift_code,
+                        bank_settlement_code:_this.form.bank_settlement_code,
+                        bank_address:_this.form.bank_address,
+                        city:_this.form.city,
+                        bank_address_detail:_this.form.bank_address_detail,
+                        bank_postal_code:_this.form.bank_postal_code,
+                        account_currency:_this.form.account_currency,
+                        account_type:_this.form.account_type,
+
+                        platform_cd:_this.form.platform_cd_val,
+                        store_name:_this.form.store_name,
+                        platform_order_no:_this.form.platform_order_no,
+                        collection_account:_this.form.collection_account,
+                        collection_user_name:_this.form.collection_user_name,
+                        trade_no:_this.form.trade_no,
+                        our_company_cd:_this.form.our_company_cd,
+                        payable_amount:_this.form.payable_amount,
+                        payable_date:_this.form.payable_date,
+                        payment_channel_cd:_this.form.payment_channel_cd,
+                        payment_way_cd:_this.form.payment_way_cd,
+                        payment_currency_cd: _this.form.payment_currency_cd,
+                        submit_type:type
+                    },
+                    general_payment:{
+                        general_payment_id:_this.form.general_payment_id,
+                        payment_nature:_this.form.payment_nature,
+                        supplier:_this.form.supplier,
+                        contract_information:_this.form.contract_information,
+                        contract_no:_this.form.contract_no,
+                        settlement_type:_this.form.settlement_type,
+                        procurement_nature:_this.form.procurement_nature,
+                        invoice_information:_this.form.invoice_information,
+                        invoice_type:_this.form.invoice_type,
+                        bill_information:_this.form.bill_information,
+                        payment_type:_this.form.payment_type.value,
+                        payment_remark:_this.form.payment_remark,
+                        dept_id:_this.form.dept_id,
+                        invoice_attachment: tempInvoice,
+                        bill_attachment: tempBill,
+                        other_attachment: tempOther
+                    },
+                    general_payment_detail:general_payment_detail
+                }
+
+
+                axios.post("index.php?m=finance&a=editGeneralPayment", data)
+                    .then(function(res) {
+                        var result = res.data;
+                        if (result.code == 2000) {
+                            if(type ==1 || type == '1'){
+                                _this.$message.success(_this.$lang('保存成功'));
+                            }else{
+                                _this.$message.success(_this.$lang('提交成功'));
+                            }
+                            
+                            setTimeout(() => {
+                                newTab("/index.php?m=finance&a=general_payment_detail&payment_audit_id=" + _this.payment_audit_id, '一般付款单详情');
+                                window.location.reload()
+                                _this.submitBtnDisabled = false;
+                            }, 1000);
+                        } else {
+                            _this.$message.warning(_this.$lang(result.msg));
+                            _this.submitBtnDisabled = false;
+                        }
+                        
+                    });
+            },
+        },
+        watch: {
+            selectCountry: function (newVal) {
+                var _this = this;
+            if (!newVal) return;
+            axios.post('/index.php?g=common&m=index&a=get_area', {
+                    parent_no: newVal,
+                    is_id:'Y'
+            }).then(function (res) {
+                if (res.data.code == 2000) {
+                _this.province = res.data.data;
+
+                if(res.data.data == null){
+                    _this.selectProvince = '';
+                    _this.county = [];
+                    _this.selectCounty = '';
+                }else{
+                    var provinceAll = res.data.data
+                    var status = '1'
+                    for(var i=0;i<provinceAll.length;i++){
+                        if(provinceAll[i].id == _this.selectProvince){
+                            status = '2'
+                        }
+                    }
+                    if(status == '1'){
+                        _this.selectProvince = '';
+                        _this.county = [];
+                        _this.selectCounty = '';
+                    }
+                }
+
+                } else {
+                _this.$message({
+                    message: data.msg,
+                    type: 'error'
+                });
+                }
+            })
+
+
+            },
+            selectProvince: function (newVal) {
+                var _this = this;
+                if (!newVal || !_this.selectCountry) return;
+                var parentId = _this.selectCountry + ',' + newVal;
+
+                axios.post('/index.php?g=common&m=index&a=get_area', {
+                    parent_no: newVal,
+                    is_id: 'Y'
+                }).then(function (res) {
+                    if (res.data.code == 2000) {
+                        _this.county = res.data.data;
+
+                        if (res.data.data == null) {
+                            _this.selectCounty = '';
+                        } else {
+                            var countyAll = res.data.data
+                            var status = '1'
+                            for (var i = 0; i < countyAll.length; i++) {
+                                if (countyAll[i].id == _this.selectCounty) {
+                                    status = '2'
+                                }
+                            }
+                            if (status == '1') {
+                                _this.selectCounty = '';
+                            }
+                        }
+                    } else {
+                        _this.$message({
+                            message: data.msg,
+                            type: 'error'
+                        });
+                    }
+                })
+            }
+        }
+    })
+</script>
+</body>
+</html>
+

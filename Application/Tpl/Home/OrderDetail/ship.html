@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<link rel="stylesheet" type="text/css" href="../Public/lib/icheck/icheck.css"/>
+	<link rel="stylesheet" href="../Public/lib/bootstrap/css/bootstrap.min.css">
+	<link rel="stylesheet" href="../Public/lib/icon/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../Public/lib/webuploader/0.1.5/webuploader.css"/>
+	<title><{$Think.lang.采购信息}></title>
+	<script type="text/javascript" src="../Public/lib/My97DatePicker/WdatePicker.js"></script>
+    <link rel="stylesheet" href="../Public/css/common.css?v=2017036"/>
+    <link rel="stylesheet" href="../Public/css/purchaseDetail.css?v=201708122"/>
+    <link rel="stylesheet" href="../Public/css/default.css"/>
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <style>
+        .warehouseSelect .el-input__suffix-inner{
+            text-indent: initial;
+        }
+    </style>
+</head>
+<body id="ship">
+<div  class="col-lg-12 col-md-12 col-sm-12 purchase_detail">
+    <div class="row row_title" >
+       <a class="active"><{$Think.lang.采购发货}></a>
+    </div>
+    <form method="post" class="shipping_form" action="<{:U('ship')}>" enctype="multipart/form-data" style="display:block;" >
+            <div class="card card_table">
+                <div class="card-header">
+                    <b><{$Think.lang.商品信息}></b>
+                </div>
+                <div class="card-block">
+                    <blockquote class="card-blockquote">
+                        <div>
+                            <table class="table table-bordered">
+                                <thead>
+                                <tr class="tr_th">
+                                    <th width=""><input type="checkbox" class="ship_allCheckbox"></th>
+                                    <th width=""><{$Think.lang.SKUID}></th>
+                                    <th width=""><{$Think.lang.条形码}></th>
+                                    <th width=""><{$Think.lang.商品名称}></th>
+                                    <th width=""><{$Think.lang.图片}></th>
+                                    <th width=""><{$Think.lang.SKU信息}></th>
+                                    <th width=""><{$Think.lang.需求数量}></th>
+                                    <th width=""><{$Think.lang.已发货}></th>
+                                    <th width=""><{$Think.lang.保质期到期日与发货数量}></th>
+                                    <th width=""><{$Think.lang.剩余待发}></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <?php
+                                    foreach($goods_info as $key=>$v){
+                                ?>
+                                <tr class="ship_goods" information_id="<{$v['information_id']}>">
+                                    <td><input type="checkbox" class="ship_checkbox"></td>
+                                    <td class="sku_id"><?php echo $v['sku_information'];?></td>
+                                    <td class="sku_id"><{$v.upc_id}></td>
+                                    <td><?php echo $v['goods_name'];?></td>
+                                    <td onmouseover="utils.picView(this,'<{$v.goods_image}>')")><img src="<{$v.goods_image}>" style="max-height: 80px;max-width: 80px" /></td>
+                                    <td><?php echo $v['goods_attribute'];?></td>
+                                    <td class="ship_goods_need">
+                                        <?php echo number_format($v['goods_number']);?>
+                                        <input class="goods_number" value="<{$v.goods_number}>" type="hidden">
+                                    </td>
+                                    <td class="ship_goods_send">
+                                        <{:round($v['shipped_number']-$v['return_number'])}>
+                                        <input class="shipped_number" value="<{:round($v['shipped_number']-$v['return_number'])}>" type="hidden">
+                                        <input class="ship_end_number" value="<{:round($v['ship_end_number'])}>" type="hidden">
+                                    </td>
+                                    <td class="td_time_mount">
+                                        <input class="form-control ship_number_t" type="hidden">
+                                        <div class="td_time_mount_main">
+                                            <div class="input-group td_time_mount_div input-group-lg" >
+                                                <input autocomplete="off" placeholder="<{$Think.lang.保质期到期日}>" onfocus="WdatePicker({firstDayOfWeek:1,minDate:'%y-%M-%d'})" is_shelf_life="<{$v.is_shelf_life}>"  class="form-control expiration_date_ship">
+                                                <span class="input-group-btn">
+                                                    <button class="btn btn-secondary" type="button"><i class="fa  fa-calendar fa-lg"></i></button>
+                                                </span>
+                                            </div>
+                                            <div class="td_time_mount_div">
+                                                <input placeholder="<{$Think.lang.发货数量}>" class="form-control form-control-sendNum" onchange="calculateNumber(this)">
+                                                <input class="form-control ship_number" type="hidden">
+                                            </div>
+                                            <div  class="td_time_mount_cor">
+                                                <a class="expiration_date_number_minus" onclick="productionDateNumberMinus(this)" href="javascript:void(0)" style="text-decoration:none;">
+                                                    <i class="" ><img src="../Public/images/delete.png" alt=""></i>&nbsp;
+                                                </a>
+                                                <a class="expiration_date_number_plus" onclick="productionDateNumberPlus(this)" href="javascript:void(0)" style="text-decoration:none;">
+                                                    <i class="" ><img src="../Public/images/add.png" alt=""></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="remainder"><?php echo number_format(($remainder = $v['goods_number']-$v['shipped_number'] + $v['return_number'] - $v['ship_end_number']) >= 0 ? $remainder : 0);?></td>
+                                </tr>
+                                <?php } ?>
+                                <tr class="total">
+                                    <td><{$Think.lang.合计}></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td class="number_total"><{:number_format($relevance_info['number_total'])}></td>
+                                    <td>
+                                        <{:number_format($relevance_info['shipped_number'])}>
+                                        <input class="shipped_number_total" style="display: none" value="<{$relevance_info.shipped_number}>">
+                                    </td>
+                                    <td > <span class="ship_number_total_show">0</span>
+                                        <input name="shipping_number" class="ship_number_total" style="display: none">
+                                    </td>
+                                    <td>
+                                    <span class="remainder_total"></span>
+                                        <input class="remainder_total_val" name="remainder_total" value="" type="hidden">
+                                        <input name="relevance_id" name="remainder_total" value="<{$relevance_info.relevance_id}>" style="display:none;">
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </blockquote>
+                </div>
+            </div>
+            <div id="purchaseDelivery" class="card card_no_thead">
+                <div class="card-header card-inverse">
+                    <b><{$Think.lang.发货信息}></b>
+                </div>
+                <div class="card-block">
+                    <blockquote class="card-blockquote">
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <tbody class="Shipping_detail">
+                                <tr>
+                                    <td class="must" width="13%"><{$Think.lang.是否有准确的发货信息}></td>
+                                    <td  class="td_label" width="19%">
+                                        <label><input type="radio" name="has_ship_info" class="has_ship_info" value="1"  checked/><{$Think.lang.有}></label>
+                                        <label><input type="radio" name="has_ship_info" class="has_ship_info" value="0" /><{$Think.lang.无(若有提单/物流单号请选择有)}></label>
+                                    </td>
+                                    <td class="must" width="13%"><{$Think.lang.提单号(或其他有效单据号)}></td>
+                                    <td width="20%"><input type="text" name="bill_of_landing" class="form-control bill_of_landing" /></td>
+                                    <td class="must" width="13%"><{$Think.lang.发货时间}></td>
+                                    <td class="td_time" width="19%">
+                                        <div class="input-group input-group-lg">
+                                            <input type="text" name="shipment_date" id="shipment_date" autocomplete="off"  onfocus="WdatePicker({firstDayOfWeek:1})"  class="form-control">
+                                            <span class="input-group-btn">
+                                                <button class="btn btn-secondary" type="button"><i class="fa  fa-calendar fa-lg"></i></button>
+                                            </span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="must"><{$Think.lang.预计到港/到货时间}></td>
+                                    <td class="td_time">
+                                        <div class="input-group input-group-lg">
+                                            <input type="text" name="arrival_date" id="arrival_date"  autocomplete="off"  onfocus="WdatePicker({firstDayOfWeek:1})"  class="form-control">
+                                            <span class="input-group-btn">
+                                                <button class="btn btn-secondary" type="button"><i class="fa  fa-calendar fa-lg"></i></button>
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td><{$Think.lang.本次发货数量}></td>
+                                    <td class="ship_number_total_1 td_left">0</td>
+                                    <td class="must"><{$Think.lang.是否需要入我方库}></td>
+                                    <td class="td_label">
+                                        <el-radio-group @change="need_warehousingChange(need_warehousing_radio)" v-model="need_warehousing_radio">
+                                            <el-radio :label="1"><{$Think.lang.需要}></el-radio>
+                                            <el-radio <if condition="empty($occupy_orders) eq true">disabled</if> :label="0"><{$Think.lang.不需要，直接发给客户}></el-radio>
+                                        </el-radio-group>
+                                        <input type="hidden" class="need_warehousingInput" name="need_warehousing" value="" >
+                                        <!-- <label> <input type="radio" class="need_warehousing" name="need_warehousing" value="1" checked><{$Think.lang.需要}></label>
+                                        <label> <input type="radio" class="need_warehousing" name="need_warehousing" value="0" <if condition="empty($occupy_orders) eq true">disabled</if>><{$Think.lang.不需要，直接发给客户}></label> -->
+                                    </td>
+                                    <!--<td class="td_label"><{:L(cdVal($order_info['warehouse']))}></td>-->
+                                </tr>
+                                <tr>
+                                    <td class="must"><{$Think.lang.我方仓库}></td>
+                                    <td class="td_left">
+                                        <!-- <select name="warehouse" class="form-control warehouse">
+                                            <option value=""><{$Think.lang.请选择仓库}></option>
+                                            <volist name="warehouse" id="v">
+                                                <option value="<{$v.CD}>" <if condition="$v.CD eq 'N000680800'">disabled</if>><{$v.CD_VAL}></option>
+                                            </volist>
+                                        </select> -->
+                                        <el-select class="searchSelect warehouseSelect" @change="warehouseChange(warehouse_cd)"  filterable  v-model="warehouse_cd" placeholder="<{$Think.lang.请选择}>">
+                                            <el-option
+                                                v-for="item in warehouse"
+                                                :key="item.cd"
+                                                :label="item.val"
+                                                :value="item.cd">
+                                            </el-option>
+                                        </el-select>
+                                        <input type="hidden" class="warehouseInput" name="warehouse" value="" >
+                                    </td>
+                                    <td><{$Think.lang.关联自动发货销售PO单号}></td>
+                                    <td class="td_left">
+                                        <select class="form-control sale_no" name="sale_no" style="display: none" disabled>
+                                            <volist name="occupy_orders" id="v">
+                                                <option value="<{$v.demand_code}>"><{$v.demand_code}>-[<{$v.third_po_no}>]</option>
+                                            </volist>
+                                        </select>
+                                    </td>
+                                    <td><{$Think.lang.发货备注}>
+                                    <td colspan="2"><input type="text" class="form-control" name="remark"/></td>
+                                    <!--<td colspan="7"><input type="text" class="form-control" name="remark"/></td>-->
+                                </tr>
+                                <tr>
+                                    <td><{$Think.lang.上传发货凭证}></td>
+                                    <td colspan="5" class="upload-td">
+                                        <div class="upload-td_div">
+                                            <div class="upload-box-child">
+                                                <div class="upload-select">
+                                                    <fieldset class="form-group">
+                                                        <select class="form-control" name="credential_type[]" id="">
+                                                            <option value=""><{$Think.lang.请选择文件类型}></option>
+                                                            <volist name="credential_types" id="v">
+                                                                <option value="<{$v.CD}>"><{$v.CD_VAL}></option>
+                                                            </volist>
+                                                        </select>
+                                                    </fieldset>
+                                                </div>
+                                                <div class="upload-select-file">
+                                                        <input type="file" name="credential[]" id="credential" style="display: none;"
+                                                            onchange="document.querySelector('#credentialName').textContent=this.files[0].name" />
+                                                        <button type="button" onclick="document.querySelector('#credential').click()"><{$Think.lang.选择文件}></button>
+                                                        <span id="credentialName"><{$Think.lang.未选择任何文件}></span>
+                                                    <!-- <input type="file" name="credential[]" style="display: inline-block"> -->
+                                                    <div>
+                                                        <i class="fujian_delete upload-minus" onclick="uploadMinus(this)"><img src="../Public/images/delete.png" alt=""></i>&nbsp;
+                                                        <i class="fujian_add upload-plus" onclick="uploadPlus(this)"><img src="../Public/images/add.png" alt=""></i>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span class="upload-box_tip"><{$Think.lang.文件最大不超过20M，支持JPG,GIF,PNG,JPEG,ZIP,PDF,WORD,EXCEL格式}></span>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </blockquote>
+                </div>
+            </div>
+            <div class="col-lg-12  col-md-12 col-xs-12 col-lg-12-btn">
+                <button type="button" class="btn btn-sure" id="ship_confirm"><{$Think.lang.确定发货}></button>
+                <button type="button" class="btn btn-cancel" onclick="location='<{:U("order_detail",["id"=>$relevance_info["relevance_id"]])}>'"><{$Think.lang.取消}></button>
+            </div>
+    </form>
+
+</div>
+</body>
+<script type="text/javascript" src="../Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="../Public/lib/bootstrap/js/tether.min.js"></script>
+<script type="text/javascript" src="../Public/lib/bootstrap/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="../Public/utils/utils.js?20180817"></script>
+<script type="text/javascript" src="../Public/lib/jquery.form.min.js"></script>
+<script src="../Public/lib/layer/1.9.3/layer.js" type="text/javascript"></script>
+<script type="text/javascript" src="../Public/lib/webuploader/0.1.5/webuploader.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+
+<script>
+    var Vm = new Vue({
+        el: '#purchaseDelivery',
+        data: {
+            warehouse:[],
+            warehouse_cd:'',
+            need_warehousing_radio:1
+        },
+        created() {
+            this.getSelectData()
+        },
+        methods:{
+            getSelectData:function(){
+                var warehouseStr = '<volist name="warehouse" id="v">{"cd":"<{$v.CD}>","val":"<{$v.CD_VAL}>"},</volist>' ;
+                var warehouseArr = JSON.parse("[" + warehouseStr.substring(0,warehouseStr.length - 1) +"]")
+                warehouseArr.splice(warehouseArr.findIndex(item => item.cd === 'N000680800'), 1)
+                this.warehouse_cd = ''
+                this.warehouse = warehouseArr
+            },
+            warehouseChange:function(val){
+                if(this.need_warehousing_radio == 1){
+                    $('.need_warehousingInput').val('1')
+                }
+                $('.warehouseInput').val(val)
+            },
+            need_warehousingChange:function(val){
+                if(val == 0){
+                    this.warehouse = [{
+                        cd: "N000680800",
+                        val: "虚拟仓"
+                    }]
+                    this.warehouse_cd = 'N000680800'
+                    $('.warehouseInput').val('N000680800')
+                    $('.sale_no').show().val('').attr('disabled',false);
+                }else{
+                    $('.sale_no').hide().attr('disabled',true);
+                    this.getSelectData()
+                }
+                $('.need_warehousingInput').val(val.toString())
+            }
+        }
+    })
+</script>
+<script>
+    function king(e) {
+        var k = e.toString().split('.');
+        if(e.toString().indexOf('.') > 0){
+            var s = '.'+k[1];
+        }else{
+            var s = '';
+        }
+        return k[0].toString().replace(/\d{1,3}(?=(\d{3})+(\.\d*)?$)/g, '$&,')+s;
+    }
+    //上传组件
+    function uploadPlus(ts) {
+        var html = $(ts).parents('.upload-box-child').prop('outerHTML');
+        $('.upload-td_div').append(html);
+    }
+    function uploadMinus(ts) {
+        var number = $('.upload-box-child').size();
+        if(number == 1) {
+            layer.msg("<span class='invoice_detail_bomb_tip'><i style='color:red;'>X</i><{$Think.lang.必须保留一个上传按钮}></span>");
+            return false;
+        }
+        $(ts).parents('.upload-box-child').remove();
+    }
+
+    //输入的是否是数字进行校验
+    function numberCheck(number){
+        return /^(\d+(,\d\d\d)*|\d+)$/.test(number);
+    }
+    function productionDateNumberPlus(plus) {
+        var html = $(plus).parents('.td_time_mount_main').prop('outerHTML');
+        $(plus).parents('.td_time_mount').append(html);
+        $(plus).parents('.td_time_mount').find('.ship_number:last').val('')
+    }
+    function productionDateNumberMinus(minus) {
+        if($(minus).parents('.td_time_mount_main').siblings('.td_time_mount_main').size()) {
+            var sib = $(minus).parents('.td_time_mount_main').siblings(':eq(0)');
+            $(minus).parents('.td_time_mount_main').remove();
+            calculateNumber(sib);
+        }else {
+            return false;
+        }
+    }
+    function calculateNumber(num) {
+            if(Number(num.value) === 0){
+                $(num).parents('tr').find('.ship_checkbox').prop('checked',false)
+                $('.ship_allCheckbox').prop('checked',false)
+            }
+        var tr = $(num).parents('tr');
+        var goods_number = parseFloat($(tr).find('.goods_number').val());
+        var shipped_number = parseFloat($(tr).find('.shipped_number').val());
+        var ship_end_number = parseFloat($(tr).find('.ship_end_number').val());
+        var number = $(num).val();
+        if(number === '') number = '0';
+        var ship_number = 0;
+        if(numberCheck(number)) {
+            var number_n = number.replace(/,/g,'');
+            $(num).next().val(number_n);
+            $(num).val(king(number_n));
+            if($(num).val() != '') {
+                $(num).parents('.td_time_mount').find('.ship_number').each(function() {
+                    if($(this).val() != '') {
+                        ship_number += parseFloat($(this).val());
+                    }
+                });
+                var remainder;
+                //发货数不能超过采购数的105%
+                if ((remainder = goods_number - shipped_number - ship_number - ship_end_number) < 0) {
+                    layer.msg("<span class='invoice_detail_bomb_tip'><i style='color:red;'>X</i><{$Think.lang.发货数量之和不能超过该SKU数量}></span>");
+                    $(num).val('');
+                    $(num).next().val('');
+                    calculateNumber(num);
+                    return false;
+                }
+                $(tr).find('.ship_number_t').val(ship_number);
+                $(tr).find('.remainder').html(king(remainder >= 0 ? remainder :0));
+            }
+        }else {
+            $(num).val('');
+            $(num).next().val('');
+            layer.msg("<span class='invoice_detail_bomb_tip'><i style='color:red;'>X</i><{:L('请输入正确待数字')}></span>");
+            calculateNumber(num);
+        }
+        statistic();
+    }
+    function statistic() {
+        var ship_number_total       = 0;
+        var remainder_total  = 0;
+        $('.ship_goods').each(function() {
+            var ship_number = $(this).find('.ship_number_t').val();
+            if(ship_number == '') {
+                ship_number = 0;
+            }else {
+                ship_number = parseFloat(ship_number);
+            }
+            ship_number_total += ship_number;
+
+            var remainder = parseFloat($(this).find('.remainder').html().replace(/,/g,''));
+            remainder_total += remainder;
+        })
+        $('.ship_number_total_show').html(king(ship_number_total));
+        $('.ship_number_total').val(ship_number_total);
+        $('.ship_number_total_1').html(king(ship_number_total));
+        $('.remainder_total').html(king(remainder_total));
+        $('.remainder_total_val').val(remainder_total);
+    }
+
+    function shipSubmit() {
+        if($('.ship_number_total').val() == '0' || $('.ship_number_tremainderotal').val() == '') {
+            layer.msg("<span class='invoice_detail_bomb_tip'><i style='color:red;'>X</i><{:L('请选择发货商品')}></span>");
+            return false;
+        }
+        var n_d =0;
+        var form_data = new FormData($('.shipping_form')[0]);
+        $('.ship_goods').each(function (i,e) {
+            var expiration_date_arr = [];
+            var ship_number_total   = $(e).find('.ship_number_t').val();
+            var information_id      = $(e).attr('information_id');
+            var sku_id              = $(e).find('.sku_id').html();
+            var ship_goods = {};
+            if(ship_number_total != '' && ship_number_total != '0') {
+                ship_goods['information_id']    = information_id;
+                ship_goods['ship_number']       = ship_number_total;
+                ship_goods['sku_id']            = sku_id;
+                ship_goods['number_info']       = [];
+                $(e).find('.ship_number').each(function (index, el) {
+                    if ($(el).val() != '' && $(el).val() != '0') {
+                        var expiration_date_el = $(el).parents('.td_time_mount_main').find('.expiration_date_ship').val();
+                        if ($.inArray(expiration_date_el, expiration_date_arr) != -1) {
+                            n_d++;
+                        } else {
+                            expiration_date_arr.push(expiration_date_el);
+                        }
+                        var number_info = {};
+                        number_info['number'] = $(el).val();
+                        number_info['expiration_date'] = expiration_date_el;
+                        ship_goods['number_info'].push(number_info);
+                    }
+                })
+                console.log(ship_goods);
+                form_data.append("shipped_goods[]", JSON.stringify(ship_goods));
+            }
+        })
+        if(n_d > 0) {
+            layer.msg("<span class='invoice_detail_bomb_tip'><i style='color:red;'>X</i><{$Think.lang.同一个商品生产日期不能相同}></span>");
+            return false;
+        }
+        var url = $('.shipping_form').prop('action');
+
+        $.ajax({
+            url: url,
+            type: "POST",
+            data: form_data,
+            processData: false,  // 告诉jQuery不要去处理发送的数据
+            contentType: false,   // 告诉jQuery不要去设置Content-Type请求头
+            beforeSend:function () {
+                utils.lazy_loading("show");
+            },
+            success: function(msg) {
+                utils.lazy_loading();
+                if(msg.status == 1){
+                    layer.msg("<span class='invoice_detail_bomb_tip'><i>√</i>"+msg.info+"</span>");
+                    setTimeout(function () {
+                        window.location = "<{:U('order_list')}>";
+                    },1000)
+                }else {
+//                    utils.modal(true, {width:500,title:"<{$Think.lang.发货结果}>",content:msg.info},false)
+                    layer.msg("<span class='invoice_detail_bomb_tip'><i style='color: red'>X</i>"+msg.info+"</span>");
+                }
+            }
+        });
+    }
+    function shipConfirm() {
+        if($('.has_ship_info:checked').val() == 0) {
+            utils.modal(true, {width:500,title:"<{$Think.lang.提交确认}>",content:"<{$Think.lang.你没有填写提单（或其他有效单据号），是否继续}>",confirmFn:shipSubmit,cancelFn:shipCancel},false);
+        }else {
+            shipSubmit();
+        }
+    }
+    function redShipConfirm() {
+        var info = getShipNumberInfo();
+        utils.modal(true, {width:500,title:"提交确认",content:info,confirmFn:shipConfirm,cancelFn:shipCancel},false);
+    }
+    function shipCancel() {
+        $('.has_ship_info:eq(1)').prop('checked',false);
+        $('.has_ship_info:eq(0)').prop('checked',true).change();
+    }
+    function getShipNumberInfo() {
+        var info='<table class="table table-border table-bordered"><thead><tr><th width="40%">SKUID</th><th width="30%"><{$Think.lang.待发货数量}></th><th width="30%"><{$Think.lang.本次发货数量}></th></tr></thead>'+
+        '<tbody class="text-c"> ';
+        $('.ship_goods').each(function (i,e) {
+            var number = 0;
+            $(e).find('.ship_number').each(function (index,el) {
+                if($(el).val() != '' && $(el).val() != '0') {
+                    number += parseFloat($(el).val());
+                }
+            })
+            var sku_id = $(e).find('td:eq(1)').html();
+            var remainder = parseFloat($(e).find('.goods_number').val()) - parseFloat($(e).find('.shipped_number').val()) - parseFloat($(e).find('.ship_end_number').val());
+            info = info+'<tr><td>'+sku_id+'</td><td>'+remainder+'</td><td>'+number+'</td></tr> ';
+        })
+        info = info + '</tbody></table>';
+        return info;
+    }
+    $(function () {
+        statistic();
+        //多选
+        $('.ship_number_input').change(function(){
+            if(numberCheck($(this))) {
+                calculateNumber($(this).parents('tr'));
+            }
+        })
+
+        $('.has_ship_info').change(function() {
+            if($(this).val() == 1) {
+                $('.bill_of_landing').prop('readonly',false);
+            }else {
+                $('.bill_of_landing').prop('readonly',true).val('');
+            }
+        })
+        $('#ship_confirm').click(function() {
+            var higthLightState='hide';
+            $('.card_table .table tbody .ship_goods .ship_checkbox').each(function () {
+                if($(this).prop('checked')){
+                    $(this).parents('tr').find('.td_time_mount .expiration_date_ship').each(function () {
+                        if($(this).attr('is_shelf_life') == 1 ){
+                            if($(this).val()){}
+                            else{
+                                higthLightState ='show'
+                            }
+                        }
+                    })
+                }
+            })
+            $(".td_time_mount .td_time_mount_main .td_time_mount_div .expiration_date_ship").each(function () {
+                var _this= $(this);
+                console.info(_this,'2')
+                if($(this).parents('tr').find('.ship_checkbox').prop('checked')){
+                    console.info($(this),'1')
+                    if(_this.attr('is_shelf_life') == 1){
+                        if(_this.val()){}
+                        else{
+                            _this.css({'border-color':"red",'border-right':"none"});
+                            _this.siblings().find('button').css({'border-color':"red",'border-left':"none"});
+                        }
+                    }
+                }
+            })
+            if(higthLightState == 'show'){
+                utils.modal(true, {width:500,title:"<{$Think.lang.提交确认}>",content:'<{$Think.lang.红色高亮商品为效期敏感商品，建议填写本批次商品到期日信息}>',confirmFn:shipCancel,confirmText:'<{$Think.lang.现在去填}>',cancelFn:redShipConfirm,cancelText:"<{$Think.lang.提供不了}>"},false);
+            }else{
+                redShipConfirm();
+            }
+        })
+        //商品信息多选框操作模块 单选
+        $('.purchase_detail .card_table .table tbody').on('click','.ship_goods .ship_checkbox',function (){
+            if($(this).prop('checked')){
+                $(this).prop('checked',true);
+                var index=0;
+                $('.card_table tbody .ship_goods td>.ship_checkbox').each(function () {
+                   if($(this).prop('checked')){
+                       index++;
+                   }
+                })
+                if($('.card_table tbody .ship_goods td>.ship_checkbox').length ==index) {
+                    $('.card_table .ship_allCheckbox').prop('checked', true);
+                }
+                 var num_length = $(this).parents('tr').find('.td_time_mount .td_time_mount_div .form-control-sendNum').length;
+                if(num_length == 1){
+                   var sendNum = $(this).parents('tr').find('.remainder').html();
+                    $(this).parents('tr').find('.form-control-sendNum').val(sendNum).change()
+                }else{
+                    $(this).parents('tr').find('.form-control-sendNum').change()
+                }
+            }else{
+                $(this).prop('checked',false);
+                $('.card_table .ship_allCheckbox').prop('checked',false);
+                $(this).parents('tr').find('.form-control-sendNum').val('0').change()
+            }
+        })
+        $(".card_table table tbody .ship_goods ").each(function () {
+            var sendNum = $(this).find('.ship_goods_send .shipped_number').val();
+            var needNum = $(this).find('.ship_goods_need .goods_number').val();
+            sendNum=Number(sendNum),needNum=Number(needNum);
+            if(sendNum == needNum){
+                $(this).find('.ship_checkbox').prop({'checked':false,disabled:true});
+
+            }
+        })
+        // 商品信息多选框操作模块  多选
+        $('.purchase_detail .card_table .table').on('click','.ship_allCheckbox',function () {
+            if($(this).prop('checked')){
+                $('.purchase_detail .card_table .table tbody .ship_goods .ship_checkbox').prop('checked',true)
+            }else{
+                $('.purchase_detail .card_table .table tbody .ship_goods .ship_checkbox').prop('checked',false)
+            }
+            $(this).parents('table').find('tbody tr .td_time_mount').each(function () {
+                var num_length = $(this).find('.td_time_mount_div .form-control-sendNum').length;
+                if(num_length == 1){
+                    var sendNum = $(this).parents('tr').find('.remainder').html();
+                    var Num = $(this).find('.form-control-sendNum').val();
+                    var n = Number(Num.replace(/,/g, "")) + Number(sendNum.replace(/,/g, ""))
+                    if(!$(this).parents('tr').find('.ship_checkbox').prop('checked')){
+                        n = 0
+                    }
+                    $(this).find('.form-control-sendNum').val(n).change()
+                }else{
+                    $(this).find('.form-control-sendNum').change()
+                }
+            })
+            $(".card_table table tbody .ship_goods ").each(function () {
+                var sendNum = $(this).find('.ship_goods_send .shipped_number').val();
+                var needNum = $(this).find('.ship_goods_need .goods_number').val();
+                sendNum=Number(sendNum),needNum=Number(needNum);
+                if(sendNum == needNum){
+                    $(this).find('.ship_checkbox').prop({'checked':false,disabled:true});
+
+                }
+            })
+        })
+        //日期判断 效期敏感产品日期是否为空 操作
+        $('.td_time_mount .td_time_mount_main .expiration_date_ship').blur(function () {
+            if($(this).attr('is_shelf_life') == 1){
+                if($(this).val()){}
+                else{
+                    $(this).css({'border':"1px solid rgba(0,0,0,.15)"});
+                    $(this).siblings().find('button').css({'border':"1px solid rgba(0,0,0,.15)"});
+                }
+            }
+        })
+        $('.need_warehousing').change(function() {
+            var need = $('.need_warehousing:checked').val();
+            if(need == 1) {
+                $('.warehouse').find('option').each(function() {
+                    $('.warehouse').val('');
+                    if($(this).val() == 'N000680800') {
+                        $(this).prop('disabled',true);
+                    }else {
+                        $(this).prop('disabled',false);
+                    }
+                })
+                $('.sale_no').hide().attr('disabled',true);
+            }else {
+                $('.warehouse').val('N000680800');
+                $('.warehouse').find('option').each(function() {
+                    if($(this).val() == 'N000680800') {
+                        $(this).prop('disabled',false);
+                    }else {
+                        $(this).prop('disabled',true);
+                    }
+                })
+                $('.sale_no').show().val('').attr('disabled',false);
+            }
+        })
+        //发货数量点进去的时候，出发change事件；
+        $('.form-control-sendNum').blur(function(){$(this).change()});
+        $('.card_table table tbody').on('blur','.td_time_mount .td_time_mount_div .form-control',function () {
+            if($(this).val()){
+                $(this).parents('tr').find('.ship_checkbox').prop('checked',true);
+            }
+        })
+    })
+</script>
+
+</html>

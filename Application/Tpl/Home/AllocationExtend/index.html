@@ -1,0 +1,466 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>调拨库存</title>
+    <link href="../Public/css/H-ui-3.1.min.css" rel="stylesheet" type="text/css" >
+    <link rel="stylesheet" href="../Public/css/stock.css">
+    <link rel="stylesheet" type="text/css" href="../Public/css/style.css" />
+    <link rel="stylesheet" type="text/css" href="../Public/css/default.css" />
+    <link rel="stylesheet" type="text/css" href="../Public/css/NewAllocate.css" />
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+    <style>
+        [v-cloak]{
+            display: none;
+        }
+        #app{
+            padding: 20px;
+        }
+
+        .el-button--mini{
+            width: 14%;
+        }
+        .el-button-group {
+            display: inline-block;
+            vertical-align: middle;
+            width: 100%;
+        }
+        .active-btn{
+            color: #fff;
+            background-color: #409eff;
+            border-color: #409eff;
+        }
+        .el-select .el-input {
+            width: 100%;
+        }
+        .input-with-select .el-input-group__prepend {
+            background-color: #fff;
+        }
+        .el-row{
+            margin-bottom: 20px;
+        }
+        .query-class .el-col-6{
+            padding-right:20px;
+        }
+        .label-tag{
+            margin-right: 10px;
+        }
+        .baseline{
+            height: 1px;
+            background: #E0E0E0;
+            margin: 10px 0 20px;
+        }
+        .text-right{
+            text-align:right;
+        }
+        .table{
+            width: 100%;
+            border-left: 1px solid #E0E0E0;
+            border-bottom: 1px solid #E0E0E0;
+        }
+        .table thead th{
+            background-color: #537a8c;
+            color: white;
+        }
+        .table thead th,.table tbody td {
+            border-top: 1px solid #E0E0E0;
+            border-right: 1px solid #E0E0E0;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div class="content" id="app" v-cloak>
+    <el-row>
+        <el-col :span="24">
+            <el-button-group>
+                <el-button @click="stateCheckAll()" size="mini" :class="{'active-btn':stateCheckAllItems}">{{$lang('全部')}}</el-button>
+                <el-button v-for="(i,v) in states" size="mini" @click="stateCheck(i.CD)" :class="{'active-btn':params.state == v}">{{$lang(i.CD_VAL)}}</el-button>
+            </el-button-group>
+        </el-col>
+    </el-row>
+    <el-row class="query-class">
+        <el-col :span="6">
+            <el-input :placeholder="$lang('请输入内容')" v-model="params.allo_no" class="input-with-select">
+                <el-select v-model="params.no_type" slot="prepend" placeholder="请选择" style="width:130px">
+                    <el-option :label="$lang('调拨单号')" value="1"></el-option>
+                    <el-option :label="$lang('SKU编码')" value="2"></el-option>
+                </el-select>
+            </el-input>
+        </el-col>
+        <el-col :span="6">
+            <label class="label-tag">{{$lang('调拨类型')}}</label>
+            <el-select :placeholder="$lang('请选择')" v-model="params.allo_type" style="width:80%" clearable filterable>
+                <el-option v-for="(value, key) in alloType" :key="key" :label="$lang(value)" :value="key"></el-option>
+            </el-select>
+        </el-col>
+        <el-col :span="6">
+            <label class="label-tag">{{$lang('调入团队')}}</label>
+            <el-select :placeholder="$lang('请选择')" v-model="params.allo_in_team" style="width:80%" clearable filterable>
+                <el-option v-for="(value, key) in teams" :key="key" :label="$lang(value)" :value="key"></el-option>
+            </el-select>
+        </el-col>
+        <el-col :span="6">
+            <label class="label-tag">{{$lang('调入仓库')}}</label>
+            <el-select :placeholder="$lang('请选择')" v-model="params.allo_in_warehouse" style="width:80%" clearable filterable>
+                <el-option v-for="item in warehouses" :key="item.CD" :label="$lang(item.CD_VAL)" :value="item.CD"></el-option>
+            </el-select>
+        </el-col>
+    </el-row>
+    <el-row class="query-class">
+        <el-col :span="6">
+            <label class="label-tag">{{$lang('调出团队')}}</label>
+            <el-select :placeholder="$lang('请选择')" v-model="params.allo_out_team" style="width:80%" clearable filterable>
+                <el-option v-for="(value, key) in teams" :key="key" :label="$lang(value)" :value="key"></el-option>
+            </el-select>
+        </el-col>
+        <el-col :span="6">
+            <label class="label-tag">{{$lang('调出仓库')}}</label>
+            <el-select :placeholder="$lang('请选择')" v-model="params.allo_out_warehouse" style="width:80%" clearable filterable>
+                <el-option v-for="item in warehouses" :key="item.CD" :label="$lang(item.CD_VAL)" :value="item.CD"></el-option>
+            </el-select>
+        </el-col>
+        <el-col :span="6">
+            <label class="label-tag">{{$lang('发起时间')}}</label>
+            <el-date-picker v-model="params.lunch_start_time" style="width:38%" clearable value-format="yyyy-MM-dd" type="date"></el-date-picker>
+            <label>-</label>
+            <el-date-picker v-model="params.lunch_end_time" clearable style="width:38%" value-format="yyyy-MM-dd" type="date"></el-date-picker>
+        </el-col>
+        <el-col :span="6">
+            <label class="label-tag">{{$lang('更新时间')}}</label>
+            <el-date-picker v-model="params.update_start_time" style="width:38%" clearable value-format="yyyy-MM-dd" type="date"></el-date-picker>
+            <label>-</label>
+            <el-date-picker v-model="params.update_end_time" clearable style="width:38%" value-format="yyyy-MM-dd" type="date"></el-date-picker>
+        </el-col>
+    </el-row>
+    <el-row class="query-class">
+        <el-col :span="6" style="display: flex;align-items: center;">
+            <label class="label-tag">{{$lang('出库负责人')}}</label>
+            <el-input style="flex: 1;" v-model="params.transfer_out_library_by" clearable></el-input>
+        </el-col>
+        <el-col :span="6" style="display: flex;align-items: center;">
+            <label class="label-tag">{{$lang('入库负责任人')}}</label>
+            <el-input style="flex: 1;" v-model="params.transfer_warehousing_by" clearable></el-input>
+        </el-col>
+        <el-col :span="6">
+            <el-button  @click="searchRet()" type="primary" size="small">{{$lang('查询')}}</el-button>
+            <el-button @click="resetSearch()" size="small">{{$lang('重置')}}</el-button>
+        </el-col>
+    </el-row>
+    <div class="baseline"></div>
+    <el-row>
+        <el-col :span="12">
+            <span><{$Think.lang.查询结果}>: {{count}}<{$Think.lang.条调拨记录}></span>
+        </el-col>
+        <el-col :span="12" class="text-right">
+<!--            <?php if(ButtonAction::hidden()){ ?>
+            <el-button type="success" size="mini" style="padding:0px;">
+                <a style="color:white;padding:8px 0;display: inline-block;width:100%;" onclick="opennewtab(this,'<{$Think.lang.新建调拨单}>')" _href="<{:U('allocationExtend/create_new_process')}>"><{$Think.lang.新建调拨单}></a>
+            </el-button>
+            <?php } ?>-->
+        </el-col>
+    </el-row>
+    <el-row>
+        <el-col :span="24">
+            <table class="table" cellpadding="0" cellspacing="0" border="0">
+                <thead>
+                <tr>
+                    <th> <{$Think.lang.序号}> </th>
+                    <th> <{$Think.lang.调拨单号}> </th>
+                    <th> <{$Think.lang.调拨类型}> </th>
+                    <th> <{$Think.lang.调入团队}> </th>
+                    <th> <{$Think.lang.调入仓库}> </th>
+                    <th> <{$Think.lang.调出团队}> </th>
+                    <th> <{$Think.lang.调出仓库}> </th>
+                    <th> <{$Think.lang.发起时间}> </th>
+                    <th> <{$Think.lang.更新时间}> </th>
+                    <th> <{$Think.lang.状态}> </th>
+                    <th> <{$Think.lang.操作}> </th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="(list,index) in ret" v-cloak class="td-wrap text-c">
+                    <td>{{index+1}}</td>
+                    <td>{{list.allo_no}}</td>
+                    <td>{{alloType[list.allo_type]}}</td>
+                    <td>
+                        <span v-if="list.allo_in_team in teams">{{teams[list.allo_in_team]}}</span>
+                        <span v-else>-</span>
+                    </td>
+                    <td>
+                        <span v-if="list.allo_in_warehouse in warehouses">{{$lang(warehouses[list.allo_in_warehouse].CD_VAL)}}</span>
+                        <span v-else>-</span>
+                    </td>
+                    <td>
+                        <span v-if="list.allo_out_team in teams">{{teams[list.allo_out_team]}}</span>
+                        <span v-else>-</span>
+                    </td>
+                    <td>
+                        <span v-if="list.allo_out_warehouse in warehouses">{{$lang(warehouses[list.allo_out_warehouse].CD_VAL)}}</span>
+                        <span v-else>-</span>
+                    </td>
+                    <td>{{list.create_time}}</td>
+                    <td>{{list.update_time}}</td>
+                    <td>{{states[list.state]?$lang(states[list.state].CD_VAL):''}}</td>
+                    <td>
+                        <a onclick="opennewtab(this,'<{$Think.lang.调拨单详情}>')" class="el-button el-button--primary el-button--small" :_href="show + list.id + '&storageKey=storage0003'" target="_blank">{{$lang('查看详情')}}</a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </el-col>
+    </el-row>
+    <div class="row">
+        <div class="col-100 text-right">
+            <ul class="pagination" v-html="page"></ul>
+        </div>
+    </div>
+    <!--出入库单-->
+    <div id="modal-demo" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content radius">
+                <div class="modal-header">
+                    <h3 class="modal-title">对话框标题</h3>
+                    <a class="close" data-dismiss="modal" aria-hidden="true" href="javascript:void();">×</a>
+                </div>
+                <div class="modal-body">
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary">确定</button>
+                    <button class="btn" data-dismiss="modal" aria-hidden="true">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script src="../Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="../Public/js/jquery-ui.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js?<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="../Public/js/H-ui-3.1.min.js"></script>
+<script src="../Public/lib/layer-v3.0.3/layer/layer.js"></script>
+<script type="text/javascript" src="../Public/lib/My97DatePicker/WdatePicker.js"></script>
+<script type="text/javascript" src="../Public/js/common_allo.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script>
+    Vue.filter('timeZone', function (time, self_time) {
+        var self_time = parseInt(self_time);
+        var pdate = new Date(time);
+        var str = '';
+        pdate.setDate(pdate.getDate()+self_time);
+        if (pdate != 'Invalid Date') {
+            year = pdate.getFullYear()
+            month = pdate.getMonth()+1;
+            day = pdate.getDate();
+            str = year + "-" + month + "-" + day;
+        } else {
+            str = "-";
+        }
+        return str;
+    });
+    var vm = new Vue({
+        el: '#app',
+        data:{
+            stateCheckAllItems:true,
+            warehouses: <{$warehouses}>,
+        teams: <{$teams}>,
+        ret: <{$ret}>,
+    states: <{$states}>,
+    page: <{$pages}>,
+    show: '<{:U("AllocationExtend/show")}>' + '&id=',
+        params:{
+        allo_no: '',
+            no_type:'1',
+            allo_type: '',
+            allo_in_team:'',
+            allo_in_warehouse:'',
+            allo_out_team:'',
+            allo_out_warehouse:'',
+            lunch_start_time:'',
+            lunch_end_time:'',
+            update_start_time:'',
+            update_end_time:'',
+            state:'',// 状态
+            transfer_out_library_by:'',
+            transfer_warehousing_by:''
+    },
+    stateClassDes: '',
+        stateClassSel: 'active',
+        alloType: <{$alloType}>,
+    count: <{$count}>,
+    storageKey:'storage0003'
+    },
+    created:function(){
+        this.monitorStorage();
+    },
+    methods: {
+        monitorStorage: function () {
+            var _this = this;
+            window.onstorage = function (storage) {
+                if (storage.key == _this.storageKey) {
+                    _this.searchRet();
+                    localStorage.removeItem(storage.key);
+                }
+            }
+        },
+        stateCheck: function (e) {
+            var keyIndex =0;
+            for(key in vm.states){
+                if(vm.states[key].CD == e){
+                    keyIndex = key;
+                    vm.states[key].selected = true;
+                }else{
+                    vm.states[key].selected = false;
+                }
+            }
+            this.params.state = e;
+            vm.states[keyIndex].selected == true ? vm.searchRet():'';
+            vm.stateCheckAllItems=false
+        },
+        stateCheckAll:function(){
+            this.params.state = '';
+            this.stateCheckAllItems = true;
+            vm.searchRet();
+        },
+        resetSearch: function() {
+            this.params = {
+                allo_no: '',
+                allo_type: '',
+                allo_in_team:'',
+                allo_in_warehouse:'',
+                allo_out_team:'',
+                allo_out_warehouse:'',
+                lunch_start_time:'',
+                lunch_end_time:'',
+                update_start_time:'',
+                update_end_time:'',
+                no_type:'1',
+                state:'',// 状态
+                transfer_warehousing_by:'',
+                transfer_out_library_by:''
+            };
+            this.stateCheckAllItems=true;
+            vm.searchRet();
+        },
+        rememberDate:function(name){
+            this.params[name] = document.querySelector('#'+name).value;
+        },
+        searchRet: function() {
+            var url = '<{:U("AllocationExtend/index")}>';
+            var params = this.params;
+            this.sendRequest(url, params, true, 'post');
+        },
+        flip: function (index) {
+            var params = vm.params;
+            params.p = index;
+            var url = '<{:U("AllocationExtend/index")}>';
+            this.sendRequest(url, params, true, 'post');
+        },
+        recieve_allo: function (allo_id) {
+            var data = {"id": allo_id};
+            var url = "/index.php?m=allocation&a=receive";
+            var index = layer.confirm('<{$Think.lang.是否撤回}>？', {
+                btn: ['<{$Think.lang.是}>','<{$Think.lang.否}>'],
+                title: '<{$Think.lang.提示}>'
+            }, function(){
+                layer.close(index);
+                vm.request_allo(url, data);
+            }, function(){
+                layer.close(index);
+            });
+        },
+        request_allo: function (url, data) {
+            var url = url;
+            var data = data;
+            var loadIndex = null;
+            $.ajax({
+                type: "POST",
+                async: true,
+                url: url,
+                data: data,
+                beforeSend: function () {
+                    loadIndex = layer.msg('<{$Think.lang.处理中}>', {icon: 16, shade: 0.3, time: 0});
+                },
+                success: function (response) {
+                    layer.close(loadIndex);
+                    $.Huimodalalert(response.info, 2000);
+                    setInterval("window.location.reload()", vm.showTime);
+                },
+                error: function () {
+                    $.Huimodalalert('<{$Think.lang.网络繁忙，请重试}>!');
+                }
+            });
+        },
+        reset: function () {
+            vm.allo_no = '';
+            vm.allo_guds = '';
+            vm.receive_team = '';
+            vm.warehouse_show = '';
+            vm.state = '';
+            vm.launch_time = '';
+            vm.launch_end_time = '';
+            vm.launch_team = '';
+        },
+        out_or_allo: function (id, type) {
+            var url = '/index.php?m=allocation&a=out_or_allo';
+            var title = '';
+            if(type == 1) {
+                title = '<{$Think.lang.调拨出库}>';
+                localStorage.setItem("out_or_allo_state",'1')
+            } else {
+                title = '<{$Think.lang.调拨入库}>';
+                localStorage.setItem("out_or_allo_state",'2')
+            }
+            $.post(url, {
+                    'id' : id,
+                    'type': type
+                },
+                function(str){
+                    var sindex = layer.open({
+                        title: title,
+                        area: ['893px', '600px'],
+                        type: 1,
+                        skin: 'demo-class',
+                        content: str //注意，如果str是object，那么需要字符拼接。
+                    });
+                });
+        },
+        sendRequest: function(url, requestParams, async, type) {
+            var showIndex = 0;
+            $.ajax({
+                type: type,
+                async: async,
+                url: url,
+                data: requestParams,
+                beforeSend: function () {
+                    showIndex = layer.load(2, {
+                        shade: [0.5,'#fff']
+                    });
+                },
+                success:function(response){
+                    layer.close(showIndex);
+                    if (response.status == 1) {
+                        vm.ret = response.data.ret;
+                        vm.page = response.data.page;
+                        vm.count = response.data.count;
+                    } else {
+                        layer.msg(response.info);
+                    }
+                },
+                error:function(){
+                    layer.close(showIndex);
+                    layer.msg('<{$Think.lang.请求异常}>')
+                }
+            });
+        }
+    }
+    });
+    function flip(pageInex)
+    {
+        vm.flip(pageInex);
+    }
+
+</script>
+</html>

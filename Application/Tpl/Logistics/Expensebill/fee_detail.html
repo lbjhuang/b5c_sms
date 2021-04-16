@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html lang="en">
+
+<head>
+    <!-- <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.8.2.css?v=<{$Think.const.V}>"> -->
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <!-- <link rel="stylesheet" href="./Application/Tpl/Home/Public/lib/bootstrap/css/bootstrap.min.css"> -->
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <title>
+        <{$Think.lang.费用单详情}>
+    </title>
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+        #feeDetail {
+            box-sizing: border-box;
+            padding: 20px;
+            margin: 0;
+        }
+        .el-tabs__nav-wrap::after, .el-tabs__active-bar {
+            height: 0;
+        }
+
+        .el-tabs__nav div {
+            font-size: 26px;
+            font-weight: 600;
+        }
+        .entry-info{
+        width: 100%;
+        text-align: center;
+        border-left: 1px solid #E0E0E0;
+        /* border-bottom: 1px solid #E0E0E0; */
+        font-size: 15px;
+        margin-bottom:20px;
+        }
+        .entry-info caption{
+            height: 40px;
+            background-color: #546E7A;
+            color: white;
+            text-align: left;
+            font-size: 15px;
+            line-height: 40px;
+            padding-left: 20px;
+        }
+        .entry-info tr{
+            display: flex;
+            flex-wrap: wrap;
+        }
+        .entry-info tr td{
+            border-right: 1px solid #E0E0E0;
+            /* border-top: 1px solid #E0E0E0; */
+            border-bottom: 1px solid #E0E0E0;
+            padding: 10px 15px;
+            font-size: 14px;
+            word-break: break-all;
+        }
+        .entry-info tr td:nth-child(odd){
+            width: 13.333%;
+            background: #f5fafe;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+        }
+        .entry-info tr td:nth-child(even){
+            width: 20%;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .entry-info tr td .el-input__inner{
+            height: 35px;
+        }
+        .upload-payment{
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .upload-payment ul{
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .upload-payment ul li:first-child{
+            margin-top: 0;
+        }
+        .el-select,.confirm_input,.el-date-editor{
+            width: 220px;
+        }
+        .required::after{
+            content: "*";
+            color: rgb(255, 0, 0);
+        }
+        .el-table__header thead th{
+            background: #546E7A;
+            color: #fff;
+            border-bottom: 1px solid rgb(202, 222, 231);
+            border-right: 1px solid rgb(202, 222, 231);
+            text-align: center;
+        }
+        .el-table__body,.el-table__header{
+            display: table;
+            width: 100% !important;
+            table-layout: auto;
+        }
+        .el-table__body tbody tr td{
+            text-align: center;
+        }
+        .el-table__body tbody tr td:last-child{
+            border-right: none;
+        }
+        .el-table__body tbody tr:last-child td{
+            border-bottom: none;
+        }
+        .return_title{
+            position: relative;
+        }
+        .return_title .return_content{
+            position: absolute;
+            left: 0;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .return_title .return_tag{
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+    <div v-cloak id="feeDetail">
+        <div>
+            <el-tabs v-model="activeName">
+                <el-tab-pane :label="$lang('费用单详情')" name="first">
+
+                    <div v-if="!fee_edit">
+
+                    
+                        <!-- 审核信息-待确认 -->
+                        <table v-if="status == '0' && detail.remark.business_return_reason" class="entry-info" border="0" cellpadding="0" cellspacing="0">
+                                <caption>{{$lang('审核信息')}}</caption>
+                                <tbody>
+                                    <tr>
+                                        <td style="width: 20%;color: red;">{{$lang('业务审核退回原因')}}</td>
+                                        <td style="width: 80%;color: red;">{{detail.remark.business_return_reason}}</td>
+                                    </tr>
+                                </tbody>
+                        </table>
+                        <!-- 审核信息-待业务审核 -->
+                        <table v-if="status == '6' && detail.remark.accounting_return_reason" class="entry-info" border="0" cellpadding="0" cellspacing="0">
+                                <caption>{{$lang('审核信息')}}</caption>
+                                <tbody>
+                                    <tr>
+                                        <td style="width: 20%;color: red;">{{$lang('会计审核退回原因')}}</td>
+                                        <td style="width: 80%;color: red;">[{{detail.remark.accounting_return_reason_val}}] {{detail.remark.supply_note}}</td>
+                                    </tr>
+                                </tbody>
+                        </table>
+                        <!-- 基础信息 -->
+                        <table class="entry-info" border="0" cellpadding="0" cellspacing="0">
+                                <caption>{{$lang('基础信息')}}</caption>
+                                <tbody>
+                                    <tr>
+                                        <td>Payment Key</td>
+                                        <td>{{detail.info.payment_no}}</td>
+                                        <td>{{$lang('费用单状态')}}</td>
+                                        <td>{{$lang(detail.info.fee_status_val)}}</td>
+                                        <td>{{$lang('销售团队')}}</td>
+                                        <td>{{detail.info.CD_VAL}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>{{$lang('触发操作')}}</td>
+                                        <td>{{$lang(detail.info.action_type_cd_val)}}</td>
+                                        <td>{{$lang('调拨单号')}}</td>
+                                        <td>
+                                            <a @click="viewDetail(detail.info.allo_id,'allo')" style="color:blue;cursor:pointer;">{{detail.info.allo_no}}</a>
+                                        </td>
+                                        <td>{{$lang('调拨单发起人')}}</td>
+                                        <td>{{detail.info.create_user}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>{{$lang('调出仓库')}}</td>
+                                        <td>{{detail.info.allo_out_warehouse}}</td>
+                                        <td>{{$lang('调入仓库')}}</td>
+                                        <td>{{detail.info.allo_in_warehouse}}</td>
+                                        <td>{{$lang('费用细分')}}</td>
+                                        <td>{{$lang(detail.info.cost_sub_cd_val)}}</td>
+                                    </tr>
+                                    <!-- 待确认第一次 -->
+                                    <!-- <tr v-if="status == '0' && detail.remark.business_return_reason == ''"> -->
+                                    <tr v-if="status == '0'">
+                                        <td>{{$lang('费用确认责任人')}}</td>
+                                        <td>{{detail.info.ETC2}}</td>
+                                        <td>{{$lang('业务审核人')}}</td>
+                                        <td>{{detail.info.ETC}}</td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                    <!-- 待确认（退回）、待业务审核、待会计审核、待付款、待出账、已完成 -->
+                                    <tr v-if="(status == '0' && detail.remark.business_return_reason) || status != '0'">
+                                    <tr v-if="status != '0'">
+                                        <td>{{$lang('费用确认责任人')}}</td>
+                                        <td>{{detail.info.ETC2}}</td>
+                                        <td>{{$lang('业务审核人')}}</td>
+                                        <td>{{detail.info.ETC}}</td>
+                                        <td>{{$lang('我方公司')}}</td>
+                                        <td>{{detail.info.our_company_cd_val}}</td>
+                                    </tr>
+                                    <tr v-if="status != '0'">
+                                        <td>{{$lang('供应商名称')}}</td>
+                                        <td>{{detail.info.SP_NAME}}</td>
+                                        <td>{{$lang('供应商名称（英文）')}}</td>
+                                        <td>{{detail.info.SP_NAME_EN}}</td>
+                                        <td>{{$lang('合同编号')}}</td>
+                                        <td>
+                                            <a @click="viewDetail(detail.info.contract_id,'contract')" style="color:blue;cursor:pointer;">{{detail.info.contract_no}}</a>
+                                        </td>
+                                    </tr>
+                                    <!-- 待会计审核、待付款、待出账、已完成 -->
+                                    <tr v-if="status == '4' || status == '1' || status == '2' || status == '3'">
+                                        <td>{{$lang('关联付款单号')}}</td>
+                                        <td>
+                                            <a @click="viewDetail(detail.info.payment_audit_id,'payment')" style="color:blue;cursor:pointer;">{{detail.info.payment_audit_no}}</a>
+                                        </td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+        
+                                </tbody>
+                            </table>
+                            <!-- 支付信息 -->
+                            <table class="entry-info" border="0" cellpadding="0" cellspacing="0">
+                                <caption>{{$lang('支付信息')}}</caption>
+                                <tbody>
+                                    <!-- 待确认第一次 -->
+                                    <!-- <tr v-if="status == '0' && detail.remark.business_return_reason == ''"> -->
+                                    <tr v-if="status == '0'">
+                                        <td>{{$lang('确认前-本期应付金额')}}</td>
+                                        <td>{{detail.payment.currency_cd_val}}  {{detail.payment.amount | numberFormat}}</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                    <!-- 待确认（退回）、待业务审核、待会计审核、待付款、待出账、已完成 -->
+                                    <!-- <tr v-if="(status == '0' && detail.remark.business_return_reason) || status != '0'"> -->
+                                    <tr v-if="status != '0'">
+                                        <td>{{$lang('确认前-本期应付金额')}}</td>
+                                        <td>{{detail.payment.currency_cd_val}}  {{detail.payment.amount | numberFormat}}</td>
+                                        <td>{{$lang('确认后-本期应付金额')}}</td>
+                                        <td>{{detail.payment.currency_cd_val}}  {{detail.payment.payable_amount_after | numberFormat}}</td>
+                                        <td>{{$lang('预计付款日期')}}</td>
+                                        <td>{{detail.payment.payable_date_after}}</td>
+                                    </tr>
+                                    <tr v-if="status != '0'">
+                                        <td>{{$lang('支付渠道')}}</td>
+                                        <td>{{detail.payment.payment_channel_cd}}</td>
+                                        <td>{{$lang('支付方式')}}</td>
+                                        <td>{{detail.payment.payment_way_cd}}</td>
+                                        <td>{{$lang('收款账户名')}}</td>
+                                        <td>{{detail.payment.supplier_collection_account}}</td>
+                                    </tr>
+                                    <tr v-if="status != '0'">
+                                        <td>{{$lang('收款账户开户行')}}</td>
+                                        <td>{{detail.payment.supplier_opening_bank}}</td>
+                                        <td>{{$lang('收款银行账号')}}</td>
+                                        <td>{{detail.payment.supplier_card_number}}</td>
+                                        <td>{{$lang('收款银行SWIFT CODE')}}</td>
+                                        <td>{{detail.payment.supplier_swift_code}}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <!-- 出账信息-已完成 -->
+                            <table v-if="status == '3'" class="entry-info" border="0" cellpadding="0" cellspacing="0">
+                                <caption>{{$lang('出账信息')}}</caption>
+                                <tbody>
+                                    <tr>
+                                        <td>{{$lang('出账凭证/水单')}}</td>
+                                        <td>
+                                            <div v-if="detail.remark.billing_voucher">
+                                                <div class="attachmentLink"   v-for="item in detail.remark.billing_voucher">
+                                                    <a class="file_type" :href="'/index.php?m=order_detail&a=download&file='+item.save_name">{{item.original_name}}</a>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <!-- 备注信息 -->
+                            <!-- <table v-if="(status == '0' && detail.remark.business_return_reason) || status != '0'" class="entry-info" border="0" cellpadding="0" cellspacing="0"> -->
+                            <table v-if="status != '0'" class="entry-info" border="0" cellpadding="0" cellspacing="0">
+                                <caption>{{$lang('备注信息')}}</caption>
+                                <tbody>
+                                    <!-- 待确认（退回）、待业务审核、待会计审核、待付款、待出账、已完成 -->
+                                    <!-- <tr v-if="(status == '0' && detail.remark.business_return_reason) || status != '0'"> -->
+                                        <td v-if="((status == '0' && detail.remark.business_return_reason) || status != '0') && detail.remark.amount_difference != '0.00'">{{$lang('应付差额')}}</td>
+                                        <td v-if="((status == '0' && detail.remark.business_return_reason) || status != '0') && detail.remark.amount_difference != '0.00'">{{detail.payment.currency_cd_val}}  {{detail.remark.amount_difference | numberFormat}}</td>
+                                         <td v-if="((status == '0' && detail.remark.business_return_reason) || status != '0') && detail.remark.pay_remainder != '0'">{{$lang('继续支付剩余部分')}}</td>
+                                        <td v-if="((status == '0' && detail.remark.business_return_reason) || status != '0') && detail.remark.pay_remainder != '0'">{{detail.remark.pay_remainder_val}}</td>
+                                        <td v-if="((status == '0' && detail.remark.business_return_reason) || status != '0') && detail.remark.difference_reason_val">{{$lang('差异原因')}}</td>
+                                        <td v-if="((status == '0' && detail.remark.business_return_reason) || status != '0') && detail.remark.difference_reason_val">{{detail.remark.difference_reason_val}}</td>
+                                    <!-- </tr> -->
+                                    <!-- 待确认（退回）、待业务审核、待会计审核、待付款 -->
+                                    <!-- <tr v-if="(status == '0' && detail.remark.business_return_reason) || status == '6' || status == '4' || status == '1'"> -->
+                                        <td v-if="(status == '0' && detail.remark.business_return_reason) || status == '6' || status == '4' || status == '1'">{{$lang('付款需求附件')}}</td>
+                                        <td v-if="(status == '0' && detail.remark.business_return_reason) || status == '6' || status == '4' || status == '1'">
+                                            <div v-if="detail.remark.payment_attachment">
+                                                    <div class="attachmentLink"   v-for="item in detail.remark.payment_attachment">
+                                                        <a class="file_type" :href="'/index.php?m=order_detail&a=download&file='+item.save_name">{{item.original_name}}</a>
+                                                    </div>
+                                            </div> 
+                                        </td>
+                                        <td v-if="(status == '0' && detail.remark.business_return_reason) || status == '6' || status == '4' || status == '1'">{{$lang('提交付款备注')}}</td>
+                                        <td v-if="(status == '0' && detail.remark.business_return_reason) || status == '6' || status == '4' || status == '1'">{{detail.remark.confirmation_remark}}</td>
+                                        <!-- <td></td>
+                                        <td></td> -->
+                                    <!-- </tr> -->
+                                    <!-- 待出账、已完成 -->
+                                    <!-- <tr v-if="status == '2' || status == '3'"> -->
+                                        <td v-if="status == '2' || status == '3'">{{$lang('付款需求附件')}}</td>
+                                        <td v-if="status == '2' || status == '3'">
+                                            <div v-if="detail.remark.payment_attachment">
+                                                    <div class="attachmentLink"   v-for="item in detail.remark.payment_attachment">
+                                                        <a class="file_type" :href="'/index.php?m=order_detail&a=download&file='+item.save_name">{{item.original_name}}</a>
+                                                    </div>
+                                            </div>
+                                        </td>
+                                        <td v-if="status == '2' || status == '3'">{{$lang('提交付款备注')}}</td>
+                                        <td v-if="status == '2' || status == '3'">{{detail.remark.confirmation_remark}}</td>
+                                        <td v-if="status == '2' || status == '3'">{{$lang('付款/出账确认备注')}}</td>
+                                        <td v-if="status == '2' || status == '3'">{{detail.remark.confirmation_remark_audit}}</td> 
+                                    <!-- </tr> -->
+                                    <!-- 下一次付款金额、下一次付款日期 -->
+                                        <td v-if="detail.remark.next_pay_amount != '0.00'">{{$lang('下一次付款金额')}}</td>
+                                        <td v-if="detail.remark.next_pay_amount != '0.00'">{{detail.payment.currency_cd_val}}  {{detail.remark.next_pay_amount | numberFormat}}</td>
+                                        <td v-if="detail.remark.next_pay_time">{{$lang('下一次付款日期')}}</td>
+                                        <td v-if="detail.remark.next_pay_time">{{detail.remark.next_pay_time}}</td>
+                                </tbody>
+                            </table>
+
+                            
+                            <!-- 按钮 -->
+                            <div style="text-align: center;">
+                                <!-- 待确认 -->
+                                <el-button @click="fee_edit = true" v-if="status == '0'"  type="primary">{{$lang('费用确认')}}</el-button>
+                                <!-- 待业务审核 -->
+                                <el-button @click="operating('pass')" v-if="status == '6'" type="primary">{{$lang('通过')}}</el-button>
+                                <el-button @click="delDialog = true" v-if="status == '6'" >{{$lang('退回')}}</el-button>
+                                <el-button @click="operating('revoke')" v-if="status == '6'" type="primary">{{$lang('撤回')}}</el-button>
+                                <!-- 待会计审核 -->
+                                <el-button @click="operating('revoke_accounting')" v-if="status == '4'" type="primary">{{$lang('撤回')}}</el-button>
+                                <!-- all -->
+                                <el-button @click="operating('back')">{{$lang('返回列表')}}</el-button>
+                            </div>
+
+                            <!-- 退回弹框 -->
+                            <el-dialog title="请输入退回原因" :before-close="closeReturnBack" :visible.sync="delDialog">
+                                <div slot="title" class="return_title">
+                                    <span class="return_content">请输入退回原因<span class="return_tag">*</span></span>
+                                </div>
+                                <div style="text-align: center;">
+                                    <el-input
+                                        type="textarea"
+                                        :rows="5"
+                                        placeholder="请输入内容"
+                                        v-model="business_return_reason">
+                                    </el-input>
+                                    <el-button style="margin-top: 20px;" type="primary" @click="operating('return')"> {{$lang('确定')}} </el-button>
+                                </div>
+                            </el-dialog>
+
+
+                        </div>    
+
+
+                        <!-- 确认表单页 -->
+                        <div v-if="fee_edit">
+                            <!-- 基础信息 -->
+                            <table class="entry-info" border="0" cellpadding="0" cellspacing="0">
+                                <caption>{{$lang('基础信息')}}</caption>
+                                <tbody>
+                                    <tr>
+                                        <td>Payment Key</td>
+                                        <td>{{detail.info.payment_no}}</td>
+                                        <td>{{$lang('费用单状态')}}</td>
+                                        <td>{{detail.info.fee_status_val}}</td>
+                                        <td>{{$lang('销售团队')}}</td>
+                                        <td>{{detail.info.CD_VAL}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>{{$lang('触发操作')}}</td>
+                                        <td>{{detail.info.action_type_cd_val}}</td>
+                                        <td>{{$lang('调拨单号')}}</td>
+                                        <td>{{detail.info.allo_no}}</td>
+                                        <td>{{$lang('调拨单发起人')}}</td>
+                                        <td>{{detail.info.create_user}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>{{$lang('调出仓库')}}</td>
+                                        <td>{{detail.info.allo_out_warehouse}}</td>
+                                        <td>{{$lang('调入仓库')}}</td>
+                                        <td>{{detail.info.allo_in_warehouse}}</td>
+                                        <td>{{$lang('费用细分')}}</td>
+                                        <td>{{detail.info.cost_sub_cd_val}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>{{$lang('费用确认责任人')}}</td>
+                                        <td>{{detail.info.ETC2}}</td>
+                                        <td>{{$lang('业务审核人')}}</td>
+                                        <td>{{detail.info.ETC}}</td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <!-- 支付信息 -->
+                            <table class="entry-info" border="0" cellpadding="0" cellspacing="0">
+                                <caption>{{$lang('支付信息')}}</caption>
+                                <tbody>
+                                    <tr>
+                                        <td>{{$lang('确认前-本期应付金额')}}</td>
+                                        <td>{{detail.payment.currency_cd_val}}  {{detail.payment.amount | numberFormat}}</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <!-- 应付确认信息 -->
+                            <table class="entry-info" border="0" cellpadding="0" cellspacing="0">
+                                <caption>{{$lang('应付确认信息')}}</caption>
+                                <tbody>
+                                    <tr>
+                                        <td>{{$lang('供应商')}} <span class="required"></span></td>
+                                        <td>
+                                            <el-select @change="vendor_change" value-key="ID" v-model="form.vendor_cd" filterable placeholder="请选择">
+                                                <el-option
+                                                    v-for="item in vendor"
+                                                    :key="item.ID"
+                                                    :label="item.SP_NAME"
+                                                    :value="item">
+                                                </el-option>
+                                            </el-select>
+                                        </td>
+                                        <td>{{$lang('我方公司')}}<span class="required"></span></td>
+                                        <td>
+                                            <el-select @change="our_company_change" v-model="form.our_company_cd" filterable placeholder="请选择">
+                                                <el-option
+                                                    v-for="item in our_company"
+                                                    :key="item.CD"
+                                                    :label="item.CD_VAL"
+                                                    :value="item.CD">
+                                                </el-option>
+                                            </el-select>
+                                        </td>
+                                        <td>{{$lang('合同')}}<span class=""></span></td>
+                                        <td>
+                                            <el-select v-model="form.contract_cd" filterable placeholder="请选择">
+                                                <el-option
+                                                    v-for="item in contract"
+                                                    :key="item.CON_NO"
+                                                    :label="item.CON_NAME"
+                                                    :value="item.CON_NO">
+                                                </el-option>
+                                            </el-select>
+                                        </td>
+                                        
+                                        <td>{{$lang('预计付款日期')}}<span class="required"></span></td>
+                                        <td>
+                                            <el-date-picker
+                                                v-model="form.expected_payment_date"
+                                                type="date"
+                                                placeholder="选择日期">
+                                            </el-date-picker>
+                                        </td>
+                                        <td>{{$lang('确认后-本期应付金额')}}<span class="required"></span></td>
+                                        <td>
+                                            {{detail.payment.currency_cd_val}}
+                                            <el-input class="confirm_input" @blur="amounts_payable_change(form.amounts_payable)" v-model="form.amounts_payable" placeholder="请输入内容"></el-input>
+                                        </td>
+                                        <td>{{$lang('应付差额')}}</td>
+                                        <td>
+                                            {{detail.payment.currency_cd_val}}
+                                            {{form.amount_difference | numberFormat}}
+                                        </td>
+                                        <td v-if="difference">{{$lang('继续支付剩余部分')}}<span class="required"></span></td>
+                                        <td v-if="difference">
+                                            <el-radio-group @change="continue_change" v-model="form.continue_to_pay">
+                                                <el-radio :label="1">需要支付</el-radio>
+                                                <el-radio :label="2">本次结束</el-radio>
+                                            </el-radio-group>
+                                        </td>
+                                        <td v-if="difference">{{$lang('差异原因')}}<span class="required"></span></td>
+                                        <td v-if="difference">
+                                            <el-select v-model="form.difference_reason_cd" filterable placeholder="请选择">
+                                                <el-option
+                                                    v-for="item in payable_difference"
+                                                    :key="item.CD"
+                                                    :label="item.CD_VAL"
+                                                    :value="item.CD">
+                                                </el-option>
+                                            </el-select>
+                                        </td>
+                                        <td v-if="difference && continue_pay">{{$lang('下一次付款金额')}}</td>
+                                        <td v-if="difference && continue_pay">
+                                            {{detail.payment.currency_cd_val}}
+                                            {{form.next_pay_amount | numberFormat}}
+                                        </td>
+                                        <td v-if="difference && continue_pay">{{$lang('下一次付款日期')}}<span class="required"></span></td>
+                                        <td v-if="difference && continue_pay">
+                                            <el-date-picker
+                                                v-model="form.next_payment_date"
+                                                type="date"
+                                                placeholder="选择日期">
+                                            </el-date-picker>
+                                        </td>
+                                        <td v-if="!continue_pay">{{$lang('金额差异原因')}}</td>
+                                        <td v-if="!continue_pay"></td>
+                                        <td>{{$lang('付款需求附件')}}<span class="required"></span></td>
+                                        <td>
+                                            <el-upload
+                                                class="upload-payment"
+                                                action="/index.php?m=order_detail&a=file_upload"
+                                                :on-success="handleSuccessDeductible"
+                                                :on-remove="handleRemoveDeductible"
+                                                :before-upload="beforeUpload"
+                                                multiple
+                                                :file-list="payment_attachment">
+                                                <el-button size="small" type="primary">上传附件</el-button>
+                                            </el-upload>
+                                        </td>
+                                        <td>{{$lang('提交付款备注')}}</td>
+                                        <td>
+                                            <el-input class="confirm_input" v-model="form.payment_remark" placeholder="请输入内容"></el-input>
+                                        </td>
+                                        <td>{{$lang('支付渠道')}}<span class="required"></span></td>
+                                        <td>
+                                            <el-select v-model="form.payment_channel_cd" filterable placeholder="请选择">
+                                                <el-option
+                                                    v-for="item in payment_channel"
+                                                    :key="item.CD"
+                                                    :label="item.CD_VAL"
+                                                    :value="item.CD">
+                                                </el-option>
+                                            </el-select>
+                                        </td>
+                                        <td>{{$lang('支付方式')}}<span class="required"></span></td>
+                                        <td>
+                                            <el-select v-model="form.payment_way_cd" filterable placeholder="请选择">
+                                                <el-option
+                                                    v-for="item in payment_way"
+                                                    :key="item.CD"
+                                                    :label="item.CD_VAL"
+                                                    :value="item.CD">
+                                                </el-option>
+                                            </el-select>
+                                        </td>
+                                        <td>{{$lang('收款账户名')}}<span class="required"></span></td>
+                                        <td>
+                                            <el-input class="confirm_input" v-model="form.account_name" placeholder="请输入内容"></el-input>
+                                        </td>
+                                        <td>{{$lang('收款账户开户行')}}<span class="required"></span></td>
+                                        <td>
+                                            <el-input class="confirm_input" v-model="form.account_bank" placeholder="请输入内容"></el-input>
+                                        </td>
+                                        <td>{{$lang('收款银行账号')}}<span class="required"></span></td>
+                                        <td>
+                                            <el-input class="confirm_input" v-model="form.receiving_bank_account" placeholder="请输入内容"></el-input>
+                                        </td>
+                                        <td>{{$lang('收款银行SWIFT CODE')}}<span class="required"></span></td>
+                                        <td>
+                                            <el-input class="confirm_input" v-model="form.bank_swiftCode" placeholder="请输入内容"></el-input>
+                                        </td>
+                                        <td v-if="!difference || !continue_pay"></td>
+                                        <td v-if="!difference || !continue_pay"></td>
+
+                                    </tr>
+                                
+                                </tbody>
+                            </table>
+
+                            <!-- 按钮 -->
+                            <div style="text-align: center;">
+                                <el-button @click="submit" type="primary">{{$lang('提交')}}</el-button>
+                            </div>
+
+                        </div>
+                        
+                    
+                </el-tab-pane>
+                <el-tab-pane :label="$lang('日志信息')" name="second">
+                    <el-table :data="logData" border style="width: 100%;margin-top: 20px;">
+                            <el-table-column  :label="$lang('操作人')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.created_by}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  :label="$lang('操作时间')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.created_at}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  :label="$lang('操作')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.operation_info}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  :label="$lang('当前状态')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.status_name}}</span>
+                                </template>
+                            </el-table-column>
+                    </el-table>
+                    <!-- 分页 -->
+                    <div style="text-align: right;margin-top: 20px;">
+                        <el-pagination
+                                background
+                                @current-change="handleCurrentChange"
+                                @size-change="handleSizeChange"
+                                :current-page.sync="page.this_page"
+                                :page-size="page.page_count"
+                                :page-sizes="[10, 30, 50, 100]"
+                                layout="total, sizes, prev, pager, next, jumper"
+                                :total="page.count">
+                        </el-pagination>
+                    </div>
+                </el-tab-pane>
+            </el-tabs>
+        </div>
+ 
+    </div>
+</body>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js">
+</script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<!-- <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.8.2.js?v=<{$Think.const.V}>"></script> -->
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script>
+    var Vm = new Vue({
+        el: '#feeDetail',
+        data: {
+            activeName:'first',
+            detail:{
+                info:{},
+                payment:{},
+                remark:{},
+            },
+            form:{
+                vendor_cd:'',
+                vendor_name:'',
+                our_company_cd:'',
+                contract_cd:'',
+                expected_payment_date:'',
+                amounts_payable:'',
+                amount_difference:0,
+                next_pay_amount:0,
+                continue_to_pay:1,
+                difference_reason_cd:'',
+                next_payment:'',
+                next_payment_date:'',
+                payment_attachment:[],
+                payment_remark:'',
+                payment_channel_cd:'',
+                payment_way_cd:'',
+                account_name:'',
+                account_bank:'',
+                receiving_bank_account:'',
+                bank_swiftCode:'',
+            },
+            difference:false,
+            continue_pay:true,
+            delDialog:false,
+            business_return_reason:'',
+            payment_attachment:[],
+            fee_id:'',
+            payment_audit_id:'',
+            payment_id:'',
+            status:'',
+            fee_edit:false,
+            our_company:[],
+            vendor:[],
+            contract:[],
+            contract2:[],
+            payable_difference:[],
+            payment_channel:[
+              {
+                CD: 'N001000301',
+                CD_VAL: '银行'
+              }
+            ],
+            payment_way:[
+              {
+                CD: 'N003020001',
+                CD_VAL: '转账'
+              }
+            ],
+            logData:[],
+            page:{
+                count:0,
+                this_page:1,
+                page_count:10,
+            },
+        },
+        created() {
+            this.fee_id = utils.parseQuery(window.location.search).fee_id
+            this.getDetailData()
+            this.getCommonData()
+            // numberFormat
+            // console.log(utils.numberFormat('122222222'));
+            
+        },
+        methods: {
+            getDetailData:function(){
+                var _this = this
+                axios.post("/index.php?g=logistics&m=Expensebill&a=details",{
+                    "payment_id": _this.fee_id
+                }).then(function (res) {
+                    console.log(res);
+                    if (res.data.code == 2000) {
+                        _this.status = res.data.data.info.fee_status
+                        _this.payment_audit_id = res.data.data.info.payment_audit_id
+                        _this.payment_id = res.data.data.info.payment_id
+                        
+                        _this.detail.info = res.data.data.info
+                        _this.detail.payment = res.data.data.payment
+                        _this.detail.remark = res.data.data.remark
+                        
+                        _this.form.amounts_payable = res.data.data.payment.amount
+                        _this.getLog()
+                        
+                    }else {
+                        _this.$message.warning(res.data.msg);
+                    }
+                    
+                })
+            },
+            getCommonData:function(){
+                var _this = this
+                // 我方公司
+                // axios.post("/index.php?g=oms&m=CommonData&a=commonData",{
+                //     "data": {
+                //         "query": {
+                //             "company": "true"
+                //         }
+                //     }
+                // }).then(function (res) {
+                //     if (res.data.code == 2000) {
+                //         _this.our_company = res.data.data.company;
+                //     }
+                // })
+
+                // 供应商
+                axios.post("/index.php?g=logistics&m=Expensebill&a=getSupplier",{}).then(function (res) {
+                    if (res.data.code == 2000) {
+                        _this.vendor = res.data.data
+                    }
+                })
+
+                // 差异原因、我方公司
+                
+                axios.post("/index.php?g=common&m=index&a=get_cd",{
+                    cd_type:{
+                        payment_dif_reason:true,
+                        our_company:false
+                    }
+                }).then(function (res) {
+                    console.log(res);
+                    if (res.data.code == 2000) {
+                        _this.payable_difference = res.data.data.payment_dif_reason
+                        _this.our_company = res.data.data.our_company
+                    }
+                })
+            
+            },
+            getLog:function(){
+                var _this = this
+                
+                var params = {
+                    "search": {
+                        "payment_id":_this.payment_id
+                    },
+                    "pages": {
+                        "per_page": _this.page.page_count,
+                        "current_page": _this.page.this_page
+                    }
+                };
+                
+                axios.post("/index.php?g=logistics&m=Expensebill&a=getLog", params).then(function(res){
+                    
+                    if (res.data.code == 200) {
+                        _this.logData = res.data.data.data.data
+                        _this.page.count = Number(res.data.data.data.pages.total)
+                    }else {
+                        _this.$message.warning(res.data.msg);
+                    }
+                })
+            },
+            amounts_payable_change:function(val){
+                var _val = (Math.round((val)*100)/100).toFixed(2)
+                if(this.detail.payment.amount != _val){
+                    this.form.amount_difference = (Math.round((Math.abs(this.detail.payment.amount - _val))*100)/100).toFixed(2)
+                    this.form.next_pay_amount = (Math.round((Math.abs(this.detail.payment.amount - _val))*100)/100).toFixed(2)
+                    this.difference = true
+                    this.form.amounts_payable = _val
+                }else{
+                    this.form.amount_difference = 0
+                    this.form.next_pay_amount = 0
+                    this.difference = false
+                    this.form.amounts_payable = _val
+                }
+            },
+            continue_change:function(val){
+                if(val == 2){
+                    this.continue_pay = false
+                }else{
+                    this.continue_pay = true
+                }
+            },
+            // 上传附件
+            handleSuccessDeductible: function(res, file, fileList) {
+                // console.log(fileList);
+                // console.log(res);
+                if(res.status == '0'){
+                    this.$message({
+                        message: this.$lang(res.info),
+                        type: 'error'
+                    });
+                }else{
+                    this.payment_attachment = fileList;
+                }
+
+                var data = this.payment_attachment
+                var payment_attachment_upload = []
+                for(let key in data){
+                    var obj ={}
+                    obj.original_name = data[key].response.info.name
+                    obj.save_name = data[key].response.info.savename
+                    payment_attachment_upload.push(obj)
+                }
+                this.form.payment_attachment = payment_attachment_upload
+                
+            },
+            handleRemoveDeductible: function(file, fileList) {
+                // console.log(fileList);
+                this.payment_attachment = fileList;
+
+                var data = this.payment_attachment
+                var payment_attachment_upload = []
+                for(let key in data){
+                    var obj ={}
+                    obj.original_name = data[key].response.info.name
+                    obj.save_name = data[key].response.info.savename
+                    payment_attachment_upload.push(obj)
+                }
+                this.form.payment_attachment = payment_attachment_upload
+            },
+            //过滤同名文件
+            beforeUpload: function(file) {
+                // console.log(file);
+                var flag = true;
+                var _this = this;
+                var length = this.payment_attachment.length;
+                if (length) {
+                    for (var i = 0; i < length; i++) {
+                        if (file.name === _this.payment_attachment[i].name) {
+                            flag = false;
+                        }
+                    }
+                }
+                if (!flag) {
+                    _this.$message({
+                        message: _this.$lang('不能上传同名文件'),
+                        type: 'error'
+                    });
+                }
+                return flag;
+            },
+            // 提交
+            submit:function(){
+                var _this = this
+                
+                var params = {
+                    "payment_id" : _this.payment_id,
+                    "supplier_id" : _this.form.vendor_cd.ID,
+                    "our_company_cd" : _this.form.our_company_cd,
+                    // "payable_amount_after" : _this.detail.payment.amount,
+                    "payable_amount_after" : _this.form.amounts_payable,
+                    // "payable_amount_before" : _this.form.amounts_payable,
+                    "payable_amount_before" : _this.detail.payment.amount,
+                    "payable_date_after" : _this.dateFormat(_this.form.expected_payment_date),
+                    "amount_difference" : _this.form.amount_difference,
+                    "contract_no" : _this.form.contract_cd,
+                    "pay_remainder" : _this.form.continue_to_pay,
+                    "difference_reason" : _this.form.difference_reason_cd,
+                    "next_pay_amount" : _this.form.next_pay_amount,
+                    "next_pay_time" : _this.dateFormat(_this.form.next_payment_date),
+                    "payment_attachment" : _this.form.payment_attachment,
+                    "confirmation_remark" : _this.form.payment_remark,
+                    "payment_channel_cd" : _this.form.payment_channel_cd,
+                    "payment_way_cd" : _this.form.payment_way_cd,
+                    "supplier_opening_bank" : _this.form.account_bank,
+                    "supplier_collection_account" : _this.form.account_name,
+                    "supplier_card_number" : _this.form.receiving_bank_account,
+                    "supplier_swift_code" : _this.form.bank_swiftCode,
+                    "payable_currency_cd" : _this.detail.payment.currency_cd,
+                    
+                };
+                
+                axios.post("/index.php?g=logistics&m=Expensebill&a=feeConfirm", params).then(function(res){
+                    console.log(res);
+                    
+                    if (res.data.code == 200) {
+                        _this.$message.success(_this.$lang('提交成功'));
+                        setTimeout(() => {
+                            window.location.reload()
+                            // _this.fee_edit = false
+                            // _this.getDetailData()
+                        }, 1000);
+                    }else {
+                        _this.$message.warning(res.data.msg);
+                    }
+                })
+            },
+            // 供应商
+            vendor_change:function(val){
+                var _this = this
+                _this.contract = []
+                _this.form.contract_cd = ''
+                _this.form.vendor_name = val.SP_NAME
+                if(_this.form.vendor_name && _this.form.our_company_cd){
+                    var params = {
+                        SP_NAME:_this.form.vendor_name,
+                        CON_COMPANY_CD:_this.form.our_company_cd
+                    }
+                    axios.post("/index.php?g=logistics&m=Expensebill&a=getContract", params).then(function(res){
+                        if (res.data.code == 2000) {
+                            console.log(res);
+                            _this.contract = res.data.data
+                        }else {
+                            _this.$message.warning(res.data.msg);
+                        }
+                    })
+                }else{
+                    
+                }
+
+                // var params = {
+                //     SP_NAME:val.SP_NAME
+                // }
+                // axios.post("/index.php?g=logistics&m=Expensebill&a=getContract", params).then(function(res){
+                //     if (res.data.code == 2000) {
+                //         _this.contract2 = res.data.data
+                //         if(_this.form.our_company_cd && _this.form.vendor_cd){
+                //             _this.contract = _this.contract2
+                //         }else{
+                //             _this.contract = []
+                //             _this.form.contract_cd = ''
+                //         }
+                //     }else {
+                //         _this.$message.warning(res.data.msg);
+                //     }
+                // })
+
+
+            },
+            // 我方公司
+            our_company_change:function(val){
+                var _this = this
+                _this.contract = []
+                _this.form.contract_cd = ''
+                _this.form.our_company_cd = val
+                if(_this.form.vendor_name && _this.form.our_company_cd){
+                    var params = {
+                        SP_NAME:_this.form.vendor_name,
+                        CON_COMPANY_CD:_this.form.our_company_cd
+                    }
+                    axios.post("/index.php?g=logistics&m=Expensebill&a=getContract", params).then(function(res){
+                        if (res.data.code == 2000) {
+                            console.log(res);
+                            _this.contract = res.data.data
+                        }else {
+                            _this.$message.warning(res.data.msg);
+                        }
+                    })
+                }else{
+                    
+                }
+                // if(this.form.our_company_cd && this.form.vendor_cd){
+                //     this.contract = this.contract2
+                // }else{
+                //     this.contract = []
+                //     this.form.contract_cd = ''
+                // }
+            },
+            operating:function(type){
+                if(type == 'pass'){
+                    var _this = this
+                    var params = {
+                        payment_audit_id:Number(_this.payment_audit_id),
+                        status:4,
+                        is_return:0,
+                        business_return_reason:''
+                    }
+
+                    axios.post("/index.php?g=logistics&m=Expensebill&a=businessAudit", params).then(function(res){
+                        console.log(res);
+                            
+                        if (res.data.code == 200) {
+                            _this.$message.success(_this.$lang('审批通过'));
+                            setTimeout(() => {
+                                _this.page = {
+                                    count:0,
+                                    this_page:1,
+                                    page_count:10,
+                                }
+                                _this.getDetailData()
+                            }, 1000);
+                        }else {
+                            _this.$message.warning(res.data.msg);
+                        }
+                    })
+
+                }else if(type == 'revoke'){
+                    var _this = this
+                    var params = {
+                        payment_audit_id:Number(_this.payment_audit_id),
+                        status:0,
+                        is_return:0,
+                        business_return_reason:''
+                    }
+
+                    axios.post("/index.php?g=logistics&m=Expensebill&a=businessAudit", params).then(function(res){
+                        console.log(res);
+                        
+                        if (res.data.code == 200) {
+                            _this.$message.success(_this.$lang('撤回成功'));
+                            setTimeout(() => {
+                                _this.page = {
+                                    count:0,
+                                    this_page:1,
+                                    page_count:10,
+                                }
+                                _this.getDetailData()
+                            }, 1000);
+                        }else {
+                            _this.$message.warning(res.data.msg);
+                        }
+                    })
+
+                }else if(type == 'return'){
+                    var _this = this
+                    var params = {
+                        payment_audit_id:Number(_this.payment_audit_id),
+                        status:0,
+                        is_return:1,
+                        business_return_reason:_this.business_return_reason
+                    }
+
+                    axios.post("/index.php?g=logistics&m=Expensebill&a=businessAudit", params).then(function(res){
+                        console.log(res);
+                        
+                        if (res.data.code == 200) {
+                            _this.$message.success(_this.$lang('退回成功'));
+                            _this.delDialog = false
+                            _this.business_return_reason = ''
+                            setTimeout(() => {
+                                _this.page = {
+                                    count:0,
+                                    this_page:1,
+                                    page_count:10,
+                                }
+                                _this.getDetailData()
+                            }, 1000);
+
+                        }else {
+                            _this.$message.warning(res.data.msg);
+                        }
+                    })
+
+                }else if(type == 'back'){
+                    var route = document.createElement("a");
+                    route.setAttribute("style", "display: none");
+                    route.setAttribute("onclick", "backNewtab(this,'费用单列表')");
+                    route.setAttribute("_href", '/index.php?g=logistics&m=Expensebill&a=fee_list');
+                    route.click();
+                }else if(type == 'revoke_accounting'){
+                    var _this = this
+                    var params = {
+                        payment_audit_id:Number(_this.payment_audit_id),
+                        status:0,
+                        is_return:0,
+                        accounting_return_reason:'',
+                        supply_note:'',
+                        source_cd:_this.detail.info.source_cd
+                    }
+
+                    axios.post("/index.php?m=orderDetail&a=accountingAudit", params).then(function(res){
+                        console.log(res);
+                        
+                        if (res.data.code == 200) {
+                            _this.$message.success(_this.$lang('撤回成功'));
+                            setTimeout(() => {
+                                _this.page = {
+                                    count:0,
+                                    this_page:1,
+                                    page_count:10,
+                                }
+                                _this.getDetailData()
+                            }, 1000);
+                        }else {
+                            _this.$message.warning(res.data.msg);
+                        }
+                    })
+                }
+            },
+            closeReturnBack:function(done){
+                this.business_return_reason = ''
+                done()
+            },
+            viewDetail:function(val,type){
+                if(type == 'allo'){
+                    newTab("/index.php?m=allocation_extend_new&a=transportation&id=" + val, '调拨详情');
+                }else if(type == 'contract'){
+                    newTab("/index.php?m=contract&a=show&ID=" + val, '合同详情');
+                }else if(type == 'payment'){
+                    // newTab("/index.php?m=finance&a=pay_order_detail&payment_audit_id=" + val, '付款单详情');
+                    newTab("/index.php?m=finance&a=pay_order_detail&payment_audit_id=" + val + '&source_cd=' + this.detail.info.source_cd , '付款单详情');
+                }
+            },
+            //翻页切换不同页面
+            handleCurrentChange:function(val) {
+                this.page.this_page = val;
+                this.getLog()
+            },
+            //切换每页展示的数目
+            handleSizeChange:function (val) {
+                this.page.this_page = 1;
+                this.page.page_count = val;
+                this.getLog()
+            },
+            dateFormat:function(val){
+                if(val == '' || val == null ){
+                    return('')
+                }else{
+                    var myMonth = val.getMonth() + 1
+                    var myDate = val.getDate()
+                    if(myMonth<10){
+                        myMonth = "0" + myMonth
+                    }
+                    if(myDate<10){
+                        myDate = "0" + myDate
+                    }
+                    return(val.getFullYear()+'-'+myMonth+'-' +myDate)
+                }
+            }
+        },
+        filters: {
+            numberFormat:function(number, addSymbol, dot2) {
+                let hasMinus = false
+                    if (number === '-') {
+                        return number
+                    } else if (number != null) {
+                        let numStr = dot2 ? parseFloat(number).toFixed(2) : number.toString()
+                        if (numStr.startsWith('-')) {
+                            hasMinus = true
+                            numStr = numStr.slice(1)
+                        }
+                        const numArr = numStr.split('.')
+                        let [num, dotNum] = numArr
+                        let result = []
+                        const operateNum = num.split('').reverse()
+                        const length = operateNum.length
+                        for (let i = 0; i < length; i++) {
+                            result.push(operateNum[i])
+                            if (((i + 1) % 3 === 0) && (i !== length - 1)) {
+                                result.push(',')
+                            }
+                        }
+                        if (dotNum) {
+                            result.reverse().push('.', ...dotNum)
+                        } else {
+                            result.reverse()
+                        }
+
+                        if (addSymbol) {
+                            result = result.join('').concat('%')
+                        } else {
+                            result = result.join('')
+                        }
+
+                        if (hasMinus) {
+                            result = '-' + result
+                        }
+
+                        return result
+                    }
+            }
+        }
+    })
+</script>
+
+</html>

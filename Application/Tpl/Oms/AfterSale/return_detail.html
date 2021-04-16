@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <title>$lang('退货详情')</title>
+    <style>
+        span.shopTag>span {
+            position: absolute !important;
+            top: 0px;
+            left: 0px;
+            border-radius: 0px;
+            background-color: #f99c64;
+            border: 1px solid rgb(231, 156, 116) !important;
+        }
+        
+        .el-popover {
+            text-align: left !important;
+        }
+        
+        .guds-item {
+            width: 156px;
+            float: left;
+            padding: 5px 0px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .count-item {
+            padding: 5px 0px;
+            float: right;
+            font-weight: 600;
+            font-size: 14px
+        }
+        
+        .el-table .cell {
+            word-break: break-word !important;
+        }
+        
+        .ellipsis {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer;
+        }
+        
+        .sale-team {
+            width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+        
+        .title-info-container .title-info {
+            /*text-align: right;*/
+            padding-left: 12px;
+            height: 20px;
+            line-height: 20px;
+        }
+
+        /* 物流轨迹弹窗 */
+        .text-left{
+            position: relative;
+            margin: 0;
+        }
+        .track-tile{
+            text-align: left;
+        }
+        .track-center{
+            position: absolute;
+            background: #fff;
+            z-index: 2;
+            top: 0;
+            left: 125px;
+        }
+        .track-center .dot-wrap{
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 1px solid #ccc;
+            text-align: center;
+            line-height: 16px;
+        }
+        .track-center .dot-wrap .dot{
+            width: 10px;
+            height: 10px;
+            display: inline-block;
+            background: #ccc;
+            border-radius: 50%;
+        }
+        .track-center .dot-wrap .dot.active{
+            background: orange;
+        }
+        .track-right {
+            display: inline-block;
+            width: 130px;
+            vertical-align: top;
+            font-size: 13px;
+            padding-bottom: 10px;
+        }
+        .text-left .track-left{
+            padding-bottom: 10px;
+            border-left: 1px solid #ccc;
+            padding-left: 16px;
+            min-height: 46px;
+        }
+        .track-left {
+            display: inline-block;
+            width: 260px;
+            vertical-align: top;
+            font-size: 13px;
+            padding-left: 15px;
+        }
+        .track-color {
+            color: orange;
+        }
+        
+        .el-popover.el-popper div {
+            text-align: center;
+        }
+        .el-popover__title {
+            text-align: left !important;
+            font-weight: 600;
+            font-size: 15px;
+            padding: 5px 14px;
+            margin: 0;
+        }
+        /* 结束 */
+    </style>
+</head>
+
+<body class="orderList">
+    <div id="order-list" class="list-common" style="margin-bottom:220px;">
+        <div class="step-content">
+            <el-steps v-if="only_return_money === 0" :active="active" align-center>
+                <el-step :title="$lang('已申请')"></el-step>
+                <el-step :title="$lang('退货中')" v-if="total_status_code != 'N002800008'"></el-step>
+                <el-step :title="$lang(activeVal)"></el-step>
+            </el-steps>
+            <el-steps v-if="only_return_money === 1" :active="active" align-center>
+                <el-step :title="$lang('退款不退货')"></el-step>
+            </el-steps>
+        </div>
+        <!-- 分割线 start-->
+        <div class="orderList-line line-split"></div>
+        <!-- 分割线 end-->
+
+        <!-- 订单表格主体 start-->
+        <div class="orderList-Main list-common-main">
+            <header>
+                <el-button type="primary" size="mini" @click="applyCancel()" v-if="total_status_code && total_status_code != 'N002800008' && total_status_code != 'N002800007' && total_status_code != 'N002800006' && only_return_money !== 1">{{$lang('取消售后')}}</el-button>
+            </header>
+
+            <el-table border show-header ref="multipleTable" :data="tableData" tooltip-effect="dark" style="width: 100%" class="order-list-table table-common" v-loading="tableLoading">
+                <el-table-column :label="$lang('售后单号')" prop="after_sale_no">
+                </el-table-column>
+                <el-table-column :label="$lang('订单号')">
+                    <template slot-scope="scope">
+                        {{scope.row.order_no}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('物流单号')">
+                    <template slot-scope="scope">
+                        <div id="order-number">
+                            <el-popover placement="bottom" width="520" :title="$lang('物流动态')" trigger="click" v-model="scope.row.popoverValue" append-to-body @hide="hideChange">
+                                <div style="padding-left:15px;overflow: auto;max-height: 550px;">
+                                    <i class="el-icon-close close" style="position: absolute; top:15px; right:15px;font-size: 22px;cursor: pointer" @click="scope.row.popoverValue = false"></i>
+                                    <p class="track-tile">
+                                        <span class="track-right">{{$lang('时间')}}</span>
+                                        <span class="track-left">{{$lang('地点和跟踪进度')}}</span>
+                                    </p>
+                                    <p v-if="key<trackIndex" class="text-left" v-for="(item,key) in trackData" :key="key" :class="{'track-color':!key}">
+                                        <span class="track-right">[ {{item.day || '-'}} ]
+                                        </br>
+                                        {{$lang(item.week)}} &nbsp;&nbsp; {{item.time}}
+                                        </span>
+                                        <span class="track-left">{{item.remark || '-'}}</span>
+                                        <span class="track-center">
+                                            <i class="dot-wrap">
+                                                <span class="dot" :class="{active:!key}" v-if="key===0||key ===trackData.length-1"></span>
+                                                <span class="el-icon-arrow-up" v-else></span>
+                                            </i>
+                                        </span>
+                                    </p>
+                                    <!--  v-if="trackData.length>3" -->
+                                    <p style="text-align: right;cursor: pointer;" @click="seeTrack" v-if="trackData && trackData.length>trackIndex">{{$lang('展开')}}</p>
+                                    <p style="text-align: right;cursor: pointer;" @click="closeTrack" v-if="trackIndex>4">{{$lang('收起')}}</p>
+                                    <p v-show="!trackData" style=" color: #999; font-size: 14px;">
+                                        {{$lang('暂无物流信息')}}
+                                    </p>
+                                </div>
+                                <a href="javascript:void(0);" class="to-detail-btn" style="text-decoration: none" slot="reference" type="text" @click="getTrack(scope.row)">{{scope.row.logistics_no}}</a>
+                            </el-popover>
+                        </div>
+                        <!-- <span>{{scope.row.logistics_no}}</span> -->
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('商品编码')">
+                    <template slot-scope="scope">
+                        <div v-if="scope.row.product_info && scope.row.product_info.hasOwnProperty('sku_id')">{{scope.row.product_info.sku_id}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('商品名称')">
+                    <template slot-scope="scope">
+                            <div v-if="scope.row.product_info && scope.row.product_info.hasOwnProperty('spu_name')">{{scope.row.product_info.spu_name}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('商品属性')">
+                    <template slot-scope="scope">
+                        <div v-if="scope.row.product_info && scope.row.product_info.hasOwnProperty('product_attr')">{{scope.row.product_info.product_attr}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('商品图片')" style="position: relative;">
+                    <template slot-scope="scope">
+                        <img v-if="scope.row.product_info && scope.row.product_info.hasOwnProperty('thumbnail')" :src="scope.row.product_info.thumbnail" style="cursor: pointer;" width="80" height="80" @mouseenter="showImg(scope.row)" @mouseleave="showImg(scope.row)">
+                        <div style="position: absolute; top: 10px; left: 100%; box-shadow: 0 0 5px #536d7a;z-index:999" v-if="scope.row.bigImg">
+                            <img :src="scope.row.product_info.thumbnail" width="300" height="300">
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="yet_return_num" :label="$lang('退货件数')"></el-table-column>
+                <el-table-column prop="yet_warehouse_num" :label="$lang('已入库件数')"></el-table-column>
+                <el-table-column prop="refuse_warehouse_num" :label="$lang('拒绝入库件数')"></el-table-column>
+                <el-table-column :label="$lang('物流方式')">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.logistics_way_code)}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('预计物流费用')">
+                    <template slot-scope="scope">
+                        {{scope.row.logistics_fee_currency_code_val}} {{scope.row.logistics_fee}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('服务费')">
+                    <template slot-scope="scope">
+                        {{scope.row.service_fee_currency_code_val}} {{scope.row.service_fee}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('退回仓库')">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.warehouse_code_val)}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="created_at" :label="$lang('发起时间')"></el-table-column>
+                <el-table-column :label="$lang('申请人')">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.created_by)}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('售后原因')">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.return_reason)}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('拒绝入库原因')">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.refuse_warehouse_reason)}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('操作')" width="120">
+                    <template slot-scope="scope" v-if="scope.row.status_code != 'N002800006' && scope.row.status_code != 'N002800007' && scope.row.status_code != 'N002800008'">
+                        <el-button v-if="only_return_money !== 1" type="text" size="mini" @click="applyCancel(scope.row.return_goods_id)">{{$lang('取消退货申请')}}</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <!-- <el-pagination background @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="pages.current_page" :page-sizes="[10, 30, 50, 100]" :page-size="pages.per_page" layout="sizes,prev, pager, next, jumper" :total="totalCount">
+            </el-pagination> -->
+        </div>
+        <!-- 订单表格主体 end-->
+    </div>
+    <!--引入js-->
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/layer/1.9.3/layer.js"></script>
+    <script>
+        var VM = new Vue({
+            el: '#order-list',
+            components: {},
+            data: {
+              only_return_money:0,
+                after_sale_no: '',
+                activeVal: '已完成',
+                order_no: '',
+                active: -1,
+                tableLoading: true,
+                pages: {
+                    per_page: 10,
+                    current_page: 1
+                },
+                // totalCount: 0, //总条数
+                tableData: [], //查询返回数据
+                bigImg: false,
+                total_status_code: '',
+                
+                trackIndex: 4,  // 物流轨迹显示多少条标识
+                trackData: [], // 物流轨迹数据
+            },
+            methods: {
+                 
+                hideChange() {
+                    this.trackIndex = 4;
+                },
+                // 展开/收起物流轨迹
+                seeTrack: function() {
+                    this.trackIndex = this.trackData.length;
+                },
+                closeTrack: function() {
+                    this.trackIndex = 4;
+                },
+                // 切换页面是关闭弹窗
+                handleScroll() {
+                    if (document.documentElement.scrollTop === 0) {
+                        for (var i = 0;i<document.getElementsByClassName('el-popover').length; i++) {
+                        document.getElementsByClassName('el-popover')[i].style.display = 'none';
+                        }
+                    }
+                },
+                // 获取物流轨迹
+                getTrack: function (item) {
+                    this.trackData = [];
+                    var _this = this;
+                    var param = {
+                        data: {
+                        query: {
+                            orderId: item.order_no,
+                            trackingNumber: item.logistics_no,
+                            platCd: item.platform_country_code
+                        }
+                        }
+                    };
+                    // let aaa = [
+                    //       {date: '2019-09-25 11:11:54',remark: '啊大大啊大大啊大大啊大大啊大大啊大大啊大大啊大大啊大大啊大大啊大大啊大大大大啊大大'},
+                    //       {date: '2019-09-25 11:11:54',remark: '啊大大啊大大啊大大啊大大啊大大啊大大啊大大啊大大啊大大啊大大啊大大啊大大大大啊大大'},
+                    //       {date: '2019-09-25 11:11:54',remark: '啊大大啊大大啊大大啊大大啊大大啊大大啊大大啊大大啊大大啊大大啊大大啊大大大大啊大大'},
+                    //       {date: '2019-09-25 11:11:54',remark: '啊大大啊大大啊大大啊大大啊大大啊大大啊大大啊大大啊大大啊大大啊大大啊大大大大啊大大'},
+                    //       {date: '2019-09-25 11:11:54',remark: '啊大大啊大大啊大大啊大大啊大大啊大大啊大大啊大大啊大大啊大大啊大大啊大大大大啊大大'},
+                    //     ]
+                    //     _this.trackData = aaa;
+                    //     var weekArray = new Array("星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六");
+
+                    //     // var week = weekArray[new Date(date).getDay()];//注意此处必须是先new一个Date
+                    //     if (_this.trackData) {
+                    //       _this.trackData.forEach(function (ele, ind) {
+                    //         _this.$set(ele, "week", weekArray[new Date(ele.date.split(' ')[0]).getDay()]);
+                    //         _this.$set(ele, "day", ele.date.split(' ')[0]);
+                    //         _this.$set(ele, "time", ele.date.split(' ')[1]);
+                    //       });
+                    //     }
+                    axios.post("/index.php?g=oms&m=OutStorage&a=feeding", param).then(function (res) {
+                        console.log(res);
+                        
+                        var weekArray = new Array("星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六");
+                        if (res.data.code == 2000) {
+                            _this.trackData = res.data.data.pageData;
+                            if (_this.trackData) {
+                            _this.trackData.forEach(function (ele, ind) {
+                                _this.$set(ele, "week", weekArray[new Date(ele.date.split(' ')[0]).getDay()]);
+                                _this.$set(ele, "day", ele.date.split(' ')[0]);
+                                _this.$set(ele, "time", ele.date.split(' ')[1]);
+                            });
+                            _this.trackData.reverse();
+                            }
+                        }
+                    });
+                },
+                getAfterOrderList: function getAfterOrderList() {
+                    var _this = this;
+                    var param = {
+                        after_sale_no: _this.after_sale_no,
+                    }
+                    _this.tableLoading = true;
+                    axios.post('/index.php?g=OMS&m=afterSale&a=returnDetail', param).then(function(res) {
+                        if (res.data.code == 200) {
+                          _this.only_return_money = res.data.data.only_return_money
+                            _this.tableData = res.data.data.data;
+                            _this.total_status_code = res.data.data.total_status_code;
+                            _this.active = _this.total_status_code == 'N002800001' ? 0 : (_this.total_status_code == 'N002800002' || _this.total_status_code == 'N002800008' ? 1 : 2);
+                            _this.activeVal = _this.total_status_code == 'N002800008' ? '已取消' : (_this.total_status_code == 'N002800007' ? '已拒绝' : '已完成');
+                            setTimeout(function() {
+                                _this.tableLoading = false;
+                            }, 1000);
+                        } else {
+                            _this.$message.error(_this.$lang(res.data.info));
+                        }
+                    }).catch(function(err) {
+                        console.log(err);
+                    });
+                },
+                handleSizeChange: function handleSizeChange(val) {
+                    this.pages = {
+                        per_page: val,
+                        current_page: 1
+                    };
+                    this.getAfterOrderList();
+                },
+                handleCurrentChange: function handleCurrentChange(val) {
+                    this.pages.current_page = val
+                    this.getAfterOrderList();
+                },
+                showImg: function showImg(item) {
+                    Vue.set(item, 'bigImg', !item.bigImg);
+                },
+                applyCancel: function applyCancel(item) {
+                    var _this = this;
+                    var data;
+                    if (!item) {
+                        data = {
+                            after_sale_no: _this.after_sale_no,
+                            order_no: _this.order_no
+                        }
+                        _this.postCancelApply(data);
+                    } else {
+                        data = {
+                            return_goods_id: item,
+                            order_no: _this.order_no
+                        }
+                        _this.postCancelApply(data);
+                    }
+                },
+                postCancelApply: function postCancelApply(data) {
+                    var _this = this;
+                    if (_this.total_status_code == 'N002800006') {
+                        layer.confirm('商品已经入库,无法取消售后申请', function() {});
+                    } else {
+                        layer.confirm('是否取消售后申请', function() {
+                            axios.post('/index.php?g=OMS&m=afterSale&a=cancelReturn', data).then(function(res) {
+                                if (res.data.code == 200) {
+                                    layer.msg('已取消!', {
+                                        icon: 1,
+                                        time: 1000
+                                    });
+                                    _this.$message.success(_this.$lang(res.data.msg));
+                                    window.location.reload();
+                                } else {
+                                    layer.msg('取消失败!', {
+                                        icon: 1,
+                                        time: 1000
+                                    });
+                                    _this.$message.error(_this.$lang(res.data.msg));
+                                }
+                            }).catch(function(err) {
+                                console.log(err);
+                            });
+                        });
+                    }
+                }
+            },
+            mounted: function mounted() {
+                // window.addEventListener('scroll', this.handleScroll)
+            },
+            created: function created() {
+                this.after_sale_no = getQueryVariable("after_sale_no");
+                this.order_no = getQueryVariable("order_no");
+                this.getAfterOrderList();
+            },
+        });
+        //获取url参数
+        function getQueryVariable(variable) {
+            var query = window.location.search.substring(1);
+            var vars = query.split("&");
+            for (var i = 0; i < vars.length; i++) {
+                var pair = vars[i].split("=");
+                if (pair[0] == variable) {
+                    return pair[1];
+                }
+            }
+            return false;
+        }
+    </script>
+</body>
+
+</html>

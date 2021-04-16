@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.const.V}>">
+    <!--[if IE 9]> <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/style.css"/><![endif]-->
+    <title>待拣货</title>
+    <style>
+        @media screen and (-ms-high-contrast: active),
+        (-ms-high-contrast: none) {
+            .el-step {
+                width: 230px !important;
+            }
+            .el-step__icon {
+                display: inline-block
+            }
+            .el-step__icon-inner {
+                margin-top: 3px !important;
+            }
+        }
+        
+        [v-cloak] {
+            display: none;
+        }
+        
+        #picking-list {
+            visibility: hidden;
+        }
+        
+        #remark-dialog .el-dialog {
+            padding: 0px;
+        }
+        
+        .do-remark,
+        .remarks-content {
+            color: #1E7EB4;
+            cursor: pointer;
+        }
+        
+        .el-table .cell,
+        .el-table th div,
+        .el-table--border td:first-child .cell,
+        .el-table--border th:first-child .cell {
+            padding-left: 0;
+        }
+        
+        .selectStatus .el-dialog__header {
+            display: inline-block;
+            margin-bottom: 12px;
+        }
+        
+        .selectStatus .el-button.el-button--default {
+            background-color: #fff !important;
+        }
+        
+        .isError {
+            color: red;
+        }
+        
+        .export-order {
+            height: 28px;
+            padding: 0 12px;
+            background-color: #2ba384;
+            border: none;
+            margin-left: 20px;
+            border-radius: 4px;
+            color: #fff;
+            cursor: pointer;
+            border: none;
+            outline: none;
+        }
+        
+        .export-order:active {
+            -webkit-box-shadow: none;
+            box-shadow: none;
+            background-color: #2dbda8;
+        }
+        
+        .export-order:hover {
+            background-color: #2dbda8;
+        }
+        
+        .sale-team {
+            width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+        
+        .orderLogo {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+        }
+        
+        .orderLogo span {
+            margin-left: 1px;
+            background: #f99c64;
+            color: #FFF;
+            padding: 2px 4px;
+        }
+        
+        .dialog_wrap .el-dialog {
+            padding: 20px;
+        }
+        
+        .dialog_inner {
+            text-align: center;
+            margin-top: 10px;
+        }
+        .title-min{
+            width: 155px !important;
+            text-align: center;
+            padding-left: 0 !important;
+            color: #000 !important;
+        }
+        .el-select{
+            padding: 0 !important;
+        }
+        .btn-search{
+            background-color: #0375DE !important;
+        }
+        .third-order{
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .third-order a{
+            width: fit-content;
+        }
+        .el-loading-spinner{
+            top:300px;
+            margin-top: -21px;
+            position: fixed;
+        }
+    </style>
+</head>
+
+<body class="pickingList">
+    <div id="picking-list" class="list-common" v-cloak style="margin-bottom: 220px;" v-loading="tableLoading">
+        <div class="step-content">
+            <el-steps :active="active" align-center>
+                <el-step :title="$lang('派单推荐')"></el-step>
+                <el-step :title="$lang('待派单')"></el-step>
+                <el-step :title="$lang('待获取运单号')"></el-step>
+                <el-step :title="$lang('待拣货')"></el-step>
+                <el-step :title="$lang('待分拣')"></el-step>
+                <el-step :title="$lang('待核单')"></el-step>
+                <el-step :title="$lang('待出库')"></el-step>
+                <el-step :title="$lang('已出库')"></el-step>
+            </el-steps>
+        </div>
+        <!-- 搜索查询 start-->
+        <div class="pickingList-search search-common">
+            <!-- 平台 start-->
+            <div class="search-toggle">
+                <el-row type="flex">
+                    <el-col :span="4" class="title-info-container">
+                        <div class="title-info">
+                            {{$lang('平台渠道')}}
+                        </div>
+                    </el-col>
+                    <el-col :span="22" class="search-item-i">
+                        <span :class="{active:isChannelALL}" @click="channelALL">
+                            {{$lang('全部')}}
+                        </span>
+                        <span class="channel-item" v-for="channel in channels" :data-cd="channel.cd" @click="selectChannel(channel.cd)">{{$lang(channel.cdVal)}}</span>
+                    </el-col>
+                </el-row>
+                <!-- 平台 end-->
+                <!--站点 start-->
+                <el-row type="flex" style="background-color: #F5F5F5;margin-left: 87px; padding: 15px 0px 15px 0px;border-radius:4px;">
+                    <el-col :span="4" class="title-info-container title-min">
+                        <div class="title-info" style="color:#000">{{$lang('站点')}}</div>
+                    </el-col>
+                    <el-col :span="22" class="search-item-i">
+                        <span :class="{active:isSiteAll}" @click="siteAll()" class="tab-item-border" style="float: left;">{{$lang('全部')}}</span>
+                        <div class="search-item-i" style="padding-right: 140px;">
+
+                            <el-button v-show="sites.length>= 8" @click="showMore = !showMore" style="position: absolute;right: 75px;" type="text">{{showMore ?'收起' : '展开'}}<i :class="showMore ? 'el-icon-arrow-up' : 'el-icon-arrow-down'" class="el-icon--right"></i>
+                            </el-button>
+
+                            <span :class="{'site-item':true,active:site.checked}" v-for="site in sites.slice(0,7)" :data-cd="site.CD" @click="selectSite(site.CD)" class="tab-item-border">{{$lang(site.CD_VAL)}}</span>
+
+                            
+                            <span v-show="showMore" :class="{'site-item':true,active:site.checked}" v-for="site in sites.slice(7)" :data-cd="site.CD" @click="selectSite(site.CD)" class="tab-item-border">{{$lang(site.CD_VAL)}}</span>
+                        </div>
+                        <!-- <div class="search-item-i" v-show="showMore">
+                        </div> -->
+
+                    </el-col>
+                </el-row>
+                <!--站点 end-->
+                <!-- 售后类型 start-->
+                <el-row type="flex">
+                    <el-col :span="4" class="title-info-container">
+                        <div class="title-info">{{$lang('售后类型')}}</div>
+                    </el-col>
+                    <el-col :span="22" class="search-item-i">
+                        <span :class="{active:selectaftersalesTypeStatus == ''}"  class="tab-item-min" @click="selectaftersalesType('')">{{$lang('全部')}}</span>
+                        <span :class="{active:selectaftersalesTypeStatus == '1'}" class="tab-item-min" @click="selectaftersalesType('1')">{{$lang('补发')}}</span>
+                        <span :class="{active:selectaftersalesTypeStatus == '2'}" class="tab-item-min" @click="selectaftersalesType('2')">{{$lang('换货')}}</span>
+                    </el-col>
+                </el-row>
+                <!-- 售后类型 end -->
+                <!-- 包裹类型 start-->
+                <el-row type="flex">
+                    <el-col :span="4" class="title-info-container">
+                        <div class="title-info">
+                            {{$lang('包裹类型')}}
+                        </div>
+                    </el-col>
+                    <el-col :span="22" class="search-item-i">
+                        <span :class="{active:isPackALL}" class="tab-item-min" @click="packALL">
+                            {{$lang('全部')}}
+                        </span>
+                        <span class="pack-item tab-item-min" v-for="(pack,key) in packStatus" :key="key" :data-cd="key" @click="selectPack(key)">{{$lang(pack)}}</span>
+                    </el-col>
+                </el-row>
+                <!-- 包裹类型 end-->
+
+            </div>
+            <!-- 排序方式 start-->
+            <el-row type="flex">
+                <el-col :span="4" class="title-info-container">
+                    <div class="title-info">
+                        {{$lang('排序方式')}}
+                    </div>
+                </el-col>
+                <el-col :span="22" class="search-item-i">
+                    <span class="sort-type tab-item-min" v-for="(item,key) in sort" :data-CD="key" :class="{active: key == 'orderTime'}" @click="selectSort(key)">{{$lang(item)}}</span>
+                    <span class="contain-remark" @click="toggleRemark">
+                        {{$lang('含备注')}}
+                    </span>
+                    <span class="contain-error" @click="toggleError">
+                        {{$lang('拣货异常')}}
+                    </span>
+                </el-col>
+            </el-row>
+            <!-- 排序方式 end-->
+            <div class='cls' style="height:auto;">
+                <el-col :span="4" class="title-info-container" style="height:100%;">
+                    <div class="title-info">
+                        {{$lang('条件筛选')}}
+                    </div>
+                </el-col>
+                <el-col :span="22" class="search-item-i">
+                    <div class="fl sort-item">
+                        <el-select :popper-append-to-body=false :multiple-limit=10 filterable size="small" v-model="selectedCountries" multiple collapse-tags :placeholder="$lang('国家')" style="width:300px">
+                            <el-option v-for="(countryItem,key) in countryStatus" :key="key" :label="$lang(countryItem.NAME)" :value="countryItem.id">
+                            </el-option>
+                        </el-select>
+                    </div>
+                    <div class="fl sort-item">
+                        <el-select :popper-append-to-body=false :multiple-limit=10 filterable size="small" v-model="selectedShops" multiple collapse-tags :placeholder="$lang('店铺')" style="width:300px">
+                            <el-option v-for="(shopItem,key) in shopStatus" :key="key" :label="$lang(shopItem.STORE_NAME)" :value="shopItem.ID">
+                            </el-option>
+                        </el-select>
+                    </div>
+                    <div class="fl sort-item">
+                        <el-select :popper-append-to-body=false :multiple-limit=10 filterable size="small" v-model="selectedWarehouses" multiple collapse-tags :placeholder="$lang('仓库')" style="width:300px">
+                            <el-option v-for="(warehouseItem,key) in warehouseStatus" :key="key" :label="$lang(warehouseItem.CD_VAL)" :value="warehouseItem.CD">
+                            </el-option>
+                        </el-select>
+                    </div>
+                    <div class="fl sort-item">
+                        <el-select :popper-append-to-body=false @change="selectCompany" :multiple-limit=10 filterable size="small" v-model="selectedLogisticsCompanys" multiple collapse-tags :placeholder="$lang('物流公司')" style="width:300px">
+                            <el-option v-for="(logisticsCompanyItem,key) in logisticsCompanyStatus" :key="key" :label="$lang(logisticsCompanyItem.cdVal)" :value="logisticsCompanyItem.cd">
+                            </el-option>
+                        </el-select>
+                    </div>
+                    <div class="fl sort-item">
+                        <el-select :popper-append-to-body=false :multiple-limit=10 filterable size="small" v-model="selectedShippingMethods" multiple collapse-tags :placeholder="$lang('物流方式')" style="width:300px">
+                            <el-option v-for="(shippingMethodsItem,key) in shippingMethodsStatus" :key="key" :label="$lang(shippingMethodsItem.logisticsMode)" :value="shippingMethodsItem.id">
+                            </el-option>
+                        </el-select>
+
+
+                    </div>
+                    <div class="fl sort-item">
+                        <!-- <el-select :popper-append-to-body=false :multiple-limit=10 filterable size="small" v-model="selectedShippingMethods" multiple collapse-tags :placeholder="$lang('面单获取方式')" style="width:300px">
+                            <el-option v-for="(shippingMethodsItem,key) in shippingMethodsStatus" :key="key" :label="$lang(shippingMethodsItem.logisticsMode)" :value="shippingMethodsItem.id">
+                            </el-option>
+                        </el-select> -->
+
+                        <el-select :popper-append-to-body=false filterable size="small" v-model="selectedSurface" collapse-tags :placeholder="$lang('面单获取方式')" style="width:300px">
+                            <el-option v-for="(e,k) in surfaceWayStatus" :key="e.cd" :label="$lang(e.cdVal)" :value="e.cd"> </el-option>
+                        </el-select>
+                    </div>
+                    <div class="fl sort-item">
+                        <el-select :popper-append-to-body=false :multiple-limit=10 filterable size="small" v-model="selectedSalesTeam" multiple collapse-tags :placeholder="$lang('销售团队')" style="width:300px">
+                            <el-option v-for="(salesTeamItem,key) in salesTeamStatus" :key="key" :label="$lang(salesTeamItem)" :value="key">
+                            </el-option>
+                        </el-select>
+                    </div>
+                    <div class="fl sort-item">
+                        <div>
+                            <el-select :popper-append-to-body=false filterable size="small" v-model="timeSort">
+                                <el-option v-for="(timeItem,key) in time" :key="key" :label="$lang(timeItem)" :value="key">
+                                </el-option>
+                            </el-select>
+                            <el-date-picker value-format="yyyy-MM-dd HH:mm:ss" size="small" v-model="dateRange" type="datetimerange" :default-time="['00:00:00', '23:59:59']" align="right" unlink-panels :range-separator="$lang('至')" :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')" :picker-options="pickerOptions">
+                            </el-date-picker>
+
+                        </div>
+                    </div>
+                </el-col>
+            </div>
+            <div class="search-btn-container">
+                <div class="btns" style="padding-left:80px;">
+                    <el-select :popper-append-to-body=false filterable size="small" v-model="selectedDownQuery" placeholder="<{$Think.lang.请选择}>" style="width:150px">
+                        <el-option v-for="(downQueryItem,key) in downQueryStatus" :key="key" :label="$lang(downQueryItem)" :value="key">
+                        </el-option>
+                    </el-select>
+                    <el-input size="small" class="search-keywords" v-model="searchKeywords"></el-input>
+                    <button @click="doSearch" class="btn-search" name="search">
+                    {{$lang('搜索')}}
+                </button>
+                    <button @click="doReset" class="btn-reset" name="reset">
+                    {{$lang('重置')}}
+                </button>
+                </div>
+            </div>
+            <!-- 搜索查询 end-->
+
+        </div>
+        <!-- 分割线 start-->
+        <div class="orderList-line line-split"></div>
+        <!-- 分割线 end-->
+
+        <!-- 订单表格主体 start-->
+        <span class="orderList-Main list-common-main">
+            <header>
+                {{$lang('搜索结果:共')}}
+                    <span class="num-bold">{{totalCount}}</span> {{$lang('条记录')}}
+        <button style="margin-left:20px" @click="exportOrder" type="text" class="export-order"> {{$lang('导出')}}</button>
+        <span class="btns-content">
+                            <a class="common-btn" style="background:#b0b0b0" @click='showDoBack'> {{$lang('退回')}} </a>
+                            <a class="border-btn scan-check" @click="oneKeyToPass" style="padding:0 12px;height:28px;display:inline-block;margin-top:0px">
+                                {{$lang('一键通过')}}
+                            </a>
+                            <?php if(ButtonAction::hidden()){ ?>
+                            <a class="common-btn" @click="toDetail">
+                                {{$lang('打印拣货单')}}
+                            </a>
+                            <?php } ?>
+                        </span>
+        <!-- Table -->
+        <el-dialog :title="$lang('一键通过结果')" :visible.sync="dialogTableVisible01" class="tableStatus">
+            <el-table :data="gridData01" border>
+                <el-table-column :label="$lang('订单号')">
+                    <template slot-scope="scope">
+                                            <div :class="{'isError':(scope.row.code != '2000')}">{{scope.row.b5cOrderNo}}</div>
+                                        </template>
+                </el-table-column>
+                <el-table-column :label="$lang('回退状态')">
+                    <template slot-scope="scope">
+                                            <div :class="{'isError':(scope.row.code != '2000')}">{{$lang(scope.row.msg)}}</div>
+                                        </template>
+                </el-table-column>
+            </el-table>
+            <span slot="footer" class="dialog-footer">
+                                            <el-button size="small" type="primary" @click="finishedStatus01">{{$lang('确 定')}}</el-button>
+                                        </span>
+        </el-dialog>
+        <el-dialog :title="$lang('收货地址')" :visible.sync="dialogTableVisible" class="dialog-table-content">
+            <header>
+                <{$Think.lang.拣货号：}>{{gridDataTemp.pickingNo}}</header>
+            <div style="float:right;margin-bottom:10px">{{gridDataTemp.pickingTime}}</div>
+            <el-table border show-header :data="gridData">
+                <el-table-column property="locationCode" :label="$lang('货位')"></el-table-column>
+                <el-table-column property="locationCodeBack" :label="$lang('备用货位')"></el-table-column>
+                <el-table-column property="skuId" :label="$lang('SKU编码')" width="120"></el-table-column>
+                <el-table-column property="gudsOptUpcId" :label="$lang('条形码')"></el-table-column>
+                <el-table-column property="gudsNm" :label="$lang('商品名称')"></el-table-column>
+                <el-table-column property="deadlineDateForUse" :label="$lang('到期日')"></el-table-column>
+                <el-table-column property="nums" :label="$lang('需求数量')"></el-table-column>
+                <el-table-column property="address" :label="$lang('标注')"></el-table-column>
+            </el-table>
+            <div class="btns">
+                <button class="common-btn print-btn" @click="doPrint">
+                                    {{$lang('打印')}}
+                                </button>
+            </div>
+        </el-dialog>
+        <el-dialog class="selectStatus" :title="$lang('订单退回')" :visible.sync="backDialogVisible" width="40%" :before-close="handleClose">
+            <el-radio-group v-model="backToStatus" size="medium" style="padding: 0 20px;">
+                <el-radio label="N001821000">{{$lang('待派单')}}</el-radio>
+                <el-radio disabled label="N001820500">{{$lang('待拣货')}}</el-radio>
+                <el-radio disabled label="N001820600">{{$lang('待分拣')}}</el-radio>
+                <el-radio disabled label="N001820700">{{$lang('待核单')}}</el-radio>
+            </el-radio-group>
+
+            <el-dialog title="提示" :visible.sync="innerVisible" width="30%" append-to-body class="dialog_wrap">
+                <span style="display: flex; justify-content: center;">只有实际仓库没有发货的订单才可以退回</span>
+                <div style="display: flex;justify-content: space-around;margin-top: 10px;padding: 10px 20px 20px;" class="dialog_inner">
+                    <el-button @click="batchFn()">未发货</el-button>
+                    <el-button type="primary" @click="innerVisible = false">已发货</el-button>
+                </div>
+            </el-dialog>
+
+            <span slot="footer" class="dialog-footer">
+                <el-button size="small" @click="cancelStatus">{{$lang('取 消')}}</el-button>
+                <el-button size="small" type="primary" @click="doStatus">{{$lang('确 定')}}</el-button>
+            </span>
+        </el-dialog>
+        <el-dialog :title="$lang('回退结果')" :visible.sync="backResultDialogVisible" class="tableStatus">
+            <el-table :data="backGridData" border>
+                <el-table-column :label="$lang('订单号')">
+                    <template slot-scope="scope">
+                                        <div :class="{'isError':(scope.row.code != '2000')}">{{scope.row.b5cOrderNo}}</div>
+                                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('回退状态')">
+                    <template slot-scope="scope">
+                                        <div :class="{'isError':(scope.row.code != '2000')}">{{$lang(scope.row.msg)}}</div>
+                                    </template>
+                </el-table-column>
+            </el-table>
+            <span slot="footer" class="dialog-footer">
+                                <el-button size="small" type="primary" @click="finishedStatus">{{$lang('确 定')}}</el-button>
+                            </span>
+        </el-dialog>
+
+        </header>
+
+        <el-table border show-header ref="multipleTable" :data="tableData" tooltip-effect="dark" style="width: 100%" @selection-change="handleSelectionChange" class="picking-list-table table-common">
+            <el-table-column type="selection" width="55">
+            </el-table-column>
+            <el-table-column :label="$lang('站点&店铺')" width="100">
+                <template slot-scope="scope">
+                        <div>{{$lang(scope.row.platName)}}</div>
+                        <div style="margin-bottom: 5px">{{$lang(scope.row.storeName)}}</div>
+                    </template>
+            </el-table-column>
+            <el-table-column prop="b5cOrderNo" :label="$lang('订单号')" width="135">
+            </el-table-column>
+            <el-table-column :label="$lang('平台订单号')" width="135">
+                <template slot-scope="scope">
+                    <!-- v-bind:_href="'/index.php?g=OMS&m=Order&a=orderDetail&thrId='+scope.row.orderId+'&platCode='+scope.row.platCd" -->
+                    <div class="third-order">
+                        <span>{{scope.row.orderNo?scope.row.orderNo:scope.row.orderId}}</span>
+                        <a class="to-detail-btn"  @click="toOrderDetail(scope.row.orderNo,scope.row.orderId, scope.row.platCd)">{{$lang('查看')}}</a>
+                    </div>
+                    <div class="orderLogo">
+                        <span v-if="scope.row.after_sale_type == '1'">{{$lang('补发')}}</span>
+                        <span v-if="scope.row.after_sale_type == '2'">{{$lang('换货')}}</span>
+                        <span v-if="scope.row.after_sale_type == ''"></span>
+                    </div>
+                    </template>
+            </el-table-column>
+            <el-table-column :label="$lang('商品名称')" width="110">
+                <template slot-scope="scope">
+                        <div v-if="scope.row.name.length < 2">{{transName(scope.row.name[0])}}</div>
+                        <el-popover placement="bottom" width="150px" trigger="hover" v-if="scope.row.name.length > 1">
+                            <div v-for="(item,index) in scope.row.name">{{transName(item)}}</div>
+                            <div slot="reference" class="name-wrapper">
+                                <div>{{transName(scope.row.name[0])}}</div>
+                                <i class='el-icon-d-arrow-left' slot="reference"></i>
+                            </div>
+                        </el-popover>
+                    </template>
+            </el-table-column>
+            <el-table-column :label="$lang('商品编码')" width="110">
+                <template slot-scope="scope">
+                        <div v-if="scope.row.skuIds.length < 2">{{scope.row.skuIds[0]}}</div>
+                        <el-popover placement="bottom" width="150px" trigger="hover" v-if="scope.row.skuIds.length > 1">
+                            <div v-for="(item,index) in scope.row.skuIds">{{item}}</div>
+                            <div slot="reference" class="name-wrapper">
+                                <div>{{scope.row.skuIds[0]}}</div>
+                                <i class='el-icon-d-arrow-left' slot="reference"></i>
+                            </div>
+                        </el-popover>
+                    </template>
+            </el-table-column>
+            <!-- <el-table-column prop="gudsType" :label="$lang('包裹类型')">
+                </el-table-column>
+                <el-table-column prop="saleTeam" :label="$lang('销售团队')" width="100">
+                </el-table-column> -->
+            <el-table-column :label="$lang('包裹类型')" width="135">
+                <template slot-scope="scope">
+                        {{$lang(scope.row.gudsType)}}
+                    </template>
+            </el-table-column>
+            <!-- <el-table-column prop="saleTeam" :label="$lang('销售团队')" width="100">
+                </el-table-column> -->
+            <el-table-column :label="$lang('销售团队')">
+                <template slot-scope=scope>
+                        <div class="sale-team" :title="$lang(scope.row.saleTeam)">
+                            {{$lang(scope.row.saleTeam)}}
+                        </div>
+                    </template>
+            </el-table-column>
+            <el-table-column :label="$lang('时间')" width='200'>
+                <template slot-scope="scope">
+                    <div v-if="!!scope.row.orderTime">{{$lang('下单时间')}} ：{{scope.row.orderTime | formatDate}}</div>
+                    <div v-if="!!scope.row.payment_time">{{$lang('付款时间')}} ：{{scope.row.payment_time | formatDate}}</div>
+                    <div v-if="!!scope.row.shipping_time">{{$lang('平台发货时间')}}：{{scope.row.shipping_time | formatDate}}</div>
+                    <div v-if="!!scope.row.send_ord_time">{{$lang('派单时间')}}：{{scope.row.send_ord_time | formatDate}}</div>
+                </template>
+            </el-table-column>
+            <!-- <el-table-column prop="warehouseNm" :label="$lang('下发仓库')">
+                </el-table-column>
+                <el-table-column prop="expeCompany" :label="$lang('物流公司')" width="200">
+                </el-table-column>
+                <el-table-column prop="logisticModel" :label="$lang('物流方式')">
+                </el-table-column> -->
+            <el-table-column :label="$lang('下发仓库')" width="135">
+                <template slot-scope="scope">
+                        {{$lang(scope.row.warehouseNm)}}
+                    </template>
+            </el-table-column>
+            <el-table-column :label="$lang('物流公司')" width="135">
+                <template slot-scope="scope">
+                        {{$lang(scope.row.expeCompany)}}
+                    </template>
+            </el-table-column>
+            <el-table-column :label="$lang('物流方式')" width="135">
+                <template slot-scope="scope">
+                        {{$lang(scope.row.logisticModel)}}
+                    </template>
+            </el-table-column>
+            <el-table-column :label="$lang('面单')">
+                <template slot-scope="scope">
+                        <div>{{$lang(scope.row.surfaceWayGetCd)}}</div>
+                        <div v-if="scope.row.surfaceWayGetCd == 'N002010100'">{{$lang(scope.row.logisticsSingleStatuCdNm)}}</div>
+                    </template>
+
+            </el-table-column>
+            <el-table-column prop="trackingNumber" :label="$lang('运单号')">
+            </el-table-column>
+            <el-table-column prop="remarkMsg" :label="$lang('备注')">
+                <template slot-scope="scope">
+                            <!-- use_remarks -->
+                                <div v-show="scope.row.use_remarks" @click="doRemark(scope.row)" class="remarks-content">{{$lang(scope.row.use_remarks)}}</div>
+                                <div v-show="scope.row.remarkMsg && !scope.row.use_remarks" @click="doRemark(scope.row)" class="remarks-content">{{$lang(scope.row.remarkMsg)}}</div>
+                                <div v-show="!scope.row.remarkMsg && !scope.row.use_remarks" class="do-remark" @click="doRemark(scope.row)">{{$lang('备注')}}</div>
+                                <el-dialog :visible.sync="dialogVisible" :show-close="false" width="420px" id="remark-dialog">
+                                    <el-tabs type="border-card">
+                                        <el-tab-pane :label="$lang('用户备注')">
+                                            <div class="use_remarks_content">{{$lang(form.use_remarks)}}</div>
+                                        </el-tab-pane>
+                                        <el-tab-pane :label="$lang('运营备注')">
+                                            <textarea class="operate-remark" name="" id="" cols="40" rows="10" v-model="form.remarkMsg" :data-order="scope.row.orderId"
+                                                :data-plat="scope.row.platCd"></textarea>
+                                            <div class="btns remark-btn" >
+                                                <?php if(ButtonAction::hidden()){ ?>
+                                                <button class="save-remark-btn" @click="saveRemark(scope.$index, scope.row)">{{$lang('保存')}}</button>
+                                                 <?php } ?>
+                                                <button class="cancel-remark-btn" @click='cancelRemark'>{{$lang('取消')}}</button>
+                                            </div>
+                                        </el-tab-pane>
+                                    </el-tabs>
+
+                                </el-dialog>
+                            </template>
+            </el-table-column>
+            <el-table-column prop="msgCd1" :label="$lang('拣货异常')">
+            </el-table-column>
+        </el-table>
+
+        <el-pagination background @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="currentPage" :page-size="searchData.data.query.pageSize" :page-sizes="[20,50,100]" layout="sizes,prev, pager, next, jumper" :total="totalCount">
+        </el-pagination>
+    </div>
+    <!-- 订单表格主体 end-->
+    </div>
+    <!--引入js-->
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.6.3.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Oms/Picking/pickingList.js?v=<{$Think.const.V}>"></script>
+
+</body>
+
+</html>

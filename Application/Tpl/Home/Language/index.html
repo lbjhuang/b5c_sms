@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>翻译配置表</title>
+    <link rel="stylesheet" href="../Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="../Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="../Public/css/default.css">
+    <link rel="stylesheet" href="../Public/../Hr/hrstyle.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="../Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+</head>
+<style>
+    [v-cloak] {
+        display: none;
+    }
+    .warp{
+        word-break: break-all;
+        word-wrap: break-word;
+        white-space: normal;
+    }
+    .show-list .el-form-item__label {
+        padding: 0;
+    }
+</style>
+
+<body>
+    <div id="lang" class="show-list" v-cloak style="padding-bottom:160px">
+        <div class="use-title">翻译配置表</div>
+        <el-form ref="form" :model="form" :label-position="labelPosition" label-width="85px" @submit.native.prevent>
+            <div class="use-row">
+                <div class="col-100">
+                    <table class="search-table">
+                        <tbody>
+                            <tr>
+                                <td width="25%">
+                                    <el-form-item label="元素名称">
+                                        <el-input v-model="form.element" @keyup.enter.native="search"></el-input>
+                                    </el-form-item>
+                                </td>
+                                <td class="use-row">
+                                    <div class="col-100 use-btn">
+                                        <button type="button" class="btn-pub btn-green" @click="search()">查询</button>
+                                        <button type="button" class="btn-pub btn-default mg-l-20" @click="reset(1)">重置</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </el-form>
+        <div class="baseline"></div>
+        <div class="use-row">
+            <div class="col-30 result-num">
+                搜索结果：&nbsp;&nbsp;共 <b>{{total}}</b> 条  
+                <el-button type="text" style="margin-left: 20px;" @click="exportElement">导出</el-button>
+            </div>
+            <div class="col-70 text-right">
+                <el-button @click="downTmp()">模版下载</el-button>
+                <el-upload style="display: inline-block;margin:0 10px;" class="upload-demo" action="/index.php?m=language&a=import" :on-success="importFileFun" ref="importExc" :show-file-list="false">
+                    <el-button type="primary">EXCEL导入</el-button>
+                </el-upload>
+                <el-button type="danger" @click="del()" v-if="!editType">删除</el-button>
+                <el-button type="success" @click="save()" v-if="editType">保存</el-button>
+                <el-button type="warning" @click="edit()" v-if="!editType">编辑</el-button>
+                <el-button type="success" @click="add()">新增</el-button>
+            </div>
+        </div>
+        <div class="use-row">
+            <div class="col-100">
+                <table class="table-list" width="100%">
+                    <thead>
+                        <tr>
+                            <th width="50px">
+                                <el-checkbox v-model="checkAll" @change="checkAllFn()"></el-checkbox>
+                            </th>
+                            <th width="60px">序号</th>
+                            <!-- <th>元素名称</th>
+                            <th>英文翻译</th>
+                            <th>日文翻译</th>
+                            <th>韩文翻译</th> -->
+                            <th v-for="item in baseData.language">
+                                {{ item.CD_VAL }}翻译
+                            </th>
+                            <th width="160px">日志</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(item,index) in dataList">
+                            <td>
+                                <el-checkbox v-model="item.checked" :disabled="addStatus"></el-checkbox>
+                            </td>
+                            <td>{{1 + index + (form.currentPage - 1) * form.pageSize}}</td>
+
+                            <td v-for="(term, i) in item.name">
+                                <span v-if="i == 'N000920100'">
+                                    <el-input v-if="editType && item.checked && addStatus" placeholder="请输入" v-model="item.element" clearable> </el-input>
+                                    <span class="warp" v-else>{{item.element}}</span>
+                                </span>
+                                <span v-else>
+                                    <el-input v-if="editType && item.checked" placeholder="请输入" v-model="item.name[i]" clearable> </el-input>
+                                    <span class="warp" v-else>{{term}}</span>
+                                </span>
+                            </td>
+                            <td>
+                                <el-button v-if="!item.checked" type="primary" size="mini" @click="viewLog(item)">查看</el-button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="use-row">
+            <div class="col-100 text-right">
+                <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="form.currentPage" :page-sizes="[20, 50, 100, 200]" :page-size="form.pageSize" layout="sizes, prev, pager, next,jumper" :total="total"></el-pagination>
+            </div>
+        </div>
+        <el-dialog title="导入错误" :visible.sync="importVisible" width="20%" size="tiny">
+            <span style="color: #ff0000c9;font-size: 16px;">是否下载错误报告?</span>
+            <span slot="footer" class="dialog-footer">
+                <el-button @click="importVisible = false">否</el-button>
+                <el-button type="primary" @click="dwonErrTmep()">是</el-button>]
+            </span>
+        </el-dialog>
+        
+        <el-dialog title="翻译日志" :visible.sync="log.visible" :before-close="handleClose">
+            <div>
+                <p><b>{{log.element}}</b></p>
+                <el-row>
+                    <el-col :span="19">
+                        <span style="margin-right:10px;">语言</span>    
+                        <el-select :popper-append-to-body=false v-model="log.lang" placeholder="选择语言"  style="width:20%">
+                            <el-option v-for="item in baseData.language" :key="item.CD" :label="item.CD_VAL" :value="item.CD"></el-option>
+                        </el-select>
+                        <span style="margin:0 10px;">修改时间</span>    
+                        <el-date-picker style="width:58%" value-format="yyyy-MM-dd" v-model="log.dates" type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期"> </el-date-picker>
+                    </el-col>
+                    <el-col :span="5">
+                        <el-button type="primary" @click="searchLog()">查询</el-button>
+                        <el-button  @click="reset()">重置</el-button>
+                    </el-col>
+                </el-row>
+                <p style="border-bottom: 1px solid #BDBDBD; padding-bottom: 15px;">搜索结果：共{{log.dataTotal}}条记录</p>
+                <el-row v-if="log.tableData && log.tableData.length">
+                    <el-col :span="24">
+                        <el-table :data="log.tableData" style="width: 100%" v-loading="log.loading">
+                            <el-table-column prop="language" label="语言" width="100"> </el-table-column>
+                            <el-table-column prop="updated_by" label="修改人" width="100"> </el-table-column>
+                            <el-table-column prop="updated_at" label="修改时间"> </el-table-column>
+                            <el-table-column prop="translation_old" label="修改前翻译"> </el-table-column>
+                            <el-table-column prop="translation_new" label="修改后翻译"> </el-table-column>
+                        </el-table>
+                    </el-col>
+                    <el-col :span="24" class="text-right">
+                        <el-pagination layout="prev, pager, next"  @current-change="searchLog(1)" :current-page.sync="log.page" :total="log.dataTotal"></el-pagination>
+                    </el-col>
+                </el-row>
+                <el-row v-else>
+                    <el-col :span="24" class="text-center">
+                        <p style="color: #909399;">暂无日志</p>
+                    </el-col>
+                </el-row>
+            </div>
+        </el-dialog>
+
+        <table id="errTable" style="display:none">
+                <tr>
+                    <td>元素名称</td>
+                    <td>语言环境</td>
+                    <td>语言环境CODE</td>
+                    <td>翻译内容</td>
+                    <td>错误信息</td>
+                </tr>
+                <tr v-for="item in errData">
+                    <td>{{item.element}}</td>
+                    <td>{{item.language}}</td>
+                    <td>{{item.type}}</td>
+                    <td>{{item.translation_content}}</td>
+                    <td>{{item.error_msg}}</td>
+                </tr>
+            </table>
+    </div>
+    <script type="text/javascript" src="../Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="../Public/lib/jquery.table2excel.js?v=<{$Think.const.V}>"></script>
+    <script type="text/javascript" src="../Public/utils/utils.js?v=<{$Think.const.V}>"></script>
+    <script src="../Public/js/H-ui.js"></script>
+    <script src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="../Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="../Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="../Public/js/element-ui-2.2.js"></script>
+    <script src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script>
+        var lang = new Vue({
+            el: '#lang',
+            data: {
+                labelPosition: 'left',
+                total: 0,
+                baseData:{},
+                form: {
+                    element: '',
+                    currentPage: 1,
+                    pageSize: 20,
+                },
+                checkAll: false,
+                editType: false,
+                dataList: [],
+                errData:[],
+                importVisible:false,
+                addStatus:false,
+                log:{
+                    visible:false,
+                    dates:[],
+                    lang:'',
+                    element:'',
+                    dataTotal:10,
+                    tableData:[],
+                    page:1,
+                    loading:false
+                },
+                queryPost: function(url, param) {
+                    var headers = {
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        }
+                    }
+                    return axios.post(url, Qs.stringify(param), headers);
+                },
+                judgCheck: function(data) {
+                    var checked = false;
+                    for (var i = data.length; i--;) {
+                        if (data[i].checked) {
+                            checked = true;
+                        }
+                    }
+                    return checked;
+                }
+            },
+            created: function() {
+                this.search();
+                this.getCode();
+            },
+            methods: {
+                getCode:function(){
+                    var _this = this,
+                        param = {
+                            cd_type: {
+                                language: true
+                            }
+                        };
+                    axios.post('./index.php?g=common&m=index&a=get_cd',param)
+                    .then(function(res){
+                        _this.baseData = res.data.data
+                    })
+                },
+                search: function() {
+                    this.checkAll = false;
+                    var param = {element:this.form.element,p:this.form.currentPage,list_rows:this.form.pageSize}
+                    axios.get('/index.php?m=language&a=language_list&' + Qs.stringify(param)).then(function(res) {
+                        var data = res.data.data;
+                        lang.dataList = data.list ? data.list : [];
+                        lang.dataList.forEach(function(item,index){
+                            Vue.set(lang.dataList[index],'checked',false)
+                        })
+                        lang.total = +data.page.total_rows;
+                    });
+                },
+                //模版下载
+                downTmp: function() {
+                    window.location = "/index.php?m=common_file&a=download&name=language_import.xlsx";
+                },
+                //删除条目
+                del: function() {
+                    var element = [];
+                    // 判定是否选中的条目
+                    var checked = this.judgCheck(this.dataList)
+                    if (checked) {
+                        this.dataList.forEach(function(item) {
+                            if (item.checked) {
+                                element.push(item.element);
+                            }
+                        });
+                        //确定是否删除？
+                        this.$confirm('此操作将删除选中的条目, 是否继续?', '提示', {
+                            confirmButtonText: '确定',
+                            cancelButtonText: '取消',
+                            type: 'warning'
+                        }).then(function() {
+                            $.ajax({
+                                type: "POST",
+                                url: '/index.php?m=language&a=language_del',
+                                contentType: "application/x-www-form-urlencoded",
+                                data: {element:element},
+                                dataType: "json",
+                                success: function (res) {
+                                    if (res.status) {
+                                        lang.$message({
+                                            type: 'success',
+                                            message: '删除成功!'
+                                        });
+                                        lang.checkAll = false;
+                                        lang.search();
+                                    }
+                                }
+                            })
+                        }).catch(function() {
+                            lang.$message({
+                                type: 'info',
+                                message: '已取消删除'
+                            });
+                        });
+                    } else {
+                        this.$message({
+                            message: '请先勾选要删除的条目',
+                            type: 'warning'
+                        });
+                    }
+                },
+                //保存编辑
+                save: function() {
+                    var param = this.dataList;
+                    var arr = [];
+                    for (var i = 0, len = param.length; i < len; i++) {
+                        if(param[i].checked){
+                            for (var key in param[i].name) {
+                                if (key !== "element" && key !== "checked" &&  key !== "id") {
+                                    arr.push({
+                                        element: param[i].element,
+                                        type: key,
+                                        translation_content: param[i].name[key]
+                                    });
+                                }
+                            }
+                        }
+                    }
+                    $.ajax({
+                        type: "POST",
+                        url: '/index.php?m=language&a=language_save',
+                        contentType: "application/x-www-form-urlencoded",
+                        data: {data:arr},
+                        dataType: "json",
+                        success: function (res) {
+                            if(res.status){
+                                lang.$message({
+                                    message: res.info,
+                                    type: 'success'
+                                });
+                                lang.editType = lang.addStatus = false;
+                                lang.search();
+                            }else{
+                                lang.$message({
+                                    message: res.info,
+                                    type: 'error'
+                                });
+                            }
+                           
+                        }
+                    })
+                },
+                //编辑条目
+                edit: function() {
+                    // 判定是否选中的条目
+                    var checked = this.judgCheck(this.dataList)
+                    this.addStatus = false;
+                    if (checked) {
+                        this.editType = true;
+                    } else {
+                        this.$message({
+                            message: '请先勾选要编辑的条目',
+                            type: 'warning'
+                        });
+                    }
+
+                },
+                //检查元素是否存在
+                seaRepeat:function(element){
+                    $.ajax({
+                        type: "POST",
+                        url: '/index.php?m=language&a=check_exist',
+                        contentType: "application/x-www-form-urlencoded",
+                        data: {element:element},
+                        dataType: "json",
+                        success: function (res) {
+                            if(res.status){
+                                lang.$message({
+                                    message: res.info,
+                                    type: 'error'
+                                });
+                            }
+                           
+                        }
+                    })
+                },
+                add: function() {
+                    var languageData = this.baseData.language;
+                    let objItem = {
+                        checked: true,
+                        element: '',
+                        name: {}
+                    }
+                    for(var i = 0; i < languageData.length; i++) {
+                        objItem.name[languageData[i].CD] = '';
+                    }
+                    console.log(objItem);
+                    this.dataList.unshift(objItem);
+                    this.editType = this.addStatus = true;
+                },
+                checkAllFn: function() {
+                    if(!this.checkAll){
+                        this.editType = false;
+                    }
+                    var data = this.dataList;
+                    for (var i = data.length; i--;) {
+                        Vue.set(this.dataList[i], 'checked', this.checkAll);
+                    }
+                },
+                handleSizeChange: function(size) {
+                    this.form.pageSize = size;
+                    this.search();
+                },
+                handleCurrentChange: function(currentPage) {
+                    this.form.currentPage = currentPage;
+                    this.search();
+                },
+                //导入sku
+                importFileFun: function(res, file, fileList) {
+                    if (res.status > 0) {
+                        this.importType = true;
+                        this.search();
+                        this.$message({
+                            message: '导入成功',
+                            type: 'success'
+                        });
+                    } else {
+                        //清空文件列表
+                        this.$refs.importExc.clearFiles();
+                        this.importVisible = true;
+                        this.errData = res.data;
+                        this.errData.forEach(function(item){
+                            switch(item.type){
+                                case 'N000920100':
+                                    item.language = 'Chinese';
+                                    break;
+                                case 'N000920200':
+                                    item.language = 'English';
+                                    break;
+                                case 'N000920300':
+                                    item.language = 'Japanese';
+                                    break;
+                                case 'N000920400':
+                                    item.language = 'Korean';
+                                    break;
+                            }
+                        })
+                    }
+                },
+                //错误报告
+                dwonErrTmep:function(){
+                    $("#errTable").table2excel({
+                        exclude  : ".noExl", //过滤位置的 css 类名
+                        filename : "<{$Think.lang.翻译导入错误报告}>.xls", //文件名称
+                        name: "Excel Document Name.xlsx",
+                        exclude_img: true,
+                        exclude_links: true,
+                        exclude_inputs: true
+                    });
+                    this.importVisible = false;
+                },
+                exportElement:function(){
+                    window.location = '/index.php?m=language&a=export&element=' + this.form.element;
+                },
+                reset: function(type) {
+                    if(type){
+                        this.form.element = '';
+                        this.checkAll = false;
+                        this.editType = false;
+                        this.search();
+                    }else{
+                        this.log.lang = '';
+                        this.log.dates = [];
+                        this.searchLog();
+                    }
+                },
+                searchLog:function(type){
+                    var param = {
+                        element:this.log.element,
+                        updated_at:this.log.dates,
+                        language:this.log.lang,
+                        page:type ? this.log.page : 1,
+                        page_size:10
+                    },
+                    _this = this;
+                    this.log.loading = true;
+                    axios.post('./index.php?m=language&a=log_list', param)
+                        .then(function (res) {
+                            _this.log.tableData = res.data.data.list;
+                            _this.log.dataTotal =  +res.data.data.total;
+                            _this.log.loading = false;
+                        })
+                },
+                viewLog:function(item){
+                    this.log.element = item.element;
+                    this.log.visible = true;
+                    this.log.dates = [];
+                    this.log.lang = '';
+                    this.log.page = 1;
+                    this.searchLog();
+                },
+                handleClose:function(){
+                    this.log.visible = false;
+                }
+            }
+        })
+    </script>
+</body>
+
+</html>

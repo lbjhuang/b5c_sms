@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>在途占用列表</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Scm/style.css?v=<{$Think.config.VER_NUM}>">
+
+    <style>
+        #onway {
+            padding: 20px 20px 0px 40px;
+            margin-bottom: 220px;
+        }
+    
+        .v-cloak {
+            display: none;
+        }
+    
+        .width-95 {
+            width: 95%
+        }
+    
+        .preview-wrap {
+            position: relative;
+            display: contents;
+            width: 100%;
+        }
+    
+        .preview-wrap img {
+            cursor: pointer;
+        }
+    
+        .preview-wrap .big-img {
+            position: absolute;
+            bottom: 0px;
+            left: 80px;
+            box-shadow: 1px 2px 15px #606266;
+            z-index: 999;
+        }
+        .mg-left{
+            margin-left: 50px;
+        }
+        .el-date-editor .el-range__close-icon{
+            margin-left: -5px;
+            width: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="" v-cloak id="onway">
+        <el-form ref="form" :model="form" label-width="90px" label-position="left">
+            <el-row>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('在途类型')">
+                        <el-select v-model="form.onway_type" filterable clearable class="width-95" :placeholder="$lang('请选择在途类型')">
+                            <el-option v-for="item in baseData.onway_type" :key="item.CD" :label="$lang(item.CD_VAL)" :value="item.CD"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('采购/调拨单号')">
+                        <el-input v-model="form.pur_no" class="width-95"></el-input>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('SKU/条形码')">
+                        <el-input v-model="form.sku_upc_id" class="width-95"></el-input>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('商品名称')">
+                        <el-input v-model="form.sku_name" class="width-95"></el-input>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('待入仓库')">
+                        <el-select class="width-95" filterable clearable v-model="form.warehouse" :placeholder="$lang('请选择在途类型')">
+                            <el-option v-for="item in baseData.warehouse" :key="item.CD" :label="$lang(item.CD_VAL)" :value="item.CD"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('销售团队')">
+                        <el-select class="width-95" filterable clearable v-model="form.sell_team" :placeholder="$lang('请选择在途类型')">
+                          <el-option v-for="item in baseData.sell_team" :key="item.CD" :label="$lang(item.CD_VAL)" :value="item.CD"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('采购团队')">
+                        <el-select class="width-95" filterable clearable v-model="form.purchase_team" :placeholder="$lang('请选择在途类型')">
+                          <el-option v-for="item in baseData.purchase_team" :key="item.CD" :label="$lang(item.CD_VAL)" :value="item.CD"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('入库日期')">
+                        <el-date-picker type="daterange"  value-format="yyyy-MM-dd" :range-separator="$lang('至')" :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')" v-model="form.arrive_time" style="width: 95%;"></el-date-picker>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('批次号')">
+                        <el-input v-model="form.batch_code" class="width-95"></el-input>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="24">
+                    <el-button type="primary" @click="getData">{{$lang('查询')}}</el-button>
+                    <el-button @click="reset">{{$lang('重置')}}</el-button>
+                </el-col>
+            </el-row>
+        </el-form>
+        <div style="margin-top:20px;">
+            <div style="margin-bottom:10px;display: flex">
+                <b>{{$lang('结果：共')}} {{totalData}} {{$lang('记录')}}</b>
+                <b class="mg-left">{{$lang('总在途数量统计')}}：{{Number(sumData.total).toLocaleString()}}</b>
+                <b class="mg-left">{{$lang('可预计在途数量共计')}}：{{Number(sumData.available).toLocaleString()}}</b>
+                <b class="mg-left">{{$lang('已预订在途数量共计')}}：{{Number(sumData.occupied).toLocaleString()}}</b>
+                <b class="mg-left" style="margin-right: auto">{{$lang('在途金额共计（USD）')}}：{{Number(Number(sumData.onway_money_usd).toFixed(2)).toLocaleString()}}</b>
+                <el-button type="primary" @click="downData" size="mini">{{$lang('导出')}}</el-button>
+            </div>
+            <el-table border show-header :data="listData" tooltip-effect="dark" style="width: 100%" v-loading="tableLoading" class="order-list-table table-common">
+                <el-table-column type="index" width="50"> </el-table-column>
+                <el-table-column :label="$lang('在途类型')">
+                    <template scope="scope">
+                        <div>{{$lang(scope.row.onway_type)}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="link_bill_id" :label="$lang('单据号')"> </el-table-column>
+                <el-table-column prop="sku_id" :label="$lang('SKU编码')"> </el-table-column>
+                <el-table-column prop="upc_id" :label="$lang('条形码')"> </el-table-column>
+                <el-table-column :label="$lang('商品名称')">
+                    <template scope="scope">
+                        <div>{{$lang(scope.row.spu_name)}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('商品属性')">
+                    <template scope="scope">
+                        <div>{{$lang(scope.row.attributes)}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('图片')">
+                    <template scope="scope">
+                        <span class="preview-wrap">
+                            <img :src="scope.row.image_url" width="40" height="40" @mouseover="previewImg(scope.row,'showImg',true)" @mouseout="previewImg(scope.row,'showImg',false)">
+                            <div v-if="scope.row.showImg">
+                                <img :src="scope.row.image_url" width="300" height="300" class="big-img">
+                            </div>
+                        </span>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="batch_code" :label="$lang('批次号')"> </el-table-column>
+                <el-table-column prop="total_inventory" :label="$lang('在途总数')"> </el-table-column>
+                <el-table-column prop="available_for_sale_num" :label="$lang('可预订数量')"> </el-table-column>
+                <el-table-column :label="$lang('已预订数量')">
+                    <template scope="scope">
+                        <el-popover placement="bottom" width="300" trigger="click" style="padding:0;">
+                            <div>
+                                <el-table size="small " border show-header :data="scope.row.occupiedList" tooltip-effect="dark" class="order-list-table table-common">
+                                    <el-table-column width="80" :label="$lang('预订类型')"> 
+                                        <template scope="prop"> {{$lang(prop.row.occupied_type)}} </template>
+                                    </el-table-column>
+                                    <el-table-column :label="$lang('编号')" prop="ord_id" width="140"> </el-table-column>
+                                    <el-table-column width="80" :label="$lang('预订数量')" prop="occupy_num"> </el-table-column>
+                                </el-table>
+                            </div>
+                            <el-button type="text" slot="reference" @click="getOccupiedList(scope.row)">{{scope.row.occupied}}</el-button>
+                        </el-popover>
+                    </template>
+                </el-table-column>
+                <el-table-column  :label="$lang('采购币种')">
+                    <template scope="scope">
+                        <div>{{scope.row.pur_currency}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column  :label="$lang('采购单价（采购币种,含增值税）')">
+                    <template scope="scope">
+                        <div>{{scope.row.pur_currency}} {{scope.row.unit_price_origin}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column  :label="$lang('采购单价（CNY,含增值税）')">
+                    <template scope="scope">
+                        <div>CNY {{scope.row.unit_price}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column  :label="$lang('采购单价（USD，含增值税）')">
+                    <template scope="scope">
+                        <div>USD {{scope.row.unit_price_usd}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('退税比例')"> 
+                        <template scope="scope">
+                            <div>{{parseInt(scope.row.proportion_of_tax * 100) + ' %'}}</div>
+                        </template>
+                </el-table-column>
+                <el-table-column :label="$lang('待入仓库')">
+                    <template scope="scope">
+                        <div>{{$lang(scope.row.warehouse)}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('销售团队')">
+                    <template scope="scope">
+                        <div>{{$lang(scope.row.sell_team)}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('采购团队')">
+                    <template scope="scope">
+                        <div>{{$lang(scope.row.purchase_team)}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="arrive_time" :label="$lang('预计入库日期')"> </el-table-column>
+            </el-table>
+        </div>
+        <div>
+            <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="form.page"
+                :page-sizes="[20, 50, 100, 200]" :page-size="form.pageSize" layout="total, sizes, prev, pager, next, jumper" :total="totalData">
+            </el-pagination>
+        </div>
+    </div>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script>
+        if (getCookie('think_language') !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en)
+        }
+
+        var vm = new Vue({
+            el: '#onway',
+            data: {
+                form: {
+                    onway_type: '',
+                    pur_no: '',
+                    sku_upc_id: '',
+                    sku_name: '',
+                    warehouse: '',
+                    sell_team: '',
+                    purchase_team: '',
+                    arrive_time: '',
+                    page: 1,
+                    pageSize: 20,
+                    batch_code:''
+                },
+                totalData:1,
+                baseData:{},
+                listData:[],
+                sumData:{},
+                tableLoading:false,
+                isPageChange:false
+            },
+            created: function () {
+                var query = window.location.search.substring(1);                
+                var vars = query.split("&");
+                if (vars[2] && vars[2].split("=")[0] === 'team') {  // 如果是从团队库存汇总报表进入该页面，搜索参数取传入参数
+                    var team = vars[2].split("=")[1];
+                    this.form.sell_team = team; // 销售团队取传入的销售团队
+                    this.form.onway_type = 'N002410200';  // 在途类型为调拨在途
+                }
+                if (vars[3] && vars[3].split("=")[0] === 'warehouse_cd') {  // 如果是从安全库存进入该页面，搜索参数取传入参数
+                    this.form.warehouse = vars[3].split("=")[1];
+                    this.form.sku_upc_id = vars[4].split("=")[1];
+                }
+                this.getCd();
+                this.getData();
+            },
+            methods: {
+                getCd:function(){
+                    var _this = this;
+                    var params = {
+                        cd_type: {
+                            onway_type: false, 
+                            warehouse: false, 
+                            purchase_team: false, 
+                            sell_team: false, 
+                        }
+                    }
+                    axios.post('/index.php?g=common&m=index&a=get_cd',params).then(function (res) {
+                        if(res.data.code == 2000){
+                            _this.baseData = res.data.data;
+                        }else{
+                            _this.$message.error(_this.$lang("获取码表数据失败"));
+                        }
+                    })
+                },
+
+                getData:function(){
+                    var _this = this;
+                    this.tableLoading = true;
+                    for(var x in this.form){
+                        if(typeof(this.form[x])=='string'){
+                            this.form[x] = this.form[x].trim();
+                            this.form[x] = this.form[x].replace(/[\r\n]/g,"");
+                            if(x!=='pur_no'){
+                                this.form[x] = this.form[x].replace(/[\r\n&\|\\\*^%$#@\-]/g,"");
+                            }
+                        }
+
+                    }
+                    axios.post('/index.php?m=warehouse&a=onwayList',this.form).then(function (res) {
+                        _this.tableLoading = false;
+                        if(res.data.code == 2000){
+                                _this.listData = res.data.data.list;
+                            _this.totalData = res.data.data.total;
+                            if(res.data.data.sum_data){
+                                _this.sumData = res.data.data.sum_data;
+                            }
+                            _this.isPageChange = false;
+                        }else{
+                            _this.$message.error(_this.$lang("获取数据失败"));
+                        }
+                    })
+                },
+                downData:function(){
+                    var _this = this;
+                    axios.post('/index.php?m=warehouse&a=exportOnwayList', this.form, {
+                        responseType: 'blob'
+                    }).then(res => {
+                        let blob = res.data
+                        let reader = new FileReader()
+                        reader.readAsDataURL(blob)
+                        reader.onload = (e) => {
+                            let a = document.createElement('a')
+                            a.download = '导出表格.xls'
+                            a.href = e.target.result
+                            document.body.appendChild(a)
+                            a.click()
+                            document.body.removeChild(a)
+                        }
+                    })
+                },
+                getOccupiedList:function(row){
+                    var _this = this
+                    axios.post('/index.php?m=warehouse&a=onwayOccupiedList',{batch_id:row.batch_id,link_bill_id:row.link_bill_id}).then(function (res) {
+                        if(res.data.code == 2000){
+                            for(var x = 0;x<res.data.data.length;x++){
+                                if(!res.data.data[x].occupy_num || res.data.data[x].occupy_num === '0'){
+                                    res.data.data.splice(x,1)
+                                }
+                            }
+                            _this.$set(row,'occupiedList',res.data.data)
+                        }else{
+                            _this.$message.error(_this.$lang("获取数据失败"));
+                        }
+                    })
+                },
+                previewImg: function (item, tag, type) {
+                    this.$set(item, tag, type);
+                },
+                handleSizeChange: function(val) {
+                    this.form.page = 1;
+                    this.form.pageSize = val;
+                },
+                handleCurrentChange: function(val) {
+                    this.isPageChange = true;
+                    this.form.page = val;
+                },
+                reset: function () {
+                    this.form = {
+                        onway_type: '',
+                        pur_no: '',
+                        sku_upc_id: '',
+                        sku_name: '',
+                        warehouse: '',
+                        sell_team: '',
+                        purchase_team: '',
+                        arrive_time: '',
+                        page: 1,
+                        pageSize: 20,
+                    }
+                }
+            },
+            watch: {
+                form: {
+                    handler: function handler(newValue, oldValue) {
+                        console.log(this.isPageChange)
+                        if(!this.isPageChange){
+                            this.form.page = 1
+                            this.getData();
+                        }else{
+                            this.getData();
+                        }                      
+                    },
+                    deep: true
+                }
+            }
+        })
+    </script>
+</body>
+
+</html>

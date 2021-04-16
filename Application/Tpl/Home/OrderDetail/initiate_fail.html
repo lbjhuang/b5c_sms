@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="/Application/Tpl/Home/B2b/css/detail.css?v=<{$Think.const.V}>">
+    <title>发起退货报错结果页</title>
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+
+        .order_dialog .el-dialog table {
+            max-width: 500px;
+            overflow: auto
+        }
+
+        .order_dialog .inline-td td {
+            padding: 8px 6px;
+        }
+
+        .order_dialog .inline-td td span {
+            white-space: normal;
+        }
+
+        .btn-content {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .header-step {
+            font-size: 26px;
+            font-weight: 600;
+            margin-bottom: 24px;
+        }
+
+        .el-select.full-width {
+            width: 100%;
+        }
+
+        .el-select.item-width {
+            width: 33%;
+        }
+
+        .main-basic-table td {
+            padding: 4px 20px;
+        }
+    </style>
+
+</head>
+
+<body>
+<div id="main-detail" v-cloak style="padding:0px 0px 50px;overflow: hidden;box-sizing: border-box;height: 100%;">
+    <div class="main-content" style="height:100%;overflow: auto;padding: 20px 20px 20px 30px;">
+        <header class="header-step">{{$lang('发起失败')}}</header>
+        <div class="main-basic-info">
+            <header style="margin-top:10px">
+                {{$lang('基本信息')}}
+            </header>
+            <table border="0" cellspacing="0" cellpadding="0" class="main-basic-table"
+                   style="table-layout: auto;width: 100%;">
+                <thead>
+                <tr>
+                    <th>{{$lang('采购单号')}}</th>
+                    <th>{{$lang('SKU')}}</th>
+                    <th>{{$lang('商品类型')}}</th>
+                    <th>{{$lang('失败原因')}}</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                </tbody>
+            </table>
+            <div class="btn-content">
+                <el-button type="default">{{$lang('确定')}}</el-button>
+            </div>
+        </div>
+    </div>
+    <!--引入js-->
+    <script type="text/javascript"
+            src="/Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="/Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="/Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript"
+            src="/Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script>
+      var VM = new Vue({
+        el: '#main-detail',
+        components: {},
+        data: {
+          showOrder: true,
+          rate: 1,
+          hadOrders: false,
+          sureDialog: false,
+          dialogVisible: false,
+          dialogType: 'toFinished',
+          transfer_no: '',
+          search_order_list: [],
+          detailData: {
+            basis: {},
+            amount: {},
+            claim: {},
+            clime_order: []
+          },
+          queryType: [{
+            CD: 'PO_ID',
+            CD_VAL: 'B2B订单号'
+          }, {
+            CD: 'THR_PO_ID',
+            CD_VAL: 'PO单号'
+          }],
+          orderSearchData: {
+            search_value: '',
+            search_type: 'THR_PO_ID',
+            client_name: ''
+          },
+          searchLoading: false
+        },
+        created() {
+          this.transfer_no = getQueryVariable('account_transfer_no')
+          this.getBaseData();
+          this.getDetail();
+        },
+        watch: {
+          detailData: {
+            handler: function handler(newValue, oldValue) {
+              if (newValue.clime_order) {
+                newValue.clime_order.forEach(function (el, ind) {
+                  var total = 0;
+                  el.deductions.forEach(function (e, i) {
+                    if (e.deduction_amount < 0) {
+                      e.deduction_amount = 0
+                    }
+                    total += +e.deduction_amount;
+                  })
+                  el.order_summary.summary_amount = (el.order_info.claim_amount ? el.order_summary
+                      .rate * el
+                      .order_info.claim_amount : 0) +
+                    total;
+                  el.order_summary.current_remaining_receivable = el.order_summary.total -
+                    el.order_summary.summary_amount
+                })
+              }
+            },
+            deep: true
+          },
+        },
+        methods: {},
+        filters: {
+          separatNum: function (num) { //千分位方法
+            var num = Number(num).toFixed(2);
+            num = num + "";
+            var _arr = num.split(".");
+            return _arr[1] === "00" ? (num - 0).toLocaleString() + ".00" : (num - 0).toLocaleString();
+          },
+          percentage: function (num) {
+
+            return num ? ((num * 100).toFixed(2) + "%") : '';
+          },
+        }
+      });
+
+      //获取url参数
+      function getQueryVariable(variable) {
+        var query = window.location.search.substring(1);
+        var vars = query.split("&");
+        for (var i = 0; i < vars.length; i++) {
+          var pair = vars[i].split("=");
+          if (pair[0] == variable) {
+            return pair[1];
+          }
+        }
+        return false;
+      }
+
+      //时间戳转日期
+      function _formatDate(date, fmt) {
+        if (/(y+)/.test(fmt)) {
+          fmt = fmt.replace(RegExp.$1, (date.getFullYear() + '').substr(4 - RegExp.$1.length));
+        }
+        var o = {
+          'M+': date.getMonth() + 1,
+          'd+': date.getDate(),
+          'h+': date.getHours(),
+          'm+': date.getMinutes(),
+          's+': date.getSeconds()
+        };
+        for (var k in o) {
+          if (new RegExp('(' + k + ')').test(fmt)) {
+            var str = o[k] + '';
+            fmt = fmt.replace(RegExp.$1, RegExp.$1.length === 1 ? str : padLeftZero(str));
+          }
+        }
+        return fmt;
+      }
+
+      function padLeftZero(str) {
+        return ('00' + str).substr(str.length);
+      };
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="renderer" content="webkit|ie-comp|ie-stand">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+    <meta http-equiv="Cache-Control" content="no-siteapp"/>
+    <title>GP重复支付订单列表</title>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.8.2.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+
+    <style>
+        html {
+        }
+
+        #main {
+            height: 100%;
+            padding-top: 15px;
+        }
+
+        .list {
+            padding: 0px 30px;
+        }
+
+        .divider__line {
+            display: inline-block;
+            height: 1px;
+            background-color: #dddddd;
+            width: 100%;
+        }
+
+        .article__list {
+            padding-left: 0px !important;
+        }
+
+        .article {
+            display: flex;
+            justify-content: space-between;
+            height: 45px;
+            align-items: center;
+            cursor: pointer;
+
+        }
+
+        .article__main {
+            margin-right: 20px;
+            width: 50%;
+        }
+
+        article__content {
+
+        }
+
+        .article__content-title {
+            display: inline-block;
+            white-space: normal;
+            word-break: break-all;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .article__info {
+            width: 50%;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .article__info-created-time {
+            width: 240px;
+            display: inline-block;
+            margin-right: 20px;
+        }
+
+        .article__info-updated-time {
+            width: 240px;
+            display: inline-block;
+            margin-right: 20px;
+        }
+
+        .article__info-read-num {
+            width: 140px;
+            display: flex;
+            justify-content: flex-end;
+        }
+        .button--processed{
+            color: #dddddd;
+        }
+    </style>
+</head>
+<body id="content">
+
+<div id="main">
+    <div class="list">
+        <div data-test="data" class="list__data">
+            <el-table
+                    data-test="roles"
+                    :data="pagedDuplicatePaymentOrders"
+                    border
+                    @sort-change="onSort"
+                    :span-method="objectSpanMethod"
+            >
+                <el-table-column
+                        prop="platform_val"
+                        :resizable="false"
+                        :label="$lang('店铺')"
+                >
+                    <template slot-scope="scope">
+                        <span>{{ scope.row.platform_val }}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column
+                        prop="orderIds"
+                        :resizable="false"
+                        :label="$lang('订单号')"
+                >
+                    <template slot-scope="scope">
+                        <span>{{ scope.row.orderIds }}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column
+                        prop="pay_method"
+                        :resizable="false"
+                        :label="$lang('支付类型')"
+                >
+                    <template slot-scope="scope">
+                        <span>{{ scope.row.pay_method }}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column
+                        prop="pay_id"
+                        :resizable="false"
+                        :label="$lang('交易号')"
+                >
+                    <template slot-scope="scope">
+                        <span>{{ scope.row.pay_id }}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column
+                        prop="pay_time"
+                        :resizable="false"
+                        :label="$lang('付款时间')"
+                >
+                    <template slot-scope="scope">
+                        <span>{{ scope.row.pay_time }}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column
+                        prop="orderCurrency"
+                        :resizable="false"
+                        :label="$lang('订单币种')"
+                >
+                    <template slot-scope="scope">
+                        <span>{{ scope.row.orderCurrency }}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column
+                        prop="orderPrice"
+                        :resizable="false"
+                        :label="$lang('订单金额')"
+                >
+                    <template slot-scope="scope">
+                        <span>{{ scope.row.orderPrice }}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column
+                        prop="pay_status_val"
+                        :resizable="false"
+                        :label="$lang('状态')"
+                        width="140px"
+                >
+                    <template slot-scope="scope">
+                <span v-if="scope.row.pay_status='1'">{{$lang('支付成功')}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column
+                        prop="error_status_val"
+                        :resizable="false"
+                        :label="$lang('异常情况')"
+                        width="140px"
+                >
+                    <template slot-scope="scope">
+                <span v-if="scope.row.error_status='1'">{{$lang('重复支付')}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column
+                        align="center"
+                        :resizable="false"
+                        prop="opretion"
+                        :label="$lang('操作')"
+                        width="220px"
+                >
+                    <template slot-scope="scope">
+                        <el-button
+                                v-if="scope.row.status==='1'"
+                                data-test="assign"
+                                type="text"
+                                @click="onReturnMoney(scope.row)"
+                                class="button button--assign"
+                        >{{$lang('退回资金')}}
+                        </el-button
+                        >
+                        <el-button
+                                disabled
+                                v-if="scope.row.status==='2'"
+                                data-test="assign"
+                                type="text"
+                                class="button button--processed"
+                        >{{$lang('退回成功')}}
+                        </el-button
+                        >
+                    </template>
+                </el-table-column>
+            </el-table>
+        </div>
+    </div>
+</div>
+
+
+<script src="/Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.8.2.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.js"></script>
+<a href="javascript:void(0)" class="Hui-iconfont toTop" title="返回顶部" alt="返回顶部"
+   style="width:40px;height:40px;display:none;position:fixed;right:50px;bottom:30px;z-index:999999"><img
+        src="/Application/Tpl/Home/Public/images/top.png" style="width:42px;height:42px;margin-left:-1px;"></a>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js?v=201907011048"></script>
+
+<script>
+    let vueApp = new Vue({
+            el: '#main',
+            data() {
+                return {
+                    pagedDuplicatePaymentOrders: [],
+                    numberRowsMergedIndexs: [],
+                }
+            },
+            created() {
+                this.search();
+            },
+            methods: {
+                onSearch() {
+                    this.pagination.page = 1;
+                    this.search();
+                },
+                onPageChange(page) {
+                    this.pagination.page = page;
+                    this.search();
+                },
+                onSort(e) {
+                    if (!e.prop || !e.order) return;
+                    this.pagination.page = 1;
+                    this.pagination.sort = {prop: e.prop, order: e.order};
+                    this.search();
+                },
+                onReturnMoney(item) {
+                    this.$confirm(this.$lang('你确定要退回该重复支付的资金吗?'), this.$lang('提示')).then(() => {
+                        axios.post("/index.php?g=oms&m=repeat_pay&a=update", {
+                            orderIds: item.orderIds
+                        }).then((res) => {
+                            this.$message.success(this.$lang('重复操作的资金退回成功'));
+                            this.search();
+                        }).catch(()=>{
+                            this.$message.error(this.$lang('重复操作的资金退回失败'));
+                        })
+                    })
+
+                },
+                search() {
+                    this.searching = true;
+                    axios.post("/index.php?g=oms&m=repeat_pay&a=lists").then((res) => {
+                        this.searching = false;
+                        let pagedDuplicatePaymentOrders = [];
+                        Object.keys(res.data.data).forEach((key) => {
+                            if (res.data.data[key].length != 0) {
+                                res.data.data[key].forEach((obj) => {
+                                    pagedDuplicatePaymentOrders.push(obj);
+                                })
+                            }
+                        })
+
+                        let duplicatePaymentOrderObj = {};
+                        let duplicatePaymentOrderIndexs = [];
+
+                        pagedDuplicatePaymentOrders.forEach((obj, index) => {
+
+                            if (JSON.stringify(duplicatePaymentOrderObj) === "{}") {
+                                duplicatePaymentOrderObj = obj;
+                                duplicatePaymentOrderIndexs.push(index);
+                            } else if (duplicatePaymentOrderObj.orderIds === obj.orderIds) { //如果订单id相等
+                                duplicatePaymentOrderObj = obj;
+                                duplicatePaymentOrderIndexs.push(index);
+
+                                // 判断是不是最后一组元素
+                                let  totalLength =0;
+                                this.numberRowsMergedIndexs.forEach((arr)=>{
+                                         totalLength+=arr.length;
+                                })
+                                if((pagedDuplicatePaymentOrders.length - totalLength) === duplicatePaymentOrderIndexs.length){
+                                    this.numberRowsMergedIndexs.push(duplicatePaymentOrderIndexs);
+                                }
+
+                            } else {  // 订单id不相等的时候
+                                // 根据订单id完成数据分类
+                                this.numberRowsMergedIndexs.push(duplicatePaymentOrderIndexs);
+                                duplicatePaymentOrderObj = {};
+                                duplicatePaymentOrderIndexs = [];
+
+                                duplicatePaymentOrderObj = obj;
+                                duplicatePaymentOrderIndexs.push(index);
+                            }
+                        });
+                        this.pagedDuplicatePaymentOrders = pagedDuplicatePaymentOrders;
+                    })
+                },
+                objectSpanMethod({row, column, rowIndex, columnIndex}) {
+                    // 那些列所在的行应该被合并几行
+                    if (columnIndex === 0) {
+                        for (let i = 0; i < this.numberRowsMergedIndexs.length; i++) {
+                            let elementIndex = this.numberRowsMergedIndexs[i];
+                            for (let j = 0; j < elementIndex.length; j++) {
+                                let item = elementIndex[j]
+                                // console.log("item", rowIndex === item);
+                                if (rowIndex === item) {
+                                    if (j === 0) {
+                                        return {
+                                            rowspan: elementIndex.length,
+                                            colspan: 1
+                                        }
+                                    } else if (j != 0) {
+                                        return {
+                                            rowspan: 0,
+                                            colspan: 0
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else if (columnIndex === 1) {
+                        for (let i = 0; i < this.numberRowsMergedIndexs.length; i++) {
+                            let elementIndex = this.numberRowsMergedIndexs[i];
+                            for (let j = 0; j < elementIndex.length; j++) {
+                                let item = elementIndex[j]
+                                if (rowIndex === item) {
+                                    if (j === 0) {
+                                        return {
+                                            rowspan: elementIndex.length,
+                                            colspan: 1
+                                        }
+                                    } else if (j != 0) {
+                                        return {
+                                            rowspan: 0,
+                                            colspan: 0
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else if (columnIndex === 9) {
+                        for (let i = 0; i < this.numberRowsMergedIndexs.length; i++) {
+                            let elementIndex = this.numberRowsMergedIndexs[i];
+                            for (let j = 0; j < elementIndex.length; j++) {
+                                let item = elementIndex[j]
+                                if (rowIndex === item) {
+                                    if (j === 0) {
+                                        return {
+                                            rowspan: elementIndex.length,
+                                            colspan: 1
+                                        }
+                                    } else if (j != 0) {
+                                        return {
+                                            rowspan: 0,
+                                            colspan: 0
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                }
+            }
+        })
+    ;
+</script>
+</body>
+</html>

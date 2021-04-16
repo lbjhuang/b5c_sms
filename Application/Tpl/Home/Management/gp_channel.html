@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+        href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.config.VER_NUM}>">
+    <title>渠道维护</title>
+    <style>
+        .content{
+            border:1px solid #dddddd;
+            padding: 25px;
+        }
+        .search-toggle{
+            border:1px solid #dddddd;
+         
+            box-shadow: 0 2px 2px 0 rgba(0,0,0,.1);
+        }
+        .demo-form-inline{
+            padding: 25px;
+        }
+        .el-table .warning-row {
+            background: oldlace;
+        }
+        .el-dialog__header{
+            display: block
+        }
+        .dialogSelect{
+            padding: 0;
+            width: 100%;
+        }
+        .channelPrompt{
+            position: absolute;
+            left: -15px;
+            top: 0px;
+            font-size: 10px;
+            cursor: pointer;
+        }
+        .channelPrompt_content{
+            position: absolute;
+            top: -70px;
+            left: 0;
+            z-index: 10;
+            background: rgba(0,0,0,.5);
+            color: #fff;
+            width: 300px;    
+        }
+    </style>
+</head>
+<body class="orderList">
+    <div id="app" class="list-common" v-cloak>
+        <h2 style="text-align: center">{{$lang('渠道维护')}}</h2>
+        <div class="content" >
+           <div class="search-toggle ">
+                <el-form :inline="true" :model="formInline" :rules="rules" ref="formInline" class="demo-form-inline">
+
+                    <el-form-item :label="$lang('渠道编号')"
+                    prop="input1"
+                    >
+                            <el-input v-model="formInline.input1" placeholder="请输入"></el-input>
+                    </el-form-item>
+
+                    <el-form-item :label="$lang('渠道名称')"
+                    prop="input2"
+                    >
+                            <el-input v-model="formInline.input2" placeholder="请输入"></el-input>
+                    </el-form-item>
+
+                    <el-form-item :label="$lang('渠道标签')"
+                    prop="input3"
+                    >
+                            <el-input v-model="formInline.input3" placeholder="请输入"></el-input>
+                    </el-form-item>
+
+                    <el-form-item :label="$lang('状态')">
+                            <template>
+                            <el-select v-model="formInline.value" placeholder="请选择" @change='getChange'>
+                                <el-option
+                                v-for="item in options"
+                                :key="item.value"
+                                :label="item.label"
+                                :value="item.value"
+                                >
+                                </el-option>
+                            </el-select>
+                    </template>
+                    </el-form-item>
+
+                    <el-form-item :label="$lang('创建人')">
+                            <template>
+                                <el-select v-model="formInline.value2" placeholder="请选择" @change='getChange2' filterable>
+                                    <el-option
+                                    v-for="item in options1"
+                                    :key="item.value"
+                                    :label="item.label"
+                                    :value="item.value">
+                                    </el-option>
+                                </el-select>
+                        </template>
+                        </el-form-item>
+
+                    <el-form-item>
+                        <el-button type="primary" @click="onSubmit('formInline')">{{$lang('查询')}}</el-button>
+                        
+                    </el-form-item>
+                    <el-form-item>
+                            <el-button @click="resetForm('formInline')">{{$lang('重置')}}</el-button>
+                    </el-form-item>
+                </el-form>
+           </div>
+
+           <div class="table-conten" style="overflow: hidden;margin-top:30px;">
+              <div style="overflow: hidden">
+                  <div style="float: right"> 
+                        <el-button type="primary" @click="addChun()">{{$lang('新增渠道')}}</el-button>
+                  </div>
+                    
+              </div>
+              <div style="margin-top:20px;">
+                            <el-table
+                              :data="tableData"
+                              border
+                              center
+                              style="width: 100%"
+                              :row-class-name="tableRowClassName">
+                              <el-table-column
+                                prop="sort_num"
+                                :label="$lang('渠道编号')"
+                                >
+                              </el-table-column>
+                              <el-table-column
+                                prop="channel_name"
+                                :label="$lang('渠道名称')"
+                                >
+                              </el-table-column>
+                              <el-table-column
+                                prop="platform_name"
+                                :label="$lang('平台')">
+                              </el-table-column>
+                              <el-table-column
+                                prop="platform_tag"
+                                :label="$lang('平台标签')">
+                              </el-table-column>
+                              <el-table-column
+                                prop="medium_name"
+                                :label="$lang('渠道媒介')">
+                              </el-table-column>
+                              <el-table-column
+                                prop="medium_tag"
+                                :label="$lang('媒介标签')">
+                              </el-table-column>
+                              <el-table-column
+                                prop="channel_tag"
+                                :label="$lang('渠道标签')">
+                              </el-table-column>
+                              <el-table-column
+                                prop="create_by"
+                                :label="$lang('创建人')">
+                              </el-table-column>
+                              <el-table-column
+                                prop="datetime"
+                                :label="$lang('创建时间')">
+                              </el-table-column>
+                              <el-table-column
+                                :label="$lang('状态')">
+                                <template slot-scope="scope">
+                                    <span v-if="scope.row.status == 0">{{$lang('暂停使用')}}</span>
+                                    <span v-if="scope.row.status == 1">{{$lang('使用中')}}</span>
+                                    <span v-if="scope.row.status == -1">{{$lang('已删除')}}</span>
+                                </template>
+                              </el-table-column>
+                              <el-table-column
+                                prop="act_sum"
+                                :label="$lang('已发起活动')">
+                              </el-table-column>
+
+                              <!-- <el-table-column
+                                prop="channel_costs_usd"
+                                :label="$lang('渠道费用')">
+                              </el-table-column> -->
+
+
+                              <el-table-column :label="$lang('渠道费用')">
+                                    <template scope="scope">
+                                        <div>
+                                            ￥{{scope.row.channel_costs_usd}}
+                                        </div>
+                                    </template>
+                                </el-table-column>
+
+
+                              <el-table-column
+                                width="250"
+                                :label="$lang('操作')">
+                                <template slot-scope="scope">
+                                        <!-- <span>
+                                                <a onclick="opennewtab(this,'新建调拨单')" _href="/index.php?m=management&a=activet" style="color:#000; padding: 8px 0px; display: inline-block; width: 100%;">新建调拨单 </a>
+                                          </span> -->
+                                    <span v-if="scope.row.act_sum == 0 && scope.row.status == 1">
+                                        <el-button
+                                            size="mini"
+                                            @click="handleDelete(scope.$index, scope.row)">
+                                            {{$lang('删除渠道')}}</el-button>
+                                            <el-button
+                                            size="mini"
+                                            type="warning"
+                                            @click="handleStop(scope.$index, scope.row)">
+                                            {{$lang('暂停使用')}}</el-button>
+                                    </span>
+                                    <span v-if="scope.row.act_sum !== 0 && scope.row.status == 0">
+                                        <el-button
+                                            size="mini"
+                                            type="primary"
+                                            @click="handleEdit1(scope.$index, scope.row)">{{$lang('恢复使用')}}</el-button>
+                                            <!-- <el-button
+                                            size="mini"
+                                            type="danger"
+                                            @click="handleEdit(scope.$index, scope.row)">{{$lang('查看渠道活动')}}</el-button> -->
+                                    </span>
+                                    <span v-if="scope.row.act_sum == 0 && scope.row.status == 0">
+                                            <el-button
+                                                size="mini"
+                                                type="primary"
+                                                @click="handleEdit1(scope.$index, scope.row)">{{$lang('恢复使用')}}</el-button>
+                                                <el-button
+                                                size="mini"
+                                                @click="handleDelete(scope.$index, scope.row)">
+                                                {{$lang('删除渠道')}}</el-button>
+                                        </span>
+                                    <span  v-if="scope.row.act_sum != 0 && scope.row.status == 1">
+                                            <!-- <el-button
+                                            size="mini"
+                                            type="danger"
+                                            @click="handleEdit(scope.$index, scope.row)">{{$lang('查看渠道活动')}}
+
+                                        </el-button> -->
+                                            <!-- <el-link onclick="opennewtab(this,'新建调拨单')" _href="/index.php?m=management&a=activet"  target="_blank">默认链接</el-link> -->
+                                            <el-button
+                                            size="mini"
+                                            type="warning" 
+                                            @click="handleStop(scope.$index, scope.row)">
+                                            {{$lang('暂停使用')}}</el-button>
+                                      </span>
+                                     
+                                    
+                                      </template>
+                              </el-table-column>
+                            </el-table>
+                            <div style="overflow: hidden;">
+                                <div style="float: right;margin-top: 10px;">
+                                        <span style="padding-right: 20px;">
+                                                <span>{{totals}}{{$lang('页')}}</span>
+                                                <span>{{$lang('共')}}{{total}}{{$lang('条记录')}}</span>
+                                        </span>
+                                </div>
+                            </div>
+                            <div style="text-align: center;height: 50px;">
+                                <span style="display: inline-block;">
+                                    <el-pagination
+                                        background
+                                        @current-change="currentChange"
+                                        :current-page="page"
+                                        layout="prev, pager, next"
+                                        :total="total">
+                                      </el-pagination>
+                                </span>
+                            </div>
+                    </div>
+           </div>
+           <!-- 模态框 -->
+                <el-dialog
+                    :visible.sync="centerDialogVisible"
+                    :title="$lang('新增渠道')"
+                    width="50%"
+                    @close='clear("formLabelAlign")'
+                    show-close
+                    center>
+               
+                <div style="padding-left: 30px;">
+                    <span style="padding:30px;text-align:left;display: inline-block; width:100%;">
+                        <span style="font-weight:650"> {{$lang('渠道新增说明:')}}</span>
+                        <span> {{$lang('新增渠道需填写下列信息，其中渠道标签不可与已有标签重复')}}</span>
+                    </span>
+                </div>
+                <div style="text-align:left;border: 1px solid #dddddd;width: 80%;margin: 0 auto;padding: 20px;">
+                        <span style="display: inline-block;width: 80%;">
+                                <el-form :rules="channel_created" ref="formLabelAlign" label-width="80px" :model="formLabelAlign">
+                                        <el-form-item :label="$lang('渠道名称')" prop="name1" label-width="80px">
+                                            <el-input v-model="formLabelAlign.name1"
+                                            type="text"></el-input>
+                                        </el-form-item>
+                                        <el-form-item style="position: relative" :label="$lang('渠道平台')" prop="region">
+                                            <!-- <el-autocomplete
+                                                v-model="formLabelAlign.region"
+                                                :fetch-suggestions="querySearchAsync"
+                                                placeholder="请选择渠道平台"
+                                                @select="handleSelect"
+                                            ></el-autocomplete> -->
+                                            <div v-show="channelPromptContent" class="channelPrompt_content">活动投放时选择的流量资源平台，如Google、Facebook，己方的Gshopper等</div>
+                                            <i @mouseover="channelPromptShow" @mouseout="channelPromptHide" class="channelPrompt el-icon-info"></i>
+                                            <el-select class="dialogSelect" value-key="id" filterable v-model="formLabelAlign.region" @change="handleSelect" placeholder="请选择渠道平台">
+                                                <el-option
+                                                    v-for="item in restaurants"
+                                                    :key="item.id"
+                                                    :label="item.value"
+                                                    :value="item.id">
+                                                </el-option>
+                                            </el-select>
+
+                                        </el-form-item>
+                                        <el-form-item :label="$lang('渠道媒介')" prop="type">
+                                            <!-- <el-autocomplete
+                                            v-model="formLabelAlign.type"
+                                            :fetch-suggestions="querySearchAsync1"
+                                            placeholder="请输入内容"
+                                            @select="handleSelect1"
+                                            ></el-autocomplete> -->
+                                            <el-select class="dialogSelect" filterable v-model="formLabelAlign.type" @change="handleSelect1" placeholder="请选择渠道媒介">
+                                                <el-option
+                                                    v-for="item in restaurants1"
+                                                    :key="item.id"
+                                                    :label="item.value"
+                                                    :value="item.id">
+                                                </el-option>
+                                            </el-select>
+
+                                        </el-form-item>
+                                        <el-form-item :label="$lang('渠道标签')" prop="name2" label-width="80px">
+                                            <el-input v-model="formLabelAlign.name2" :disabled="true" size="medium"></el-input>
+                                        </el-form-item>
+<!-- 
+                                        <span slot="footer" class="dialog-footer">
+                                            <el-button type="primary" @click="sure('formLabelAlign')">{{$lang('确 定')}}</el-button>
+                                            <el-button @click="calce('formLabelAlign')">{{$lang('取 消')}}</el-button>
+                                        </span> -->
+                                        <el-form-item>
+                                            <el-button type="primary" @click="sure('formLabelAlign')">{{$lang('确定')}}</el-button>
+                                            <el-button @click="calce('formLabelAlign')">{{$lang('取消')}}</el-button>
+                                        </el-form-item>
+                                    </el-form>
+                                    
+                                </span>
+                </div>
+                
+
+                </el-dialog>
+
+        <!-- 模态框2 -->
+        <el-dialog :title="$lang('渠道删除')" :visible.sync="dialogTableVisible"  width="50%" show-close center>
+            <div style="padding:30px 20px;border: 1px solid #dddddd;width: 80%;margin:10px auto;text-align: center;font-size: 20px;">
+                <div>
+                    <span>{{$lang('渠道')}}&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                    <span style="font-weight: bold;">{{$lang(text)}}</span>
+                    <span>&nbsp;&nbsp;&nbsp;&nbsp;{{$lang('将被删除')}}</span>
+                </div>
+            </div>
+            <div slot="footer" class="dialog-footer">
+                    <el-button type="primary" @click="queding()">确 定</el-button>
+                    <el-button @click="dialogTableVisible = false">取 消</el-button>
+                </div>
+        </el-dialog>
+        </div>
+    </div>
+
+
+    <script type="text/javascript"
+        src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js?v=<{$Think.config.VER_NUM}>">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js">
+    </script>
+    <!-- <script type="text/javascript" src="./Application/Tpl/Home/Public/js/echarts.min.js?v=<{$Think.config.VER_NUM}>"> -->
+    </script>
+    <script>
+        
+         if (getCookie('think_language') !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en)
+        };
+        var app = new Vue({
+            el:"#app",
+            
+            data:{
+               
+                options:[
+                    {
+                        value:"all",
+                        label:'全部'
+                    },
+                    {
+                        value:"1",
+                        label:'使用中'
+                    },
+                    {
+                        value:"0",
+                        label:'已暂停'
+                    },
+                ],
+               
+                options1:[
+                    {
+                        value:"all",
+                        label:"全部"
+                    }
+                ],
+                formInline:{
+                    value:"全部",
+                    valueLabel:'all',
+                    value2:"全部",
+                    valueLabel2:"all",
+                    input1:"",
+                    input2:"",
+                    input3:"",
+                },
+                text:"",
+                gridData:[],
+
+               
+                totals:"",//页数
+                id:"",
+                centerDialogVisible: false, // 模态框
+                    tableData: [],
+                    page:1,
+                    pageSize:10,
+                    total:53,
+                    formLabelAlign: {
+                        name1: '', // 渠道名称
+                        region: '',
+                        type: '',
+                        name2:'hmsr=&hmmd='
+                    },
+                    regionValue:'',// 渠道平台的所有值
+                    typeValue:"",// 渠道媒介的所有值
+
+                    restaurants: [],
+                    restaurants1:[],
+                    timeout:  null,
+                    dialogTableVisible:false,
+
+                        // 跨域
+                         // 跨域
+                queryPost: function (url, param) {
+                    var headers = {
+                        headers: {
+                            'erp-req': true,
+                            'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+                        }
+                    }
+                    // var host = (window.location.origin == "http://erp.gshopper.com") ?
+                    //     "http://insight.gshopper.com/insight-backend/gpChannel" :
+                    //     ((window.location.origin == "http://erp.gshopper.prod.com") ?
+                    //         "http://insight.gshopper.prod.com/insight-backend/gpChannel" :
+                    //         "http://insight.gshopper.stage.com/insight-backend/gpChannel");
+
+                    var host = (window.location.origin == window.location.protocol + "//erp.gshopper.com") ?
+                        window.location.protocol + "//insight.gshopper.com/insight-backend/gpChannel" :
+                        ((window.location.origin == window.location.protocol + "//erp.gshopper.prod.com") ?
+                            window.location.protocol + "//insight.gshopper.prod.com/insight-backend/gpChannel" :
+                            window.location.protocol + "//insight.gshopper.stage.com/insight-backend/gpChannel");
+
+
+                    // 初始化时间展示
+                    return axios.post(host + url, Qs.stringify(param), headers);
+                },
+                channelPromptContent:false,
+                channel_created:{
+                    name1:[
+                        { required: true, message: '请输入渠道名称', trigger: 'blur' },
+                        { min: 0, max: 100, message: '最大不超过100个字符', trigger: 'blur' }
+                    ],
+                    type:[
+                        { required: true, message: '请输入渠道媒介', trigger: 'blur' },
+                    ],
+                    region:[
+                        { required: true, message: '请输入渠道平台', trigger: 'blur' },
+                    ],
+                }
+            },
+            computed: {
+                rules(){
+                    var validateInput1 = (rule,value,callback) =>{
+                if (value === '') {
+                    callback(new Error('请输入渠道编号'));
+                } else {
+                if (value !== '') {
+                    if(value.length>20){
+                        callback(new Error('输入渠道编号长度补得大于20'));
+                    }else if(!Number.isInteger(value)){
+                        callback(new Error('请输入数字值'));
+                    }else{
+                        this.$refs.formInline.validateField('input1');
+                    }
+                    
+                }
+                callback();
+                }
+                };
+             var validateInput2 = (rule,value,callback) =>{
+                    if(value === ''){
+                        callback(new Error('请输入渠道名称'))
+                    }else if(value.length > 20){
+                        callback(new Error('输入渠道名称长度不得大于20'));
+                    }else{
+                        callback();
+                    }
+                };
+                var validateInput3 = (rule,value,callback) =>{
+                    if(value === ''){
+                        callback(new Error('请输入渠道标签'))
+                    }else if(value.length > 20){
+                        callback(new Error('输入渠道标签长度不得大于20'));
+                    }else{
+                        callback();
+                    }
+                };
+                var name2 =(rule,value,callback) =>{
+                    // console.log(value)
+                    if(value === '' || value == undefined){
+                        callback(new Error('请输入渠道标签'))
+                    }else{
+                   const msgs = this.checkLabel(value)
+                       msgs.then((result) =>{
+                           //console.log(result)
+                           if(result.success === true){
+                            this.$message({
+                                message: result.msg,
+                                type: 'success'
+                                });
+                           }else{
+                            callback(new Error(result.msg))
+                           }
+                       })
+                       callback()
+                    }
+                   
+                };
+                var region = (rule,value,callback) =>{
+                    // console.log(value)
+                    if(value === ''){
+                        callback(new Error('请输入所选平台'))
+                    }else{
+                        const queryStatue = this.restaurants.some((item) =>{
+                                return item.value == value
+                            })
+                            if(!queryStatue){
+                                callback(new Error('未匹配到所选平台'))
+                            }else{
+                                callback()
+                            }
+                            callback()
+                    }
+                }
+                return {
+                   // input1:[
+                    //     { validator: validateInput1, trigger: 'blur' }
+                    // ],
+                    // input2:[
+                    //     { validator: validateInput2, trigger: 'blur' }
+                    // ],
+                    // input3:[
+                    //     { validator: validateInput3, trigger: 'blur' }
+                    // ],
+                    name1:[
+                        { required: true, message: '请输入渠道名称', trigger: 'blur' },
+                        { min: 0, max: 100, message: '最大不超过100个字符', trigger: 'blur' }
+                    ],
+                    region:[
+                        { required: true,validator: region, trigger: 'blur' }
+                    ],
+                    type:[
+                        { required: true, message: '请输入渠道媒介', trigger: 'blur' },
+                    ],
+                    name2:[
+                        { required: true,validator: name2, trigger: 'blur' }
+                    ]
+                
+                }
+                }
+                
+            },
+            watch: {
+                // 'formLabelAlign.region':{
+                //     handler(newVal,oldVal){
+                //         console.log(newVal)
+                //         console.log(formLabelAlign.type)
+                        
+                //     },
+                //     deep:true
+                // },
+                // 'formLabelAlign.type':{
+                //     handler(newVal,oldVal){
+                //         console.log(newVal)
+                // },
+                //     deep:true
+                // }
+            },
+            mounted() {
+                
+            },
+
+            created() {
+                this.getUserName()
+                this.getTable()
+            },
+            methods: {
+                tableRowClassName({row, rowIndex}) {
+                    // if (rowIndex === 1) {
+                    //     return 'warning-row';
+                    // } else if (rowIndex === 3) {
+                    //     return 'success-row';
+                    // }
+                    // return '';
+                },
+                clear(formName){
+                        this.formLabelAlign.name1 = ''
+                        this.formLabelAlign.region = ''
+                        this.formLabelAlign.name2 = 'hmsr=&hmmd='
+                        this.$refs[formName].clearValidate();
+                        this.$refs[formName].resetFields();
+                },
+                channelPromptShow(){
+                    this.channelPromptContent = true
+                },
+                channelPromptHide(){
+                    this.channelPromptContent = false
+                },
+                handleDelete(index, row) {
+                    console.log(row)
+                    this.dialogTableVisible = true
+                  
+                    this.text = ''
+                    this.text = row.channel_name
+                    this.gridData = []
+                    this.gridData.push({
+                        "sort_num":row.sort_num,
+                        "channel_name":row.channel_name,
+                        "channel_tag":row.channel_tag,
+                        "id":row.id
+                    })
+                },
+                handleEdit(index, row) {
+                    console.log(row);
+                   // /index.php?m=management&a=activet
+                    　window.location.href="http://erp.com/index.php?m=management&a=activet"; 
+                },
+               async queding(){
+                    let _that = this
+                    const param = {
+                        'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp-req': true,
+                        'id':_that.gridData[0].id
+                    }
+                    const url = '/deleteChannel'
+                    const delet = await _that.useAPi(url,param)
+                  
+                    if(delet.success == true){
+                        _that.$message({
+                        message: delet.msg,
+                        type: 'success'
+                        });
+                        _that.getTable()
+                        _that.dialogTableVisible = false
+                       _that.getTable()
+                    }else{
+                        _that.$message({
+                        message: delet.msg,
+                        type: 'warning'
+                        });
+                    }
+                    
+                },
+              async handleEdit1(index,row){
+                    let _that = this
+                    const param = {
+                        'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp-req': true,
+                        'id':row.id,
+                        'flag':1
+                    }
+                    const url = '/whetherUseChannel'
+                    const statue = await _that.useAPi(url,param)
+                    if(statue.success == true){
+                        _that.$message({
+                        message: statue.msg,
+                        type: 'success'
+                        });
+                        _that.getTable()
+                        //_that.dialogTableVisible = false
+                    }else{
+                        _that.$message({
+                        message: statue.msg,
+                        type: 'warning'
+                        });
+                    }
+                },
+              async handleStop(index,row){
+                    let _that = this
+                    const param = {
+                        'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp-req': true,
+                        'id':row.id,
+                        'flag':0
+                    }
+                    const url = '/whetherUseChannel'
+                    const statue = await _that.useAPi(url,param)
+                    if(statue.success == true){
+                        _that.$message({
+                        message: statue.msg,
+                        type: 'success'
+                        });
+                        _that.getTable()
+                        //_that.dialogTableVisible = false
+                    }else{
+                        _that.$message({
+                        message: statue.msg,
+                        type: 'warning'
+                        });
+                    }
+                },
+                //搜索按钮
+                onSubmit(formName){
+                    // this.$refs[formName].validate((valid) => {
+                    //     if (valid) {
+                    //         this.getTable()
+                    //     } else {
+                    //         console.log('error submit!!');
+                    //         return false;
+                    //     }
+                    //     })
+                    this.getTable()
+                    },
+                    //重置按钮
+                    resetForm(formName) {
+                    //    this.$refs[formName].resetFields();
+                        this.formInline.value = '全部'
+                        this.formInline.valueLabel = 'all'
+                        this.formInline.value2 = '全部'
+                        this.formInline.valueLabel2 = 'all'
+                        this.formInline.input1 = ''
+                        this.formInline.input2 = ''
+                        this.formInline.input3 = ''
+                        this.page = 1
+                        this.getTable()
+                },
+                    // 新增渠道
+                   
+                    addChun(){
+                        let _that = this
+                        _that.centerDialogVisible = true
+                       _that.getChannerlPlantform()
+                       _that.getqueryMedium()
+                    },
+                    sure(formName){
+                        // console.log(formName)
+                        let _that = this
+                        _that.$refs[formName].validate((valid) =>{
+                            if(valid){
+                                console.log(valid)
+                                var param = {
+                                    'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                                    'erp-req': true,
+                                    'channel_name':_that.formLabelAlign.name1, //渠道名称
+                                    'medium_name':  _that.typeValue.value, //渠道媒介
+                                    'platform_name': _that.regionValue.value, //渠道平台
+                                    'platform_tag':  _that.regionValue.tag, // 渠道平台标签
+                                    'medium_tag': _that.typeValue.tag, //媒介标签
+                                    'channel_tag': _that.formLabelAlign.name2,    // 渠道标签
+                                // 'create_by': 'manyi' //创建人
+                                }
+                                var  url = '/addChannel'
+                                // var  addNewChannerdata = _that.useAPi(url,param)
+
+                                // var  addResult = _that.addNewChanner()
+
+                                var  statue = _that.useAPi(url,param)
+                                statue.then((res) =>{
+                                    if(res && res.success == true){
+                                        _that.$message({
+                                            message: res.msg,
+                                            type: 'success'
+                                        });
+                                        _that.centerDialogVisible = false
+                                        _that.getTable()
+                                    }else{
+                                        _that.$message({
+                                            message: '渠道标签已经存在,无法保存',
+                                            type: 'warning'
+                                        });
+                                    }
+                                })
+                         
+                            }else{
+                                console.log(valid)
+                                return false
+                            }
+                      
+                            })
+                            
+                        // _that.$refs[formName].clearValidate();
+                        //  _that.$refs[formName].resetFields();
+                    },
+                    calce(formName){
+                        let _that = this
+                        _that.$refs[formName].clearValidate();
+                        _that.$refs[formName].resetFields();
+                        _that.centerDialogVisible = false
+                    },
+
+        // 新增渠道
+        // async addNewChanner(){
+        //     let _that = this
+        //     const param = {
+        //             'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+        //             'erp-req': true,
+        //             'channel_name':_that.formLabelAlign.name1, //渠道名称
+        //             'medium_name':  _that.typeValue.value, //渠道媒介
+        //             'platform_name': _that.regionValue.value, //渠道平台
+        //             'platform_tag':  _that.regionValue.tag, // 渠道平台标签
+        //             'medium_tag': _that.typeValue.tag, //媒介标签
+        //             'channel_tag': _that.formLabelAlign.name2,    // 渠道标签
+        //            // 'create_by': 'manyi' //创建人
+        //         }
+        //         const url = '/addChannel'
+        //         const addNewChannerdata = await _that.useAPi(url,param)
+        //         return addNewChannerdata
+        // },         
+    
+      //渠道平台查询
+    async getChannerlPlantform(){
+        let _that = this
+        const param = {
+                    'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                    'erp-req': true
+                }
+                const url = '/queryChannelPlatform'
+                const channerlData = await _that.useAPi(url,param)
+            
+                _that.restaurants = channerlData.datas.map((i,k) =>{
+                    return ({
+                        "value":i.platform_name,
+                        "tag":i.platform_tag,
+                        'id':i.id
+                    })
+                })
+      },
+      //  渠道媒介查询
+      async getqueryMedium(){
+        let _that = this
+        const param = {
+                    'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                    'erp-req': true
+                }
+                const url = '/queryMediumPlatform'
+                const channerlData = await _that.useAPi(url,param)
+            
+                _that.restaurants1 = channerlData.datas.map((i,k) =>{
+                    return ({
+                        "value":i.medium_name,
+                        "tag":i.medium_tag,
+                        'id':i.id
+                    })
+                })
+      },
+        querySearchAsync(queryString, cb) {
+            var restaurants = this.restaurants;
+            var results = queryString ? restaurants.filter(this.createStateFilter(queryString)) : restaurants;
+
+            clearTimeout(this.timeout);
+            this.timeout = setTimeout(() => {
+            cb(results);
+            }, 3000);
+        },
+            createStateFilter(queryString) {
+           
+                const queryStatue = this.restaurants.some((item) =>{
+                    return item.value == queryString
+                })
+             
+                if(queryStatue){
+                    return (state) => {
+                    return (state.value.toLowerCase().indexOf(queryString.toLowerCase()) === 0);
+                    console.log(state.value.toLowerCase().indexOf(queryString.toLowerCase()) === 0)
+                    };
+                }else{
+                    return false
+                }
+               
+            },
+            querySearchAsync1(queryString, cb) {
+            var restaurants = this.restaurants1;
+            var results = queryString ? restaurants.filter(this.createStateFilter1(queryString)) : restaurants;
+
+            clearTimeout(this.timeout);
+            this.timeout = setTimeout(() => {
+            cb(results);
+            }, 3000 * Math.random());
+        },
+            createStateFilter1(queryString) {
+                return (state) => {
+                            return (state.value.toLowerCase().indexOf(queryString.toLowerCase()) === 0);
+                };
+            },
+            
+            // 渠道平台
+            handleSelect(item) {
+                this.restaurants.map((item2, i) => {
+                    if (item2.id == item) {
+                         this.regionValue = item2
+                         this.formLabelAlign.region = item2.value
+                         this.formLabelAlign.name2 = 'hmsr=' +item2.tag+ '&hmmd=' + this.typeValue.tag
+                         console.log(item2)
+                         console.log(this.regionValue)
+                    }
+                })
+
+
+                // console.log(this.formLabelAlign.region)
+                // console.log(this.restaurants)
+                // this.regionValue = item
+                //  this.formLabelAlign.region = item.value
+                //  this.formLabelAlign.name2 = 'hmsr=' +item.tag+ '&hmmd=' + this.typeValue.tag
+                //  this.$refs.formLabelAlign.clearValidate();
+                // this.$nextTick(() => this.$refs.formLabelAlign.clearValidate())
+                
+            },
+            // 渠道媒介
+            handleSelect1(item){
+                this.restaurants1.map((item2, i) => {
+                    if (item2.id == item) {
+                        console.log(item2)
+                         this.typeValue = item2
+                         this.formLabelAlign.type = item2.value
+                         this.formLabelAlign.name2 = 'hmsr=' +this.regionValue.tag+ '&hmmd=' + item2.tag
+                    }
+                })
+                // this.typeValue = item
+                // this.formLabelAlign.type = item.value
+                // this.formLabelAlign.name2 = 'hmsr=' +this.regionValue.tag+ '&hmmd=' + item.tag
+                //  this.$refs.formLabelAlign.clearValidate();
+                // this.$nextTick(() => this.$refs.formLabelAlign.clearValidate())
+              
+            },
+            // 状态查寻
+            getChange(value){
+                this.formInline.valueLabel = value
+            },
+            getChange2(value){
+                // console.log(value)
+                this.formInline.valueLabel2 = value
+            },
+            /*
+            * api请求
+             */
+            // 封装公共的api
+            useAPi(url,param){
+
+                const data = this.queryPost(url,param).then((res) =>{
+                   
+                    if(res.data.success === true){
+                         return res.data
+                        
+                    }else{
+                         return res.msg
+                    }
+                    
+                })
+                .catch((error) =>{
+                    console.log(error)
+                })
+                return data
+            },
+             // 创建人查询接口
+         async getUserName(){
+             let _that = this
+                const param = {
+                    'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                    'erp-req': true
+                }
+                const url = '/queryUsername'
+                const userName = await _that.useAPi(url,param)
+                if(userName != undefined){
+                    userName.datas.forEach((i,k) =>{
+                        _that.options1.push({
+                            value:i.create_by,
+                            label:i.create_by
+                        })
+                    })
+                }
+             },
+             async getTable(){
+                 let _that = this
+                const param = {
+                    'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                    'erp-req': true,
+                    'page' :_that.page,
+                    'pageSize':10,
+                    'sort_num': _that.formInline.input1, //渠道编号
+                    'channel_name': _that.formInline.input2, //渠道名称
+                    'channel_tag':_that.formInline.input3, // 渠道媒介
+                    'status': _that.formInline.valueLabel, // 状态
+                    'create_by': _that.formInline.valueLabel2 //创建人
+                }
+                const table = await _that.useAPi('/queryChannelInfo',param)
+           
+                const datas = table.datas
+    
+                if(table!=undefined){
+                    _that.tableData = table.datas
+                _that.total = table.totalCount
+                    function isInteger(n){
+                                    return parseInt(n) == parseFloat(n)
+                                }
+                            let num = table.totalCount / _that.pageSize
+                            // console.log( res.data.totalCount)
+                            // console.log(isInteger(num))
+                           
+                            if(isInteger(num)){
+                                _that.total = table.totalCount
+
+                               
+                                if(Math.round(num) == 0){
+                                    _that.totals = 1
+                                }else{
+                                    if(Math.round(num) < num){
+                                        _that.totals = Math.round(num) + 1
+                                    }else{
+                                        _that.totals = Math.round(num)
+                                    }
+                                }
+                            }else{
+                                if(Math.round(num) == 0){
+                                    _that.totals = 1
+                                }else{
+                                    if(Math.round(num) < num){
+                                        _that.totals = Math.round(num) + 1
+                                    }else{
+                                        _that.totals = Math.round(num)
+                                    }
+                                    
+                                }
+                                _that.total = table.totalCount
+                            }
+                }else{
+                    _that.tableData = []
+                }
+               
+             },
+             // 页面翻页功能
+                currentChange:function currentChange(value){
+                    this.page = value
+                    this.getTable()
+                },
+                // 渠道标签的校验
+              async checkLabel(value){
+                    let _that = this
+                    const param = {
+                        'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp-req': true,
+                        'page' :_that.page,
+                        'pageSize':10,
+                        'create_by':'超级管理员',
+                        'channel_tag':value
+                    }
+                    const msg = await _that.useAPi('/checkLabel',param)
+                   
+                    return msg
+                }
+            
+            }
+        })
+    </script>
+</body>
+</html>

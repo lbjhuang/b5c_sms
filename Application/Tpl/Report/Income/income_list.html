@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>收入报表</title>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/../Hr/hrstyle.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+</head>
+
+<style>
+    [v-cloak] {
+        display: none;
+    }
+    .btn-pub{
+        outline: none;
+    }
+    .show-list .table-list tr th{
+        padding:0px 6px;
+    }
+    .use-row .col-100{
+        overflow: auto;
+    }
+    .el-pagination{
+        height: 200px;
+    }
+    .show-list .el-form-item__label{
+        padding-top:0px;
+        padding-bottom:0px;
+    }
+</style>
+
+<body>
+    <div id="cost" class="show-list" v-cloak>
+        <el-form ref="form" :model="form" :label-position="labelPosition" label-width="130px">
+            <div class="use-row">
+                <div class="col-100">
+                    <table class="search-table">
+                        <tbody>
+                            <tr>
+                                <td style="width:33%">
+                                    <el-form-item :label="$lang('出库日期')">
+                                        <el-date-picker style="width:100%;height: 40px;" v-model="form.zd_date"
+                                            :clearable="clearDate" value-format="yyyy-MM-dd" size="small" type="daterange"
+                                            align="right" unlink-panels :range-separator="$lang('至')"
+                                            :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')"
+                                            :picker-options="pickerOptions">
+                                        </el-date-picker>
+                                    </el-form-item>
+                                </td>
+                                <td style="width:33%">
+                                    <el-form-item :label="$lang('销售订单号')">
+                                        <el-input v-model="form.sale_no" :placeholder='$lang("全部")'>
+                                        </el-input>
+                                    </el-form-item>
+                                </td>
+                                <td style="width:33%">
+                                    <el-form-item :label="$lang('我方销售公司')">
+                                        <el-select :filterable="true" multiple collapse-tags :placeholder="$lang('全部')"
+                                            v-model="form.our_company" clearable>
+                                            <el-option :key="item.CD" :label="item.CD_VAL" :value="item.CD_VAL" v-for="item in baseData.our_company"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <el-form-item :label="$lang('销售团队')">                                                                                                                
+                                        <el-select :filterable="true" collapse-tags multiple :placeholder="$lang('全部')"
+                                            v-model="form.sale_team" clearable>
+                                            <el-option :key="item.CD" :label="item.CD_VAL" :value="item.CD" v-for="item in baseData.sell_team"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                </td>
+                                <td>
+                                    <el-form-item :label="$lang('销售PO日期')">
+                                        <el-date-picker style="width:100%;height: 40px;" v-model="form.po_date"
+                                            :clearable="clearDate" value-format="yyyy-MM-dd" size="small" type="daterange"
+                                            align="right" unlink-panels :range-separator="$lang('至')"
+                                            :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')"
+                                            :picker-options="pickerOptions">
+                                        </el-date-picker>
+                                    </el-form-item>
+                                </td>
+                                <td>
+                                    <el-form-item :label="$lang('仓库')">
+                                        <el-select v-model="form.warehouse" collapse-tags multiple filterable
+                                            :placeholder='$lang("全部")'>
+                                            <el-option v-for="item in baseData.warehouse" :key="item.CD" :label="item.CD_VAL"
+                                                :value="item.CD"> </el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <el-form-item :label="$lang('SKU/条形码')">
+                                        <el-input v-model="form.sku_upc_id" :placeholder='$lang("请输入SKU/条形码")'>
+                                        </el-input>
+                                    </el-form-item>
+                                </td>
+                                <td>
+                                    <el-form-item :label="$lang('商品名称')">
+                                        <el-input v-model="form.spu_name" :placeholder='$lang("请输入商品名称")'>
+                                        </el-input>
+                                    </el-form-item>
+                                </td>
+                                <td>
+                                    <el-form-item :label="$lang('操作人')">
+                                        <el-select v-model="form.zd_user" collapse-tags multiple filterable remote default-first-option :placeholder='$lang("请输入拼音花名")' :remote-method="remoteMethod"> 
+                                            <el-option v-for="item in userList" :key="item.id" :label="item.name" :value="item.name"> </el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <el-form-item :label="$lang('关联单数据类型')">
+                                        <el-select v-model="form.relation_type" collapse-tags multiple filterable
+                                        :placeholder='$lang("全部")' @change="selectPlatform">
+                                        <el-option v-if="item.CD == 'N002350300' || item.CD == 'N002350400'" v-for="item in baseData.relation_type" :key="item.CD" :label="item.CD_VAL"
+                                            :value="item.CD"> </el-option>
+                                    </el-select>
+                                    </el-form-item>
+                                </td>
+                                <td>
+                                    <el-form-item :label="$lang('平台')">
+                                        <el-select v-model="form.plat_cd" collapse-tags multiple filterable
+                                            :placeholder='$lang("全部")' @change="selectPlatform">
+                                            <el-option v-for="item in baseData.plat" :key="item.CD" :label="item.CD_VAL"
+                                                :value="item.CD"> </el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                </td>
+                                <td>
+                                    <el-form-item :label="$lang('店铺')">
+                                        <el-select v-model="form.store_id" collapse-tags multiple filterable
+                                            :placeholder='$lang("全部")'>
+                                            <el-option v-for="item in storeList" :key="item.CD" :label="item.CD_VAL"
+                                                :value="item.CD"> </el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <el-form-item :label="$lang('客户名称')">
+                                        <el-input v-model = "form.customer" :placeholder="$lang('请输入客户名称')"></el-input>
+                                    </el-form-item>
+                                </td>
+                                <td>
+                                    <el-form-item :label="$lang('收货国家')">
+                                            <el-input v-model = "form.country" :placeholder="$lang('请输入收货国家')"></el-input>
+                                    </el-form-item>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="col-100 use-btn">
+                                        <button type="button" class="btn-pub btn-green" @click="search">
+                                            {{$lang('查询')}}</button>
+                                        <button type="button" class="btn-pub btn-default mg-l-20" @click="reset()">{{$lang('重置')}}</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </el-form>
+        <div class="baseline"></div>
+        <div class="use-row create-wrap">
+            <div class="col-50 result-num occupy">
+                {{$lang('搜索结果')}}：&nbsp;&nbsp;{{$lang('共')}}
+                <b>{{totalCount}}</b> {{$lang('条')}}
+            </div>
+            <div class="col-50 text-right occupy" style="width: 50%">
+                <?php if(ButtonAction::hidden()){ ?>
+                <el-button type="primary" @click="exportList()">{{$lang('导出')}}</el-button>
+                <?php }?>
+            </div>
+        </div>
+        <div class="use-row">
+            <div class="col-100">
+                <table class="table-list" v-loading="tableLoading">
+                    <thead>
+                        <tr>
+                            <th>{{$lang('出库ID')}}</th>
+                            <th>{{$lang('销售币种')}}</th>
+                            <th>{{$lang('不含税销售金额')}}</th>
+                            <th>{{$lang('增值税率')}} </th>                      
+                            <th>{{$lang('增值税额')}} </th>
+                            <th>{{$lang('关联单据类型')}}</th>
+                            <th>{{$lang('销售订单号')}}</th>
+                            <th>{{$lang('我方销售公司')}}</th>
+                            <th>{{$lang('销售团队')}}</th>
+                            <th>{{$lang('销售PO时间')}}</th>
+                            <th>{{$lang('仓库')}}</th>
+                            <th>{{$lang('SKU编码')}}</th>
+                            <th>{{$lang('条形码')}}</th>
+                            <th>{{$lang('商品名称')}}</th>
+                            <th>{{$lang('商品属性')}}</th>
+                            <th>{{$lang('批次号')}}</th>
+                            <th>{{$lang('数量')}}</th>
+                            <th>{{$lang('单位')}}</th>
+                            <th>{{$lang('操作人')}}</th>
+                            <th>{{$lang('出库时间')}}</th>
+                            <th>{{$lang('平台')}}</th>
+                            <th>{{$lang('店铺')}}</th>
+                            <th>{{$lang('客户名称')}}</th>
+                            <th>{{$lang('收货国家')}}</th>
+
+
+
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(item,index) in dataList">
+                            <td>{{item.bill_no}}</td>
+                            <td>{{item.currency}}</td>
+                            <td>{{item.currency}} {{item.sale_amount_no_tax}}</td>
+                            <td>{{item.tax_rate}}</td>
+                            <td>{{item.tax}}</td>
+                            <td>{{item.relation_type}}</td>
+                            <td>{{item.sale_no}}</td>
+                            <td>{{$lang(item.our_company)}}</td>
+                            <td>{{item.sale_team}}</td>
+                            <td>{{item.po_date}}</td>
+                            <td>{{item.warehouse}}</td>
+                            <td>{{item.sku_id}}</td>
+                            <td>{{item.upc_id}}</td>
+                            <td>{{$lang(item.spu_name)}}</td>
+                            <td>{{item.attributes}}</td>
+                            <td>{{item.batch_code}}</td>
+                            <td>{{item.send_num}}</td>
+                            <td>{{item.unit}}</td>
+                            <td>{{item.zd_user}}</td>
+                            <td>{{item.zd_date}}</td>
+                            <td>{{item.plat}}</td>
+                            <td>{{item.store}}</td>
+                            <td>{{item.customer}}</td>
+                            <td>{{item.country}}</td>
+
+
+
+
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="use-row">
+            <div class="col-100 text-right">
+                <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="form.page"
+                    :page-sizes="[20, 50, 100, 200]" :page-size="form.page_size" layout="sizes, prev, pager, next,jumper"
+                    :total="totalCount"></el-pagination>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+    <script src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script>
+        if (getCookie('think_language') !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en)
+        }
+        var way = new Vue({
+            el: '#cost',
+            data: {
+                clearDate: false,
+                labelPosition: 'left',
+                totalCount: 0,
+                tableLoading: false,
+                onwayAmount: 0,
+                form: {
+                    zd_date: [],
+                    sale_no:"",
+                    our_company: [],
+                    sale_team: [],
+                    po_date: [],
+                    warehouse: [],
+                    sku_upc_id:"",
+                    spu_name:"",
+                    zd_user:[],
+                    relation_type:[],
+                    plat_cd:[],
+                    store_id:[],
+                    customer:'',
+                    page: 1,
+                    page_size: 20
+                },
+                baseData: {},
+                storeList:[],
+                dataList: [],
+                userList: [],
+                pickerOptions: {},
+                dateNow: utils.dateFormat(new Date(), 'yyyy-MM-dd'),
+            },
+            created: function () {
+                this.pickerOptions = {
+                    disabledDate(time) {
+                        return time.getTime() < new Date('2018-07-31');
+                    },
+                    shortcuts: [{
+                        text: this.$lang("最近一周"),
+                        onClick: function (picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: this.$lang("最近一个月"),
+                        onClick: function (picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: this.$lang("最近三个月"),
+                        onClick: function (picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }]
+                }
+
+                this.getBaseData();
+                this.getStoreList();
+                this.search();
+            },
+            methods: {
+                getBaseData: function () {
+                    var _this = this;
+                    var param = {
+                        cd_type: {
+                            our_company: false,
+                            warehouse:false,
+                            sell_team:false,
+                            plat:false,
+                            relation_type:false
+                        }
+                    }
+                    axios.post("/index.php?g=common&m=index&a=get_cd", param).then(function (res) {
+                        if (res.data.code == 2000) {
+                            _this.baseData = res.data.data;
+                        }
+                    })
+                },
+                selectPlatform(val){
+                    this.getStoreList(val)
+                },
+                getStoreList(platform){
+                    var _this = this;
+                    var param = {
+                        plat_form:platform
+                    }
+                    axios.post("/index.php?g=Oms&m=Order&a=storesGet", param).then(function (res) {
+                        if (res.data.status == 200000) {
+                            _this.storeList = (res.data.data.length>0)?res.data.data:[];
+                        }
+                    })
+                },
+                remoteMethod(query) {
+                    var _this = this;
+                    if (query !== '') {
+                        axios.post('/index.php?g=common&m=user&a=search_user', Qs.stringify({ name: query }))
+                            .then(function (res) {
+                                _this.userList = res.data.data || [];
+                            })
+                    } else {
+                        this.userList = [];
+                    }
+                },
+                search: function () {
+                    var _this = this;
+                    var param = this.form;
+                    this.tableLoading = true;
+                
+                    axios.post("/index.php?g=report&m=income&a=list_data", param).then(function (res) {
+                        var data = res.data;
+                        _this.tableLoading = false;
+                        if (data.code == 2000) {
+                            _this.dataList = data.data.list;
+                            _this.totalCount = +data.data.total;
+                        } else {
+                            _this.$message({
+                                message: _this.$lang('获取数据失败'),
+                                type: 'warning'
+                            });
+                        }
+                    })
+                },
+                handleSizeChange: function (size) {
+                    this.form.page_size = size;
+                    this.search();
+                },
+                handleCurrentChange: function (currentPage) {
+                    this.form.page = currentPage;
+                    this.search();
+                },
+                reset: function () {
+                    this.form = {
+                        zd_date: [],
+                        sale_no:"",
+                        our_company: [],
+                        sale_team: [],
+                        po_date: [],
+                        warehouse: [],
+                        sku_upc_id:"",
+                        spu_name:"",
+                        zd_user:[],
+                        relation_type:[],
+                        plat_cd:[],
+                        store_id:[],
+                        customer:'',
+                        page: 1,
+                        page_size:this.form.page_size
+                    }
+                },
+                exportList: function () {
+                    var param = this.form;
+                    var tmep = document.createElement('form');
+                    tmep.action = '/index.php?g=report&m=income&a=export';
+                    tmep.method = "post";
+                    tmep.style.display = "none";
+                    var opt = document.createElement("input");
+                    opt.name = 'export_params';
+                    opt.value = JSON.stringify(param);
+                    tmep.appendChild(opt);
+                    document.body.appendChild(tmep);
+                    tmep.submit();
+                    $(tmep).remove();
+                },
+            },
+            filters: {
+                numberFormat: function (val) {
+                    if (val) {
+                        var num = parseFloat(val).toLocaleString();
+                        return num.indexOf('.') > 0 ? num : num + ".00";
+                    }
+                }
+            },
+            watch: {
+                form: {
+                    handler: function handler(newValue, oldValue) {
+                        this.search();
+                    },
+
+                    deep: true
+                }
+            },
+        })
+    </script>
+</body>
+
+</html>

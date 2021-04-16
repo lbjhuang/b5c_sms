@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <title>$lang('公司证照资质管理')</title>
+    <style>
+        [v-cloak]{
+            display: none;
+        }
+        #company-license-management{
+            padding: 10px 20px;
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+        }
+        .el-table__header thead th{
+            background: #546E7A;
+            color: #fff;
+            border-bottom: 1px solid #668491;
+            border-right: 1px solid #668491;
+        }
+        .el-table__body tbody tr td{
+            border-right: 1px solid #668491;
+            border-bottom: 1px solid #668491;
+        }
+        .el-table__body tbody tr td:last-child{
+            border-right: none;
+        }
+        .el-table__body tbody tr:last-child td{
+            border-bottom: none;
+        }
+        .el-table--border, .el-table--group{
+            border-left: 1px solid #668491;
+            border-right: 1px solid #668491;
+            border-bottom: 1px solid #668491;
+        }
+        .filter_input{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .filter_input span{
+            margin-right: 10px;
+        }
+        .filter_input div{
+            width: 70%;
+        }
+        .filter_btn{
+            margin: 20px 0;
+            padding-left: 50px;
+        }
+        .company_dialog_wrap{
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+        .company_dialog_title{
+            margin-bottom: 30px;
+            font-size: 24px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .company_dialog_form .el-select{
+            padding: 0;
+            width: 100%;
+        }
+        .el-dialog__wrapper .el-dialog{
+            width: 40%;
+        }
+        .expiryDatePrompt{
+            color: #f56c6c;
+            font-size: 12px;
+            line-height: 1;
+            padding-top: 4px;
+        }
+        .expiryDateWrap >label:before{
+            content: '*';
+            color: #f56c6c;
+            margin-right: 4px;
+        }
+        .company_table_pagination{
+            margin-top: 20px;
+            text-align: right;
+        }
+        .company_add{
+            margin-bottom: 20px;
+        }
+        .dialog_footer{
+            text-align: center;
+        }
+        .dialog_footer button{
+            width: 120px;
+        }
+        .table{
+            border-bottom: 1px solid #000;
+            border-right: 1px solid #000;
+        }
+        .table td{
+            height: 40px;
+            border-top: 1px solid #000;
+            border-left: 1px solid #000;
+            text-align: center;
+            line-height: 40px;
+            padding: 0 10px;
+        }
+        .table .file_type{
+            color: #288bde;
+            cursor: pointer;
+        }
+        .attachmentLink .file_type:hover{
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+<div id="company-license-management" v-cloak style="margin-bottom:220px;">
+    <!-- 筛选条件 -->
+    <div class="header">
+        <el-row type="flex" :gutter="20">
+            <el-col :span="8" class="filter_input">
+                <span>{{$lang('资质编号')}}</span>
+                <el-input v-model="form.qualification_num"></el-input>
+            </el-col>
+            <el-col :span="8" class="filter_input">
+                <span>{{$lang('我方公司')}}</span>
+
+                <el-select @change="ourCompanyChangeForm" filterable v-model="form.ourCompany_cd">
+                    <el-option v-for="(item,index) in form.ourCompany" :key="index"
+                               :label="$lang(item.CD_VAL)"
+                               :value="item.CD">
+                    </el-option>
+                </el-select>
+
+
+            </el-col>
+            <el-col :span="8" class="filter_input">
+                <span>{{$lang('资质名称')}}</span>
+                <el-input v-model="form.qualification_name"></el-input>
+            </el-col>
+        </el-row>
+        <el-row type="flex" :gutter="20" class="filter_btn">
+            <el-col :span="8">
+                <el-button @click="search()" type="primary">{{$lang('搜索')}}</el-button>
+                <el-button @click="reset()">{{$lang('重置')}}</el-button>
+            </el-col>
+        </el-row>
+    </div>
+    <!-- 记录 -->
+    <div class="company_add">
+        <el-row type="flex" class="row-bg" align="middle">
+            <el-col :span="12">
+                <span>{{$lang('搜索结果')}}：{{$lang('共')}}<span> {{page.count}} </span>{{$lang('条记录')}}</span>
+            </el-col>
+            <el-col style="text-align: right" :span="12">
+                <el-button type="primary" @click="operating('新增资质')" class="seacher">{{$lang('新增')}}</el-button>
+            </el-col>
+        </el-row>
+    </div>
+    <!-- 表单内容 -->
+    <!-- 表单内容 -->
+    <div class="company_table">
+        <el-table :data="tableData" border style="width: 100%" v-loading="tableLoading">
+            <el-table-column align="center" :label="$lang('资质编号')" width="160px">
+                <template slot-scope="scope">
+                    <span>{{scope.row.number}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('我方公司名称')" width="160px">
+                <template slot-scope="scope">
+                    <span>{{$lang(scope.row.our_company_code_val)}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('证照名称 (文件名称)')" width="200px">
+                <template slot-scope="scope">
+                    <span>{{scope.row.name}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('发证日')" width="130px">
+                <template slot-scope="scope">
+                    <span>{{scope.row.issue_date}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('到期日')" width="130px">
+                <template slot-scope="scope">
+                    <span v-if="scope.row.is_long_time == '1'">{{$lang('长期')}}</span>
+                    <span v-else>{{scope.row.expire_date}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('续证时间')" width="130px">
+                <template slot-scope="scope">
+                    <span>{{scope.row.renew_date}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('注意事项(备注)')" width="280px">
+                <template slot-scope="scope">
+                    <span>{{scope.row.precautions}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('文件内容摘录')" width="280px">
+                <template slot-scope="scope">
+                    <span>{{scope.row.content}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('资质附件')" width="120px">
+                <template slot-scope="scope">
+                        <el-popover
+                        placement="bottom"
+                        title=""
+                        trigger="click">
+                        <table class="table" cellpadding="0" cellspacing="0">
+                            <tr v-for="item in scope.row.attachment">
+                                <td class="file_type" @click="open(item.save_name)">{{item.save_name}}</td>
+                                <td><a class="file_type" :href="'/index.php?m=order_detail&a=download&file='+item.save_name">{{$lang('下载')}}</a></td>
+                            </tr>
+                        </table>
+                        <!-- <div class="attachmentLink" v-for="item in scope.row.attachment">
+                            <a class="file_type" :href="'/opt/b5c-disk/img/'+item.save_name">{{item.original_name}}</a>
+                            <a class="file_type" :href="'/index.php?m=order_detail&a=download&file='+item.save_name">下载</a>
+                        </div> -->
+                        <span slot="reference" style="color:#409EFF;cursor: pointer;" v-if="scope.row.attachment.length > 0">{{$lang('查看附件')}}</span>
+                        </el-popover>
+                </template>
+            </el-table-column>
+
+            <!-- <el-table-column align="center" :label="$lang('发证机关')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.issue_office}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('续证地点')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.renew_address}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('续证材料')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.renew_material}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('对应负责部门')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.department}}</span>
+                </template>
+            </el-table-column> -->
+            <el-table-column align="center" width="180" :label="$lang('操作')" width="90px">
+                <template slot-scope="scope">
+                    <!-- <el-button size="mini" @click="operating('modefied',scope.row)" type="primary">{{$lang('编辑')}}</el-button>
+                    <el-button size="mini" @click="operating('delete',scope.row)">{{$lang('删除')}}</el-button> -->
+                    <el-button size="small" type="primary" @click="operating('资质详情',scope.row)">{{$lang('查看')}}</el-button>
+                </template>
+            </el-table-column>
+        </el-table>
+        <!-- 分页 -->
+        <div v-show="paginationStatus" class="company_table_pagination">
+            <el-pagination
+                    background
+                    @current-change="handleCurrentChange"
+                    @size-change="handleSizeChange"
+                    :current-page.sync="page.this_page"
+                    :page-size="page.page_count"
+                    :page-sizes="[10, 30, 50, 100]"
+                    layout="total, sizes, prev, pager, next, jumper"
+                    :total="page.count">
+            </el-pagination>
+
+        </div>
+    </div>
+
+    <!-- 对话框 -->
+    <!-- <el-dialog :visible.sync="dialogVisible" :close-on-click-modal=false @close='closeDialog'>
+        <div class="company_dialog_wrap" style="overflow: hidden;">
+            <div class="company_dialog_title">
+                <span>{{$lang('资质信息')}}</span>
+            </div>
+            <el-form class="company_dialog_form" :model="dialogForm" :rules="rules" ref="ruleForm" label-width="130px">
+                <el-form-item prop="ourCompany_cd"  :label="$lang('所属我方公司')">
+                    <el-select @change="ourCompanyChange" filterable v-model="dialogForm.ourCompany_cd">
+                        <el-option v-for="(item,index) in dialogForm.ourCompany" :key="index"
+                                   :label="$lang(item.CD_VAL)"
+                                   :value="item.CD">
+                        </el-option>
+
+                    </el-select>
+                </el-form-item>
+                <el-form-item prop="qualificationName" :label="$lang('资质名称')">
+                    <el-input v-model="dialogForm.qualificationName" auto-complete="off"></el-input>
+                </el-form-item>
+                <el-form-item class="attachmentWrap" prop="qualificationAttachment" :label="$lang('资质附件')">
+                    <el-upload
+                            class="upload"
+                            action="/index.php?g=common&m=file&a=file_upload"
+                            :on-success="handleSuccess"
+                            :on-preview="handlePreview"
+                            :on-remove="handleRemove"
+                            :before-remove="beforeRemove"
+                            :before-upload="handleBeforeUpload"
+                            :file-list="dialogForm.qualificationAttachment">
+                        <el-button size="small" type="primary">{{$lang('上传文件')}}</el-button>
+                    </el-upload>
+                    <div class="expiryDatePrompt" v-show="attachmentPrompt">请上传资质附件</div>
+                </el-form-item>
+                <el-form-item prop="issuingDay" :label="$lang('发证日')">
+                    <el-date-picker
+                            v-model="dialogForm.issuingDay"
+                            type="date"
+                            placeholder="选择日期"
+                            :picker-options="pickerOptions">
+                    </el-date-picker>
+                </el-form-item>
+                <el-form-item class="expiryDateWrap" prop="expiryDate" :label="$lang('到期日')">
+                    <el-date-picker
+                            :disabled="dialogForm.expiryDateStatus"
+                            v-model="dialogForm.expiryDate"
+                            type="date"
+                            placeholder="选择日期">
+                    </el-date-picker>
+                    <el-checkbox v-model="dialogForm.expiryChecked">长期</el-checkbox>
+                    <div class="expiryDatePrompt" v-show="expiryDatePrompt">请选择到期日</div>
+                </el-form-item>
+                <el-form-item prop="expiryChecked">
+                    <el-checkbox v-model="dialogForm.expiryChecked">长期</el-checkbox>
+                </el-form-item>
+                <el-form-item prop="renewalDate" :label="$lang('续证时间')">
+                    <el-date-picker
+                            v-model="dialogForm.renewalDate"
+                            type="date"
+                            placeholder="选择日期">
+                    </el-date-picker>
+                </el-form-item>
+                <el-form-item prop="issuingAuthority" :label="$lang('发证机关')">
+                    <el-input v-model="dialogForm.issuingAuthority" auto-complete="off"></el-input>
+                </el-form-item>
+                <el-form-item prop="renewalLocation" :label="$lang('续证地点')">
+                    <el-input v-model="dialogForm.renewalLocation" auto-complete="off"></el-input>
+                </el-form-item>
+                <el-form-item prop="renewalMaterial" :label="$lang('续证材料')">
+                    <el-input v-model="dialogForm.renewalMaterial" auto-complete="off"></el-input>
+                </el-form-item>
+                <el-form-item prop="correspondingDepartment" :label="$lang('对应负责部门')">
+                    <el-input v-model="dialogForm.correspondingDepartment" auto-complete="off"></el-input>
+                </el-form-item>
+                <el-form-item prop="precautions" :label="$lang('注意事项')">
+                    <el-input type="textarea" :rows="4" v-model="dialogForm.precautions" auto-complete="off"></el-input>
+                </el-form-item>
+            </el-form>
+            <div slot="footer" class="dialog_footer">
+                <el-button @click="submitButton('ruleForm')" type="primary">{{$lang('确定')}}</el-button>
+            </div>
+        </div>
+    </el-dialog> -->
+
+</div>
+
+<!--引入js-->
+<script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Company/companyLicenseQualificationManagement.js?v=<{$Think.const.V}>"></script>
+
+</body>
+</html>

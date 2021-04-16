@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/lib/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/purchaseDetail.css">
+    <link rel="stylesheet" href="../Public/css/logistics.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <title><{$Think.lang.运费详情}></title>
+    <style>
+        [v-cloak]{display: none !important;}
+        .layui-layer-content{width:500px;background:white !important;border:1px solid #cccccc;border-right:2px solid #cccccc}
+    </style>
+</head>
+<body>
+<div class="col-lg-12 col-md-12 col-sm-12 rule_add" id="rule_log" >
+    <input type="hidden" id="logModeId" value=<?php echo $logModeId ?> >
+    <div class="row row_title">
+        <!-- <a>Wish<{$Think.lang.邮}>-<{$Think.lang.欧洲专线}>-<{$Think.lang.规则详情}></a> -->
+        <a @click="jump()" style="font-weight: 100;cursor: pointer;">{{logName}}</a> &nbsp&nbsp&nbsp&nbsp&nbsp
+        <a class="active">{{$lang('查看日志')}}</a>
+    </div>
+    <div class="detail_form">
+        <form id="edit_part">
+            <table class="table table-bg">
+                <thead>
+                    <th width="40%">{{$lang('时间')}}</th>
+                    <th width="30%">{{$lang('操作人')}}</th>
+                    <th width="30%">{{$lang('详细信息')}}</th>
+                </thead>
+                <tbody>
+                    <template v-for="item in logList">
+                    <tr>
+                        <td>{{item.CREATE_TIME}}</td>
+                        <td>{{item.CREATE_USER}}</td>
+                        <td>{{$lang(item.LOG_MSG)}}</td>
+                    </tr>
+                    </template>
+                   
+                </tbody>
+            </table>
+        </form>
+    </div>
+         <div class="logistics_table_record" v-cloak style="text-align: right;" >
+            <div class="block">
+                <el-pagination
+                    @current-change="handleCurrentChange"
+                    @size-change="handleSizeChange"
+                    :current-page.sync="page.sePage"
+                    :page-size="page.pageSize"
+                    :page-sizes="[20, 50, 100, 200]"
+                    layout="total, sizes, prev, pager, next, jumper"
+                    :total="page.pageLength">
+                </el-pagination>
+            </div>
+        </div>
+</div>
+</body>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<!-- <script type="text/javascript" src="/Application/Tpl/Home/Public/js/vue-2.4.2.js?v=<{$Think.const.V}>"></script> -->
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/element-ui.js?v=<{$Think.const.V}>"></script>
+<script src="/Application/Tpl/Home/Public/lib/layer/1.9.3/layer.js" type="text/javascript"></script>
+<script src="/Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script src="/Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript">
+    var log = new Vue({
+        el: '#rule_log',
+        data:{
+            logList:[],
+            page:{
+                sePage:1,
+                pageSize:20,
+                pageLength:50,
+                pageShow:'none',
+                displayLength:0,
+            },
+            logName:'',
+            TotalPageSize:0,
+        },
+        created:function () {
+            this.search();
+        },
+        mounted:function(){
+            //翻页处校验，跳到输入页码的页面，当大于最大页数时，提示报错。
+            $("#rule_log .logistics_table_record").on("keyup",'.el-pagination__jump .el-pagination__editor',function () {
+                var amount = parseFloat($(this).val());
+                //上下左右，删除，enter键以及纯数字键盘校验。
+                if (event.key !== 'Backspace' && isNaN(event.key) && event.key !== 'ArrowDown' && event.key !== 'ArrowUp' && event.key !== 'ArrowRight' && event.key !== 'ArrowLeft'&& event.key !== 'Enter') {
+                    $(this).val('')
+                    layer.msg("<span class='invoice_detail_bomb_tip'><i style='color: red'>X</i>输入页码有误，请检查后重新输入</span>");
+                    return false;
+                }
+                if(amount ==0|| amount > log.TotalPageSize){
+                    layer.msg("<span class='invoice_detail_bomb_tip'><i style='color: red'>X</i>输入页码有误，请检查后重新输入</span>");
+                    $(this).val('')
+                    return false;
+                }
+            })
+        },
+        methods:{
+            //页面加载数据初始化
+            search:function(){
+                var logModeId = $("#logModeId").val();
+                axios.get("/index.php?g=logistics&m=FreightRules&a=logList&logModeId="+logModeId+"&sePage="+this.page.sePage+"&pageSize="+this.page.pageSize)
+                 .then(function(res){
+                    log.logList = res.data.data;
+                    log.page.pageLength = res.data.total;
+                    log.logName = res.data.name;
+                    var TotalPageSize = Number(res.data.total)/Number(res.data.data.length)
+                    log.TotalPageSize = Math.ceil(TotalPageSize);
+                 })
+            },
+            //翻页跳转函数
+            handleCurrentChange:function(val){
+                this.page.sePage = val;
+                this.search();
+            },
+            //改变当前页数据展示的条数。
+            handleSizeChange:function(val){
+                this.page.pageSize =val;
+                this.search();
+            },
+            //跳转到对应物流运费模板列表页
+            jump:function(){
+                var logModeId = $("#logModeId").val();
+                var trackurl = "/index.php?g=logistics&m=FreightRules&a=rule_list&logModeId="+logModeId;
+                var route = document.createElement("a");
+                route.setAttribute("style", "display: none");
+                route.setAttribute("onclick", "changenewtab(this,'运费规则表')");
+                route.setAttribute("_href", trackurl);
+                route.click();
+                //window.location = "/index.php?g=logistics&m=FreightRules&a=rule_list&logModeId="+logModeId;
+            }
+        }
+    })
+</script>
+</html>

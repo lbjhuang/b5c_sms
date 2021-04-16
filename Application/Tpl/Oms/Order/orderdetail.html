@@ -1,0 +1,2409 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="/Application/Tpl/Oms/Order/orderDetail.css">
+    <title>Oms订单详情</title>
+    <style>
+        [v-cloak] {
+            display: none !important;
+        }
+
+
+        .check-tip-icon{
+            margin-left: 10px;
+            cursor: pointer;
+        }
+        .check-tip-icon::before{
+            color: #E6A23C;
+            background: #fff;
+            border-radius: 50%;
+            font-size: 22px;
+        }
+        .to-detail-btn {
+            text-decoration: underline;
+            cursor: pointer;
+            color: #1E7EB4;
+        }
+
+        .cell {
+            word-break: break-all;
+            word-wrap: normal;
+            text-overflow: ellipsis;
+            vertical-align: middle;
+            width: 100%;
+            box-sizing: border-box;
+            white-space: normal;
+            line-height: 20px;
+        }
+
+        .dispach-basic-info td {
+            padding: 10px 6px;
+        }
+
+        .goods-table.el-table,
+        .goods-table.el-table__body-wrapper {
+            overflow: visible !important;
+        }
+
+        .el-table--enable-row-hover .el-table__body tr:hover>td {
+            background-color: #ffffff;
+        }
+
+        .consignee-basic-info td {
+            padding: 0px 8px;
+        }
+
+        .el-table .cell {
+            word-break: break-word !important;
+        }
+
+        .ellipsis {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer;
+            width: 60%;
+            margin: 0 auto;
+        }
+
+        .isGroupSku {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            padding: 0px 6px;
+            background: #FF9100;
+            border: none;
+            color: #fff;
+        }
+        .address_tooltip{
+            display: inline-block;
+            position: absolute;
+            top: 27px;
+            right: 0px;
+            width: 22px;
+            height: 22px;
+            line-height: 22px;
+            background: #ddd;
+        }
+        #ProductKey .has-gutter{
+            display: none;
+        }
+    </style>
+
+</head>
+
+<body class="orderDetail">
+<div ref="orderDetail" id="order-detail">
+    <el-tabs v-model="activeName" @tab-click="handleClick" v-cloak>
+        <el-tab-pane :label="$lang('订单详情')" name="first">
+            <div class="order-basic-info">
+                <header style="margin-top:10px">
+                    {{$lang('基础信息')}}
+                </header>
+                <table border="0" cellspacing="0" cellpadding="0" class="order-basic-table">
+                    <tbody>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('订单号')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span>{{detailData.order_id}}</span>
+                        </td>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('下单时间')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-if="!!detailData.order_time">{{detailData.order_time | formatDateSS}}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('订单来源')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span>{{detailData.orderOrigin}}</span>
+                        </td>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('付款时间')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-if="!!detailData.payment_time">{{detailData.payment_time | formatDateSS}}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('平台订单状态')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span>{{detailData.order_source == 'GENERAL SYSTEM' ? detailData.third_party_order_status : ''}}</span>
+                        </td>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('平台发货时间')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-if="!!detailData.delivery_time">{{detailData.delivery_time | formatDateSS}}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('订单状态')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span>{{$lang(detailData.order_status)}}</span>
+                        </td>
+
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('派单时间')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-if="!!detailData.send_ord_time">{{detailData.send_ord_time | formatDate}}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('平台订单ID')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span>{{detailData.third_party_order_id}}</span>
+                        </td>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('出库时间')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-if="!!detailData.sendout_time">{{detailData.sendout_time | formatDate}}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('平台订单号')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span>{{detailData.third_party_order_number}}</span>
+                        </td>
+
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('站点')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span>{{detailData.platform_name}}</span>
+                        </td>
+
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('订单获取方式')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span>{{$lang(detailData.order_source)}}</span>
+                        </td>
+
+
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('店铺名称')}}
+                            </div>
+                        </td>
+                        <td>
+                            <a class="to-detail-btn" v-if="detailData.storeIndexUrl" class="to-detail-btn" target="_blank" :href="detailData.storeIndexUrl">{{detailData.store_name}}</a>
+                            <span v-if="!detailData.storeIndexUrl">{{detailData.store_name}}</span>
+                        </td>
+
+
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('关联类型/单号')}}
+                            </div>
+                        </td>
+                        <td>
+                            <div v-show="detailData.associateOrders != ''">
+                                <div v-for="item in detailData.associateOrders">
+                                    <span>{{item.orderTypeNm}} :</span>
+                                    <span>{{item.orderId}}</span>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('销售团队')}}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="ellipsis" :title="$lang(detailData.sales_team)">{{$lang(detailData.sales_team)}}</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('运营备注')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span style="white-space: pre-wrap;">{{detailData.operational_notes}}</span>
+                        </td>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('销售小团队')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-if="detailData.sell_small_team">{{detailData.sell_small_team}}</span>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('订单类型')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span style="white-space: pre-wrap;">{{$lang(detailData.btc_order_type_cd_val)}}</span>
+                        </td>
+                        <td class="info-title">
+                        </td>
+                        <td>
+                        </td>
+                    </tr>
+                    <!-- <tr>
+                <td class="info-title">
+                    <div class="cell">
+                        {{$lang('订单取消原因')}}
+                    </div>
+                </td>
+                <td>
+                    <span>{{$lang(detailData.cancel_reason)}}</span>
+                </td>
+            </tr> -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="cooperation-basic-info" v-if="detailData.btc_order_type_cd == 'N003720002'">
+                <header style="margin-top:10px">
+                    {{$lang('合作信息')}}
+                </header>
+                <table border="0" cellspacing="0" cellpadding="0" class="order-basic-table">
+                    <tbody>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('合作店铺ID')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-if="detailData.cooperative_info">{{detailData.cooperative_info.reality_opt_store_id}}</span>
+                        </td>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('合作公司')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-if="detailData.cooperative_info">{{$lang(detailData.cooperative_info.supplier_id_val)}}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell" v-if="detailData.cooperative_info">
+                                {{$lang('合作方结算价（'+detailData.cooperative_info.cooperative_price_currency_val+'）')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-if="detailData.cooperative_info">
+                                <span>{{detailData.cooperative_info.cooperative_price_currency_val}}</span>
+                                {{detailData.cooperative_info.cooperative_price}}
+                            </span>
+                        </td>
+                        <td class="info-title">
+                        </td>
+                        <td>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="dispach-basic-info">
+                <header>
+                    {{$lang('派单信息')}}
+                </header>
+                <table border="0" cellspacing="0" cellpadding="0" class="guds-basic-table">
+                    <thead>
+                    <tr>
+                        <th>
+                            {{$lang('订单ID/子订单ID')}}
+                        </th>
+                        <th>
+                            {{$lang('商品名称')}}
+                        </th>
+                        <th>
+                            {{$lang('下发仓库')}}
+                        </th>
+                        <th>
+                            {{$lang('下发数量')}}
+                        </th>
+                        <th>
+                            {{$lang('库存是否充足')}}
+                        </th>
+                        <th>
+                            {{$lang('物流公司')}}
+                        </th>
+                        <th>
+                            {{$lang('物流方式')}}
+                        </th>
+                        <th>
+                            {{$lang('用户指定配送方式')}}
+                        </th>
+                        <th>
+                            {{$lang('运单号')}}
+                        </th>
+                        <th>
+                            {{$lang('包装号')}}
+                        </th>
+                        <th>
+                            {{$lang('物流状态')}}
+                        </th>
+                        <th>
+                            {{$lang('派单状态')}}
+                        </th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr v-for="item in detailData.patch_data">
+                        <td v-if="item.suborder_id">{{item.suborder_id}}</td>
+                        <td v-else>{{item.PARENT_ORDER_ID}}</td>
+                        <td>{{$lang(item.product_name)}}</td>
+                        <td>{{$lang(item.delivery_warehouse)}}</td>
+                        <td>{{item.the_number_issued}}</td>
+                        <td>
+                                    <span v-if="item.stock_adequate == '0'">
+                                        {{$lang('否')}}
+                                    </span>
+                            <span v-if="item.stock_adequate == '1'">
+                                        {{$lang('是')}}
+                                    </span>
+                        </td>
+                        <td>{{$lang(item.logistics_company)}}</td>
+                        <td>{{$lang(item.shipping_methods)}}</td>
+                        <td>{{item.default_warehouse_logistics }}</td>
+                        <td>{{item.waybill_number}}</td>
+                        <td>{{detailData.packing_no}}</td>
+                        <td>{{$lang(item.logistics_status)}}</td>
+                        <td>{{$lang(item.send_status)}}</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="guds-basic-info">
+                <header>
+                    {{$lang('商品信息')}}
+                    <?php if(ButtonAction::hidden()){ ?>
+                    <button v-if="detailData.is_patch == 1  && sendOrdStatus != 'N001821101'" class="guds-edit-btn" @click="addPrentShow">
+                        {{$lang('新增赠品')}}
+                    </button>
+
+                    <button v-if="!isGudsEditStatus  && (sendOrdStatus === 'N001820100' || sendOrdStatus ==='N001821000' || sendOrdStatus ==='N001820300') && isShowEditButtonByOmsListEntry" class="guds-edit-btn" @click="editGuds">
+                        {{$lang('编辑')}}
+                    </button>
+                    <?php } ?>
+                    <?php if(ButtonAction::hidden()){ ?>
+                    <button v-show="isGudsEditStatus" :disabled="isClickedGuds" class="guds-save-btn" @click="saveGuds">
+                        {{$lang('保存')}}
+                    </button>
+                    <?php } ?>
+                    <button v-show="isGudsEditStatus" class="guds-cancel-btn" @click="cancelGuds">
+                        {{$lang('取消')}}
+                    </button>
+                    <el-button v-if="(sendOrdStatus === 'N001820100' || sendOrdStatus ==='N001821000' || sendOrdStatus ==='N001820300') && isShowEditButtonByOmsListEntry" class="guds-edit-btn" style="background: #fff;color:#606266" @click="checkGroupSkuMap" v-loading.fullscreen="fullscreenLoading">
+                        {{$lang('组合拆商品')}}
+                    </el-button>
+                </header>
+                <!-- 赠品弹窗 -->
+                <el-dialog class="present-pop" :title="$lang('赠品')" :visible.sync="addPresentIsShow" width="30%">
+                    <div class="present-top">
+                        <div class="id-and-name">
+                            <span>SKU ID</span>
+                            <el-input type="number" class="sku-id" @blur="skuIdChange" v-model="skuIdValue" size="small"></el-input>
+                            <span class="sku-name">SKU {{$lang('名称')}}</span>
+                            <el-input class="sku-goods-name" @blur="skuNameChange" v-model="skuName" size="small"></el-input>
+
+                            <span class="sku-name">{{$lang('产品ID(非必填)')}}</span>
+                            <el-input class="product-id" v-model="productId" :disabled="disablebInput == 0 ? true : false" size="small">
+                                <template slot="append">
+                                    <el-dropdown trigger="click" @command="handleCommand">
+                                        <i class="el-icon-caret-bottom" style="cursor: pointer;"></i>
+                                        <el-dropdown-menu slot="dropdown">
+                                            <el-dropdown-item command="0" v-show="productIdOpt">{{productIdOpt}}</el-dropdown-item>
+                                            <el-dropdown-item command="1">{{$lang('手动输入')}}</el-dropdown-item>
+                                        </el-dropdown-menu>
+                                    </el-dropdown>
+
+                                </template>
+                            </el-input>
+                        </div>
+
+                        <div class="present-img">
+                            <img class="present-imgMsg" src="https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1530696796368&di=393beaaad7cc6db7a072d258569f80d1&imgtype=0&src=http%3A%2F%2Fs16.sinaimg.cn%2Fmw690%2F003gRgrCzy73OGZAV434f%26690">
+                            <!-- <img src="" class="present-img-show" alt=""> -->
+                        </div>
+                    </div>
+                    <div class="present-bottom">
+                        <div class="present-num">
+                            <p>SKU {{$lang('数量')}}</p>
+                            <el-input class="sku-input" type="number" v-model="skuNum" size="small"></el-input>
+                        </div>
+                        <div class="present-price">
+                            <p>SKU {{$lang('成本价格（元)')}}</p>
+                            <el-input class="sku-input-price price-min" :disabled="true" v-model="skuPriceSmall" size="small"></el-input> —
+                            <el-input class="sku-input-price price-max" :disabled="true" v-model="skuPriceBig" size="small"></el-input>
+                        </div>
+                    </div>
+                    <span slot="footer" class="dialog-footer">
+                            <el-button type="primary" @click="presentAdd">{{$lang('提交')}}</el-button>
+                            <el-button @click="presentCanal">{{$lang('取 消')}}</el-button>
+                        </span>
+                </el-dialog>
+                <el-dialog class="present-pop" :title="$lang('组合商品信息')" :visible.sync="dialogCheckGroup" width="50%">
+                    <div v-for="(val,key) in groupSkuMapData">
+
+                        <head>
+                            {{$lang('组合商品' + key +',对应的子sku为:')}}
+                        </head>
+                        <el-table border show-header :data="val" tooltip-effect="dark" class="guds-basic-table  goods-table">
+                            <el-table-column prop="sku_id" label="SKU ID">
+                            </el-table-column>
+                            <el-table-column prop="upc_id" :label="$lang('商品编码')">
+                            </el-table-column>
+                            <el-table-column :label="$lang('商品名称')">
+                                <template slot-scope="scope">
+                                    {{$lang(scope.row.spu_name)}}
+                                </template>
+                            </el-table-column>
+                            <el-table-column :label="$lang('属性值')">
+                                <template slot-scope="scope">
+                                    {{$lang(scope.row.product_attr)}}
+                                </template>
+                            </el-table-column>
+                            <el-table-column prop="thumbnail" :label="$lang('商品图片')" style="position: relative;">
+                                <template slot-scope="scope">
+                                    <img v-if="!!scope.row.thumbnail" :src="scope.row.thumbnail" style="cursor: pointer;" width="80" height="80" @mouseenter="showImg(scope.row)" @mouseleave="showImg(scope.row)">
+                                    <div style="position: absolute; top: 10px; left: 100px; box-shadow: 0 0 5px #536d7a;z-index:999" v-if="scope.row.bigImg">
+                                        <img :src="scope.row.thumbnail" width="300" height="300">
+                                    </div>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                    </div>
+                    <div>
+                        <footer>
+                            {{$lang('拆成子sku后,将按子sku进行出库,不可回到当前组合状态,确认还要拆商品吗？')}}
+                        </footer>
+                    </div>
+                    <span slot="footer" class="dialog-footer">
+                            <el-button type="primary" @click="submitGroupSku">{{$lang('提交')}}</el-button>
+                            <el-button @click="dialogCheckGroup = false">{{$lang('取 消')}}</el-button>
+                        </span>
+                </el-dialog>
+                <el-table border show-header ref="multipleTable" :data="gudsInfo" tooltip-effect="dark" class="guds-basic-table" @selection-change="handleSelection" style="width: 100%;">
+                    <el-table-column type="selection"></el-table-column>
+                    <el-table-column label="SKU ID" width="110">
+                        <template slot-scope="scope">
+                            <!-- <div :class="{isEmptyBlock:!scope.row.b5cSkuId}" v-show="!isGudsEditStatus && !scope.row.groupSkuId">
+                                {{scope.row.b5cSkuId}}
+                            </div>
+                            <div :class="{isEmptyBlock:!scope.row.b5cSkuId}" v-show="!isGudsEditStatus && scope.row.groupSkuId">
+                                {{scope.row.b5cSkuId}}{{$lang('组合')}}ID: </br> {{scope.row.groupSkuId}}
+                            </div> -->
+                            <div :class="scope.row.b5cSkuId ? 'isValuedBlock' : 'isEmptyBlock'" v-show="!isGudsEditStatus && !scope.row.groupSkuId">
+                                {{scope.row.b5cSkuId}}
+                            </div>
+                            <div :class="scope.row.b5cSkuId ? 'isValuedBlock' : 'isEmptyBlock'" v-show="!isGudsEditStatus && scope.row.groupSkuId">
+                                {{scope.row.b5cSkuId}}{{$lang('组合')}}ID: </br> {{scope.row.groupSkuId}}
+                            </div>
+                            <el-input size="small" v-model="gudsInfo[scope.$index]['b5cSkuId']" v-show="isGudsEditStatus" :disabled="detailData.isB2c === 1"></el-input>
+                            <div style="color: blue;cursor: pointer" @click="searchProductKey(scope.row)">Product Key</div>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="skuId" :label="$lang('平台SKUID')" width="120">
+                    </el-table-column>
+                    <el-table-column :label="$lang('产品ID')" width="80">
+                        <template slot-scope="scope">
+                            <span v-show="!isGudsEditStatus">{{scope.row.orderItemId}}</span>
+                            <el-input size="small" v-model="gudsInfo[scope.$index]['orderItemId']" v-show="isGudsEditStatus" :disabled="detailData.isB2c === 1"></el-input>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="itemName" :label="$lang('平台名称')" width="180">
+                    </el-table-column>
+                    <el-table-column :label="$lang('中文名称')" width="180">
+                        <template slot-scope="scope">
+                            <div>
+                                <a v-if="scope.row.PRODUCT_DETAIL_URL" class="to-detail-btn" target="_blank" :href="scope.row.PRODUCT_DETAIL_URL">
+                                    {{scope.row.brand_name}} 
+                                    <span v-if="scope.row.brand_name && scope.row.product_name">|</span> 
+                                    {{scope.row.product_name}}
+                                </a>
+                                <span v-else>
+                                    {{scope.row.brand_name}} 
+                                    <span v-if="scope.row.brand_name && scope.row.product_name">|</span> 
+                                    {{scope.row.product_name}}
+                                </span>
+                                <span class="isGroupSku" v-if="scope.row.is_group_sku == '1'">组合</span>
+                            </div>
+                            <div class="presentTips" v-show="scope.row.gudsType == 1">{{$lang('赠品')}}</div>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="product_name_en" :label="$lang('英文名称')" width="180">
+                    </el-table-column>
+                    <el-table-column prop="guds_img_cdn_addr" :label="$lang('商品图片')" style="position: relative;" width="100">
+                        <template slot-scope="scope">
+                            <el-popover placement="right" width="300" trigger="hover">
+                                <img :src="scope.row.guds_img_cdn_addr" width="300" height="300">
+                                <img slot="reference" v-if="!!scope.row.guds_img_cdn_addr" :src="scope.row.guds_img_cdn_addr" style="cursor: pointer;" width="80" height="80">
+                            </el-popover>
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('条形码')" width="125">
+                        <template slot-scope="scope">
+                            <span style="white-space: pre-line">{{scope.row.barcode}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('属性（值）')" width="100">
+                        <template slot-scope="scope">
+                            <span v-html="scope.row.optNameValueStr"></span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('规格')">
+                        <template slot-scope="scope">
+                            <!-- <span :class="{isEmptyBlock:scope.row.isTrue}">{{scope.row.specification}}</span> -->
+                            <span :class="scope.row.isTrue ? 'isEmptyBlock' : 'isValuedBlock'">{{scope.row.specification}}</span>
+
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('重量')" width="60">
+                        <template slot-scope="scope">
+                            <!-- <span :class="{isEmptyBlock:!scope.row.weight}">{{scope.row.weight}}</span> -->
+                            <span :class="scope.row.weight ? 'isValuedBlock' : 'isEmptyBlock'">{{scope.row.weight}}</span>
+
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="itemCount" :label="$lang('数量')" width="60">
+                    </el-table-column>
+                    <el-table-column :label="$lang('申报价格(USD)')" width="140">
+                        <template slot-scope="scope">
+                            <!-- <span :class="{isEmptyBlock:!scope.row.customsPrice}" v-show="!isGudsEditStatus">{{scope.row.customsPrice}}</span> -->
+                            <span :class="scope.row.customsPrice ? 'isValuedBlock' : 'isEmptyBlock'" v-show="!isGudsEditStatus">USD {{scope.row.customsPrice}}</span>
+                            <el-input size="small" v-model="gudsInfo[scope.$index]['customsPrice']" v-show="isGudsEditStatus"></el-input>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="GUDS_HS_CODE2" :label="$lang('海关申报编码')" width="120">
+                    </el-table-column>
+                    <el-table-column :label="date.label" v-for="date in tableHeader" width="120">
+                        <template slot-scope='scope'>
+                            <span v-if="date.name == 'costPrice' || date.name == 'cooperative_final_price'">USD</span>
+                            <span v-else>
+                                <span v-if="detailData.btc_order_type_cd !== 'N003720002'">{{detailData.trading_currency}}</span>
+                            </span>
+                            {{gudsInfo[scope.$index][date.name]}}
+                            <!-- <div v-if="date.name == 'costPrice' && gudsInfo[scope.$index][date.name]"> ({{gudsInfo[scope.$index].spu_currency}})</div> -->
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('操作')" width="80">
+                        <template scope='scope'>
+                            <el-button v-if="gudsInfo[scope.$index].gudsType == 1  && sendOrdStatus != 'N001821101'" size="mini" @click="delePresent(gudsInfo[scope.$index])" >{{$lang('删除')}}</el-button>
+                            <!-- <el-button size="mini" @click="delePresent(gudsInfo[scope.$index])"  v-show="gudsInfo[scope.$index].gudsType == 1">{{$lang('删除')}}</el-button> -->
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('是否上架Gshopper')" width="85">
+                        <template slot-scope='scope'>
+                            {{scope.row.gudsType != 1 ? $lang(scope.row.is_on_sale_snapshot_name) :  '—'}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('是否编辑人民币、美元价格，是否编辑中、英详情图')" width="200">
+                        <template slot-scope='scope'>
+                            {{scope.row.gudsType != 1 ? $lang(scope.row.edited_error_msg) || '已编辑' : '—'}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('收件人国家是否上架')" width="160">
+                        <template slot-scope='scope'>
+                            {{scope.row.gudsType != 1 ? $lang(scope.row.is_on_sale_reciever_snapshot_name) : '—'}}
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </div>
+            <div class="pay-basic-info">
+                <header>
+                    {{$lang('支付信息')}}
+                </header>
+                <table border="0" cellspacing="0" cellpadding="0" class="order-basic-table">
+                    <tbody>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('账户名称')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span>{{detailData.payAccountId}}</span>
+                        </td>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('支付类型')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span>{{detailData.payMethod}}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('交易号')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span>{{detailData.transaction_number || '-'}}</span>
+                        </td>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('商品总价')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-if="detailData.total_price_of_goods">
+                                <span v-if="detailData.btc_order_type_cd == 'N003720002'">USD</span>
+                                <span v-else>{{detailData.trading_currency}}</span>
+                                 {{detailData.total_price_of_goods}}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('交易币种')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-if="detailData.btc_order_type_cd == 'N003720002'">USD</span>
+                            <span v-else>{{detailData.trading_currency || '-'}}</span>
+                        </td>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('税费')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-if="detailData.taxes_and_fees">商品税：{{detailData.taxes_and_fees}}</span>
+                            <span v-if="detailData.promotion_discount_tax">优惠税：{{detailData.promotion_discount_tax}}</span>
+                            <span v-if="detailData.shipping_tax">运费税：{{detailData.shipping_tax}}</span>
+                            <span v-if="detailData.shipping_discount_tax ">运费折扣税：{{detailData.shipping_discount_tax}}</span>
+                            <span v-if="detailData.gift_wrap_tax">包装税：{{detailData.gift_wrap_tax}}</span>
+                            <span v-if=" !detailData.promotion_discount_tax && !detailData.gift_wrap_tax && !detailData.shipping_discount_tax && !detailData.shipping_tax && !detailData.taxes_and_fees"> - </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('运费')}} {{$lang('向用户收取')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span>{{detailData.shipping_costs || '-'}}</span>
+                        </td>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('支付总价')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-if="detailData.pay_the_total_price">
+                                <span v-if="detailData.btc_order_type_cd !== 'N003720002'">{{detailData.trading_currency}}</span>
+                                 {{detailData.pay_the_total_price}}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('定金金额')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span>{{detailData.total_deposit_amount || '-'}}</span>
+                        </td>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('支付总价(美元)')}}
+                            </div>
+                        </td>
+                        <td>
+                            <!-- <span :class="{isEmptyBlock:!detailData.pay_the_total_price_usd}">{{detailData.pay_the_total_price_usd || '-'}}</span> -->
+                            <span v-if="detailData.pay_the_total_price_usd" :class="detailData.pay_the_total_price_usd ? 'isValuedBlock' : 'isEmptyBlock'">
+                                <span v-if="detailData.btc_order_type_cd !== 'N003720002'">USD</span>
+                                {{detailData.pay_the_total_price_usd}}
+                            </span>
+
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('优惠金额')}}
+                            </div>
+                        </td>
+                        <td>
+                            <!-- <span>{{$lang('平台优惠：')}}{{Number(detailData.platform_discount_price).toFixed(2)}} + {{$lang('商家优惠：')}}{{Number(detailData.seller_discount_price).toFixed(2)}} + {{$lang('其他优惠：')}}{{Number(detailData.other_discounted_price).toFixed(2)}} = {{$lang('总优惠金额：')}}{{Number(detailData.discounted_price).toFixed(2)}}</span> -->
+
+                            <span v-if="Number(detailData.platform_discount_price)">{{$lang('平台优惠')}}：{{detailData.trading_currency}} {{Number(detailData.platform_discount_price).toFixed(2)}}</span>
+                            <span v-if="Number(detailData.platform_discount_price) && Number(detailData.seller_discount_price)">+</span>
+                            <span v-if="Number(detailData.seller_discount_price)">{{$lang('商家优惠')}}：{{detailData.trading_currency}} {{Number(detailData.seller_discount_price).toFixed(2)}}</span>
+                            <span v-if="Number(detailData.seller_discount_price) && Number(detailData.other_discounted_price)">+</span>
+                            <span v-if="Number(detailData.other_discounted_price)">{{$lang('其他优惠')}}：{{detailData.trading_currency}} {{Number(detailData.other_discounted_price).toFixed(2)}}</span>
+                            <span v-if="Number(detailData.platform_discount_price) || Number(detailData.seller_discount_price) || Number(detailData.other_discounted_price)">=</span>
+                            <span>{{$lang('总优惠金额')}}：{{detailData.trading_currency}} {{Number(detailData.discounted_price).toFixed(2)}}</span>
+                        </td>
+
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('结算金额')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-if="detailData.pay_settle_price">
+                                <span v-if="detailData.btc_order_type_cd !== 'N003720002'">{{detailData.trading_currency}}</span>
+                                {{detailData.pay_settle_price}}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('使用优惠码')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span>{{detailData.promo_code || '-'}}</span>
+                        </td>
+
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('结算金额（美元）')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-if="detailData.pay_settle_price_dollar">
+                                <span v-if="detailData.btc_order_type_cd !== 'N003720002'">USD</span>
+                                {{detailData.pay_settle_price_dollar}}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('包装费')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span>{{detailData.pay_wrapper_amount || '-'}}</span>
+                        </td>
+
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('买家联系方式')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span>{{detailData.credit_card_phone_no || '-'}}</span>
+                            <el-button style="position: absolute;right:5px;margin-top:-6px;" type="primary" size="mini" @click="sendQuery">{{$lang('发送订单信息确认短信')}}</el-button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('手续费')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span>{{detailData.pay_instalment_service_amount || '-'}}</span>
+                        </td>
+
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('买家短信回复内容')}}
+                            </div>
+                        </td>
+                        <td>
+                            <ul v-if="detailData.credit_card_sms && detailData.credit_card_sms.length > 0">
+                                <li style="white-space: normal;text-align: left" v-for="item in detailData.credit_card_sms">{{item.recv_msg}}</li>
+                            </ul>
+                            <span v-else>-</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('买家信用卡地址')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span>{{detailData.credit_card_bill_address || '-'}}</span>
+                        </td>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('交易号2')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span>{{detailData.out_trade_no || '-'}}</span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="consignee-basic-info">
+                <header>
+                    {{$lang('收货人信息')}}
+                    <el-tooltip v-if="detailData.address_valid_status == 1 && detailData.is_patch_order == 1" class="item" effect="light" placement="top-start">
+                        <div slot="content">
+                            <div style="padding: 8px 20px; border: 1px solid #282828;border-radius: 6px;margin-bottom: 10px;display: inline-block;cursor: pointer;" @click="copy">复制</div>
+                            <div id="errorMsg">
+                                <div v-if="JSON.parse(detailData.address_valid_res).data">
+                                    <div>resultMsg: <span>
+                                        {{JSON.parse(detailData.address_valid_res).data.resultMsg}}</span> </div>
+                                    <div>suggestionList:</div>
+                                    <div style="padding-left: 30px;">
+                                        <div v-for="(item,index) in JSON.parse(detailData.address_valid_res).data.suggestionList" :key="index">
+                                            {{index+1}}:"zipcode":{{item.zipcode}} "city":{{item.city}} "street":{{item.street}}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div v-else>
+                                    {{JSON.parse(detailData.address_valid_res).msg}}
+                                </div>
+                            </div>
+                        </div>
+                        <i class="el-icon-warning check-tip-icon"></i>
+                    </el-tooltip>
+                    <i class="el-icon-check check-icon" v-if="detailData.address_valid_status == 2 && detailData.is_patch_order == 1"></i>
+                    <?php if(ButtonAction::hidden()){ ?>
+                    <!-- <button v-show="!isConsigneeEditStatus" class="consignee-edit-btn" @click="editConsignee">
+                        {{$lang('编辑')}}
+                </button> -->
+                    <button v-if="!isConsigneeEditStatus  && sendOrdStatus != 'N001821101'" class="consignee-edit-btn" @click="editConsignee">
+                        {{$lang('编辑')}}
+                    </button>
+                    <?php } ?>
+                    <?php if(ButtonAction::hidden()){ ?>
+                    <button v-show="isConsigneeEditStatus" :disabled="isClicked" class="consignee-save-btn" @click="saveConsignee">
+                        {{$lang('保存')}}
+                    </button>
+                    <?php } ?>
+                    <button v-show="isConsigneeEditStatus" class="consignee-cancel-btn" @click="cancelConsignee">
+                        {{$lang('取消')}}
+                    </button>
+                    <button :disabled="checkValid" v-if="detailData.is_address_valid && detailData.is_patch_order == 1" :class="checkValid ? 'btn-disabled' : ''" class="consignee-edit-btn" style="background: #ffffff; color: rgb(96, 98, 102);" @click="checkAddress">
+                        {{checkValid ? $lang('地址校验中，请稍后...') : $lang('校验地址')}}
+                    </button>
+                </header>
+                <table border="0" cellspacing="0" cellpadding="0" class="order-basic-table">
+                    <tbody>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('收货人姓名')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-show="!isConsigneeEditStatus">{{detailData.consignee_name}}</span>
+                            <el-input size="small" class="consignee-name" v-show="isConsigneeEditStatus" v-model="detailData.consignee_name"></el-input>
+                        </td>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('收货人手机号')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-show="!isConsigneeEditStatus">{{detailData.receiver_phone_number}}</span>
+                            <el-input size="small" class="consignee-receiver_phone_number" v-show="isConsigneeEditStatus" v-model="detailData.receiver_phone_number"></el-input>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('收货人身份证')}}
+                            </div>
+                        </td>
+                        <td>
+                            <div v-show="!isConsigneeEditStatus">
+                                <span style="display: inline-block;width: 80%;vertical-align: middle;"> {{detailData.buyer_id}} </span>
+                                <span style="display: inline-block;width: 20%;text-align: right;vertical-align: middle;">
+                                        <el-popover placement="bottom" title="" width="200" trigger="click" v-model="showDecode" v-if="detailData.isB2c == 1">
+                                            <div><i style="position: absolute; cursor: pointer; top: 10px; right: 10px;" class="el-icon-close" @click="closeDecode"></i></div>
+                                            <div style="text-align: center;">{{detailData.buyerUserIdentityName}}</div>
+                                            <div style="margin-top: 12px;" class="text-center">{{decodebuyerId}}</div>
+                                            <el-button type="primary" size="mini" slot="reference" @click="decodeId">{{$lang('查看完整信息')}}</el-button>
+                                        </el-popover>
+                                        </span>
+                            </div>
+                            <el-input size="small" class="consignee-buyer_id" v-show="isConsigneeEditStatus" v-model="detailData.buyer_id"></el-input>
+                        </td>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('收货人电话')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-show="!isConsigneeEditStatus">{{detailData.receiver_tel_number}}</span>
+                            <el-input size="small" class="consignee-tel" v-show="isConsigneeEditStatus" v-model="detailData.receiver_tel_number"></el-input>
+                        </td>
+
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('收货人邮箱')}}
+                            </div>
+                        </td>
+                        <td>
+                            <!-- <span :class="{isEmptyBlock:!detailData.country}" v-show="!isConsigneeEditStatus">{{detailData.receiver_email}}</span> -->
+                            <span :class="detailData.country ? 'isValuedBlock' : 'isEmptyBlock'" v-show="!isConsigneeEditStatus">{{detailData.receiver_email}}</span>
+
+                            <el-input size="small" class="consignee-mail" v-show="isConsigneeEditStatus" v-model="detailData.receiver_email"></el-input>
+                        </td>
+
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('买家ID')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-show="!isConsigneeEditStatus">{{$lang(detailData.buyerUserId)}}</span>
+                            <el-input size="small" class="consignee-buyers-id" v-show="isConsigneeEditStatus" v-model="detailData.buyerUserId"></el-input>
+                        </td>
+
+                    </tr>
+                    <tr>
+
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('国家')}}
+                                <i class="el-icon-check check-icon-border" v-if="detailData.address_valid_status == 2 && detailData.is_patch_order == 1"></i>
+                            </div>
+                        </td>
+                        <td>
+                            <!-- <span :class="{isEmptyBlock:!detailData.country}" v-show="!isConsigneeEditStatus">{{$lang(detailData.country)}}</span> -->
+                            <span :class="detailData.country ? 'isValuedBlock' : 'isEmptyBlock'" v-show="!isConsigneeEditStatus">{{$lang(detailData.country)}}</span>
+                            <el-input size="small" class="consignee-country" v-show="isConsigneeEditStatus" v-model="detailData.country"></el-input>
+                        </td>
+
+
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('省份')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-show="!isConsigneeEditStatus" class="consignee-prime">{{detailData.province}}</span>
+                            <el-input size="small" class="consignee-prime" v-show="isConsigneeEditStatus" v-model="detailData.province"></el-input>
+                        </td>
+
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('市')}}
+                                <i class="el-icon-check check-icon-border" v-if="detailData.address_valid_status == 2 && detailData.is_patch_order == 1"></i>
+                            </div>
+                        </td>
+                        <td>
+                            <span v-show="!isConsigneeEditStatus" class="consignee-city">{{detailData.city}}</span>
+                            <el-input size="small" class="consignee-city" v-show="isConsigneeEditStatus" v-model="detailData.city"></el-input>
+                        </td>
+
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('区（县）')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-show="!isConsigneeEditStatus && detailData.isB2c === 1" class="consignee-region">{{detailData.region}}</span>
+                            <span v-show="!isConsigneeEditStatus && detailData.isB2c === 0" class="consignee-region"></span>
+                            <el-input size="small" :disabled="detailData.isB2c === 0" class="consignee-region" v-show="isConsigneeEditStatus" v-model="detailData.region"></el-input>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('详细地址1')}}
+                                <i class="el-icon-check check-icon-border" v-if="detailData.address_valid_status == 2 && detailData.is_patch_order == 1"></i>
+                            </div>
+                        </td>
+                        <td style="overflow: hidden;white-space: nowrap;text-overflow: ellipsis;position: relative;">
+                            <!-- <span :class="{isEmptyBlock:!detailData.address}" v-show="!isConsigneeEditStatus" class="consignee-address">{{detailData.address}}</span> -->
+                            <span :class="detailData.address ? 'isValuedBlock' : 'isEmptyBlock'" style="white-space: pre-wrap;" v-show="!isConsigneeEditStatus" class="consignee-address">{{detailData.address}}</span>
+                            <el-input size="small" class="consignee-address" type="textarea" v-show="isConsigneeEditStatus" v-model="detailData.address"></el-input>
+                            <span class="address_tooltip" v-if="detailData.address">{{detailData.address.length}}</span>
+                        </td>
+
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('详细地址2')}}
+                            </div>
+                        </td>
+                        <td style="overflow: hidden;white-space: nowrap;text-overflow: ellipsis;position: relative;">
+                            <!-- <span v-show="!isConsigneeEditStatus" class="consignee-address2">{{detailData.address2}}</span> -->
+                            <span :class="detailData.address2 ? 'isValuedBlock' : 'isEmptyBlock'" style="white-space: pre-wrap;" v-show="!isConsigneeEditStatus" class="consignee-address2">{{detailData.address2}}</span>
+                            <el-input size="small" class="consignee-address2" type="textarea" v-show="isConsigneeEditStatus" v-model="detailData.address2"></el-input>
+                            <span class="address_tooltip" v-if="detailData.address2">{{detailData.address2.length}}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('详细地址3')}}
+                            </div>
+                        </td>
+                        <td style="overflow: hidden;white-space: nowrap;text-overflow: ellipsis;position: relative;">
+                            <!-- <span v-show="!isConsigneeEditStatus" class="consignee-address3">{{detailData.address3}}</span> -->
+                            <span :class="detailData.address3 ? 'isValuedBlock' : 'isEmptyBlock'" style="white-space: pre-wrap;" v-show="!isConsigneeEditStatus" class="consignee-address3">{{detailData.address3}}</span>
+                            <el-input size="small" class="consignee-address3" type="textarea" v-show="isConsigneeEditStatus" v-model="detailData.address3"></el-input>
+                            <span class="address_tooltip" v-if="detailData.address3">{{detailData.address3.length}}</span>
+                        </td>
+
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('详细地址4')}}
+                            </div>
+                        </td>
+                        <td style="overflow: hidden;white-space: nowrap;text-overflow: ellipsis;position: relative;">
+                            <!-- <span v-show="!isConsigneeEditStatus" class="consignee-address4">{{detailData.address4}}</span> -->
+                            <span :class="detailData.address4 ? 'isValuedBlock' : 'isEmptyBlock'" style="white-space: pre-wrap;" v-show="!isConsigneeEditStatus" class="consignee-address4">{{detailData.address4}}</span>
+                            <el-input size="small" class="consignee-address4" type="textarea" v-show="isConsigneeEditStatus" v-model="detailData.address4"></el-input>
+                            <span class="address_tooltip" v-if="detailData.address4">{{detailData.address4.length}}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('邮编')}}
+                                <i class="el-icon-check check-icon-border" v-if="detailData.address_valid_status == 2 && detailData.is_patch_order == 1"></i>
+                            </div>
+                        </td>
+                        <td>
+                            <span v-show="!isConsigneeEditStatus">{{detailData.zip_code}}</span>
+                            <el-input size="small" class="consignee-zip_code" v-show="isConsigneeEditStatus" v-model="detailData.zip_code"></el-input>
+                        </td>
+
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('买家身份证')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-show="!isConsigneeEditStatus">{{detailData.buyerUserIdentityCard}}</span>
+                            <!-- <el-input size="small" class="consignee-card" v-show="isConsigneeEditStatus" v-model="detailData.buyerUserIdentityCard"></el-input> -->
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('用户备注')}}
+                            </div>
+                        </td>
+                        <td style="white-space: initial;padding: 8px;">
+                            <span>{{$lang(detailData.user_comments)}}</span>
+                        </td>
+
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('门牌号')}}
+                                <i class="el-icon-check check-icon-border" v-if="detailData.address_valid_status == 2 && detailData.is_patch_order == 1"></i>
+                            </div>
+                        </td>
+                        <td>
+                            <span v-show="!isConsigneeEditStatus" class="consignee-doorplate">{{detailData.doorplate}}</span>
+                            <el-input size="small" class="consignee-doorplate" v-show="isConsigneeEditStatus" v-model="detailData.doorplate"></el-input>
+                        </td>
+                    </tr>
+                    <tr v-if="detailData.plat_cd == 'N000830300' || detailData.plat_cd == 'N000830400' || detailData.plat_cd == 'N000830500'">
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('次要收货人姓名')}}
+                            </div>
+                        </td>
+                        <td style="white-space: initial;padding: 8px;">
+                            <span>{{$lang(detailData.sub_addr_recipient_name)}}</span>
+                        </td>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('次要收货地址')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span>{{detailData.sub_addr}}</span>
+                        </td>
+                    </tr>
+                    <tr v-if="detailData.plat_cd == 'N000830300' || detailData.plat_cd == 'N000830400' || detailData.plat_cd == 'N000830500'">
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('通行符')}}
+                            </div>
+                        </td>
+                        <td style="white-space: initial;padding: 8px;">
+                            <span>{{$lang(detailData.kr_customs_code)}}</span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <!-- 发票地址 -->
+            <div v-if="detailData.has_invoice_address == '1'" class="consignee-basic-info">
+                <header>
+                    {{$lang('发票地址')}}
+                    <button v-if="!isInvoiceAddressStatus" class="consignee-edit-btn" @click="isInvoiceAddressStatus = true">
+                        {{$lang('编辑')}}
+                    </button>
+                    <button v-show="isInvoiceAddressStatus"  class="consignee-save-btn" @click="saveInvoiceAddress">
+                        {{$lang('保存')}}
+                    </button>
+                    <button v-show="isInvoiceAddressStatus" class="consignee-cancel-btn" @click="cancelInvoiceAddress">
+                        {{$lang('取消')}}
+                    </button>
+                </header>
+                <table border="0" cellspacing="0" cellpadding="0" class="order-basic-table">
+                    <tbody>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('公司')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-show="!isInvoiceAddressStatus">{{detailData.invoice_company}}</span>
+                            <el-input size="small" class="consignee-name" v-show="isInvoiceAddressStatus" v-model="detailData.invoice_company"></el-input>
+                        </td>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('手机号')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-show="!isInvoiceAddressStatus">{{detailData.invoice_phone}}</span>
+                            <el-input size="small" v-show="isInvoiceAddressStatus" v-model="detailData.invoice_phone"></el-input>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('姓名')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-show="!isInvoiceAddressStatus">{{detailData.invoice_name}}</span>
+                            <el-input size="small" v-show="isInvoiceAddressStatus" v-model="detailData.invoice_name"></el-input>
+                        </td>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('电话号')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-show="!isInvoiceAddressStatus">{{detailData.invoice_mobile}}</span>
+                            <el-input size="small" class="consignee-tel" v-show="isInvoiceAddressStatus" v-model="detailData.invoice_mobile"></el-input>
+                        </td>
+
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('性别')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-show="!isInvoiceAddressStatus">{{detailData.invoice_civility}}</span>
+                            <el-input size="small" v-show="isInvoiceAddressStatus" v-model="detailData.invoice_civility"></el-input>
+                        </td>
+
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('国家')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-show="!isInvoiceAddressStatus">{{$lang(detailData.invoice_country)}}</span>
+                            <el-input size="small" class="consignee-buyers-id" v-show="isInvoiceAddressStatus" v-model="detailData.invoice_country"></el-input>
+                        </td>
+
+                    </tr>
+                    <tr>
+
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('省份')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-show="!isInvoiceAddressStatus">{{detailData.invoice_province}}</span>
+                            <el-input size="small" v-show="isInvoiceAddressStatus" v-model="detailData.invoice_province"></el-input>
+                        </td>
+
+
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('市')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-show="!isInvoiceAddressStatus" class="consignee-prime">{{detailData.invoice_city}}</span>
+                            <el-input size="small" class="consignee-prime" v-show="isInvoiceAddressStatus" v-model="detailData.invoice_city"></el-input>
+                        </td>
+
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('区县')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-show="!isInvoiceAddressStatus" class="consignee-city">{{detailData.invoice_area}}</span>
+                            <el-input size="small" class="consignee-city" v-show="isInvoiceAddressStatus" v-model="detailData.invoice_area"></el-input>
+                        </td>
+
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('邮编')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-show="!isInvoiceAddressStatus">{{detailData.invoice_zip_code}}</span>
+                            <el-input size="small" v-show="isInvoiceAddressStatus" v-model="detailData.invoice_zip_code"></el-input>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('详细地址1')}}
+                            </div>
+                        </td>
+                        <td style="overflow: hidden;white-space: nowrap;text-overflow: ellipsis;position: relative;">
+                            <span :class="detailData.invoice_street_1 ? 'isValuedBlock' : 'isEmptyBlock'" style="white-space: pre-wrap;" v-show="!isInvoiceAddressStatus" class="consignee-address">{{detailData.invoice_street_1}}</span>
+                            <el-input size="small" class="consignee-address" type="textarea" v-show="isInvoiceAddressStatus" v-model="detailData.invoice_street_1"></el-input>
+                            <span class="address_tooltip" v-if="detailData.invoice_street_1">{{detailData.invoice_street_1.length}}</span>
+                        </td>
+
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('详细地址2')}}
+                            </div>
+                        </td>
+                        <td style="overflow: hidden;white-space: nowrap;text-overflow: ellipsis;position: relative;">
+                            <span :class="detailData.invoice_street_2 ? 'isValuedBlock' : 'isEmptyBlock'" style="white-space: pre-wrap;" v-show="!isInvoiceAddressStatus" class="consignee-address2">{{detailData.invoice_street_2}}</span>
+                            <el-input size="small" class="consignee-address2" type="textarea" v-show="isInvoiceAddressStatus" v-model="detailData.invoice_street_2"></el-input>
+                            <span class="address_tooltip" v-if="detailData.invoice_street_2">{{detailData.invoice_street_2.length}}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('详细地址3')}}
+                            </div>
+                        </td>
+                        <td style="overflow: hidden;white-space: nowrap;text-overflow: ellipsis;position: relative;">
+                            <span :class="detailData.invoice_street_3 ? 'isValuedBlock' : 'isEmptyBlock'" style="white-space: pre-wrap;" v-show="!isInvoiceAddressStatus" class="consignee-address3">{{detailData.invoice_street_3}}</span>
+                            <el-input size="small" class="consignee-address3" type="textarea" v-show="isInvoiceAddressStatus" v-model="detailData.invoice_street_3"></el-input>
+                            <span class="address_tooltip" v-if="detailData.invoice_street_3">{{detailData.invoice_street_3.length}}</span>
+                        </td>
+
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('详细地址4')}}
+                            </div>
+                        </td>
+                        <td style="overflow: hidden;white-space: nowrap;text-overflow: ellipsis;position: relative;">
+                            <span :class="detailData.invoice_street_4 ? 'isValuedBlock' : 'isEmptyBlock'" style="white-space: pre-wrap;" v-show="!isInvoiceAddressStatus" class="consignee-address4">{{detailData.invoice_street_4}}</span>
+                            <el-input size="small" class="consignee-address4" type="textarea" v-show="isInvoiceAddressStatus" v-model="detailData.invoice_street_4"></el-input>
+                            <span class="address_tooltip" v-if="detailData.invoice_street_4">{{detailData.invoice_street_4.length}}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('门牌号')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-show="!isInvoiceAddressStatus">{{detailData.apartment_number}}</span>
+                            <el-input size="small" class="consignee-zip_code" v-show="isInvoiceAddressStatus" v-model="detailData.apartment_number"></el-input>
+                        </td>
+
+                        <td class="info-title">
+                            <div class="cell">
+                                
+                            </div>
+                        </td>
+                        <td>
+                        </td>
+                    </tr>
+                   
+                    </tbody>
+                </table>
+            </div>
+            <!-- 退款信息 -->
+            <div class="refund-info">
+                <header>
+                    {{$lang('退款信息')}}
+                </header>
+                <table border="0" cellspacing="0" cellpadding="0" class="order-basic-table">
+                    <tbody>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('退款发起商品金额')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-if="refund_info">{{refund_info.comm_currency_cd_val}} {{refund_info.refund_comm_amount}}</span>
+                        </td>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('退款发起总金额')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-if="refund_info">{{refund_info.total_currency_cd_val}} {{refund_info.refund_total_amount}}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('退款原因')}}
+                            </div>
+                        </td>
+                        <td>
+                            <span v-if="refund_info">{{refund_info.refund_reason}}</span>
+                        </td>
+                        <td class="info-title">
+                            <div class="cell">
+                                {{$lang('同步日期')}}
+                            </div>
+                        </td>
+                        <td>
+                                        <span v-if="refund_info">
+                                            {{refund_info.syn_at | formatDate}}
+                                        </span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="guds-basic-info" v-if="(afterSaleInfo.reissue_info && afterSaleInfo.reissue_info.length>0) || (afterSaleInfo.return_info && afterSaleInfo.return_info.length>0)">
+                <header>
+                    {{$lang('售后信息')}}
+                </header>
+                <el-tag style="background:black; color: white;margin-top: 5px;" v-if="afterSaleInfo.reissue_info && afterSaleInfo.reissue_info.length>0">{{$lang('补发')}}</el-tag>
+                <el-table border show-header ref="multipleTable" :data="afterSaleInfo.reissue_info" tooltip-effect="dark" class="guds-basic-table  goods-table" v-if="afterSaleInfo.reissue_info && afterSaleInfo.reissue_info.length>0">
+                    <el-table-column prop="after_sale_no" :label="$lang('售后单号')"></el-table-column>
+                    <el-table-column :label="$lang('商品编码')">
+                        <template slot-scope="scope">
+                            <div v-if="scope.row.product_info && scope.row.product_info.hasOwnProperty('sku_id')">{{scope.row.product_info.sku_id}}</div>
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('商品名称')">
+                        <template slot-scope="scope">
+                            <div v-if="scope.row.product_info && scope.row.product_info.hasOwnProperty('spu_name')">{{scope.row.product_info.spu_name}}</div>
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('商品属性')">
+                        <template slot-scope="scope">
+                            <div v-if="scope.row.product_info && scope.row.product_info.hasOwnProperty('product_attr')">{{scope.row.product_info.product_attr}}</div>
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('商品图片')" style="position: relative;" width="100">
+                        <template slot-scope="scope">
+                            <img v-if="scope.row.product_info && scope.row.product_info.hasOwnProperty('thumbnail')" :src="scope.row.product_info.thumbnail" style="cursor: pointer;" width="80" height="80" @mouseenter="showImg(scope.row)" @mouseleave="showImg(scope.row)">
+                            <div style="position: absolute; top: 10px; left: 100px; box-shadow: 0 0 5px #536d7a;z-index:999" v-if="scope.row.bigImg">
+                                <img :src="scope.row.product_info.thumbnail" width="300" height="300">
+                            </div>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="yet_reissue_num" :label="$lang('期望补发件数')"></el-table-column>
+                    <el-table-column prop="yet_reissue_num" :label="$lang('已补发件数')"></el-table-column>
+                    <el-table-column prop="reissue_no" :label="$lang('补发单号')"></el-table-column>
+                    <el-table-column prop="child_order_no" :label="$lang('子订单号')"></el-table-column>
+                    <el-table-column :label="$lang('收货人姓名')">
+                        <template scope="scope">
+                            <span>{{scope.row.receiver_name}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="receiver_phone" :label="$lang('收货人手机号')"></el-table-column>
+                    <el-table-column :label="$lang('详细地址')">
+                        <template scope="scope">
+                            <span>{{scope.row.address}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('申请人')">
+                        <template scope="scope">
+                            <span>{{scope.row.created_by}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="created_at" :label="$lang('发起时间')"></el-table-column>
+                    <el-table-column :label="$lang('售后状态')">
+                        <template scope="scope">
+                            {{$lang(scope.row.status_code_val)}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('售后原因')">
+                        <template scope="scope">
+                            <span>{{scope.row.reissue_reason}}</span>
+                        </template>
+                    </el-table-column>
+                </el-table>
+                <el-tag style="background:black; color: white;margin-top: 5px;" v-if="afterSaleInfo.return_info && afterSaleInfo.return_info.length>0">退货</el-tag>
+                <el-table border show-header ref="multipleTable" :data="afterSaleInfo.return_info" tooltip-effect="dark" class="guds-basic-table goods-table" v-if="afterSaleInfo.return_info && afterSaleInfo.return_info.length>0">
+                    <el-table-column prop="after_sale_no" :label="$lang('售后单号')"></el-table-column>
+                    <el-table-column prop="logistics_no" :label="$lang('物流单号')"></el-table-column>
+                    <el-table-column :label="$lang('商品编码')">
+                        <template slot-scope="scope">
+                            <div v-if="scope.row.product_info && scope.row.product_info.hasOwnProperty('sku_id')">{{scope.row.product_info.sku_id}}</div>
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('商品名称')">
+                        <template slot-scope="scope">
+                            <div v-if="scope.row.product_info && scope.row.product_info.hasOwnProperty('spu_name')">{{scope.row.product_info.spu_name}}</div>
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('商品属性')">
+                        <template slot-scope="scope">
+                            <div v-if="scope.row.product_info && scope.row.product_info.hasOwnProperty('product_attr')">{{scope.row.product_info.product_attr}}</div>
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('商品图片')" style="position: relative;" width="100">
+                        <template slot-scope="scope">
+                            <img v-if="scope.row.product_info && scope.row.product_info.hasOwnProperty('thumbnail')" :src="scope.row.product_info.thumbnail" style="cursor: pointer;" width="80" height="80" @mouseenter="showImg(scope.row)" @mouseleave="showImg(scope.row)">
+                            <div style="position: absolute; top: 10px; left: 100px; box-shadow: 0 0 5px #536d7a;z-index:999" v-if="scope.row.bigImg">
+                                <img :src="scope.row.product_info.thumbnail" width="300" height="300">
+                            </div>
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('期望退货件数')">
+                        <template scope="scope">
+                            <span>{{parseInt(scope.row.yet_warehouse_num) + parseInt(scope.row.refuse_warehouse_num)}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="yet_warehouse_num" :label="$lang('已退货件数')"></el-table-column>
+                    <el-table-column prop="refuse_warehouse_num" :label="$lang('拒绝退货件数')"></el-table-column>
+                    <el-table-column :label="$lang('退货仓库')">
+                        <template scope="scope">
+                            <span>{{scope.row.warehouse_code_val}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('预计物流费用')">
+                        <template slot-scope="scope">
+                            {{scope.row.logistics_fee_currency_code_val}} {{scope.row.logistics_fee}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('服务费')">
+                        <template slot-scope="scope">
+                            {{scope.row.service_fee_currency_code_val}} {{scope.row.service_fee}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('申请人')">
+                        <template scope="scope">
+                            <span>{{scope.row.created_by}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="created_at" :label="$lang('发起时间')"></el-table-column>
+                    <el-table-column :label="$lang('售后状态')">
+                        <template scope="scope">
+                            {{$lang(scope.row.status_code_val)}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('售后原因')">
+                        <template scope="scope">
+                            <span>{{scope.row.return_reason}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('拒绝退货原因')">
+                        <template scope="scope">
+                            <span>{{scope.row.refuse_warehouse_reason}}</span>
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </div>
+
+        </el-tab-pane>
+        <el-tab-pane :label="$lang('操作日志')" name="second">
+            <div class="order-operation-log ">
+                <el-table :data="tableData" stripe border show-header style="width: 100%">
+                    <el-table-column prop="ORD_HIST_REG_DTTM" :label="$lang('时间')">
+                    </el-table-column>
+                    <!-- <el-table-column prop="ORD_STAT_CD_NAME" :label="$lang('订单状态')">
+                </el-table-column> -->
+                    <el-table-column :label="$lang('订单状态')">
+                        <template scope="scope">
+                            {{$lang(scope.row.ORD_STAT_CD_NAME)}}
+                        </template>
+                    </el-table-column>
+                    <!--  <el-table-column prop="ORD_HIST_WRTR_EML" :label="$lang('提交人')">
+                </el-table-column>
+                <el-table-column prop="ORD_HIST_HIST_CONT" :label="$lang('详细信息')">
+                </el-table-column> -->
+                    <el-table-column :label="$lang('提交人')">
+                        <template scope="scope">
+                            {{$lang(scope.row.ORD_HIST_WRTR_EML)}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('详细信息')">
+                        <template scope="scope">
+                            <div v-html="$lang(scope.row.ORD_HIST_HIST_CONT)"></div>
+                        </template>
+                </el-table>
+            </div>
+        </el-tab-pane>
+    </el-tabs>
+    <!-- 订单表格主体 end-->
+    <el-dialog id="ProductKey" title="Product Key" :visible.sync="dialogTableVisible" width="900">
+        <table style="border:1px #cccccc solid;border-collapse: collapse;text-align: center;width:100%">
+            <tr v-for="(v,k) in ProductKeyData" style="border:1px #cccccc solid">
+                <td style="border:1px #cccccc solid;padding: 10px;width: 20%;">{{v[0]?v[0].product_key:''}}</td>
+                <td style="border:1px #cccccc solid;padding: 10px;width: 20%;">{{v[1]?v[1].product_key:''}}</td>
+                <td style="border:1px #cccccc solid;padding: 10px;width: 20%;">{{v[2]?v[2].product_key:''}}</td>
+                <td style="border:1px #cccccc solid;padding: 10px;width: 20%;">{{v[3]?v[3].product_key:''}}</td>
+                <td style="border:1px #cccccc solid;padding: 10px;width: 20%;">{{v[4]?v[4].product_key:''}}</td>
+            </tr>
+        </table>
+        <div v-if="ProductKeyData.length === 0" style="line-height: 60px;text-align: center">
+            暂无数据
+        </div>
+    </el-dialog>
+</div>
+<!--引入js-->
+<script type="text/javascript" src="/Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script>
+    var VM = new Vue({
+        el: '#order-detail',
+        components: {},
+        data: {
+            prouductUrl:location.host === 'erp.gshopper.com'? '//data.gshopper.com/search/b2cProductKey':'//data.gshopper.stage.com/search/b2cProductKey',
+            order_inc_id:'',
+            dialogTableVisible:false,
+            ProductKeyData:[],
+            thrId: '', //第三方订单id
+            platCode: '', //平台code
+            order_no: '', //订单号
+            isGudsEditStatus: false, //商品编辑状态
+            isInvoiceAddressStatus: false, //发票编辑状态
+            isConsigneeEditStatus: false, //商品编辑状态
+            activeName: 'first',
+            tableData: [], //操作日志数据
+            detailData: {}, //订单详情数据
+            gudsInfo: [], //商品信息数据
+            afterSaleInfo: [], //售后信息数据
+            gudsInfoTemp: [], //商品信息数据临时存储
+            links: [],
+            loadingFinish: true,
+            tableHeader: [],
+            bigImg: false,
+            checkValid: false, // 检验地址防重复点击
+            fullscreenLoading: false,
+            addPresentIsShow: false, // 赠品弹窗是否显示
+            dialogCheckGroup: false, // 组合拆商品弹窗是否显示
+            groupSkuMapData: {}, // 可拆商品信息
+            skuIdValue: '', // 赠品id
+            skuName: '', // 赠品名称
+            productId: '', // 赠品产品id
+            productIdOpt: '', // 店铺产品id
+            disablebInput: '0',
+            skuNum: 1, // 赠品数量
+            skuPriceSmall: '', // 赠品价格小
+            skuPriceBig: '', // 赠品价格大
+            presentData: {}, // 赠品数据存储
+            isClicked: false,
+            isClickedGuds: false,
+            decodebuyerId: '',
+            showDecode: false,
+            multipleSelection: [],
+            sendOrdStatus: '', //派单状态
+            refund_info:{}, //退款信息
+            isShowEditButtonByOmsListEntry:null
+        },
+        created: function created() {
+            console.log("缓存");
+
+            this.thrId = getQueryVariable("thrId");
+            this.platCode = getQueryVariable("platCode");
+            this.order_no = getQueryVariable("order_no");
+
+            this.getOrderDetail({
+                "thr_order_id": this.thrId,
+                "plat_code": this.platCode
+            });
+            this.getOrderLog();
+            this.getAfterSale();
+        },
+        beforeCreate: function beforeCreate() {},
+
+        mounted: function mounted() {
+            console.log("if对象",window.frames.frameElement.getAttribute("src"));
+            let strArray =   window.frames.frameElement.getAttribute("src").split("&");
+            this.isShowEditButtonByOmsListEntry =  JSON.parse(strArray[strArray.length-1].split("=")[1]);
+            console.log(this.isShowEditButtonByOmsListEntry);
+            // console.log("对象",this.$refs.orderDetail.parentNode.parentNode.parentNode)
+        },
+        methods: {
+            // 复制
+            copy() {
+                var val = document.getElementById('errorMsg');
+                window.getSelection().selectAllChildren(val);
+                document.execCommand("Copy");
+            },
+            // 校验地址
+            checkAddress() {
+                let param = {
+                    data: {
+                        plat_cd: this.detailData.plat_cd,
+                        order_id: this.detailData.third_party_order_id
+                    }
+                }
+                this.checkValid = true;
+                axios.post('/index.php?g=OMS&m=Patch&a=checkOrderAddressValid', param).then((res) => {
+                    console.log(res);
+                    this.checkValid = false;
+                    if (res.data.status == 200000) {
+                        this.$message.success(this.$lang('校验成功'));
+                        this.$set(this.detailData, 'address_valid_status', 2)
+                    } else {
+                        try{
+                            let data = JSON.parse(res.data.data.data);
+                            var str = '';
+                            var msg = '';
+                            if(data.data) {
+                                for(var i = 0; i < data.data.suggestionList.length; i++) {
+                                    str += `<div style='padding-left:30px'>${i+1}:"zipcode":${data.data.suggestionList[i].zipcode} "city":${data.data.suggestionList[i].city} "street":${data.data.suggestionList[i].street}</div>`
+                                }
+                                msg = data.data.resultMsg
+                            } else {
+                                msg = this.$lang(data.msg)
+                            }
+                            this.$message({
+                                showClose: true,
+                                type: 'error',
+                                dangerouslyUseHTMLString: true,
+                                message: `<div style="text-align:center">${this.$lang('校验失败')}！</br></div><div>resultMsg:${msg}</div><div> suggestionList : </div>${str}`
+                            });
+                            this.$set(this.detailData, 'address_valid_status', 1);
+                            this.$set(this.detailData, 'address_valid_res', res.data.data.data);
+                        } catch {
+                            this.$message.error(res.data.data.data)
+                        }
+                    }
+                })
+            },
+            handleCommand(command){
+                this.disablebInput = command
+                if(command == 0) {
+                    this.productId = this.productIdOpt;
+                } else {
+                    this.productId = '';
+                }
+            },
+            /**
+             * 数组分割方法
+             */
+            spilt:function(arr){
+                var result = [];
+                for(var i=0,len=arr.length;i<len;i+=5){
+                    result.push(arr.slice(i,i+5));
+                }
+                return result
+            },
+            /**
+             *  查询ProductKey
+             */
+            searchProductKey:function(data){
+                var _this = this;
+                _this.dialogTableVisible = true;
+                axios.post(this.prouductUrl,{
+                    "search":{
+                        "sku_id":data.b5cSkuId,
+                        "order_inc_id":_this.order_inc_id
+                    }}).then(function(res) {
+                    if(res.data.code === 200){
+                        var arr = res.data.data.product_keys
+                        _this.ProductKeyData = _this.spilt(arr)
+                    }
+                }).catch(function(err) {console.log(err)});
+            },
+            showImg: function showImg(item) {
+                Vue.set(item, 'bigImg', !item.bigImg);
+            },
+            //商品信息勾选操作
+            handleSelection: function handleSelection(val) {
+                this.multipleSelection = val;
+            },
+            //判断商品是否可拆
+            checkGroupSkuMap() {
+                var _this = this;
+                var data = [];
+                var sku_ids = [];
+                if (_this.multipleSelection.length) {
+                    _this.fullscreenLoading = true;
+                    for (let item of _this.multipleSelection) {
+                        data.push({
+                            sku_id: item.b5cSkuId ? item.b5cSkuId : item.skuId,
+                            is_group_sku: item.is_group_sku
+                        });
+                        sku_ids.push(item.b5cSkuId ? item.b5cSkuId : item.skuId);
+                    }
+                    axios.post('/index.php?g=OMS&m=Order&a=checkGroupSkuMap', data).then(function(res) {
+                        if (res.data.code == 200) {
+                            _this.getGroupSkuMap(sku_ids);
+                        } else {
+                            _this.$message.error(_this.$lang(res.data.msg));
+                            _this.fullscreenLoading = false;
+                        }
+                    }).catch(function(err) {
+                        console.log(err);
+                    });
+                } else {
+                    this.$message({
+                        message: _this.$lang("请至少选择一项"),
+                        type: "warning"
+                    });
+                }
+            },
+            //获取组合商品子SKU
+            getGroupSkuMap(sku_ids) {
+                var _this = this;
+                var data = {
+                    sku_ids
+                }
+                axios.post('/index.php?g=OMS&m=order&a=groupSkuMap', data).then(function(res) {
+                    if (res.data.code == 200) {
+                        _this.dialogCheckGroup = true;
+                        _this.groupSkuMapData = res.data.data;
+                        _this.fullscreenLoading = false;
+                    } else {
+                        _this.$message.error(_this.$lang(res.data.msg));
+                    }
+                }).catch(function(err) {
+                    console.log(err);
+                });
+            },
+            //拆组合商品提交
+            submitGroupSku() {
+                var _this = this;
+                var goods_info = []
+                for (let item of _this.multipleSelection) {
+                    goods_info.push({
+                        sku_id: item.b5cSkuId ? item.b5cSkuId : item.skuId,
+                        is_group_sku: item.is_group_sku,
+                        id: item.id
+                    });
+                }
+                var data = {
+                    order_info: {
+                        order_id: _this.thrId,
+                        plat_cd: _this.platCode
+                    },
+                    goods_info: goods_info
+                }
+
+                axios.post('/index.php?g=OMS&m=Order&a=splitGroupSkuSubmit', data).then(function(res) {
+                    if (res.data.code == 200) {
+                        _this.dialogCheckGroup = false;
+                        _this.$message.success(_this.$lang(res.data.msg));
+                        setTimeout(function() {
+                            _this.getOrderDetail({
+                                "thr_order_id": _this.thrId,
+                                "plat_code": _this.platCode
+                            });
+                        }, 800)
+                    } else {
+                        _this.$message.error(_this.$lang(res.data.msg));
+                    }
+                }).catch(function(err) {
+                    console.log(err);
+                });
+            },
+            //编辑商品信息
+            editGuds: function editGuds() {
+                this.isClickedGuds = false;
+                this.isGudsEditStatus = !this.isGudsEditStatus;
+            },
+            saveGuds: function saveGuds() {
+                var _this = this;
+                var sku_Arr = [];
+                this.isClickedGuds = true;
+                this.gudsInfo.forEach(function(element, index) {
+                    sku_Arr.push({
+                        "thr_sku": element.skuId,
+                        "sku": element.b5cSkuId,
+                        "CUSTOMS_PRICE": element.customsPrice,
+                        "id": element.id,
+                        "ORDER_ITEM_ID": element.orderItemId
+                    });
+                });
+                var postData = {
+                    "thr_order_id": this.thrId,
+                    "plat_cd": this.platCode,
+                    "sku_arr": sku_Arr
+                };
+                axios.post('/index.php?g=OMS&m=Order&a=orderDetailUpdSku', postData).then(function(response) {
+                    if (response.data.status == 200000) {
+                        _this.isGudsEditStatus = !_this.isGudsEditStatus;
+                        $('.guds-basic-table table.el-table__body tr').each(function() {
+                            $(this).find('td').css('background', '#fff');
+                        })
+                        setTimeout(function() {
+                            _this.getOrderDetail({
+                                "thr_order_id": _this.thrId,
+                                "plat_code": _this.platCode
+                            });
+                        }, 200)
+
+                    } else {
+                        _this.$message.error(_this.$lang(response.data.info));
+                    }
+                }).catch(function(err) {
+                    console.log(err);
+                });
+            },
+            cancelGuds: function cancelGuds() {
+                this.isGudsEditStatus = !this.isGudsEditStatus;
+                this.gudsInfo = this.gudsInfoTemp;
+                this.getOrderDetail({
+                    "thr_order_id": this.thrId,
+                    "plat_code": this.platCode
+                });
+            },
+            saveInvoiceAddress:function(){
+                var _this = this
+                var param = {
+                    "thr_order_id": this.thrId,
+                    "plat_cd": this.platCode,
+                    "info_arr":{
+                        "city":_this.detailData.invoice_city,
+                        "civility":_this.detailData.invoice_civility,
+                        "company":_this.detailData.invoice_company,
+                        "country":_this.detailData.invoice_country,
+                        "name":_this.detailData.invoice_name,
+                        "phone":_this.detailData.invoice_phone,
+                        "apartment_number":_this.detailData.apartment_number,
+                        "mobile":_this.detailData.invoice_mobile,
+                        "state":'',
+                        "street_1":_this.detailData.invoice_street_1,
+                        "street_2":_this.detailData.invoice_street_2,
+                        "street_3":_this.detailData.invoice_street_3,
+                        "street_4":_this.detailData.invoice_street_4,
+                        "zip_code":_this.detailData.invoice_zip_code,
+                        "province":_this.detailData.invoice_province,
+                        "area":_this.detailData.invoice_area,
+                    }
+                }
+                console.log(param);
+                axios.post('/index.php?g=OMS&m=Order&a=orderUpdInvoiceAddress', param).then(function(res) {
+                    if (res.data.status == 200000) {
+                        _this.isInvoiceAddressStatus = false
+                        _this.getOrderDetail({
+                            "thr_order_id": _this.thrId,
+                            "plat_code": _this.platCode
+                        });
+                    }
+                })
+            },
+            cancelInvoiceAddress:function(){
+                this.isInvoiceAddressStatus = false
+                this.getOrderDetail({
+                    "thr_order_id": this.thrId,
+                    "plat_code": this.platCode
+                });
+            },
+            //编辑收货人信息
+            editConsignee: function editConsignee() {
+                this.isClicked = false;
+                this.isConsigneeEditStatus = !this.isConsigneeEditStatus;
+            },
+            saveConsignee: function saveConsignee() {
+                var _this = this;
+                var postData = {
+                    "thr_order_id": this.thrId,
+                    "plat_cd": this.platCode,
+                    "info_arr": {
+                        "PROVINCES": $('.consignee-prime').find('input').val(),
+                        "COUNTRY": $('.consignee-country').find('input').val(),
+                        "ADDRESS1": $('.consignee-address').find('textarea').val(),
+                        "ADDRESS2": $('.consignee-address2').find('textarea').val(),
+                        "ADDRESS3": $('.consignee-address3').find('textarea').val(),
+                        "ADDRESS4": $('.consignee-address4').find('textarea').val(),
+                        "CITY": $('.consignee-city').find('input').val(),
+                        "REGION": $('.consignee-region').find('input').val(),
+                        "doorplate": $('.consignee-doorplate').find('input').val(),
+                        "NAME": $('.consignee-name').find('input').val(),
+                        "PHONE": $('.consignee-receiver_phone_number').find('input').val(),
+                        "IDENTITY_CARD": $('.consignee-buyer_id').find('input').val(),
+                        "POST_CODE": $('.consignee-zip_code').find('input').val(),
+                        "RECEIVER_TEL": $('.consignee-tel').find('input').val(),
+                        "USER_EMAIL": $('.consignee-mail').find('input').val(),
+                        "buyerUserId":$('.consignee-buyers-id').find('input').val()
+                        // "USER_IDENTITY_CARD": $('.consignee-card').find('input').val(),
+                    }
+                };
+                this.isClicked = true;
+                axios.post('/index.php?g=OMS&m=Order&a=orderDetailUpdInfo', postData).then(function(response) {
+                    if (response.data.status == 200000) {
+                        _this.isConsigneeEditStatus = !_this.isConsigneeEditStatus;
+                        _this.getOrderDetail({
+                            "thr_order_id": _this.thrId,
+                            "plat_code": _this.platCode
+                        });
+                        _this.$message.success(_this.$lang(response.data.info))
+
+                    } else {
+                        _this.$message.error(_this.$lang(response.data.info));
+                        _this.isClicked = false;
+                    }
+
+                }).catch(function(err) {
+                    console.log(err);
+                    _this.$message.error(_this.$lang('接口错误'));
+                    _this.isClicked = false;
+                });
+            },
+            cancelConsignee: function cancelConsignee() {
+                this.isConsigneeEditStatus = !this.isConsigneeEditStatus;
+                this.getOrderDetail({
+                    "thr_order_id": this.thrId,
+                    "plat_code": this.platCode
+                });
+            },
+            handleClick: function handleClick(tab, event) {},
+            getOrderLog: function getOrderLog() {
+                var _this = this;
+                axios.get('/index.php?g=OMS&m=Order&a=orderLog&thr_order_id=' + _this.thrId + '&plat_cd=' + _this.platCode).then(function(response) {
+                    if (response.data.status == 200000) {
+                        _this.tableData = response.data.data;
+                    } else {
+                        _this.$message.error(_this.$lang(response.data.info));
+                    }
+                }).catch(function(err) {
+                    console.log(err);
+                });
+            },
+            getAfterSale: function getAfterSale() {
+                var _this = this;
+                var data = {
+                    order_no: _this.order_no,
+                    order_id: _this.thrId,
+                    platform_cd: this.platCode
+                }
+                axios.post('/index.php?g=OMS&m=afterSale&a=detail', data).then(function(res) {
+                    if (res.data.code == 200) {
+                        _this.afterSaleInfo = res.data.data;
+                    } else {
+                        _this.$message.error(_this.$lang(res.data.info));
+                    }
+                }).catch(function(err) {
+                    console.log(err);
+                });
+            },
+            getOrderDetail: function getOrderDetail(data) {
+                var _this = this;
+                axios.post('/index.php?g=OMS&m=Order&a=orderDetail', data)
+                    .then(function(response) {
+                        console.log(response)
+                        if (response.data.status == 200000) {
+                            _this.order_inc_id = response.data.data.data.order_inc_id
+                            _this.sendOrdStatus = response.data.data.data[0].sendOrdStatus
+                            console.log("派单状态", _this.sendOrdStatus);
+                            _this.detailData = response.data.data.data[0];
+                            console.log("订单详情--派单信息",response.data);
+
+
+                            _this.gudsInfo = response.data.data.data[0].guds;
+                            _this.productIdOpt = response.data.data.data[0].product_id;
+
+                            _this.gudsInfoTemp = JSON.parse(JSON.stringify(_this.gudsInfo));
+                            if(_this.gudsInfo){
+                                _this.gudsInfo.forEach(function(el) {
+                                    if (el.specification) {
+                                        var arrTemp = el.specification.split('*');
+                                        el.isTrue = arrTemp.some(function(el) {
+                                            return el == 0 || el == "";
+                                        })
+                                    }
+                                })
+                            }else{
+                                _this.gudsInf = []
+                            }
+
+                            console.log(response.data.data.data[0]);
+                            // 退款信息
+                            if(response.data.data.data[0].refund_info){
+                                _this.refund_info = response.data.data.data[0].refund_info[0]
+
+
+                            }else{
+                                _this.refund_info = {}
+                            }
+
+                            _this.tableHeader = [{
+                                label: _this.$lang('成本价格 (USD)'),
+                                name: 'costPrice'
+                            }, {
+                                label: _this.$lang('交易价格') + '(' + _this.detailData.trading_currency + ')',
+                                name: 'itemPrice',
+
+                            }];
+                            if(_this.detailData.btc_order_type_cd == 'N003720002') {
+                                let obj = {
+                                    label: _this.$lang('合作结算单价 (USD)'),
+                                    name: 'cooperative_final_price',
+                                };
+                                _this.tableHeader.push(obj);
+                            }
+                            _this.getLinks()
+
+                        } else {
+                            _this.$message.error(_this.$lang(response.data.info));
+                        }
+                    }).catch(function(err) {
+                    console.log(err);
+                });
+            },
+            getLinks: function getLinks() {
+                var _this = this;
+                var data = {
+                    "thr_order_id": this.thrId,
+                    "plat_cd": this.platCode,
+                    "STORE_ID": this.detailData.STORE_ID
+                }
+                axios.post('/index.php?g=OMS&m=Order&a=links', data)
+                    .then(function(response) {
+                        if (response.data.status == 200000) {
+                            _this.loadingFinish = false;
+                            _this.links = response.data.data;
+                            _this.gudsInfo.forEach(function(item) {
+                                var link = _this.links.filter(function(link) {
+                                    return item.b5cSkuId == link.B5C_SKU_ID;
+                                })[0];
+                                _this.$set(item, 'PRODUCT_DETAIL_URL', link.PRODUCT_DETAIL_URL);
+                            })
+                        } else {
+                            _this.$message.error(_this.$lang(response.data.info));
+                        }
+                        setTimeout(function() {
+                            $('.isEmptyBlock').each(function() {
+                                $(this).parents('td').css('background', '#ffcccc');
+                            })
+                            $('.isValuedBlock').each(function() {
+                                $(this).parents('td').css('background', '#fff');
+                            })
+
+                        }, 800)
+
+                    })
+                    .catch(function(err) {
+                        console.log(err);
+                    });
+            },
+            skuIdChange: function skuIdChange(value) {
+                $(".sku-goods-name .el-input__inner").val("");
+                this.getPresentData();
+            },
+            skuNameChange: function skuNameChange(value) {
+                $(".sku-id .el-input__inner").val("");
+                this.getPresentData();
+            },
+            getPresentData: function getPresentData() {
+                var params = {
+                    "SKU_ID": $(".sku-id .el-input__inner").val(),
+                    "GUDS_NM": $(".sku-goods-name .el-input__inner").val()
+                };
+                var _this = this;
+                axios.post('/index.php?g=OMS&m=OrderSku&a=searchSku', params)
+                    .then(function(response) {
+                        if (response.status == 200) {
+                            if (response.data.code == 400) {
+                                _this.$message({
+                                    center: true,
+                                    message: _this.$lang(response.data.info),
+                                    type: 'error'
+                                });
+                                return false;
+                            }
+                            this.presentData = response.data.data;
+                            $(".present-img").show();
+                            if (this.skuIdValue !== "" || this.skuName !== "") {
+                                $(".sku-goods-name .el-input__inner").val(this.presentData.GUDS_NM);
+                                $(".sku-id .el-input__inner").val(this.presentData.SKU_ID);
+                            }
+                            $(".present-imgMsg").attr("src", this.presentData.guds_img_cdn_addr);
+                            $(".price-min .el-input__inner").val(this.presentData.cost.min);
+                            $(".price-max .el-input__inner").val(this.presentData.cost.max);
+                        }
+                    })
+                    .catch(function(err) {
+                        console.log(err);
+                    })
+            },
+            addPrentShow: function addPrentShow() {
+                $(".sku-goods-name .el-input__inner").val("")
+                $(".sku-id .el-input__inner").val("");
+                this.skuNum = 1;
+                // this.skuPriceSmall = 0;
+                // this.skuPriceBig = 0;
+                $(".price-min .el-input__inner").val(0);
+                $(".price-max .el-input__inner").val(0);
+                this.addPresentIsShow = true;
+            },
+            presentAdd: function presentAdd() {
+                if (this.skuNum <= 0 || /^\d+\.\d+$/.test(this.skuNum)) {
+                    this.$message({
+                        center: true,
+                        type: 'error',
+                        message: this.$lang('sku数量不能小于1且为整数')
+                    });
+                    return false;
+                }
+                var data = {
+                    "data": [{
+                        "ORDER_ID": this.detailData.third_party_order_id,
+                        "PLAT_CD": this.detailData.plat_cd,
+                        "B5C_SKU_ID": $(".sku-id .el-input__inner").val(),
+                        "ITEM_COUNT": this.skuNum,
+                        "ORDER_ITEM_ID": this.productId
+                    }]
+                }
+                var _this = this;
+                axios.post('/index.php?g=Oms&m=OrderSku&a=giftAdd', data)
+                    .then(function(response) {
+                        if (response.status == 200) {
+                            if (response.data.code == 400) {
+                                _this.$message({
+                                    center: true,
+                                    type: 'error',
+                                    message: _this.$lang(response.data.info)
+                                });
+                                return false;
+                            }
+                            _this.skuName = '';
+                            _this.skuIdValue = '';
+                            _this.$message({
+                                center: true,
+                                message: _this.$lang('提交成功'),
+                                type: 'success'
+                            });
+                            setTimeout(function() {
+                                _this.getOrderDetail({
+                                    "thr_order_id": _this.thrId,
+                                    "plat_code": _this.platCode
+                                });
+                            }, 800)
+                            _this.addPresentIsShow = false;
+                        }
+                    })
+                    .catch(function(err) {
+                        _this.$message({
+                            center: true,
+                            type: 'error',
+                            message: _this.$lang('新增失败')
+                        });
+                        console.log(err);
+                    })
+
+            },
+            presentCanal: function presentCanal() {
+                this.skuName = '';
+                this.skuIdValue = '';
+                this.skuNum = 1;
+                // this.skuPriceSmall = 0;
+                // this.skuPriceBig = 0;
+                $(".price-min .el-input__inner").val(0);
+                $(".price-max .el-input__inner").val(0);
+                this.addPresentIsShow = false;
+            },
+            delePresent: function delePresent(item) {
+                var _this = this;
+                var postData = {
+                    "data": [{
+                        "sku_id": item.id
+                    }]
+                }
+                axios.post('/index.php?g=Oms&m=OrderSku&a=giftDel', postData)
+                    .then(function(response) {
+                        if (response.data.code == 200) {
+                            _this.$message({
+                                center: true,
+                                message: _this.$lang('删除成功'),
+                                type: 'success'
+                            });
+                        } else {
+                            _this.$message({
+                                center: true,
+                                message: _this.$lang(response.data.info),
+                                type: 'error'
+                            });
+                        }
+                        setTimeout(function() {
+                            _this.getOrderDetail({
+                                "thr_order_id": _this.thrId,
+                                "plat_code": _this.platCode
+                            });
+                        }, 800)
+                    })
+                    .catch(function(err) {
+                        _this.$message({
+                            center: true,
+                            message: _this.$lang(err)
+                        });
+                        console.log(err);
+                    })
+            },
+            decodeId: function() {
+                var _this = this,
+                    param = {
+                        data: {
+                            query: {
+                                third_order_id: this.detailData.third_party_order_id,
+                                plat_cd: this.detailData.plat_cd
+                            }
+                        }
+                    }
+                axios.post('/index.php?g=oms&m=Order&a=decodeId', param, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                }).then(function(res) {
+                    if (res.data.code == 2000) {
+                        _this.decodebuyerId = res.data.data;
+                    } else {
+                        _this.decodebuyerId = _this.$lang(res.data.msg);
+                    }
+                })
+            },
+            sendQuery: function() {
+                var _this = this,
+                    param = {
+                        order_id: this.detailData.third_party_order_id,
+                        plat_cd: this.detailData.plat_cd,
+                        sms_content: ''
+                    }
+                axios.post('/index.php?g=Oms&m=Order&a=sendGpSms', param)
+                    .then(function(response) {
+                        if (response.data.code == 200) {
+                            _this.$message({
+                                center: true,
+                                message: _this.$lang(response.data.msg),
+                                type: 'success'
+                            });
+                        } else {
+                            _this.$message({
+                                center: true,
+                                message: _this.$lang(response.data.msg),
+                                type: 'error'
+                            });
+                        }
+                    })
+                    .catch(function(err) {
+                        console.log(err);
+                    })
+            },
+            closeDecode: function() {
+                this.showDecode = false;
+                this.decodebuyerId = '';
+            }
+        },
+        filters: {
+            formatDate: function formatDate(time) {
+                var date = new Date(time);
+                return _formatDate(date, 'yyyy-MM-dd hh:mm');
+            },
+            formatDateSS: function formatDateSS(time) {
+                var date = new Date(time);
+                return _formatDate(date, 'yyyy-MM-dd hh:mm:ss');
+            }
+        }
+    });
+    //获取url参数
+    function getQueryVariable(variable) {
+        var query = window.location.search.substring(1);
+        var vars = query.split("&");
+        for (var i = 0; i < vars.length; i++) {
+            var pair = vars[i].split("=");
+            if (pair[0] == variable) {
+                return pair[1];
+            }
+        }
+        return false;
+    }
+
+    //时间戳转日期
+    function _formatDate(date, fmt) {
+        if (/(y+)/.test(fmt)) {
+            fmt = fmt.replace(RegExp.$1, (date.getFullYear() + '').substr(4 - RegExp.$1.length));
+        }
+        var o = {
+            'M+': date.getMonth() + 1,
+            'd+': date.getDate(),
+            'h+': date.getHours(),
+            'm+': date.getMinutes(),
+            's+': date.getSeconds()
+        };
+        for (var k in o) {
+            if (new RegExp('(' + k + ')').test(fmt)) {
+                var str = o[k] + '';
+                fmt = fmt.replace(RegExp.$1, RegExp.$1.length === 1 ? str : padLeftZero(str));
+            }
+        }
+        return fmt;
+    }
+
+    function padLeftZero(str) {
+        return ('00' + str).substr(str.length);
+    };
+</script>
+</body>
+
+</html>

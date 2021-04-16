@@ -1,0 +1,976 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <title>订单列表</title>
+    <style>
+        #order-list {
+            visibility: hidden;
+        }
+
+        span.shopTag>span {
+            position: absolute !important;
+            top: 0px;
+            left: 0px;
+            border-radius: 0px;
+            background-color: #f99c64;
+            border: 1px solid rgb(231, 156, 116) !important;
+        }
+    </style>
+</head>
+
+<body class="orderList">
+    <div id="order-list" class="list-common">
+        <div class="step-content">
+            <el-steps :active="active" align-center>
+                <el-step title="<{$Think.lang.待预派}>"></el-step>
+                <el-step title="<{$Think.lang.待派单}>"></el-step>
+                <el-step title="<{$Think.lang.待拣货}>"></el-step>
+                <el-step title="<{$Think.lang.待分拣}>"></el-step>
+                <el-step title="<{$Think.lang.待核单}>"></el-step>
+                <el-step title="<{$Think.lang.待出库}>"></el-step>
+                <el-step title="<{$Think.lang.已出库}>"></el-step>
+            </el-steps>
+        </div>
+        <!-- 搜索查询 start-->
+        <div class="orderList-search search-common">
+            <!-- 平台 start-->
+            <div class="search-toggle" v-cloak>
+                <el-row type="flex">
+                    <el-col :span="4" class="title-info-container">
+                        <div class="title-info">
+                            <{$Think.lang.平台渠道}>
+                        </div>
+                    </el-col>
+                    <el-col :span="22" class="search-item-i">
+                        <span :class="{active:isChannelALL}" @click="channelALL">
+                            <{$Think.lang.全部}>
+                        </span>
+                        <span class="channel-item" v-for="channel in channels" :data-cd="channel.CD" @click="selectChannel">{{channel.CD_VAL}}</span>
+                    </el-col>
+                </el-row>
+                <!-- 平台 end-->
+                <!-- 订单状态 start-->
+                <el-row type="flex">
+                    <el-col :span="4" class="title-info-container">
+                        <div class="title-info">
+                            <{$Think.lang.物流状态}>
+                        </div>
+                    </el-col>
+                    <el-col :span="22" class="search-item-i">
+                        <span :class="{active:isOrderALL}" @click="orderALL">
+                            <{$Think.lang.全部}>
+                        </span>
+                        <span class="order-item" v-for="order in orderStatus" :data-cd="order.CD" @click="selectOrder">{{order.CD_VAL}}</span>
+                    </el-col>
+                </el-row>
+                <!-- 订单状态 end-->
+
+                <!-- 派单状态 start-->
+                <el-row type="flex">
+                    <el-col :span="4" class="title-info-container">
+                        <div class="title-info">
+                            <{$Think.lang.物流异常}>
+                        </div>
+                    </el-col>
+                    <el-col :span="22" class="search-item-i">
+                        <span :class="{active:isDispatchALL}" @click="dispatchALL">
+                            <{$Think.lang.全部}>
+                        </span>
+                        <span class="dispatch-item" v-for="dispatch in dispatchStatus" :data-cd="dispatch.CD" @click="selectDispatch">{{dispatch.CD_VAL}}</span>
+                    </el-col>
+                </el-row>
+                <!-- 派单状态 end-->
+
+            </div>
+            <!-- 排序方式 start-->
+            <el-row type="flex">
+                <el-col :span="4" class="title-info-container">
+                    <div class="title-info">
+                        <{$Think.lang.排序方式}>
+                    </div>
+                </el-col>
+                <el-col :span="22" class="search-item-i">
+                    <span class="sort-type" v-for="item in sort" :data-CD="item.CD" :class="{active: item.CD == 'order_time'}" @click="selectSort">{{item.CD_VAL}}</span>
+                    <span class="contain-remark" @click="toggleRemark">
+                        <{$Think.lang.含备注}>
+                    </span>
+                </el-col>
+            </el-row>
+            <!-- 排序方式 end-->
+            <div class='cls' style="height:auto;">
+                <el-col :span="4" class="title-info-container" style="height:100%;">
+                    <div class="title-info">
+                        <{$Think.lang.条件筛选}>
+                    </div>
+                </el-col>
+                <el-col :span="22" class="search-item-i">
+                    <div class="fl sort-item">
+                        <el-select :popper-append-to-body=false filterable size="small" :multiple-limit=10 v-model="selectedCountries" multiple collapse-tags
+                            placeholder="<{$Think.lang.国家}>" style="width:300px">
+                            <el-option v-for="countryItem in countryStatus" :key="countryItem.id" :label="countryItem.NAME" :value="countryItem.id">
+                            </el-option>
+                        </el-select>
+                    </div>
+                    <div class="fl sort-item">
+                        <el-select :popper-append-to-body=false filterable size="small" :multiple-limit=10 v-model="selectedShops" multiple collapse-tags
+                            placeholder="<{$Think.lang.店铺}>" style="width:300px">
+                            <el-option v-for="shopItem in shopStatus" :key="shopItem.CD" :label="shopItem.CD_VAL" :value="shopItem.CD">
+                            </el-option>
+                        </el-select>
+                    </div>
+                    <div class="fl sort-item">
+                        <el-select :popper-append-to-body=false filterable size="small" :multiple-limit=10 v-model="selectedWarehouses" multiple collapse-tags
+                            placeholder="<{$Think.lang.仓库}>" style="width:300px">
+                            <el-option v-for="warehouseItem in warehouseStatus" :key="warehouseItem.CD" :label="warehouseItem.CD_VAL" :value="warehouseItem.CD">
+                            </el-option>
+                        </el-select>
+                    </div>
+                    <div class="fl sort-item">
+                        <el-select :popper-append-to-body=false @change="selectCompany" filterable size="small" :multiple-limit=10 v-model="selectedLogisticsCompanys"
+                            multiple collapse-tags placeholder="<{$Think.lang.物流公司}>" style="width:300px">
+                            <el-option v-for="logisticsCompanyItem in logisticsCompanyStatus" :key="logisticsCompanyItem.CD" :label="logisticsCompanyItem.CD_VAL"
+                                :value="logisticsCompanyItem.CD">
+                            </el-option>
+                        </el-select>
+                    </div>
+                    <div class="fl sort-item">
+                        <el-select :popper-append-to-body=false filterable size="small" :multiple-limit=10 v-model="selectedShippingMethods" multiple
+                            collapse-tags placeholder="<{$Think.lang.物流方式}>" style="width:300px">
+                            <el-option v-for="(shippingMethodsItem,key) in shippingMethodsStatus" :key="key" :label="shippingMethodsItem.CD_VAL" :value="shippingMethodsItem.ID">
+                            </el-option>
+                        </el-select>
+                    </div>
+                    <div class="fl sort-item">
+                        <el-select :popper-append-to-body=false filterable size="small" :multiple-limit=10 v-model="selectedSalesTeam" multiple collapse-tags
+                            placeholder="<{$Think.lang.系统对接}>" style="width:300px">
+                            <el-option v-for="salesTeamItem in salesTeamStatus" :key="salesTeamItem.CD" :label="salesTeamItem.CD_VAL" :value="salesTeamItem.CD">
+                            </el-option>
+                        </el-select>
+                    </div>
+                    <div class="fl sort-item">
+                        <div>
+                            <el-select :popper-append-to-body=false filterable size="small" v-model="timeSort">
+                                <el-option v-for="sortItem in sort" :key="sortItem.CD" :label="sortItem.CD_VAL" :value="sortItem.CD">
+                                </el-option>
+                            </el-select>
+                            <el-date-picker value-format="yyyy-MM-dd" size="small" v-model="dateRange" type="daterange" align="right" unlink-panels range-separator="<{$Think.lang.至}>"
+                                start-placeholder="<{$Think.lang.开始日期}>" end-placeholder="<{$Think.lang.结束日期}>" :picker-options="pickerOptions">
+                            </el-date-picker>
+
+                        </div>
+                    </div>
+                </el-col>
+            </div>
+            <div class="search-btn-container">
+                <div class="btns" style="padding-left: 80px;">
+                    <el-select :popper-append-to-body=false filterable size="small" v-model="selectedDownQuery" placeholder="<{$Think.lang.请选择}>"
+                        style="width:150px">
+                        <el-option v-for="downQueryItem in downQueryStatus" :key="downQueryItem.CD" :label="downQueryItem.CD_VAL" :value="downQueryItem.CD">
+                        </el-option>
+                    </el-select>
+                    <el-input size="small" class="search-keywords" v-model="searchKeywords"></el-input>
+                    <button @click="doSearch" class="btn-search" name="search">
+                        <{$Think.lang.搜索}>
+                    </button>
+                    <button @click="doReset" class="btn-reset" name="reset">
+                        <{$Think.lang.重置}>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 搜索查询 end-->
+
+        </div>
+        <!-- 分割线 start-->
+        <div class="orderList-line line-split"></div>
+        <!-- 分割线 end-->
+
+
+
+
+
+        <!-- 订单表格主体 start-->
+        <div class="orderList-Main list-common-main">
+            <header>
+                <{$Think.lang.搜索结果}>:
+                    <{$Think.lang.共}>
+                        <span class="num-bold">{{totalCount}}</span>
+                        <{$Think.lang.条记录}>
+                            <button class="export-order" @click="exportOrder">
+                                <{$Think.lang.导出}>
+                            </button>
+                            <!-- <button class="close-order" @click="closeOrder"><{$Think.lang.关闭订单}></button> -->
+            </header>
+
+            <el-table border show-header ref="multipleTable" :data="tableData" tooltip-effect="dark" style="width: 100%" @selection-change="handleSelectionChange"
+                class="order-list-table table-common" v-loading="tableLoading">
+                <el-table-column type="selection" width="55">
+                </el-table-column>
+                <el-table-column label="<{$Think.lang.平台渠道}>站点&店铺" width="150">
+                    <template scope="scope">
+                        <span class="shopTag" v-if="!!scope.row.order_type">
+                            <el-tag size="mini" style="color: #FFFFFF;">{{scope.row.order_type}}</el-tag>
+                        </span>
+                        <div>{{scope.row.platform}}</div>
+                        <div>{{scope.row.shop}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="sales_team" label="<{$Think.lang.销售团队}>">
+                </el-table-column>
+                <el-table-column prop="consignee_name" label="<{$Think.lang.收货人姓名}>">
+                </el-table-column>
+                <el-table-column label="<{$Think.lang.商品}>">
+
+                    <template slot-scope="scope">
+                        <div v-if="(scope.row.commodity.length>1)?false:true">{{scope.row.commodity[0]}}</div>
+                        <el-popover placement="bottom" width="200" trigger="hover" v-if="(scope.row.commodity.length>1)?true:false">
+                            <div v-for="(item,index) in scope.row.commodity">{{index+1}} : {{item}}</div>
+                            <div slot="reference" class="name-wrapper">
+                                <i class='el-icon-d-arrow-left' slot="reference"></i>
+                            </div>
+                        </el-popover>
+                    </template>
+
+                </el-table-column>
+                <el-table-column label="<{$Think.lang.订单号(平台订单)}>" width="180">
+                    <template scope="scope">
+                        <div>{{scope.row.order_number}}</div>
+                        <div class="third-order-num">
+                            <span class="to-detail-btn" onclick="opennewtab(this,'<{$Think.lang.订单详情}>')" v-bind:_href="'/index.php?g=OMS&m=Order&a=orderDetail&thrId='+scope.row.third_order_number+'&platCode='+scope.row.plat_cd">{{scope.row.third_order_number}}</span>
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="currency" label="<{$Think.lang.币种}>" width="60">
+                </el-table-column>
+                <el-table-column prop="price" label="<{$Think.lang.价格}>">
+                </el-table-column>
+                <el-table-column label="<{$Think.lang.时间}>" width="240" sortable>
+                    <template scope="scope">
+                        <div v-if="!!scope.row.order_time">
+                            <{$Think.lang.下单时间}> ：{{scope.row.order_time | formatDate}}</div>
+                        <div v-if="!!scope.row.payment_time">
+                            <{$Think.lang.付款时间}> ：{{scope.row.payment_time | formatDate}}</div>
+                        <div v-if="!!scope.row.delivery_time">
+                            <{$Think.lang.发货时间}> ：{{scope.row.delivery_time | formatDate}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column label="<{$Think.lang.状态}>">
+                    <template scope="scope">
+                        <div>{{scope.row.order_status_name}}</div>
+                        <div>{{scope.row.dispatch_status_name}}</div>
+
+                    </template>
+                </el-table-column>
+                <el-table-column prop="warehouse_name" label="<{$Think.lang.仓库}>">
+                </el-table-column>
+                <el-table-column label="<{$Think.lang.物流}>">
+                    <template scope="scope">
+                        <div>{{scope.row.logistics_company_name}}</div>
+                        <div>{{scope.row.logistics_number}}</div>
+
+                    </template>
+                </el-table-column>
+
+
+                <el-table-column label="备注">
+                    <template scope="scope">
+                        <div v-show="scope.row.remarks" @click="doRemark(scope.row)" class="remarks-content">{{scope.row.remarks}}</div>
+                        <div v-show="!scope.row.remarks" class="do-remark" @click="doRemark(scope.row)">
+                            <{$Think.lang.备注}>
+                        </div>
+                        <el-dialog :visible.sync="dialogVisible" :show-close="false" width="420px">
+                            <el-tabs type="border-card">
+                                <el-tab-pane label="<{$Think.lang.用户备注}>">
+                                    <div class="use_remarks_content">{{form.use_remarks}}</div>
+                                </el-tab-pane>
+                                <el-tab-pane label="<{$Think.lang.运营备注}>">
+                                    <textarea class="operate-remark" name="" id="" cols="40" rows="10" v-model="form.remarks" :data-order="scope.row.third_order_number"
+                                        :data-plat="scope.row.plat_cd"></textarea>
+                                    <div class="btns remark-btn">
+                                        <?php if(ButtonAction::hidden()){ ?>
+                                        <button class="save-remark-btn" @click="saveRemark(scope.$index, scope.row)">保存</button>
+                                        <?php } ?>
+                                        <button class="cancel-remark-btn" @click='cancelRemark'>取消</button>
+                                    </div>
+                                </el-tab-pane>
+                            </el-tabs>
+
+                        </el-dialog>
+                    </template>
+                </el-table-column>
+
+
+            </el-table>
+
+            <el-pagination background @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="currentPage"
+                :page-sizes="[10, 30, 50, 100]" :page-size="pageSize" layout="sizes,prev, pager, next, jumper" :total="totalCount">
+            </el-pagination>
+        </div>
+        <!-- 订单表格主体 end-->
+    </div>
+    <!--引入js-->
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript">
+        var VM = new Vue({
+            el: '#order-list',
+            components: {},
+            data: {
+                active:6,
+                form: {
+                    'third_order_number': ''
+                },
+
+                pageSize: 10,
+                tableLoading: true,
+                searchDataTemp: {
+                    "data": {
+                        'search_condition': "thr_order_id",
+                        'search_value': '',
+                        'search_time_type': "order_time",
+                        'search_time_left': '',
+                        'search_time_right': ''
+                    },
+                    "page": {
+                        "this_page": 1,
+                        "page_count": 10
+                    }
+                }, //查询条件
+                searchData: {
+                    "data": {
+                        'search_condition': "thr_order_id",
+                        'search_value': '',
+                        'search_time_type': "order_time",
+                        'search_time_left': '',
+                        'search_time_right': ''
+                    },
+                    "page": {
+                        "this_page": 1,
+                        "page_count": 10
+                    }
+                }, //查询条件
+                channels: {}, //平台渠道
+                channelData: [],
+                isChannelALL: true,
+                orderStatus: {}, //订单状态
+                orderData: [],
+                isOrderALL: true,
+                dispatchStatus: {}, //派单状态
+                dispatchData: [],
+                isDispatchALL: true,
+                sort: {}, //排序方式
+                sortData: '',
+                countryStatus: {}, //国家
+                selectedCountries: [],
+                shopStatus: {}, //店铺
+                selectedShops: [],
+                warehouseStatus: {}, //仓库
+                selectedWarehouses: [],
+                logisticsCompanyStatus: {}, //物流公司
+                selectedLogisticsCompanys: [],
+                shippingMethodsStatus: [], //物流方式
+                shippingMethodsStatusTemp: [],
+
+                selectedShippingMethods: [],
+                salesTeamStatus: {}, //销售团队
+                selectedSalesTeam: [],
+                downQueryStatus: {}, //查询条件
+                selectedDownQueryTemp: 'thr_order_id', //查询条件 临时
+                selectedDownQuery: 'thr_order_id',
+                searchKeywords: '',
+                searchKeywordsTemp: '',
+                timeSort: 'order_time',
+                remarkHave: 0, //含备注
+                currentPage: 1, //当前页数
+                totalCount: 0, //总条数
+                tableData: [], //查询返回数据
+                tableDataTemp: [],
+                multipleSelection: [],
+                dialogVisible: false,
+                operateRemark: '', //运营备注
+                // 日期选择
+                dateRange: '',
+                pickerOptions: {
+                    shortcuts: [{
+                        text: '最近一周',
+                        onClick(picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: '最近一个月',
+                        onClick(picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: '最近三个月',
+                        onClick(picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }]
+                },
+            },
+
+            methods: {
+                //搜索条件数据
+                getOrderListMenu: function () {
+                    var _this = this;
+                    axios.get('/index.php?g=OMS&m=Order&a=listMenu')
+                        .then(function (response) {
+                            var data = response.data;
+                            if (data.status != 200000) {
+                                this.$message.error(data.msg);
+                            } else {
+                                _this.channels = data.data.channel; //平台渠道
+                                _this.orderStatus = data.data.order_status; //订单状态
+                                _this.logisticsStatus = data.data.logistics_status; //物流状态
+                                _this.dispatchStatus = data.data.dispatch_status; //派单状态
+                                _this.aftermarketStatus = data.data.aftermarket_status; //售后状态
+                                _this.countryStatus = data.data.country_status; //国家
+                                _this.shopStatus = data.data.shop_status; //店铺
+                                _this.warehouseStatus = data.data.warehouse_status; //仓库
+                                _this.logisticsCompanyStatus = data.data.logistics_company_status; //物流公司
+                                data.data.shipping_methods_status.forEach(function (ele) {
+                                    _this.shippingMethodsStatus.push(ele)
+                                })
+                                _this.shippingMethodsStatusTemp = JSON.parse(JSON.stringify(_this.shippingMethodsStatus))
+                                //物流方式
+                                _this.salesTeamStatus = data.data.sales_team_status; //销售团队
+                                _this.downQueryStatus = data.data.down_query_status; //查询条件
+                                _this.sort = data.data.sort; //排序方式
+                                $('#order-list').css('visibility', 'visible')
+
+
+                            }
+                        })
+                        .catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                getOrderList: function (data) {
+                    var _this = this;
+                    _this.tableLoading = true;
+                    axios.post('/index.php?g=OMS&m=Order&a=lists', data)
+                        .then(function (response) {
+                            if (response.data.status == 200000) {
+                                _this.tableData = response.data.data.data;
+
+                                _this.totalCount = parseInt(response.data.data.page.count);
+                                setTimeout(function () {
+                                    _this.tableLoading = false;
+                                }, 1000)
+                            } else {
+                                _this.$message.error(response.data.info);
+                            }
+
+                        })
+                        .catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                selectCompany: function () {
+                    var _this = this;
+                    axios.post("index.php?g=Oms&m=OrderPresent&a=get_log_company", { company_code: _this.selectedLogisticsCompanys }).then(function (res) {
+                        if (res.data.code == 200) {
+                            if (res.data.data == null) {
+                                _this.shippingMethodsStatus = _this.shippingMethodsStatusTemp;
+                                console.log(_this.shippingMethodsStatus)
+                            } else {
+                                res.data.data.forEach(function (ele) {
+                                    ele.id = ele.ID;
+                                    ele.logisticsMode = ele.CD_VAL;
+                                })
+                                _this.shippingMethodsStatus = res.data.data
+                            }
+
+                        } else {
+                            _this.shippingMethodsStatus = _this.shippingMethodsStatusTemp;
+                        }
+                    })
+                },
+                channelALL: function () {
+                    $('.channel-item').each(function () {
+                        $(this).removeClass('active')
+                    })
+                    this.isChannelALL = true;
+                    this.channelData = []
+                },
+                selectChannel: function () {
+                    var channel = event.currentTarget.getAttribute('data-cd');
+                    this.isChannelALL = false;
+                    $(event.currentTarget).toggleClass('active');
+                    if (this.isNone($('.channel-item'))) {
+                        this.isChannelALL = true;
+                        this.channelData = []
+                    } else {
+                        this.doCheck(this.channelData, channel)
+                    }
+
+                },
+                orderALL: function () {
+                    $('.order-item').each(function () {
+                        $(this).removeClass('active')
+                    })
+                    this.isOrderALL = true;
+                    this.orderData = []
+                },
+                selectOrder: function () {
+                    var order = event.currentTarget.getAttribute('data-cd');
+                    this.isOrderALL = false;
+                    $(event.currentTarget).toggleClass('active');
+                    if (this.isNone($('.order-item'))) {
+                        this.isOrderALL = true;
+                        this.orderData = []
+                    } else {
+                        this.doCheck(this.orderData, order)
+
+                    }
+                },
+                dispatchALL: function () {
+                    $('.dispatch-item').each(function () {
+                        $(this).removeClass('active')
+                    })
+                    this.isDispatchALL = true;
+                    this.dispatchData = []
+                },
+                selectDispatch: function () {
+                    var dispatch = event.currentTarget.getAttribute('data-cd')
+                    this.isDispatchALL = false;
+                    $(event.currentTarget).toggleClass('active');
+                    if (this.isNone($('.dispatch-item'))) {
+                        this.isDispatchALL = true;
+                        this.dispatchData = []
+                    } else {
+                        this.doCheck(this.dispatchData, dispatch)
+                    }
+                },
+                selectSort: function () {
+                    $(event.currentTarget).siblings().removeClass('active').end().addClass("active");
+                    this.sortData = event.currentTarget.getAttribute('data-cd');
+                },
+                toggleRemark: function () {
+                    $(event.currentTarget).toggleClass('isActive');
+                    this.remarkHave = (this.remarkHave == 0) ? 1 : 0;
+                },
+
+                //跳转详情页
+                toDetail: function () {
+                    var dom = event.currentTarget;
+                    var platCD = dom.getAttribute('data-plat');
+                    var _href = "/index.php?g=OMS&m=Order&a=orderDetail&thrId=" + dom.innerText + "&platCode=" + platCD;
+                    dom.setAttribute("onclick", "opennewtab(this,'订单详情')");
+                    dom.setAttribute("_href", _href);
+                    dom.click();
+
+                },
+                // 查询功能
+                doSearch: function () {
+                    this.searchKeywordsTemp = this.searchKeywords;
+                    this.selectedDownQueryTemp = $.trim(this.selectedDownQuery);
+
+                    this.getOrderList(this.searchData)
+                },
+
+                //重置功能
+                doReset: function () {
+                    this.orderALL();
+                    this.channelALL();
+                    this.dispatchALL();
+                    this.selectedCountries = [];
+                    this.selectedShops = [];
+                    this.selectedWarehouses = [];
+                    this.selectedLogisticsCompanys = [];
+                    this.selectedShippingMethods = [];
+                    this.selectedSalesTeam = [];
+                    this.remarkHave = 0;
+                    this.timeSort = 'order_time';
+                    this.searchKeywords = '';
+                    this.dateRange = [];
+                    this.selectedDownQuery = 'thr_order_id';
+                    this.searchKeywordsTemp = this.searchKeywords;
+                    this.selectedDownQueryTemp = this.selectedDownQuery;
+                    $('.contain-remark').removeClass("isActive");
+                    $('.sort-type')[0].click();
+                    this.getOrderListMenu();
+                },
+                //备注
+                doRemark: function (row) {
+                    this.form = JSON.parse(JSON.stringify(row));
+                    this.formTemp = JSON.parse(JSON.stringify(this.form));
+                    this.dialogVisible = !this.dialogVisible
+                },
+                saveRemark: function (ind, row) {
+                    var _this = this;
+                    var data = {
+                        'thr_order_id': _this.form.third_order_number,
+                        'plat_cd': _this.form.plat_cd,
+                        'remarks_type': 'operate',
+                        'remarks_msg': _this.form.remarks
+                    }
+
+                    axios.post('/index.php?g=oms&m=order&a=orderRemarks', data)
+                        .then(function (response) {
+                            if (response.data.status == 200000) {
+                                _this.dialogVisible = !_this.dialogVisible;
+                                _this.getOrderList(_this.searchData);
+                            } else {
+                                _this.$message.error(response.data.info);
+                            }
+                        })
+                        .catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                cancelRemark: function () {
+
+                    this.dialogVisible = !this.dialogVisible;
+                    // this.form = JSON.parse(JSON.stringify(this.formTemp))
+                    this.form = Object.assign({}, this.formTemp)
+
+
+                },
+                //是否为空
+                isNone: function (dom) {
+                    var num = 0;
+                    dom.each(function () {
+                        if ($(this).hasClass('active')) num += 1;
+                    })
+                    return (num == 0) ? true : false;
+                },
+                //是否在数组中
+                isInArray: function (arr, value) {
+                    var index = $.inArray(value, arr);
+                    if (index >= 0) {
+                        return true;
+                    }
+                    return false;
+                },
+                //删除未知下标元素
+                deleteEle: function (arr, value) {
+                    arr.splice($.inArray(value, arr), 1);
+
+                },
+
+                // 搜索条件选择
+                doCheck: function (arr, val) {
+
+                    //如果有删除，没有则添加
+                    if (this.isInArray(arr, val)) {
+                        this.deleteEle(arr, val)
+                    } else {
+                        arr.push(val)
+                    }
+
+                },
+                //导出功能
+                exportOrder: function () {
+                    var where = {
+                        wheres: {
+                            platform: this.channelData,
+                            order_status: this.orderData,
+                            dispatch_status: this.dispatchData,
+                            logistics_status: this.dispatchData,
+                            sort: this.sortData,
+                            remark_have: this.remarkHave,
+                            country: this.selectedCountries,
+                            shop: this.selectedShops,
+                            warehouse: this.selectedWarehouses,
+                            logistics_company: this.selectedLogisticsCompanys,
+                            logistics_method: this.selectedShippingMethods,
+                            sales_team: this.selectedSalesTeam,
+                            search_time_type: this.timeSort,
+                            search_time_left: this.dateRange[0],
+                            search_time_right: this.dateRange[1],
+                            search_condition: this.selectedDownQuery,
+                            search_value: this.searchKeywordsTemp
+                        },
+                        ids: []
+                    };
+
+                    for (var i = 0; i < this.multipleSelection.length; i++) {
+                        where.ids.push(this.multipleSelection[i].id);
+                    }
+
+                    var tmep = document.createElement('form');
+                    tmep.action = '/index.php?g=OMS&m=Order&a=exportOrder';
+                    tmep.method = "post";
+                    tmep.style.display = "none";
+                    var opt = document.createElement("input");
+                    opt.name = 'post_data';
+                    opt.value = JSON.stringify(where);
+                    tmep.appendChild(opt);
+                    document.body.appendChild(tmep);
+                    tmep.submit();
+                    tmep.remove();
+
+                },
+                //关闭订单
+                closeOrder: function () {
+                    var _this = this;
+                    var arrTemp = [];
+                    _this.multipleSelection.forEach(function (ele, ind) {
+                        arrTemp.push({
+                            "thr_order_id": ele.third_order_number,
+                            "plat_cd": ele.plat_cd,
+                            "order_id": ele.order_number
+                        })
+                    });
+                    var postData = {
+                        "datas": arrTemp
+                    };
+                    axios.post('/index.php?g=OMS&m=Order&a=closeOrder', postData)
+                        .then(function (response) {
+
+                            if (response.data.status == 200000) {
+                                _this.$message.success(response.data.info);
+                            } else {
+                                _this.$message.error(response.data.info);
+                            }
+                        })
+                        .catch(function (err) {
+                            console.log(err);
+                        });
+
+                },
+                handleSizeChange: function (val) {
+                    this.currentPage = 1;
+                    this.pageSize = val;
+
+                },
+                handleCurrentChange: function (val) {
+                    this.$set(this.searchData.page, 'this_page', val)
+                    // this.getOrderList(this.searchData);
+                },
+                handleSelectionChange: function (val) {
+                    this.multipleSelection = val;
+
+                },
+
+            },
+            created: function () {
+                this.getOrderListMenu();
+                this.getOrderList();
+            },
+            watch: {
+                //自动监测搜索条件的修改
+                channelData: {
+                    handler(newValue, oldValue) {
+                        this.$set(this.searchData.data, "platform", newValue);
+                        //平台、店铺联动
+                        var postData = {
+                            "plat_form": newValue
+                        };
+                        axios.post('/index.php?g=Oms&m=Order&a=storesGet', postData)
+                            .then(function (response) {
+
+                                if (response.data.status == 200000) {
+                                    VM.shopStatus = response.data.data;
+                                } else {
+                                    VM.$message.error(response.data.info);
+                                }
+                            })
+                            .catch(function (err) {
+                                console.log(err);
+                            });
+                    },
+                    deep: true
+                },
+                orderData: {
+                    handler(newValue, oldValue) {
+                        this.$set(this.searchData.data, "order_status", newValue)
+
+
+                    },
+                    deep: true
+                },
+                dispatchData: {
+                    handler(newValue, oldValue) {
+                        this.$set(this.searchData.data, "dispatch_status", newValue)
+
+
+                    },
+                    deep: true
+                },
+                sortData: {
+                    handler(newValue, oldValue) {
+                        this.$set(this.searchData.data, "sort", newValue)
+
+
+                    },
+                    deep: true
+                },
+                remarkHave: {
+                    handler(newValue, oldValue) {
+                        this.$set(this.searchData.data, "remark_have", newValue)
+
+
+                    },
+                    deep: true
+                },
+
+                selectedCountries: {
+                    handler(newValue, oldValue) {
+                        this.$set(this.searchData.data, "country", newValue)
+
+
+                    },
+                    deep: true
+                },
+
+                selectedShops: {
+                    handler(newValue, oldValue) {
+                        this.$set(this.searchData.data, "shop", newValue)
+
+
+
+                    },
+                    deep: true
+                },
+                pageSize: {
+                    handler(newValue, oldValue) {
+                        this.$set(this.searchData.page, "page_count", newValue)
+
+
+
+                    },
+                    deep: true
+                },
+                selectedWarehouses: {
+                    handler(newValue, oldValue) {
+                        this.$set(this.searchData.data, "warehouse", newValue)
+
+
+                    },
+                    deep: true
+                },
+                selectedLogisticsCompanys: {
+                    handler(newValue, oldValue) {
+                        this.$set(this.searchData.data, "logistics_company", newValue)
+
+
+                    },
+                    deep: true
+                },
+                selectedShippingMethods: {
+                    handler(newValue, oldValue) {
+                        this.$set(this.searchData.data, "logistics_method", newValue)
+
+
+                    },
+                    deep: true
+                },
+                selectedSalesTeam: {
+                    handler(newValue, oldValue) {
+                        this.$set(this.searchData.data, "sales_team", newValue)
+
+
+                    },
+                    deep: true
+                },
+                timeSort: {
+                    handler(newValue, oldValue) {
+                        this.$set(this.searchData.data, "search_time_type", newValue)
+
+
+                    },
+                    deep: true
+                },
+                dateRange: {
+                    handler(newValue, oldValue) {
+                        this.$set(this.searchData.data, "search_time_left", newValue[0])
+                        this.$set(this.searchData.data, "search_time_right", newValue[1])
+
+
+                    },
+                    deep: true
+                },
+                selectedDownQueryTemp: {
+                    handler(newValue, oldValue) {
+                        this.$set(this.searchData.data, 'search_condition', this.selectedDownQueryTemp)
+
+                    },
+                    deep: true
+                },
+                searchKeywordsTemp: {
+                    handler(newValue, oldValue) {
+                        this.$set(this.searchData.data, "search_value", $.trim(this.searchKeywordsTemp))
+
+                    },
+                    deep: true
+                },
+                //搜索条件数据修改，自动请求接口
+                searchData: {
+                    handler(newValue, oldValue) {
+                        this.getOrderList(newValue);
+
+                    },
+                    deep: true
+                }
+
+            },
+            beforeCreate() {
+
+            },
+            mounted: function () {
+
+            },
+            filters: {
+                formatDate(time) {
+                    var date = new Date(time);
+                    return formatDate(date, 'yyyy-MM-dd hh:mm');
+                }
+            },
+        })
+
+        //时间戳转日期
+        function formatDate(date, fmt) {
+            if (/(y+)/.test(fmt)) {
+                fmt = fmt.replace(RegExp.$1, (date.getFullYear() + '').substr(4 - RegExp.$1.length));
+            }
+            var o = {
+                'M+': date.getMonth() + 1,
+                'd+': date.getDate(),
+                'h+': date.getHours(),
+                'm+': date.getMinutes(),
+                's+': date.getSeconds()
+            };
+            for (var k in o) {
+                if (new RegExp(`(${k})`).test(fmt)) {
+                    var str = o[k] + '';
+                    fmt = fmt.replace(RegExp.$1, (RegExp.$1.length === 1) ? str : padLeftZero(str));
+                }
+            }
+            return fmt;
+        }
+
+        function padLeftZero(str) {
+            return ('00' + str).substr(str.length);
+        };
+    </script>
+
+</body>
+
+</html>

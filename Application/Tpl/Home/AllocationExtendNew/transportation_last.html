@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>
+        <{$Think.lang.调拨详情}>
+    </title>
+    <link href="../Public/css/H-ui-3.1.min.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="../Public/css/stock.css">
+    <link rel="stylesheet" type="text/css" href="../Public/css/style.css"/>
+    <link rel="stylesheet" type="text/css" href="../Public/lib/Hui-iconfont/1.0.7/iconfont.css"/>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" type="text/css" href="../Public/css/NewAllocate.css"/>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <style>
+
+        .col-sm-4 {
+            padding: 0;
+        }
+
+        .title-left {
+            width: 25%;
+            float: left;
+        }
+
+        /* span {line-height: 31px;} */
+
+        table {
+            margin-top: 10px;
+        }
+
+        table thead th {
+            text-align: center;
+        }
+
+        .select-box {
+            border: solid 1px #ddd;
+        }
+
+        .table-bg thead th {
+            background-color: #537a8c;
+            color: white;
+        }
+
+        .thumbnail-wrap {
+            position: relative;
+            z-index: 999;
+        }
+
+        .thumbnail-wrap .img-wrap {
+            position: absolute;
+            top: -60px;
+            left: 120px;
+            width: 300px;
+            height: 300px;
+            border: 1px solid #eef5f9;
+        }
+
+        .thumbnail-wrap img {
+            box-shadow: 4px 4px 20px #242525;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .el-input__icon {
+            line-height: 0 !important;
+        }
+
+        /* .el-select-dropdown {
+             top: 197px !important;
+         }*/
+
+        #content .row-form .col-sm-3 > div {
+            margin-top: 0 !important;
+            float: left;
+            height: 32px;
+            line-height: 32px;
+        }
+        .el-select .el-input {
+            width: 130px;
+        }
+        .gray-text{
+            color:rgb(204, 204, 204);
+        }
+        .ck-wrap-title:hover{
+            cursor: pointer;
+        }
+        #content .table-detail-bg tbody tr td:nth-child(even) {
+            background: white;
+            color: #546E7A;
+            letter-spacing: 0;
+            text-align: center;
+            width: 35%;
+        }
+        .el-input__inner{
+            text-align: center;
+        }
+        .table-striped  .el-input__inner{
+            text-align: left;
+        }
+        .w-200{
+            width: 320px !important;
+            white-space: nowrap !important;
+        }
+    </style>
+</head>
+<body id="content">
+<div id="main">
+    <div style="display: flex">
+        <p :class="log === false?'ck-wrap-title': 'ck-wrap-title gray-text'"  @click="log=false">{{$lang("调拨单详情")}}</p>
+        <p :class="log === true?'ck-wrap-title': 'ck-wrap-title gray-text'" style="margin-left: 30px" @click="log=true">{{$lang("日志信息")}}</p>
+    </div>
+    <div v-if="!log">
+        <allot-info :info="info" :option="option" :outstocks="outstocks" :instocks="instocks" :photo="photo" :work="work"></allot-info>
+        <profit-Info  v-if="info.transfer_use_type_val === '销售'" :profit="profit" :info="info" :goods="goods"></profit-Info>
+        <good-list-over v-if="info.state_val === '运输中'"  :goods="goods" :option="option"></good-list-over>
+        <good-list-over-two v-if="info.state_val === '已完成'"  :goods="goods" :option="option" :info="info"></good-list-over-two>
+        <!--调拨单审核-->
+        <div class="bottom-row" v-if="info.state === 'N001970603'">
+            <div>
+                <button class="bottom-btn btn-back-bottom" @click="t"  v-if="outstocks.length === 0">{{$lang("退回待提交")}}</button>
+                <button class="bottom-btn btn-back-bottom" @click="out" v-if="info.allo_out_status_val !== '已完成'">{{$lang("出库")}}</button>
+                <button class="bottom-btn btn-back-bottom" @click="ins" v-if="info.allo_in_status_val !== '已完成' && outstocks.length>0">{{$lang("入库")}}</button>
+            </div>
+        </div>
+        <task-info :photo="photo" :work="work" :option="option"></task-info>
+        <out-record1 v-for="(v,k) in outstocks"  :outstocks="v"  :option="option" :index="k+1" :length="outstocks.length"></out-record1>
+        <in-record1 v-for="(v,k) in instocks"  :instocks="v"  :option="option" :index="k+1" :length="instocks.length"></in-record1>
+    </div>
+    <allot-log v-if="log" :alloid="alloid"></allot-log>
+</div>
+
+
+</body>
+<script src="../Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script src="../Public/lib/layer-v3.0.3/layer/layer.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript"
+        src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript"
+        src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/AllocationExtendNew/js/allotInfo_last.js?v=<{$Think.config.VER_NUM}>"></script>
+<script>
+    top.$('.loading').hide()
+    var id = getQueryString('id')
+    var type = getQueryString('type')
+    var vueApp = new Vue({
+        el: '#main',
+        data: {
+            alloid:id,
+            log:false,
+            option:{
+                edit:false,
+                info:true
+            },
+            outstocks: [],
+            instocks:[],
+            work: {
+                allo_id: id,
+                beat_information: "",
+                job_photos: [],
+                job_note: "",
+                operating_expenses_currency_cd: "",
+                operating_expenses: 0,
+                value_added_service_fee_currency_cd: "",
+                value_added_service_fee: 0
+            },
+            type:type, // 0 调拨审核，1 待提交
+            planned_transportation_channel_cds:[],
+            curr:[],
+            photo:[],
+            info:{},
+            goods:[],
+            profit:{},
+            value1:'',
+            thOption: [
+                {title: '序号'},
+                {title: 'SKU条码'},
+                {title: '条形码'},
+                {title: '商品名称'},
+                {title: '商品属性'},
+                {title: '商品图片'},
+                {title: '平均不含税商品单价（CNY）'},
+                {title: '平均PO内费用单价（CNY）'},
+                {title: 'PO外费用单价(CNY)'},
+                {title: '不含税销售单价', red: true},
+                {title: '不含税销售单价（CNY)'},
+                {title: '调拨数量'}
+            ]
+        },
+        mounted() {
+
+        },
+        created: function () {
+            var _this = this;
+            axios.get('index.php?m=AllocationExtendNew&a=getAlloDetail&id='+id).then(function (response) {
+                if(response.data.code === 200){
+
+                    _this.info = response.data.data.info;
+                    _this.goods = response.data.data.goods;
+                    _this.profit = response.data.data.profit;
+                    _this.outstocks = response.data.data.out_stocks;
+                    _this.instocks = response.data.data.in_stocks;
+                    let job_photos =  JSON.parse(response.data.data.work.job_photos);
+                    _this.work =response.data.data.work;
+                    _this.work.job_photos=job_photos;
+
+                    console.log("作业数据",_this.work);
+                    console.log("作业",_this.photo);
+                }
+            })
+        },
+        methods: {
+            t:function(type){
+                var _this = this;
+                axios.get('/index.php?m=AllocationExtendNew&a=waitingAssignmentWithdrawn&allo_id='+id).then(function (response) {
+                    if (response.data.code == 200) {
+                        _this.$message({
+                            message: '操作成功',
+                            type: 'success'
+                        });
+                        setTimeout(function(){
+                            _this.orderDetal(id+'&type=1','调拨单详情')
+
+                        },1000)
+                        setTimeout(function(){
+                            var url = window.location.pathname + window.location.search
+                            sessionStorage.setItem('closeWindow',url)
+                        },1200)
+                    }else{
+                        _this.$message({
+                            message: response.data.msg,
+                            type: 'warning'
+                        });
+                    }
+                })
+            },
+            out:function(){
+                window.location.href = '/index.php?m=allocation_extend_new&a=out_storage_last&id='+id
+            },
+            ins:function(){
+                window.location.href = '/index.php?m=allocation_extend_new&a=in_storage_last&id='+id
+            },
+            orderDetal: function (orderId, title) {
+                var dom = document.createElement('a');
+                var _href;
+                if (title === '调拨单审核' || title === '调拨单详情') {
+                    _href = '/index.php?m=allocation_extend_new&a=allot_check&id='+orderId
+                }
+                dom.setAttribute("onclick", "opennewtab(this,'"+this.$lang(title) + "')");
+                dom.setAttribute("_href", _href);
+                dom.click();
+            },
+            updateReviewAllo:function(type){
+                var _this = this;
+                var work = this.work;
+                var job_photos = [];
+                for(var x = 0;x<this.photo.length;x++){
+                    job_photos.push(this.photo[x].data)
+                }
+                if(job_photos.length === 0){
+                    _this.$message({
+                        message: '请上传作业照片',
+                        type: 'warning'
+                    });
+                    return
+                }
+                work.job_photos = job_photos;
+                for(var x in work){
+                    if(work[x] === ''){
+                        _this.$message({
+                            message: '请填写完整信息',
+                            type: 'warning'
+                        });
+                        return;
+                    }
+                }
+                var goods = [];
+                for(var x = 0;x<this.goods.length;x++){
+                    goods.push({
+                        "sku_id": this.goods[x].sku_id,
+                        "number_boxes": this.goods[x].number_boxes,
+                        "number_per_box": this.goods[x].number_per_box,
+                        "case_number": this.goods[x].case_number,
+                        "box_length_and_width_cm": this.goods[x].box_length_and_width_cm,
+                        "net_weight_kg": this.goods[x].net_weight_kg
+                    })
+                }
+                axios.post('/index.php?m=AllocationExtendNew&a=submitWork&allo_id='+id, {
+                    work:work,
+                    goods:goods
+                }).then(function (response) {
+                    if (response.data.code == 200) {
+                        _this.$message({
+                            message: '操作成功',
+                            type: 'success'
+                        });
+                    }
+                })
+            },
+            updateStatusAllo:function(type){
+                var _this = this;
+                axios.post('/index.php?m=AllocationExtendNew&a=updateStatusAllo&id='+id, {
+                    id:id,
+                    type:type
+                }).then(function (response) {
+                    if (response.data.code == 200) {
+                        _this.$message({
+                            message: '操作成功',
+                            type: 'success'
+                        });
+                    }
+                })
+            },
+            postMessage:function(type){
+                var _this = this;
+                var goods = [];
+                for(var x = 0; x< this.goods.length;x++){
+                    var obj = {
+                        sku_id:this.goods[x].sku_id,
+                        tax_free_sales_unit_price_currency_cd:this.goods[x].tax_free_sales_unit_price_currency_cd,
+                        tax_free_sales_unit_price:this.goods[x].tax_free_sales_unit_price
+                    }
+                    goods.push(obj)
+                }
+                axios.post('/index.php?m=AllocationExtendNew&a=editAlloInfo&id='+id, {
+                    type:type,
+                    info:{
+                        expected_delivery_date:_this.info.expected_delivery_date,//出库日期
+                        expected_warehousing_date:_this.info.expected_warehousing_date,//入库日期
+                        planned_transportation_channel_cd:_this.info.planned_transportation_channel_cd,//计划运输渠道
+                    },
+                    goods:goods
+                }).then(function (response) {
+                    if(response.data.code === 200){
+                        var text = '';
+                        switch (type) {
+                            case 'save':
+                                text = '保存成功'
+                                break;
+                            case 'submit':
+                                text = '调拨成功'
+                                break;
+                        }
+                        _this.$message({
+                            message: text,
+                            type: 'success'
+                        });
+                        setTimeout(function(){
+                            switch (type) {
+                                case 'save':
+                                    _this.orderDetal(id+'&type=1','调拨单详情')
+                                    break;
+                                case 'submit':
+                                    _this.orderDetal(id+'&type=0','调拨单审核')
+                                    break;
+                            }
+                        },1000)
+                        setTimeout(function(){
+                            var url = window.location.pathname + window.location.search
+                            sessionStorage.setItem('closeWindow',url)
+                        },1200)
+                    }else{
+                        var text = response.data.msg;
+                        for(var x in response.data.data){
+                            if(response.data.data[x] instanceof Array){
+                                text = response.data.data[x][0]
+                            }
+                        }
+                        _this.$message({
+                            message: text,
+                            type: 'error'
+                        });
+                    }
+                })
+            }
+        }
+    });
+
+    function getQueryString(name) {
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+        var r = window.location.search.substr(1).match(reg);
+        if (r != null) return unescape(r[2]); return null;
+    }
+</script>
+</html>

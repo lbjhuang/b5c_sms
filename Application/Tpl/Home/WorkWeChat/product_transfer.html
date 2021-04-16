@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>
+        <?= L('正次品转换审批') ?>
+    </title>
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <style>
+        body,
+        html {
+            padding: 0;
+            margin: 0;
+        }
+        
+        body {
+            width: 100%;
+            height: 200px;
+            position: fixed
+        }
+        
+        [v-cloak] {
+            display: none;
+        }
+        
+        .el-row {
+            padding: 10px;
+            border-bottom: 2px solid #cdcdcd;
+        }
+        
+        .el-footer {
+            width: 100%;
+            position: fixed;
+            text-align: center;
+            vertical-align: center;
+            bottom: 0;
+            padding: 0px;
+            background-color: #efefef;
+        }
+        
+        .el-footer>.el-button {
+            margin: 14px 4px 0px;
+        }
+        
+        .el-dialog__body {
+            padding: 12px;
+        }
+        
+        .el-button.el-button--default:focus,
+        .el-button.el-button--default:hover {
+            color: #606266;
+            border-color: #DCDFE6;
+        }
+        
+        .row-info {
+            color: #888888;
+            white-space: normal;
+            word-break: break-all;
+        }
+        
+        .header-fix {
+            width: 100%;
+            background-color: #fff;
+            top: 0;
+            overflow-y: auto;
+        }
+        
+        .el-main {
+            margin: 0;
+            padding: 0;
+        }
+        
+        .el-main header {
+            font-size: 14px;
+            color: #999999;
+            margin: 12px 0 12px 12px;
+        }
+        
+        .good-item {
+            display: flex;
+            border-top: 1px solid #cfcfcf;
+        }
+        
+        .good-item .left-container {
+            float: left;
+            width: 25%;
+        }
+        
+        .left-container {
+            padding: 20px;
+        }
+        
+        .left-container img {
+            width: 100%;
+        }
+        
+        .right-container>h3 {
+            font-weight: normal;
+            font-size: 16px;
+            margin: 0 0 12px 0;
+        }
+        
+        .right-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .right-container>div {
+            font-size: 14px;
+            color: #999999;
+        }
+        
+        .text-item {
+            line-height: 64px;
+        }
+        
+        .goods-list {
+            padding: 10px;
+            border-top: 8px solid #cdcdcd;
+            /* border-bottom: 10px solid #cdcdcd; */
+        }
+        
+        .goods-list .toggle {
+            float: right;
+            position: relative;
+        }
+        
+        .goods-list .toggle:before {
+            position: absolute;
+            top: 8px;
+            right: 0;
+            width: 0;
+            height: 0;
+            content: '';
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid #333;
+            transition: all .2s;
+        }
+        
+        .goods-list .toggle:after {
+            position: absolute;
+            top: 7px;
+            right: 0;
+            width: 0;
+            height: 0;
+            content: '';
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid #fff;
+            transition: all .2s;
+        }
+        
+        .goods-list .hd .hide:before {
+            transform: rotate(-90deg)
+        }
+        
+        .goods-list .hd .hide:after {
+            transform: rotate(-90deg);
+            top: 8px;
+            right: 1px;
+        }
+        
+        .goods-list .bd.hide {
+            display: none;
+        }
+        
+        .goods-list .bd {
+            border-top: 1px solid #ccc;
+            margin-top: 10px;
+        }
+        
+        .goods-list .post {
+            display: flex;
+            /* border-top: 1px solid #ccc; */
+            border-bottom: 1px solid #ccc;
+            /* padding-top: 10px; */
+            padding-bottom: 10px;
+            margin-top: 10px;
+        }
+        
+        .goods-list .post .img {
+            flex: 0 0 64px;
+            width: 64px;
+            height: 64px;
+            overflow: hidden;
+            margin-right: 10px;
+        }
+        
+        .goods-list .post img {
+            width: 64px;
+            height: 64px;
+        }
+        
+        .goods-list .post .info {
+            position: relative;
+            flex: 1;
+        }
+        
+        .goods-list .post .title {
+            margin: 0;
+            font-size: 16px;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            text-overflow: ellipsis;
+            overflow: hidden;
+        }
+        
+        .goods-list .post .num-price {
+            position: absolute;
+            bottom: 0;
+            margin: 0;
+            font-size: 13px;
+            color: #888;
+        }
+        
+        [class*=el-col-] {
+            line-height: 36px;
+        }
+    </style>
+</head>
+
+<!-- 引入组件库 -->
+
+<body>
+    <div id="wechat" v-cloak v-loading="loading">
+        <el-container>
+            <div class="header-fix" id="wechatList">
+                <el-row>
+                    <el-col :span="10">
+                        <{$Think.lang.转换单号}>
+                    </el-col>
+                    <el-col :span="14" class="row-info">&nbsp;{{dataList.detail.conversion_no}}</el-col>
+                    <el-col :span="10">
+                        <{$Think.lang.转换类型}>
+                    </el-col>
+                    <el-col :span="14" class="row-info">&nbsp;{{dataList.detail.type}}</el-col>
+                    <el-col :span="10">
+                        <{$Think.lang.归属销售团队}>
+                    </el-col>
+                    <el-col :span="14" class="row-info">&nbsp;{{dataList.detail.sales_team}}</el-col>
+                    <el-col :span="10">
+                        <{$Think.lang.归属仓库}>
+                    </el-col>
+                    <el-col :span="14" class="row-info">&nbsp;{{dataList.detail.warehouse}}</el-col>
+                    <el-col :span="10">
+                        <{$Think.lang.发起人}>
+                    </el-col>
+                    <el-col :span="14" class="row-info">&nbsp;{{dataList.detail.created_by}}</el-col>
+                    <el-col :span="10">
+                        <{$Think.lang.发起时间}>
+                    </el-col>
+                    <el-col :span="14" class="row-info">&nbsp;{{dataList.detail.created_at}}</el-col>
+                    <el-col :span="10">
+                        <{$Think.lang.备注}>
+                    </el-col>
+                    <el-col :span="14" class="row-info">&nbsp;{{dataList.detail.remark}}</el-col>
+                </el-row>
+
+                <div class="goods-list">
+                    <div class="hd">
+                        <span><{$Think.lang.商品信息}></span>
+                        <!-- <span class="toggle" :class="{hide: !isShowGoods}" @click="isShowGoods = !isShowGoods"></span> -->
+                    </div>
+                    <div class="bd list" :class="{hide: !isShowGoods}">
+                        <div v-if="dataList.products.length > 0">
+                            <div class="post" v-for="item in dataList.products">
+                                <div class="img">
+                                    <img :src="item.image_url">
+                                </div>
+                                <div class="info">
+                                    <h6 class="title">{{ item.spu_name }}&{{ item.attributes }}</h6>
+                                    <p class="num-price">
+                                        <span><{$Think.lang.转换数量}>：{{ item.number }}</span>&nbsp;&nbsp;&nbsp;
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-else>
+                            <{$Think.lang.无商品信息}>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <el-footer height="64px">
+                <div class="text-item" v-show="agreeInfo === 'agree' || dataList.config.status == '1'">
+                    <{$Think.lang.已同意}>
+                </div>
+                <div class="text-item" v-show="agreeInfo === 'refuse' || dataList.config.status == '2'">
+                    <{$Think.lang.已拒绝}>
+                </div>
+                <div class="text-item" v-show="dataList.config.status == '3'">
+                    <{$Think.lang.已撤回}>
+                </div>
+                <el-button v-if="dataList.config.can_approve == '1' && !agreeInfo" @click="confirmCheck('back')" size="medium" type="default">
+                    <{$Think.lang.不同意}>
+                </el-button>
+                <el-button v-if="dataList.config.can_approve == '1' && !agreeInfo" @click="confirmCheck('agree')" size="medium" type="info">
+                    <{$Think.lang.同意}>
+                </el-button>
+            </el-footer>
+        </el-container>
+        <el-dialog title="<{$Think.lang.审批意见}>" :visible.sync="dialogFormVisible" width="90%">
+            <el-form :model="form">
+                <el-form-item label-width="0px">
+                    <el-input type="textarea" :rows="3" v-model="form.reason"></el-input>
+                </el-form-item>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+                <el-button size="small" @click="dialogFormVisible = false">
+                    <{$Think.lang.取消}>
+                </el-button>
+                <el-button size="small" type="info" @click="doRefuse">
+                    <{$Think.lang.确认}>
+                </el-button>
+            </div>
+        </el-dialog>
+    </div>
+    <script src="https://cdn.bootcss.com/vue/2.6.6/vue.js"></script>
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script src="https://cdn.bootcss.com/axios/0.18.0/axios.js"></script>
+    <script src="http://res.wx.qq.com/open/js/jweixin-1.2.0.js"></script>
+    <script src="https://cdn.bootcss.com/js-sha1/0.6.0/sha1.js"></script>
+    <script>
+        function getContentSize() {
+            var wh = document.documentElement.clientHeight;
+            var eh = 64;
+            ch = (wh - eh) + "px";
+            document.getElementById("wechatList").style.height = ch;
+        }
+        window.onload = getContentSize;
+        window.onresize = getContentSize;
+
+        var wechat = new Vue({
+            el: '#wechat',
+            data: {
+                token: '',
+                agreeInfo: '',
+                form: {
+                    reason: ''
+                },
+                isShowGoods: true,
+                doStatus: '',
+                review_no: '',
+                loading: false,
+                dialogFormVisible: false,
+                dataList: <?=$detail?>
+            },
+            created: function() {
+                this.review_no = getQueryVariable('review_no')
+            },
+            mounted: function() {
+                var _this = this;
+                _this.doFixHeader();
+                window.addEventListener('resize', function() {
+                    _this.doFixHeader();
+                })
+            },
+            computed: {
+                rowList() {
+                    var rowInfo = {};
+                    for (var type in this.dataList.data) {
+                        rowInfo[this.dataList.keys[type]] = this.dataList.data[type]
+                    }
+                    return rowInfo
+                }
+            },
+            methods: {
+                doFixHeader: function() {
+                    var header = document.querySelector('.header-fix');
+                    var footer = document.querySelector('.el-footer');
+                    var main = document.querySelector('.el-main');
+                    var mainContainer = document.querySelector('.main-container');
+                    mainContainer.style.height = (document.body.clientHeight - header.clientHeight - footer.clientHeight) + 'px';
+                    mainContainer.style.marginTop = header.clientHeight + 'px';
+                    mainContainer.style.marginBottom = footer.clientHeight + 'px';
+                    main.style.marginBottom = footer.clientHeight + 'px';
+                    header.style.position = 'fixed';
+                    header.style.height = header.clientHeight + 'px';
+                    header.style.zIndex = 9999;
+
+                },
+                toDetail: function() {
+                    window.location.href = this.dataList.config.detail_url;
+                },
+                confirmCheck: function(type) {
+                    var _this = this;
+                    _this.doStatus = type;
+                    switch (type) {
+                        case 'back':
+                            // 需要退回原因
+                            _this.dialogFormVisible = true;
+                            break;
+                        case 'agree':
+                            _this.doCheck();
+                            break;
+                    }
+                },
+                doCheck: function() {
+                    var _this = this;
+                    var param = {
+                        "review_no": this.review_no,
+                        "status": this.doStatus === 'back' ? '0' : '1',
+                    };
+                    _this.loading = true;
+                    axios.post('/index.php?&m=api&a=wechat_approve', param).then(function(res) {
+                        var data = res.data;
+                        _this.loading = false;
+                        if (data.code == 2000) {
+                            _this.agreeInfo = _this.doStatus === 'back' ? 'refuse' : 'agree';
+                            _this.$message({
+                                message: data.msg,
+                                type: 'success'
+                            });
+                        } else {
+                            _this.$message({
+                                message: data.msg,
+                                type: 'error'
+                            });
+                        }
+                    })
+                },
+                doRefuse: function() {
+                    var _this = this;
+                    if (_this.form.reason.trim() == '') {
+                        _this.$message({
+                            message: '请填写不同意原因',
+                            type: 'error'
+                        });
+                        return
+                    }
+                    var param = {
+                        "review_no": this.review_no,
+                        "status": this.doStatus === 'back' ? '0' : '1',
+                        // "reason": this.dataList.remark || this.form.reason
+                        "reason": this.form.reason
+                    };
+                    _this.dialogFormVisible = false;
+                    _this.loading = true;
+                    axios.post('/index.php?&m=api&a=wechat_approve', param).then(function(res) {
+                        var data = res.data;
+                        _this.loading = false;
+                        if (data.code == 2000) {
+                            _this.agreeInfo = _this.doStatus === 'back' ? 'refuse' : 'agree';
+                            _this.$message({
+                                message: data.msg,
+                                type: 'success'
+                            });
+                        } else {
+                            _this.$message({
+                                message: data.msg,
+                                type: 'error'
+                            });
+                        }
+                    })
+                }
+            }
+        });
+
+        //获取url参数
+        function getQueryVariable(variable) {
+            var query = window.location.search.substring(1);
+            var vars = query.split("&");
+            for (var i = 0; i < vars.length; i++) {
+                var pair = vars[i].split("=");
+                if (pair[0] == variable) {
+                    return pair[1];
+                }
+            }
+            return false;
+        }
+    </script>
+
+</body>
+
+</html>

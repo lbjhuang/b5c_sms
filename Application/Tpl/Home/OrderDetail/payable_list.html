@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title></title>
+    <link rel="stylesheet" href="../Public/css/purchaseDetail.css"/>
+    <link rel="stylesheet" href="../Public/lib/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../Public/lib/icon/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <script type="text/javascript" src="../Public/lib/My97DatePicker/WdatePicker.js"></script>
+    <script type="text/javascript" src="../Public/lib/jquery/1.9.1/jquery.min.js"></script>
+
+    <script type="text/javascript" src="../Public/lib/bootstrap/js/tether.min.js"></script>
+    <script type="text/javascript" src="../Public/lib/bootstrap/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="../Public/css/purchase.css?=20170508"/>
+    <link rel="stylesheet" href="../Public/css/purchaseDetail.css?=20170907"/>
+    <link rel="stylesheet" href="../Public/css/common.css?=20170508"/>
+    <style>
+        #payableList{margin-bottom:60px;}
+        ul.search {
+            display: none;
+            list-style: none;
+            text-align: left;
+            border: 1px solid #E0E0E0;
+            padding: 5px 0;
+            border-radius: 3px;
+            max-height: 160px;
+            overflow: auto;
+            position: absolute;
+            z-index: 999;
+            background: white;
+            min-width: 200px;
+        }
+        ul.search li{
+            height: 30px;
+            line-height: 30px;
+            padding-left: 10px;
+        }
+        ul.search li:hover{
+            cursor: pointer;
+            background: #EEEEEE;
+        }
+        input.search{
+            border: 1px solid #d9d9d9;
+            border-radius: 3px;
+            height: 34px;
+            width: 100%;
+        }
+        .searchSelect{
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+<div class="wrap" id="payableList">
+    <div class="enter-line">
+        <form method="get" id="thisform" action="<{:U('payable_list')}>">
+            <div class="row row_menu">
+                <a href="javascript:void(0)" style="padding:0 27px;"><{$Think.lang.采购类型}>:</a>
+                <a href="javascript:void(0)" class="type_check <if condition='$param["purchase_type"] === "" or
+                $param["purchase_type"] === null'>active</if>" value ><{$Think.lang.全部}></a>
+                <volist name="purchase_type" id="vo">
+                    <a href="javascript:void(0)" class="type_check <if condition='$param["purchase_type"]===$vo["CD"]'>active</if>" value=<{$vo.CD}>><{:L($vo["CD_VAL"])}></a>
+                </volist>
+                <input type="hidden" name="purchase_type" id="purchase_type" value="<{$param.purchase_type}>">
+            </div>
+            <div class="row row_menu">
+                <a href="javascript:void(0)"><{$Think.lang.应付单状态}>:</a>
+                <a href="javascript:void(0)" class="status_check <if condition='$param["status"] === "" or
+                $param["status"] === null'>active</if>" value ><{$Think.lang.全部}></a>
+                <a href="javascript:void(0)" class="status_check <if condition='$param["status"]=== "0"'>active</if>" value="0"><{$Think.lang.待确认}></a>
+                <a href="javascript:void(0)" class="status_check <if condition='$param["status"]== 4'>active</if>" value="4"><{$Think.lang.待审核}></a>
+                <a href="javascript:void(0)" class="status_check <if condition='$param["status"] == 1'>active</if>" value="1"><{$Think.lang.待确认付款账户}></a>
+                <a href="javascript:void(0)" class="status_check <if condition='$param["status"]== 2'>active</if>" value="2"><{$Think.lang.待出账}></a>
+                <a href="javascript:void(0)" class="status_check <if condition='$param["status"]== 3'>active</if>" value="3"><{$Think.lang.已完成}></a>
+                <input type="hidden" name="status" id="status" value="<{$param.status}>">
+            </div>
+            <div class="card order_list_row_top_input">
+                <div class="card-block" >
+                    <blockquote class="card-blockquote">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <tbody>
+
+                                <tr>
+                                    <!-- <td width="2%"><{$Think.lang.应付单号}></td> -->
+                                    <td width="2%">Payment Key</td>
+                                    <td width="21%"><input class="form-control trimInput" name="payment_no" value="<{$param.payment_no}>" ></td>
+                                    <td width="2%"></td>
+                                    <td class="invoice_list_menu_select">
+                                        <!-- <fieldset class="form-group perchase_list_select">
+                                            <select class="form-control" name="number_type">
+                                                <option value="0" <if condition='$param["number_type"] == 0'>selected</if>><{$Think.lang.PO单号}></option>
+                                                <option value="1" <if condition='$param["number_type"] == 1'>selected</if>><{$Think.lang.采购单号}></option>
+                                            </select>
+                                        </fieldset> -->
+                                        <{$Think.lang.采购单号/采购PO单号}>
+                                    </td>
+                                    <td width="21%"><input placeholder="<{$Think.lang.请输入}><{$Think.lang.采购单号/采购PO单号}>" name="number" class="form-control trimInput" value="<{$param.number}>" ></td>
+                                    <td width="2%"></td>
+                                    <td width="2%"><{$Think.lang.供应商}></td>
+                                    <td width="21%"><input class="form-control trimInput" name="supplier_id"  placeholder="" value="<{$param.supplier_id}>" ></td>
+                                    <td width="2%"></td>
+                                    <td width="2%"><{$Think.lang.我方公司}></td>
+                                    <td width="21%">
+                                        <el-select class="searchSelect" @change="ourCompanyChange(our_company_cd)"  filterable  v-model="our_company_cd" placeholder="<{$Think.lang.请选择}>">
+                                            <el-option
+                                                v-for="item in our_company"
+                                                :key="item.CD"
+                                                :label="item.CD_VAL"
+                                                :value="item.CD">
+                                            </el-option>
+                                        </el-select>
+                                        <input type="hidden" class="ourCompanyInput" name="our_company" value="" >
+                                    
+                                        <!-- <div>
+                                            <input class="search" type="text" oninput="checkField(this,'#ourCompany','our_company','company')" id="ourCompany" placeholder="请选择" onfocus="teamInputFocus(this)" onblur="teamInputBlur(this,'our_company')">
+                                            <ul class="search">
+                                                <volist name="our_company" id="v">
+                                                    <li onclick="pickTeam(this,'#ourCompany','our_company')" data-cd="<{$v.CD}>"><{$v.CD_VAL}></li>
+                                                </volist>
+                                            </ul>
+                                        </div>
+                                        <fieldset class="form-group perchase_list_select" style="display:none">
+                                            <select class="form-control" name="our_company" >
+                                                <option value=""><{$Think.lang.请选择}></option>
+                                                <volist name="our_company" id="v">
+                                                    <option value="<{$v.CD}>" <{$param['our_company']==$v['CD']?'selected':''}>><{$v.CD_VAL}></option>
+                                                </volist>
+                                            </select>
+                                        </fieldset> -->
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><{$Think.lang.采购团队}></td>
+                                    <td style="padding: 0;">
+                                        <el-select class="searchSelect" @change="paymentCompanyChange(payment_company_cd)"  filterable  v-model="payment_company_cd" placeholder="<{$Think.lang.请选择}>">
+                                            <el-option
+                                                v-for="item in payment_company"
+                                                :key="item.cd"
+                                                :label="item.val"
+                                                :value="item.cd">
+                                            </el-option>
+                                        </el-select>
+                                        <input type="hidden" class="paymentCompanyInput" name="payment_company" value="" >
+                                    
+                                        <!-- <div>
+                                            <input class="search" type="text" oninput="checkField(this,'#purchaseTeam','payment_company','team')" id="purchaseTeam" placeholder="请选择" onfocus="teamInputFocus(this)" onblur="teamInputBlur(this,'payment_company')">
+                                            <ul class="search">
+                                                <volist name="purchase_team" id="v">
+                                                    <li onclick="pickTeam(this,'#purchaseTeam','payment_company')" data-cd="<{$v.CD}>"><{$v.CD_VAL}></li>
+                                                </volist>
+                                            </ul>
+                                        </div>
+                                        <fieldset class="form-group perchase_list_select" style="display:none">
+                                            <select class="form-control" name="payment_company" >
+                                                <option value=""><{$Think.lang.请选择}></option>
+                                                <volist name="purchase_team" id="v">
+                                                    <option value="<{$v.CD}>" <{$param['payment_company']==$v['CD']?'selected':''}>><{$v.CD_VAL}></option>
+                                                </volist>
+                                            </select>
+                                        </fieldset> -->
+                                    </td>
+                                    <td></td>
+                                    <td><{$Think.lang.采购员}></td>
+                                    <td><input type="text" class="form-control trimInput" name="prepared_by" value="<{$param.prepared_by}>" ></td>
+                                    <td></td>
+                                    <td class="invoice_list_menu_select">
+                                        <fieldset class="form-group ">
+                                            <select class="form-control" name="time_type" id="">
+                                                <option value="0" <{$param['time_type']==0?'selected':''}>><{$Think.lang.预计付款时间}></option>
+                                                <option value="1" <{$param['time_type']==1?'selected':''}>><{$Think.lang.实际出账日期}></option>
+                                                <option value="2" <{$param['time_type']==2?'selected':''}>><{$Think.lang.单据更新时间}></option>
+                                            </select>
+                                        </fieldset>
+                                    </td>
+                                    <td class="common_data">
+                                        <input type="text" name="start_time" id="start_time"  value="<{$param.start_time}>"  onfocus="WdatePicker({firstDayOfWeek:1})" placeholder="<{$Think.lang.起始日期}>" class="form-control">
+                                        <span style="top: auto;" class="input-group-btn">
+                                                <button class="btn btn-secondary" type="button"><i ></i></button>
+                                            </span>
+                                    </td>
+                                    <td colspan="2" class="text-center"><div class="col-data_l">一</div></td>
+                                    <td class="common_data">
+                                        <input type="text" name="end_time" id="end_time" value="<{$param.end_time}>" onfocus="WdatePicker({firstDayOfWeek:1})" placeholder="<{$Think.lang.结束时间}>" class="form-control">
+                                        <span style="top: auto;" class="input-group-btn">
+                                                <button class="btn btn-secondary" type="button"><i></i></button>
+                                            </span>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td width="2%"><{$Think.lang.关联付款单号}></td>
+                                    <td width="21%"><input class="form-control trimInput" name="payment_audit_no" value="<{$param.payment_audit_no}>" ></td>
+                                    <td></td>
+                                    <td><{$Think.lang.触发操作}></td>
+                                    <td>
+                                        <el-select class="searchSelect" @change="purOperationChange(pur_operation_cd)"  filterable  v-model="pur_operation_cd" placeholder="<{$Think.lang.请选择}>">
+                                            <el-option
+                                                v-for="item in pur_operation"
+                                                :key="item.cd"
+                                                :label="item.val"
+                                                :value="item.cd">
+                                            </el-option>
+                                        </el-select>
+                                        <input type="hidden" class="purOperationInput" name="pur_operation" value="" >
+                                    
+                                        <!-- <div>
+                                            <input class="search" type="text" oninput="checkField(this,'#purOperation','pur_operation','operation')" id="purOperation" placeholder="请选择" onfocus="teamInputFocus(this)" onblur="teamInputBlur(this,'pur_operation')">
+                                            <ul class="search">
+                                                <volist name="pur_operation" id="v">
+                                                    <li onclick="pickTeam(this,'#purOperation','pur_operation')" data-cd="<{$v.CD}>"><{$v.CD_VAL}></li>
+                                                </volist>
+                                            </ul>
+                                        </div>
+                                        <fieldset class="form-group perchase_list_select" style="display:none">
+                                            <select class="form-control" name="pur_operation" >
+                                                <option value=""><{$Think.lang.请选择}></option>
+                                                <volist name="pur_operation" id="v">
+                                                    <option value="<{$v.CD}>" <{$param['pur_operation']==$v['CD']?'selected':''}>><{$v.CD_VAL}></option>
+                                                </volist>
+                                            </select>
+                                        </fieldset> -->
+                                    </td>
+                                    <td></td>
+                                    <td><{$Think.lang.支付渠道}></td>
+                                    <td style="padding: 0;">
+                                        <el-select class="searchSelect" @change="paymentChannelChange(payment_channel_cd)" collapse-tags multiple filterable  v-model="payment_channel_cd" placeholder="<{$Think.lang.请选择}>">
+                                            <el-option
+                                                v-for="item in payment_channel"
+                                                :key="item.CD"
+                                                :label="item.CD_VAL"
+                                                :value="item.CD">
+                                            </el-option>
+                                        </el-select>
+                                        <input type="hidden" class="paymentChannelInput" name="payment_channel_cd" value="" >
+                                    
+                                    </td>
+                                    <td></td>
+                                    <td><{$Think.lang.支付方式}></td>
+                                    <td style="text-indent: 0;">
+                                        <el-select class="searchSelect" @change="payment_wayChange(payment_way_cd)" collapse-tags multiple filterable  v-model="payment_way_cd" placeholder="<{$Think.lang.请选择}>">
+                                            <el-option
+                                                v-for="item in payment_way"
+                                                :key="item.CD"
+                                                :label="item.CD_VAL"
+                                                :value="item.CD">
+                                            </el-option>
+                                        </el-select>
+                                        <input type="hidden" class="paymentWayInput" name="payment_way_cd" value="">
+                                    </td>
+                                </tr>
+
+                                </tbody>
+                            </table>
+                        </div>
+                    </blockquote>
+                </div>
+            </div>
+            <div class="row row_search">
+                <div class="col-lg-12 text-left col-md-12 col-sm-12">
+                    <input name="search" value="1" type="hidden">
+                    <button type="button" class="btn-search" id="search"><{$Think.lang.查询}></button>
+                    <button type="button" class="btn-reset" id="resetForm" ><{$Think.lang.重置}></button>
+                </div>
+            </div>
+        </form>
+        <p class="purchase_list_p" style="width: 100%;"></p>
+        <div class="card purchase_list_card">
+            <div class="purchase_list_card_head">
+                <span class="payable_list_p"><{$Think.lang.结果}>:<{$Think.lang.共}><span><{$count}></span><{$Think.lang.条记录}></span>
+                <button class="btn btn-edit btn-sm purchase_export" style="margin-left:20px;position:absolute;right:0;" type="button"><{$Think.lang.导出}></button>
+            </div>
+            <div class="card-block">
+                <blockquote class="card-blockquote">
+                    <div class="table-responsive">
+                        <table class="table table-bordered payable_list_table">
+                            <thead>
+                            <tr class="text-center">
+                                <!--<th width=""><input type="checkbox"></th>-->
+                                <th width=""><{$Think.lang.采购类型}></th>
+                                <!-- <th width=""><{$Think.lang.应付单号}></th> -->
+                                <th width="">Payment Key</th>
+                                <th width=""><{$Think.lang.采购单号}></th>
+                                <th width=""><{$Think.lang.PO单号}></th>
+                                <th width=""><{$Think.lang.触发操作}></th>
+                                <th width=""><{$Think.lang.供应商}></th>
+                                <th width=""><{$Think.lang.我方公司}></th>
+                                <th width=""><{$Think.lang.预付款金额}></th>
+                                <th width=""><{$Think.lang.预计付款时间}></th>
+                                <th width=""><{$Think.lang.对应采购}></th>
+                                <th width=""><{$Think.lang.应付状态}></th>
+                                <th width=""><{$Think.lang.实际出账日期}></th>
+                                <th width=""><{$Think.lang.单据更新时间}></th>
+                                <th width=""><{$Think.lang.操作}></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+
+
+
+                                <?php
+                                foreach ($list as $cd => $v) {
+        
+                                    $purchase_type = cdVal($v['purchase_type']);
+                                    $action_type_cd = $v['action_type_cd'];
+                                    $payable_status_val = $v['payable_status_val'];
+                                    $supplier_id = $v['supplier_id'];
+                                    $our_company = cdVal($v['our_company']);
+                                    $actiontypecd = $action_type_cd === null ? '' : L($action_type_cd)
+                                    
+                                        ?>
+                                    <tr>
+                                        <td><{$Think.lang.$purchase_type}></td>
+                                        <td><{$v.payment_no}></td>
+                                        <td><{$v.procurement_number}></td>
+                                        <td><{$v.online_purchase_order_number}></td>
+                                        <td>
+                                            <{$actiontypecd}>
+                                        </td>
+                                        <td><{$Think.lang.$supplier_id}></td>
+                                        <!-- <td><{:L($v['supplier_id'])}></td> -->
+                                        <td><{$Think.lang.$our_company}></td>
+                                        <!-- <td><{:L(cdVal($v['our_company']))}></td> -->
+                                        <td>
+                                            <{:cdVal($v['amount_currency'])}> <{:number_format($v['amount_payable_split_ori'] === null ? $v['amount_payable_ori'] : $v['amount_payable_split_ori'],2)}>
+                                        </td>
+                                        <td><{$v.payable_date}></td>
+                                        <td><{$v['prepared_by']}>(<{:cdVal($v['payment_company'])}>)</td>
+                                        <td><{$Think.lang.$payable_status_val}></td>
+                                        <td><{$v.billing_date}></td>
+                                        <td><{$v.updated_at}></td>
+                                        <td class="payable_list_cor" style="white-space: nowrap">
+                                            <div>
+                                                <a onclick="opennewtab(this,'<{$Think.lang.应付详情页}>')" _href="<{:U('payable_detail',['id'=>$v['id']])}>"   class="btn-edit"><{$Think.lang.查看}></a>
+                                            </div>
+                                        </td>
+                                    </tr>
+        
+                                <?php
+                                    }
+                                ?>
+
+
+
+                            
+                                
+                            <!-- <volist name="list" id="v">
+                                <tr>
+                                    <td><{:cdVal($v['purchase_type'])}></td>
+                                    <td><{$v.payment_no}></td>
+                                    <td><{$v.procurement_number}></td>
+                                    <td><{$v.online_purchase_order_number}></td>
+
+                                    <td><{$v['action_type_cd']}></td>
+
+                                    <td><{$v.supplier_id}></td>
+                                    <td><{:cdVal($v['our_company'])}></td>
+                                    <td><{:cdVal($v['amount_currency'])}> <{:number_format($v['amount_payable_split_ori'] === null ? $v['amount_payable_ori'] : $v['amount_payable_split_ori'],2)}></td>
+                                    <td><{$v.payable_date}></td>
+                                    <td><{$v['prepared_by']}>(<{:cdVal($v['payment_company'])}>)</td>
+                                    <td>
+                                        <{$v.payable_status_val}>
+                                    </td>
+                                    <td><{$v.billing_date}></td>
+                                    <td><{$v.updated_at}></td>
+                                    <td class="payable_list_cor" style="white-space: nowrap">
+                                        <div>
+                                            <a onclick="opennewtab(this,'<{$Think.lang.应付详情页}>')" _href="<{:U('payable_detail',['id'=>$v['id']])}>"   class="btn-edit"><{$Think.lang.查看}></a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </volist> -->
+
+
+                            </tbody>
+                        </table>
+
+
+
+
+
+
+                        <ul class="pagination" style="margin: 0;">
+                            <{$page}>
+                        </ul>
+                    </div>
+                </blockquote>
+            </div>
+        </div>
+    </div>
+    <!--模态框-->
+
+    <div class="modal fade" id="delete-modal">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="width: 360px;">
+                <div class="modal-header">
+                    <h4 class="modal-title"><{$Think.lang.提示}></h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span class="sr-only">Close</span>
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p><{$Think.lang.确认要删除吗}>？</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" onclick="order_del()"><{$Think.lang.确定}></button>
+                    <input type="hidden" id="order_del"><!-- 隐藏域用来保存需要删除的订单ID-->
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal"><{$Think.lang.取消}></button>
+                </div>
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+</div>
+</body>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/vue.2.5.13.js?<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+
+<script>
+    var VM = new Vue({
+        el: '#payableList',
+        data: {
+            payment_channel_cd:[],
+            payment_channel:[],
+            payment_way_cd:[],
+            payment_way:[],
+            our_company_cd:'',
+            our_company:[],
+            payment_company_cd:'',
+            payment_company:[],
+            pur_operation_cd:'',
+            pur_operation:[]
+        },
+        created() {
+            this.payment_channel_init()
+            this.getSelectData()
+            this.getSelectLoad()
+
+
+        },
+        methods:{
+            getSelectLoad:function(){
+                if(this.getUrl('payment_channel_cd')){
+                    // this.payment_channel_cd = JSON.parse(this.getUrl('payment_channel_cd'))
+                    // $('.paymentChannelInput').val(this.getUrl('payment_channel_cd'))
+                    $('.paymentChannelInput').val(this.getUrl('payment_channel_cd'))
+                    this.payment_channel_cd = this.getUrl('payment_channel_cd').split(',')
+                }
+                if(this.getUrl('payment_way_cd')){
+                    $('.paymentWayInput').val(this.getUrl('payment_way_cd'))
+                    this.payment_way_cd = this.getUrl('payment_way_cd').split(',')
+                }
+                if(this.getUrl('our_company')){
+                    this.our_company_cd = this.getUrl('our_company')
+                    $('.ourCompanyInput').val(this.getUrl('our_company'))
+                }
+                if(this.getUrl('payment_company')){
+                    this.payment_company_cd = this.getUrl('payment_company')
+                    $('.paymentCompanyInput').val(this.getUrl('payment_company'))
+                }
+                if(this.getUrl('pur_operation')){
+                    this.pur_operation_cd = this.getUrl('pur_operation')
+                    $('.purOperationInput').val(this.getUrl('pur_operation'))
+                }
+            },
+            getSelectData:function(){
+                var company = '<volist name="our_company" id="v">{"cd":"<{$v.CD}>","val":"<{$v.CD_VAL}>"},</volist>' ;
+                var paymentCompany = '<volist name="purchase_team" id="v">{"cd":"<{$v.CD}>","val":"<{$v.CD_VAL}>"},</volist>';
+                var operation = '<volist name="pur_operation" id="v">{"cd":"<{$v.CD}>","val":"<{$v.CD_VAL}>"},</volist>';
+                
+                this.our_company = JSON.parse("[" + company.substring(0,company.length - 1) +"]")
+                this.payment_company = JSON.parse("[" + paymentCompany.substring(0,paymentCompany.length - 1) +"]")
+                this.pur_operation = JSON.parse("[" + operation.substring(0,operation.length - 1) +"]")
+            },
+            payment_channel_init:function(){
+                var _this = this;
+                var params = {
+                    "cd_type":{
+                        "payment_channel": "false",
+                        "payment_way": "false",
+                        "our_company": "true"
+                    }
+                };
+
+                axios.post("/index.php?g=common&m=index&a=get_cd", params).then(function(res){
+                if(res.data.code == 2000){
+                    console.log(res);
+                    _this.payment_channel = res.data.data.payment_channel
+                    _this.payment_way = res.data.data.payment_way
+                    _this.our_company = res.data.data.our_company
+                }
+                })
+
+            },
+            paymentChannelChange:function(val){
+                // $('.paymentChannelInput').val(JSON.stringify(val))
+                $('.paymentChannelInput').val(val.join(','))
+            },
+            payment_wayChange:function(val){
+                // $('.paymentWayInput').val(JSON.stringify(val))
+                $('.paymentWayInput').val(val.join(','))
+            },
+            ourCompanyChange:function(val){
+                $('.ourCompanyInput').val(val)
+            },
+            paymentCompanyChange:function(val){
+                $('.paymentCompanyInput').val(val)
+            },
+            purOperationChange:function(val){
+                $('.purOperationInput').val(val)
+            },
+            getUrl:function(data){
+                var search = window.location.search
+                var urlParams = new URLSearchParams(search);
+                return urlParams.get(data)
+            }
+            
+        }
+    })
+</script>
+<script>
+    
+    // console.log(window.location.search);
+    // function getUrl(data){
+    //     var search = window.location.search
+    //     var urlParams = new URLSearchParams(search);
+    //     return urlParams.get(data)
+    // }
+    // if(getUrl('payment_channel_cd')){
+    //     $.ajax({
+    //         type: "POST",
+    //         url: "/index.php?g=common&m=index&a=get_cd",
+    //         data:{
+    //             "cd_type": {
+    //                 "payment_channel": "true"
+    //             }
+    //         },
+    //         success : function(res) {
+    //             if(res.code == 2000){
+    //                 var data = res.data.payment_channel
+    //                 for (var i = 0; i < data.length; i++) {
+    //                     var lis = document.createElement("li");  
+    //                     lis.setAttribute("onclick", "pickTeam(this,'#paymentChannel','payment_channel_cd')");
+    //                     $(lis).attr("data-cd",data[i].CD);
+    //                     $(lis).text(data[i].CD_VAL);  
+    //                     $('#paymentChannel_select').append(lis);
+    //                     var options = document.createElement("option");  
+    //                     $(options).attr('value',data[i].CD)
+    //                     $(options).text(data[i].CD_VAL);  
+                        
+
+    //                     if(data[i].CD == getUrl('payment_channel_cd')){
+    //                         $("#paymentChannel").val(data[i].CD_VAL) 
+    //                         $(options).attr("selected", 'selected');
+    //                     }
+    //                     $("select[name=payment_channel_cd]").append(options);
+    //                 }
+    //             }
+    //         }
+    //     });
+    //     $.ajax({
+    //         type: "POST",
+    //         url: "/index.php?g=common&m=index&a=getPaymentWay",
+    //         data: JSON.stringify({ "payment_channel_cd": getUrl('payment_channel_cd')}),
+    //         success : function(res) {
+    //             if(res.code == 200){
+    //                 var data = res.data
+    //                 getList.method = data
+    //                 for (var i = 0; i < data.length; i++) {
+    //                     var lis = document.createElement("li");  
+    //                     lis.setAttribute("onclick", "pickTeam(this,'#paymentMethod','payment_way_cd')");
+    //                     $(lis).attr("data-cd",data[i].CD);
+    //                     $(lis).text(data[i].CD_VAL);  
+    //                     $('#paymentMethod_select').append(lis); 
+
+                        
+    //                     var options = document.createElement("option");  
+    //                     $(options).attr('value',data[i].CD)
+    //                     $(options).text(data[i].CD_VAL);  
+                        
+
+    //                     if(getUrl('payment_way_cd')){
+    //                         if(data[i].CD == getUrl('payment_way_cd')){
+    //                             $("#paymentMethod").val(data[i].CD_VAL) 
+    //                             $(options).attr("selected", 'selected');
+    //                         }
+    //                     }
+    //                     $("select[name=payment_way_cd]").append(options);
+
+    //                 }
+    //             }
+    //         }
+    //     });
+
+    // }
+
+    var getList ={
+        company:'',
+        team:'',
+        operation:'',
+        channel:'',
+        method:''
+    }
+    getList.company = '<volist name="our_company" id="v">{"cd":"<{$v.CD}>","val":"<{$v.CD_VAL}>"},</volist>';
+    getList.team = '<volist name="purchase_team" id="v">{"cd":"<{$v.CD}>","val":"<{$v.CD_VAL}>"},</volist>';
+    getList.operation = '<volist name="pur_operation" id="v">{"cd":"<{$v.CD}>","val":"<{$v.CD_VAL}>"},</volist>';
+
+    $("#ourCompany").val($("select[name=our_company]").find("option:selected").text());
+    $("#purchaseTeam").val($("select[name=payment_company]").find("option:selected").text());
+    // $("#paymentChannel").val($("select[name=payment_channel_cd]").find("option:selected").text());
+    // $("#paymentMethod").val($("select[name=payment_way_cd]").find("option:selected").text());
+    $("#purOperation").val($("select[name=pur_operation]").find("option:selected").text());
+
+    // console.log($("#ourCompany").val());
+    // console.log($("#paymentChannel").val());
+    
+
+    function checkField(e,id,name,field) {
+        if(name == 'payment_channel_cd' || name == 'payment_way_cd'){
+            teams = getList.channel
+            $(e).next().hide().children().remove();
+            var list = ''
+            teams.forEach(function(item){
+                if(item.CD_VAL.indexOf(e.value) > -1){
+                    list += '<li onclick="pickTeam(this,\''+ id +'\',\'' + name +'\')" data-cd="'+ item.CD+'">' + item.CD_VAL +'</li>';
+                }
+            })
+            if(list.length){
+                $(e).next().show().append(list);
+            }
+        }else{
+            teams = "[" + getList[field].substring(0,getList[field].length - 1) +"]";
+            teams = JSON.parse(teams);
+            $(e).next().hide().children().remove();
+            var list = ''
+            teams.forEach(function(item){
+                if(item.val.indexOf(e.value) > -1){
+                    list += '<li onclick="pickTeam(this,\''+ id +'\',\'' + name +'\')" data-cd="'+ item.cd+'">' + item.val +'</li>';
+                }
+            })
+            if(list.length){
+                $(e).next().show().append(list);
+            }
+        }
+
+    }
+
+    // function payment_channel_init(){
+    //     $.ajax({
+    //         type: "POST",
+    //         url: "/index.php?g=common&m=index&a=get_cd",
+    //         data:{
+    //             "cd_type": {
+    //                 "payment_channel": "true"
+    //             }
+    //         },
+    //         success : function(res) {
+    //             if(res.code == 2000){
+    //                 console.log(res.data.payment_channel);
+    //                 var data = res.data.payment_channel
+    //                 getList.channel = data
+    //                 for (var i = 0; i < data.length; i++) {
+    //                     var lis = document.createElement("li");  
+    //                     lis.setAttribute("onclick", "pickTeam(this,'#paymentChannel','payment_channel_cd')");
+    //                     $(lis).attr("data-cd",data[i].CD);
+    //                     $(lis).text(data[i].CD_VAL);  
+    //                     $('#paymentChannel_select').append(lis);
+    //                     var options = document.createElement("option");  
+    //                     $(options).attr('value',data[i].CD)
+    //                     $(options).text(data[i].CD_VAL);  
+    //                     // <option value="<{$v.CD}>" <{$param['payment_channel_cd']==$v['CD']?'selected':''}>><{$v.CD_VAL}></option>
+    //                     $("select[name=payment_channel_cd]").append(options);
+    //                 }
+    //             }
+    //         }
+    //     });
+    // }
+
+    // payment_channel_init()
+
+    function pickTeam(e,id,name){
+        if(name == 'payment_channel_cd'){
+            var payment_channel_cd = $(e).attr('data-cd')
+            $.ajax({
+                type: "POST",
+                url: "/index.php?g=common&m=index&a=getPaymentWay",
+                data: JSON.stringify({ "payment_channel_cd": payment_channel_cd}),
+                success : function(res) {
+                    if(res.code == 200){
+                        var data = res.data
+                        getList.method = data
+                        for (var i = 0; i < data.length; i++) {
+                            var lis = document.createElement("li");  
+                            lis.setAttribute("onclick", "pickTeam(this,'#paymentMethod','payment_way_cd')");
+                            $(lis).attr("data-cd",data[i].CD);
+                            $(lis).text(data[i].CD_VAL);  
+                            $('#paymentMethod_select').append(lis);  
+
+                            var options = document.createElement("option");  
+                            $(options).attr('value',data[i].CD)
+                            $(options).text(data[i].CD_VAL);  
+                            $("select[name=payment_way_cd]").append(options);
+                        }
+                    }
+                }
+            });
+
+
+        }
+        
+        $("select[name=" + name + "]").children().each(function(index,item){
+            $(item).removeAttr("selected");
+            if($(item).text() == $(e).text()){
+                // $(item).prop("selected", 'selected');
+                $(item).attr("selected", 'selected');
+            }
+        })
+        $(id).val($(e).text());
+        $(id).data("cd",$(e).data('cd'));
+        $(id).next().hide().children().remove();
+
+        // $("#paymentChannel").val($("select[name=payment_channel_cd]").find("option:selected").text());
+
+        // console.log($("#paymentChannel").val());
+    }
+
+    function teamInputFocus(e){
+        if($(e).val() == '请选择'){
+            $(e).val('')
+        };
+
+        if($(e).next().children().length){
+            $(e).next().show();
+        }
+    }
+
+    function teamInputBlur(e,name){
+        if($(e).val()){
+            $(e).val($("select[name=" + name + "]").find("option:selected").text());
+        }else{
+            $(e).val($("select[name=" + name + "]").find('option').first().prop("selected", 'selected'));
+            $(e).val("请选择");
+        }
+        setTimeout(function(){
+            $(e).next().hide()
+        },500)
+    }
+
+    function reminder(relevance_id){
+        $("#delete-modal").modal('show');
+        $("#order_del").val(relevance_id);
+    }
+
+    $(function () {
+        //发货状态筛选
+        $('.status_check').click(function () {
+            var status = $(this).attr('value',);
+            $('#status').val(status);
+            $('.status_check').removeClass('active');
+            $(this).addClass('active');
+            $('#search').click();
+        })
+        //发货状态筛选
+        $('.type_check').click(function () {
+            var type= $(this).attr('value');
+            $('#purchase_type').val(type);
+            $('.type_check').removeClass('active');
+            $(this).addClass('active');
+            $('#search').click();
+        })
+        $(".perchase_list_select select").change(function () {
+            if($(this).val() && $(this).val().length>0){
+                $(this).css("color","#263238")
+            }else{
+                $(this).css("color","#90A4AE")
+            }
+        })
+        $(".payable_top_menu_checkbox span").click(function () {
+            $(this).addClass("active").siblings().removeClass("active")
+        })
+        //搜索按钮
+        $('#search').click(function () {
+            var i = 0, len = $('.trimInput').length;
+            for (; i< len; i++) {
+                $('.trimInput')[i].value = $.trim($('.trimInput')[i].value);
+            };
+            var data = $('#thisform').serialize();
+            var url = "<{:U('payable_list')}>&"+data;
+            // var url = "<{:U('payable_list')}>";
+            // console.log(url);
+            console.log(data);
+            
+
+            // $.ajax({
+            //     type: "GET",
+            //     url: url,
+            //     data:data,
+            //     success : function(res) {
+            //         console.log(res);
+            //     }
+            // });
+
+
+            // console.log(url);
+            
+            location = url;
+        })
+        //搜索按钮
+        $('.purchase_export').click(function () {
+            var data = $('#thisform').serialize();
+            var url = "<{:U('payable_export')}>&"+data;
+            location = url;
+        })
+        $('#resetForm').click(function() {
+            $('#thisform').find(':input').val('');
+            $('.status_check:eq(0)').click();
+        })
+        // 日期右侧图标点击加载日历插件/
+        $(".common_data .input-group-btn button").click(function () {
+            $(this).parents(".common_data").find("input").focus()
+        })
+    })
+    // window.onload = function() {
+    //     $('.status_check:eq(1)').addClass('active');
+    //     $('.status_check:eq(1)').siblings().removeClass('active');
+    // }
+</script>
+
+</html>

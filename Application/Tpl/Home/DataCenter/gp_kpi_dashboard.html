@@ -1,0 +1,668 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <meta name="renderer" content="webkit|ie-comp|ie-stand">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="renderer" content="webkit|ie-comp|ie-stand">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.13.0.css?v=<{$Think.config.VER_NUM}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/DataCenter/css/element-ui-custom.css?v=<{$Think.config.VER_NUM}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/DataCenter/css/gp_kpi_dashboard.css?v=<{$Think.config.VER_NUM}>">
+  <title>GP KPI Dashboard</title>
+</head>
+
+<body>
+  <div id="vm" v-cloak :class="scrollTop > 99 ? 'tofixed' : ''" @click="onWatchClick">
+    <section class="query_wrap" :class="scrollTop > 99 ? 'query_wrap_fix' : ''">
+      <el-row style="margin-bottom: 20px;" :gutter="28">
+      <!-- <el-row style="margin-bottom: 20px;" type="flex" justify="space-between" :gutter="40"> -->
+        <el-col :span="7">
+          <div class="query_time_wrap_item">
+            <div class="query__time">
+              <label class="query__title" style="min-width: 36px;">
+                {{$lang('时间')}}
+              </label>
+              <el-select size="small" v-model="queryTime" placeholder="请选择" style="margin-right: 8px;" @change="queryTimeChanged" @visible-change="visibleChange">
+                <el-option
+                  v-for="item in queryTimeOptions"
+                  :key="item.value"
+                  :label="$lang(item.name)"
+                  :value="item.value">
+                </el-option>
+              </el-select>
+              <el-date-picker @focus="visibleChange(true)" :default-value="new Date()" size="small" v-model="rangeDate" value-format="yyyyMMdd" type="daterange" range-separator="-" :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')"  :picker-options="pickerOptions" @change="rangeDateChanged">
+              </el-date-picker>
+            </div>
+          </div>
+        </el-col>
+
+        <el-col :span="4">
+          <div class="query_time_wrap_item">
+            <div class="query__time">
+              <label class="query__title" style="min-width: 64px;">
+                {{$lang('团队领导')}}
+              </label>
+              <el-select class="select-max" size="small" @visible-change="visibleChange" :placeholder="$lang('全部')" @change="storeChange('leader')" multiple collapse-tags v-model="leaderChecked" clearable filterable>
+                <el-option v-for="(item,key) in leaderData" :key="key" :label="item.team_leader" :value="item.leader_id"></el-option>
+              </el-select>
+            </div>
+          </div>
+        </el-col>
+        <el-col :span="4">
+          <div class="query_time_wrap_item">
+            <div class="query__time">
+              <label class="query__title" style="min-width: 78px;">
+                {{$lang('运营负责人')}}
+              </label>
+              <el-select class="select-max" size="small" @visible-change="visibleChange" :placeholder="$lang('全部')" @change="storeChange('operation')" multiple collapse-tags v-model="operationChecked" clearable filterable>
+                <el-option v-for="(item,key) in operationData" :key="key" :label="item.operater" :value="item.operater_id"></el-option>
+              </el-select>
+            </div>
+          </div>
+        </el-col>
+        <el-col :span="4">
+          <div class="query_time_wrap_item">
+            <div class="query__time">
+              <label class="query__title" style="min-width: 36px;">
+                {{$lang('店铺')}}
+              </label>
+              <div class="site-check-box" @click.stop="showSite">
+                <span class="all-txt" v-if="storeChecked.length == 0">{{ $lang('全部')}}</span>
+                <div v-else>
+                  <span class="txt-box">
+                    {{storeChecked[0] |codeGetName}}
+                    <i class="el-icon-close" @click.stop="storeClose"></i>
+                  </span>
+                  <span class="txt-box" v-if="storeChecked.length > 1">
+                    +{{storeChecked.length - 1}}
+                  </span>
+                </div>
+                <div class="siffix">
+                  <i class="el-icon-arrow-up" :class="shows ? 'is-reverse' : ''"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </el-col>
+        
+        <el-col style="float: right;" :span="2">
+          <div>
+            <el-button @click="reset" class="erp-el-button">{{ $lang('重置')}}</el-button>
+          </div>
+        </el-col>
+      </el-row>
+      <el-row :gutter="40">
+        <el-col :span="4">
+          <div class="query_time_wrap_item">
+            <div class="query__time">
+              <label class="query__title" style="min-width: 36px;">
+                {{$lang('站点')}}
+              </label>
+              <el-select size="small" :placeholder="$lang('全部')" @change="querySiteChange" multiple collapse-tags v-model="sitesChecked" clearable filterable>
+                <el-option v-for="(item) in siteData" :key="item.code" :label="$lang(item.country)" :value="item.code"></el-option>
+              </el-select>
+              <!-- <div class="site-check-box" @click.stop="showSite">
+                <span class="all-txt" v-if="sitesChecked.length == 0">{{ $lang('全部')}}</span>
+                <div v-else>
+                  <span class="txt-box">
+                    {{sitesChecked[0] |codeGetName}}
+                    <i class="el-icon-close" @click.stop="sitesClose"></i>
+                  </span>
+                  <span class="txt-box" v-if="sitesChecked.length > 1">
+                    +{{sitesChecked.length - 1}}
+                  </span>
+                </div>
+                <div class="siffix">
+                  <i class="el-icon-arrow-up" :class="shows ? 'is-reverse' : ''"></i>
+                </div>
+              </div> -->
+            </div>
+          </div>
+        </el-col>
+       
+      </el-row>
+      
+      <!-- <div class="site-box" v-show="shows">
+        <div class="site-title">{{$lang('站点')}}</div>
+        <div class="divider-wrapper">
+          <el-divider></el-divider>
+        </div>
+        <div class="site-item-box">
+          <div class="site-item" :class="sitesChecked.length == 0 ? 'active' : ''"  @click.stop="sitesClick()">{{$lang('全部')}}</div>
+          <div class="site-item" :class="sitesChecked.length == 0 ? 'disable' : ''" @click.stop="invertCheckedChange">{{$lang('反选')}}</div>
+          <div class="site-item" v-for="(item,index) in siteData" :key="item.code" :class="item.active == 1 ? 'active' : ''" @click.stop="sitesClick(item.code,index)">{{item.country}}</div>
+        </div>
+      </div> -->
+      <div class="site-box" v-show="shows">
+        <div class="site-title">{{$lang('店铺')}}</div>
+        <div class="divider-wrapper">
+          <el-divider></el-divider>
+        </div>
+        <div class="site-item-box">
+          <div class="site-item" :class="storeChecked.length == 0 ? 'active' : ''"  @click.stop="storeClick()">{{$lang('全部')}}</div>
+          <div class="site-item" :class="storeChecked.length == 0 ? 'disable' : ''" @click.stop="invertCheckedChange">{{$lang('反选')}}</div>
+          <div class="site-item" v-for="(item,index) in storeData" :key="item.store_id" :class="item.active == 1 ? 'active' : ''" @click.stop="storeClick(item.store_id,index)">{{item.store_name}}</div>
+        </div>
+      </div>
+      <!-- <section class="query query_time_wrap">
+        <div class="query_time_wrap_item">
+          <div class="query__title">
+            {{$lang('时间')}}
+          </div>
+          <div class="query__time">
+            <el-select size="small" v-model="queryTime" placeholder="请选择" style="margin-right: 8px;">
+              <el-option
+                v-for="item in queryTimeOptions"
+                :key="item.value"
+                :label="item.name"
+                :value="item.value">
+              </el-option>
+            </el-select>
+            <el-radio-group v-model="queryTime" @change="queryTimeChanged">
+              <el-radio :label="item.value" v-for="item in queryTimeOptions" :key="item.value" class="erp-el-radio">
+                {{$lang(item.name)}}
+              </el-radio>
+            </el-radio-group>
+            <el-date-picker size="small" v-model="rangeDate" value-format="yyyyMMdd" type="daterange" range-separator="-"
+              :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')"  :picker-options="pickerOptions" @change="rangeDateChanged">
+            </el-date-picker>
+          </div>
+        </div>
+        <div class="query_time_wrap_item">
+          <div class="query__title">
+            {{$lang('站点')}}
+          </div>
+          <div class="query__filter">
+            <el-select size="small" :placeholder="$lang('全部')" @change="sitesChange('sites')" multiple collapse-tags v-model="sitesChecked" clearable filterable>
+              <el-option v-for="(item) in siteData" :key="item.code" :label="$lang(item.country)" :value="item.code"></el-option>
+            </el-select>
+          </div>
+        </div>
+        <div class="query_time_wrap_item">
+          <div class="query__title">
+            {{$lang('团队领导')}}
+          </div>
+          <div class="query__filter">
+            <el-select size="small" :placeholder="$lang('全部')" @change="sitesChange('leader')" multiple collapse-tags v-model="leaderChecked" clearable filterable>
+              <el-option v-for="(item,key) in leaderData" :key="key" :label="item" :value="item"></el-option>
+            </el-select>
+          </div>
+        </div>
+        <div>
+          <el-button @click="reset" class="erp-el-button">{{ $lang('重置')}}</el-button>
+        </div>
+      </section>  -->
+      <!-- <section class="query query_filter_wrap">
+        <div class="query_filter_wrap_item">
+          <div class="query__title">
+            {{$lang('运营负责人')}}
+          </div>
+          <div class="query__filter">
+            <el-select size="small" :placeholder="$lang('全部')" @change="sitesChange('operation')" multiple collapse-tags v-model="operationChecked" clearable filterable>
+              <el-option v-for="(item,key) in operationData" :key="key" :label="item" :value="item"></el-option>
+            </el-select>
+          </div>
+        </div>
+      </section> -->
+      
+    </section>
+
+    <section class="index-card" v-loading="indexCardLoading">
+      <section class="index-card__basic">
+        <div class="index-card__item">
+          <div class="index-card__title">{{$lang('订单')}}</div>
+          <div class="index-card__data">{{indexCardData.order_num | formatNum}}</div>
+          <div class="index-card__qoq">
+            <div class="index-card__left_box">
+              <p class="qoq-title qoq-title-top">{{$lang('环比')}}</p>
+              <div>
+                <i :class="qoqChange(indexCardData.order_num_linkrate)"></i>
+                <span class="index-card__qoq-data">{{indexCardData.order_num_linkrate | formatNum(true)}}</span>
+              </div>
+            </div>
+            <div class="index-card__right_box">
+              <p class="qoq-title">{{$lang('同比')}}</p>
+              <span class="index-card__qoq-data">{{indexCardData.order_num_on_year_rate | formatNum(true)}}</span>
+              <i :class="qoqChange(indexCardData.order_num_on_year_rate)"></i>
+            </div>
+          </div>
+        </div>
+        <div class="index-card__item">
+          <div class="index-card__title">{{$lang('销售额')}}</div>
+          <div class="index-card__data">{{indexCardData.total_sales | formatNum | addCurrency}}</div>
+          <div class="index-card__qoq">
+            <div class="index-card__left_box">
+              <p class="qoq-title qoq-title-top">{{$lang('环比')}}</p>
+              <div>
+                <i :class="qoqChange(indexCardData.total_sales_linkrate)"></i>
+                <span class="index-card__qoq-data">{{indexCardData.total_sales_linkrate | formatNum(true)}}</span>
+              </div>
+            </div>
+            <div class="index-card__right_box">
+              <p class="qoq-title">{{$lang('同比')}}</p>
+              <span class="index-card__qoq-data">{{indexCardData.total_sales_on_year_rate | formatNum(true)}}</span>
+              <i :class="qoqChange(indexCardData.total_sales_on_year_rate)"></i>
+            </div>
+          </div>
+        </div>
+        <div class="index-card__item">
+          <div class="index-card__title">{{$lang('ODM 销售额')}}</div>
+          <div class="index-card__data">{{indexCardData.odm_total_sales | formatNum | addCurrency}}</div>
+          <div class="index-card__qoq">
+            <div class="index-card__left_box">
+              <p class="qoq-title qoq-title-top">{{$lang('环比')}}</p>
+              <div>
+                <i :class="qoqChange(indexCardData.odm_total_sales_linkrate)"></i>
+                <span class="index-card__qoq-data">{{indexCardData.odm_total_sales_linkrate | formatNum(true)}}</span>
+              </div>
+            </div>
+            <div class="index-card__right_box">
+              <p class="qoq-title">{{$lang('同比')}}</p>
+              <span class="index-card__qoq-data">{{indexCardData.odm_total_sales_on_year_rate | formatNum(true)}}</span>
+              <i :class="qoqChange(indexCardData.odm_total_sales_on_year_rate)"></i>
+            </div>
+          </div>
+        </div>
+        <div class="index-card__item">
+          <div class="index-card__title">{{$lang('毛利')}}</div>
+          <div class="index-card__data">{{indexCardData.total_gross_margin | formatNum | addCurrency}}</div>
+          <div class="index-card__qoq">
+            <div class="index-card__left_box">
+              <p class="qoq-title qoq-title-top">{{$lang('环比')}}</p>
+              <div>
+                <i :class="qoqChange(indexCardData.total_gross_margin_linkrate)"></i>
+                <span class="index-card__qoq-data">{{indexCardData.total_gross_margin_linkrate | formatNum(true)}}</span>
+              </div>
+            </div>
+            <div class="index-card__right_box">
+              <p class="qoq-title">{{$lang('同比')}}</p>
+              <span class="index-card__qoq-data">{{indexCardData.gross_margin_on_year_rate | formatNum(true)}}</span>
+              <i :class="qoqChange(indexCardData.gross_margin_on_year_rate)"></i>
+            </div>
+          </div>
+        </div>
+        <div class="index-card__item">
+          <div class="index-card__title">{{$lang('毛利率')}}</div>
+          <div class="index-card__data">{{indexCardData.total_gross_rate | formatNum(true)}}</div>
+          <div class="index-card__qoq">
+            <div class="index-card__left_box">
+              <p class="qoq-title qoq-title-top">{{$lang('环比')}}</p>
+              <div>
+                <i :class="qoqChange(indexCardData.gross_rate_link_rate)"></i>
+                <span class="index-card__qoq-data">{{indexCardData.gross_rate_link_rate | formatNum(true)}}</span>
+              </div>
+            </div>
+            <div class="index-card__right_box">
+              <p class="qoq-title">{{$lang('同比')}}</p>
+              <span class="index-card__qoq-data">{{indexCardData.gross_margin_rate_on_year_rate | formatNum(true)}}</span>
+              <i :class="qoqChange(indexCardData.gross_margin_rate_on_year_rate)"></i>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section class="sales">
+      <section class="menu-wrapper">
+        <el-menu :default-active="saleIsOdm" mode="horizontal" @select="saleIsOdmChanged">
+          <el-menu-item index="0">{{ $lang('全部商品') }}</el-menu-item>
+          <el-menu-item index="1">{{ $lang('ODM商品') }}</el-menu-item>
+        </el-menu>
+      </section>
+      <section class="trend-wraper trend-box">
+        <div class="trend-top">
+
+          <!-- 销售趋势 -->
+          <div class="sales-trend-box">
+            <chart-wrapper :title="$lang('销售趋势')" chart-height="400px" class="sale-trend" ref="saleTrend" :chart-data="saleTrendData.info" v-loading="saleTrendLoading">
+              <template #header-right>
+                <div class="erp-chart__operate">
+                  <erp-tooltip :content="$lang('分站点查看')" :max-length="12">
+                    <el-button size="mini" v-show="saleTrendBySite === '1'" @click="saleTrendBySiteChanged" class="erp-el-button">
+                      {{ $lang('分站点查看') | strOmit(12)}}</el-button>
+                  </erp-tooltip>
+                  <el-button size="mini" class="backActive erp-el-button" v-show="saleTrendBySite === '0'" @click="saleTrendBySiteChanged">
+                    {{ $lang('返回') }}
+                  </el-button>
+                  <el-select @visible-change="visibleChange" size="mini" style="margin-left: 16px;" v-model="saleTrendTimeGranularity" @change="saleTrendTimeGranularityChange"
+                    class="erp-el-select">
+                    <el-option v-for="item in timeGranularities" :key="item.value" :label="$lang(item.label)"
+                      :value="item.value">
+                    </el-option>
+                  </el-select>
+                  <!-- 11136 去除对比 -->
+                  <!-- <el-button style="margin-left: 16px;" @click="saleCompared" v-show="saleComparedShow" class="erp-el-button">{{ $lang('对比') }}</el-button>
+                  <el-button class="backActive erp-el-button" style="margin-left: 16px;" @click="saleBack" v-show="!saleComparedShow">{{ $lang('返回') }}</el-button> -->
+                </div>
+              </template>
+            </chart-wrapper>
+            
+            <div class="foot">
+              <el-radio-group v-model="saleTrendType" @change="saleTrendTimeGranularityChange">
+                <el-radio v-for="item in saleTrendTypeOptions" :key="item.value" :label="item.value" class="erp-el-radio-btn">
+                  {{$lang(item.label)}}
+                </el-radio>
+              </el-radio-group>
+            </div>
+          </div>
+          
+          <!-- 收货地区分布 -->
+          <div class="trend-map">
+            <!-- <el-button @click="setZoom" style="position: absolute;"></el-button> -->
+            <div class="fix-btn-box">
+              <div class="img-btn home" @click="setZoom"></div>
+              <div class="img-btn plus" @click="setZoom('add')"></div>
+              <div class="img-btn minus" @click="setZoom('minus')"></div>
+            </div>
+            <chart-wrapper :title="$lang('收货地区分布')" :show-chart="!siteDistributeTableShow" :chart-data="siteDistributeData.info" chart-height="500px" ref="siteDistribute" v-loading="siteDistributeLoading" class="site-distribute">
+              <template #header-right>
+                <div class="erp-chart__operate">
+                  <el-select @visible-change="visibleChange" size="mini" v-show="isDistributeType" v-model="siteDistributeType" @change="getSiteDistributeData" class="erp-el-select2">
+                    <el-option :label="$lang('按订单')" value="1"></el-option>
+                    <el-option :label="$lang('按销售额')" value="2"></el-option>
+                  </el-select>
+                  <!-- 11136 去除更多功能 -->
+                  <!-- <section style="margin-left: 16px;">
+                    <el-button v-show="!siteDistributeTableShow" @click="siteDistributeTableShowChanged"
+                      class="erp-el-button">
+                      {{ $lang('更多') }}
+                    </el-button>
+                    <el-button v-show="siteDistributeTableShow" @click="siteDistributeTableShowChanged"
+                      class="erp-el-button backActive">
+                      {{ $lang('返回') }}
+                    </el-button>
+                  </section> -->
+                </div>
+              </template>
+              <!-- 11136 去除更多功能 -->
+              <!-- <section v-show="siteDistributeTableShow">
+                <el-table max-height="265px" :data="siteDistributeTableData.datas.info" class="erp-el-table"
+                  @sort-change="siteDistributeTableSort" ref="siteDistributeTable">
+                  <el-table-column prop="country" fixed :label="$lang('站点')" width="120px">
+                  </el-table-column>
+                  <el-table-column prop="order_num" sortable="custom" align="right" :label="$lang('订单')"
+                    :sort-orders="tableSortOrders" :render-header="renderTableHeader" width="120px">
+                    <template slot-scope="scope">
+                      {{scope.row.order_num | formatNum}}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="order_num_linkrate" sortable="custom" align="right" :label="$lang('订单环比')"
+                    :sort-orders="tableSortOrders" :render-header="renderTableHeader" width="120px">
+                    <template slot-scope="scope">
+                      {{scope.row.order_num_linkrate | formatNum(true)}}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="total_sales" sortable="custom" align="right" :label="$lang('销售额')+'($)'"
+                    :sort-orders="tableSortOrders" :render-header="renderTableHeader" width="120px">
+                    <template slot-scope="scope">
+                      {{scope.row.total_sales | formatNum}}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="total_sales_linkrate" sortable="custom" align="right" :label="$lang('销售额环比')"
+                    :sort-orders="tableSortOrders" :render-header="renderTableHeader" width="120px">
+                    <template slot-scope="scope">
+                      {{scope.row.total_sales_linkrate | formatNum(true)}}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="total_gross_margin" sortable="custom" align="right" :label="$lang('毛利')+'($)'"
+                    :sort-orders="tableSortOrders" :render-header="renderTableHeader" width="120px">
+                    <template slot-scope="scope">
+                      {{scope.row.total_gross_margin | formatNum}}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="total_gross_margin_linkrate" sortable="custom" align="right" :label="$lang('毛利环比')"
+                    :sort-orders="tableSortOrders" :render-header="renderTableHeader" width="120px">
+                    <template slot-scope="scope">
+                      {{scope.row.total_gross_margin_linkrate | formatNum(true)}}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="total_gross_rate" sortable="custom" align="right" :label="$lang('毛利率')"
+                    :sort-orders="tableSortOrders" :render-header="renderTableHeader" width="120px">
+                    <template slot-scope="scope">
+                      {{scope.row.total_gross_rate | formatNum(true)}}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="gross_rate_link_rate" width="120px" sortable="custom" align="right"
+                    :label="$lang('毛利率环比')" :sort-orders="tableSortOrders"
+                    :render-header="(h, obj) => renderTableHeader(h, obj, true)">
+                    <template slot-scope="scope">
+                      {{scope.row.gross_rate_link_rate | formatNum(true)}}
+                    </template>
+                  </el-table-column>
+                </el-table>
+                <el-pagination class="erp-el-pagination" background :page-size="5" :current-page="siteDistributeTablePage"
+                  hide-on-single-page @current-change="siteDistributeTablePageChange"
+                  layout="total, prev, pager, next, jumper" :total="siteDistributeTableData.totalCount">
+                </el-pagination>
+              </section> -->
+            </chart-wrapper>
+          </div>
+          
+        </div>
+
+        <div class="trend-bottom">
+          <!-- 商品Top10 -->
+          <div class="goods-trend-box">
+            <div class="goods-img-box">
+              <div class="img-box" v-for="(item,index) in saleRankingsData.goodsInfo" :key="index">
+                <el-tooltip placement="left" effect="light">
+                  <img slot="content" v-if="item.picture" :src="item.picture" width="80" height="80"></img>
+                  <img slot="content" v-else src="./Application/Tpl/Home/DataCenter/img/place.png" width="80" height="80"></img>
+
+                  <el-image  :src="item.picture">
+                    <div slot="error">
+                      <el-image  src="./Application/Tpl/Home/DataCenter/img/place.png">
+                      </el-image>
+                    </div>
+                  </el-image>
+
+                  <!-- <img :src="item.picture" alt=""> -->
+                </el-tooltip>
+              </div>
+            </div>
+            <chart-wrapper :title="$lang('商品销售Top10')" :chart-data="saleRankingsData.goodsInfo" chart-height="330px"
+              ref="saleRankings" v-loading="saleRankingsLoading" class="sale-rankings">
+              <template #header-right>
+                <div class="erp-chart__operate">
+                  <el-select @visible-change="visibleChange" size="mini" v-model="saleRankingsType" @change="saleRankingsDataGet" class="erp-el-select2">
+                    <el-option :label="$lang('按销量')" value="goods"></el-option>
+                    <el-option :label="$lang('按销售额')" value="sales"></el-option>
+                    <el-option :label="$lang('按毛利')" value="margin"></el-option>
+                    <el-option :label="$lang('按毛利率')" value="marginRate"></el-option>
+                  </el-select>
+                </div>
+              </template>
+            </chart-wrapper>
+          </div>
+          <!-- 店铺销售分布 -->
+          <div class="goods-sales-distribution">
+            <chart-wrapper :title="$lang('店铺销售分布')" v-loading="storeSalesLoading" chart-height="370px" ref="storeSales" :chart-data="storeSalesData">
+              <template v-slot:header-right>
+                <el-select v-model="storeSalesType" @change="storeSalesDataGet" class="erp-el-select2"
+                  style="margin-left: 12px;">
+                  <el-option :label="$lang('按订单')" value="1"> </el-option>
+                  <el-option :label="$lang('按销售额')" value="2"> </el-option>
+                </el-select>
+              </template>
+            </chart-wrapper>
+          </div>
+        </div>
+      </section>
+      
+
+      <!-- <div class="divider-wrapper">
+        <el-divider></el-divider>
+      </div> -->
+      <section class="sales__bottom">
+        
+
+        
+      </section>
+    </section>
+
+    <section class="index-card" v-loading="transferIndexLoading">
+      <section class="index-card__transfer">
+        <div class="index-card__item">
+          <div class="index-card__title">{{$lang('访问用户')}}</div>
+          <div class="index-card__data">{{transferIndexData.visist_user | formatNum}}</div>
+          <div class="index-card__qoq">
+            <div class="index-card__left_box">
+              <p class="qoq-title">{{$lang('环比')}}</p>
+              <i :class="qoqChange(transferIndexData.uv_link_relative)"></i>
+              <span class="index-card__qoq-data">{{transferIndexData.uv_link_relative | formatNum(true)}}</span>
+            </div>
+            <div class="index-card__right_box">
+              <p class="qoq-title">{{$lang('同比')}}</p>
+              <span class="index-card__qoq-data">{{transferIndexData.year_uv_rate | formatNum(true)}}</span>
+              <i :class="qoqChange(transferIndexData.year_uv_rate)"></i>
+            </div>
+          </div>
+        </div>
+        <div class="index-card__item">
+          <div class="index-card__title">{{$lang('购买转化率')}}</div>
+          <div class="index-card__data">{{transferIndexData.buy_rate | formatNum(true)}}</div>
+          <div class="index-card__qoq">
+            <div class="index-card__left_box">
+              <p class="qoq-title">{{$lang('环比')}}</p>
+              <i :class="qoqChange(transferIndexData.buy_rate_linkrate)"></i>
+              <span class="index-card__qoq-data">{{transferIndexData.buy_rate_linkrate | formatNum(true)}}</span>
+            </div>
+            <div class="index-card__right_box">
+              <p class="qoq-title">{{$lang('同比')}}</p>
+              <span class="index-card__qoq-data">{{transferIndexData.buy_on_year_rate | formatNum(true)}}</span>
+              <i :class="qoqChange(transferIndexData.buy_on_year_rate)"></i>
+            </div>
+          </div>
+        </div>
+        <div class="index-card__item">
+          <div class="index-card__title">{{$lang('关键词搜索量')}}</div>
+          <div class="index-card__data">{{transferIndexData.searchs | formatNum}}</div>
+          <div class="index-card__qoq">
+            <div class="index-card__left_box">
+              <p class="qoq-title">{{$lang('环比')}}</p>
+              <i :class="qoqChange(transferIndexData.searchs_link_relative)"></i>
+              <span class="index-card__qoq-data">{{transferIndexData.searchs_link_relative | formatNum(true)}}</span>
+            </div>
+            <div class="index-card__right_box">
+              <p class="qoq-title">{{$lang('同比')}}</p>
+              <span class="index-card__qoq-data">{{transferIndexData.searchs_on_year_rate | formatNum(true)}}</span>
+              <i :class="qoqChange(transferIndexData.searchs_on_year_rate)"></i>
+            </div>
+          </div>
+        </div>
+        <div class="index-card__item">
+          <div class="index-card__title">{{$lang('关键词搜索转化率')}}</div>
+          <div class="index-card__data">{{transferIndexData.search_rate | formatNum(true)}}</div>
+          <div class="index-card__qoq">
+            <div class="index-card__left_box">
+              <p class="qoq-title">{{$lang('环比')}}</p>
+              <i :class="qoqChange(transferIndexData.search_rate_linkrate)"></i>
+              <span class="index-card__qoq-data">{{transferIndexData.search_rate_linkrate | formatNum(true)}}</span>
+            </div>
+            <div class="index-card__right_box">
+              <p class="qoq-title">{{$lang('同比')}}</p>
+              <span class="index-card__qoq-data">{{transferIndexData.on_year_rate | formatNum(true)}}</span>
+              <i :class="qoqChange(transferIndexData.on_year_rate)"></i>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+    <section class="transform-trend trend-box">
+      <div class="transform-trend-left transform-trend-box">
+        <chart-wrapper :title="$lang('行为趋势')" chart-height="270px" class="transfer-trend" ref="transferTrend"
+          :chart-data="transferTrendData.info" v-loading="transferTrendLoading">
+          <template #header-right>
+            <div class="erp-chart__operate">
+              <el-select @visible-change="visibleChange" size="mini" style="margin-left: 16px;" v-model="transferTrendTimeGranularity" @change="transferTrendDataGetChange"
+                class="erp-el-select">
+                <el-option v-for="item in timeGranularities" :key="item.value" :label="$lang(item.label)"
+                  :value="item.value">
+                </el-option>
+              </el-select>
+              <!-- 11136 去除比对功能 -->
+              <!-- <el-button style="margin-left: 16px;" @click="transferCompared" v-show="transferComparedShow" class="erp-el-button">{{ $lang('对比') }}</el-button>
+              <el-button style="margin-left: 16px;" @click="transferBack" v-show="!transferComparedShow" class="erp-el-button backActive">{{ $lang('返回') }}</el-button> -->
+            </div>
+          </template>
+        </chart-wrapper>
+        <div class="foot">
+          <el-radio-group v-model="transferTrendType" @change="transferTrendDataGetChange">
+            <el-radio v-for="item in transferTrendTypeOptions" :key="item.value" :label="item.value"
+              class="erp-el-radio-btn">
+              {{$lang(item.label)}}
+            </el-radio>
+          </el-radio-group>
+        </div>
+      </div>
+      <div class="shop-user">
+        
+
+        <!-- <div class="goods-sales-distribution"> -->
+          <chart-wrapper :title="$lang('店铺访问用户分布')" v-loading="storeVisitorLoading" chart-height="370px" ref="storeVisitor" :chart-data="storeVisitorData">
+          </chart-wrapper>
+        <!-- </div> -->
+
+      </div>
+    </section>
+    <section class="conversion-funnel-wrap">
+      <div class="transform-trend-center transform-trend-box">
+        <chart-wrapper :date-range="transferTrendData.date" ref="buyTransChart"  chart-height="385px">
+          <template #header-left>
+            <div class="erp-chart__title">
+              {{ $lang('购买转化漏斗') }}
+            </div>
+          </template>
+          <section class="overall-rate">
+            <div class="overall-rate__item">
+              <span style="text-align: center;margin-bottom: 5px;">{{ $lang('整体转化率') }}</span>
+              <span class="overall-rate__num">{{ buyTransData.overall }}%</span>
+            </div>
+          </section>
+        </chart-wrapper>
+      </div>
+      <div class="transform-trend-center-right transform-trend-box">
+        <chart-wrapper :date-range="transferTrendData.date" ref="searchTransChart"  chart-height="385px">
+          <template #header-left>
+            <div class="erp-chart__title">
+              {{ $lang('搜索转化漏斗') }}
+            </div>
+          </template>
+          <section class="overall-rate">
+            <div class="overall-rate__item">
+              <span style="text-align: center;margin-bottom: 5px;">{{ $lang('整体转化率') }}</span>
+              <span class="overall-rate__num">{{ searchTransData.overall }}%</span>
+            </div>
+          </section>
+        </chart-wrapper>
+      </div>
+    </section>
+
+
+  </div>
+  <script src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+  <script src="./Application/Tpl/Home/Public/js/vue-2.6.10.js"></script>
+  <script src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+  <script src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+  <script src="./Application/Tpl/Home/Public/js/element-ui-2.13.0.js"></script>
+  <script src="./Application/Tpl/Home/Public/js/queryString.js"></script>
+  <script src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+  <script src="./Application/Tpl/Home/Public/js/echarts-4.9.0.js"></script>
+  <script src="./Application/Tpl/Home/Public/js/lodash-4.17.15.js"></script>
+  <script src="./Application/Tpl/Home/DataCenter/world.js?v=<{$Think.config.VER_NUM}>"></script>
+  <script src="./Application/Tpl/Home/DataCenter/components/ChartWrapper.js?v=<{$Think.config.VER_NUM}>">
+  </script>
+  <script src="./Application/Tpl/Home/DataCenter/components/ErpTooltip.js?v=<{$Think.config.VER_NUM}>">
+  </script>
+  <script src="./Application/Tpl/Home/DataCenter/utils/globalConstAndFunc.js?v=<{$Think.config.VER_NUM}>">
+  </script>
+  <script src="./Application/Tpl/Home/DataCenter/js/gp_kpi_dashboard.js?v=<{$Think.config.VER_NUM}>">
+  </script>
+</body>
+
+</html>

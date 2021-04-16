@@ -1,0 +1,1286 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <meta name="renderer" content="webkit|ie-comp|ie-stand">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="renderer" content="webkit|ie-comp|ie-stand">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.13.0.css?v=<{$Think.config.VER_NUM}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/DataCenter/css/element-ui-custom.css?v=<{$Think.config.VER_NUM}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/DataCenter/css/gp_user_analysis.css?v=<{$Think.config.VER_NUM}>">
+  <title>{{$lang('GP 用户分析')}}</title>
+  <style>
+
+    .el-popover {
+      padding: 0 12px;
+      font-size: 12px;
+      /* width: 300px; */
+    }
+
+    .el-popover .title {
+      font-size: 16px;
+      color: #000;
+    }
+
+    .position-relative {
+      position: relative;
+    }
+
+    .tooltip-badge {
+      position: absolute;
+      top: -2px;
+      right: -16px;
+      color: rgba(0, 0, 0, 0.65);
+    }
+
+    .user-track {
+      padding: 20px 1.12% 0;
+      margin: 20px 0;
+      background: #fff;
+      border-radius: 8px;
+    }
+
+    .user-track .chart-operate {
+      display: flex;
+      align-items: center;
+      padding: 30px 0 0;
+
+    }
+
+    .user-track .chart-operate .operate-title {
+      font-weight: bold;
+    }
+
+    .user-track .chart-operate .operate-item {
+      margin-left: 24px;
+    }
+
+    .user-track .chart-operate .el-select {
+      width: 76px;
+      margin-left: 8px;
+    }
+
+    .user-track .chart-operate .el-select .el-input__inner {
+      height: 32px;
+    }
+
+    .user-track .chart-operate .el-select .el-input__suffix {
+      top: 3px;
+    }
+
+    .user-track .chart-tooltip {
+      padding: 30px 0;
+      border-bottom: 1px solid rgba(151, 151, 151, 0.2);
+    }
+  </style>
+</head>
+
+<body>
+  <div id="vm" @click="closeQueryPanel" v-cloak>
+    <section class="total">
+			<section class="total-item">
+				<div class="total-item-title">{{$lang('今日访问用户')}}
+          <erp-tooltip :content="$lang('GP网页端和移动端访问用户合计')"></erp-tooltip>
+        </div>
+				<div class="itemNum">{{userStatisticData.visit_user | formatNum}}</div>
+			</section>
+			<section class="total-item">
+				<div class="total-item-title">{{$lang('今日购买用户')}}</div>
+				<div class="itemNum">
+					{{userStatisticData.purchase_user | formatNum}}
+				</div>
+			</section>
+			<section class="total-item">
+				<div class="total-item-title">{{$lang('累计购买用户')}}</div>
+				<div class="itemNum">
+					{{userStatisticData.accumulate_purchase_user | formatNum}}
+				</div>
+			</section>
+			<section class="total-item">
+				<div class="total-item-title">{{$lang('累计注册用户')}}</div>
+				<div class="itemNum">{{userStatisticData.accumulate_register_user | formatNum}}</div>
+			</section>
+		</section>
+
+    <div class="search">
+			<div class="search-period">
+				<section>
+					<section class="erp-query__content">
+						<div class="erp-query-title">{{$lang('周期')}}</div>
+						<el-select v-model="dateTime" :placeholder="$lang('全部')" class="erp-el-select2">
+							<el-option v-for="(item,index) in dates" :key="item.value" :label="$lang(item.name)" :value="item.value">
+							</el-option>
+						</el-select>
+						<el-date-picker v-model="rangeDate" value-format="yyyy-MM-dd" type="daterange" range-separator="-"
+							:start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')" @change="rangeDateChange"
+							:picker-options="pickerOptions" style="margin-left: 8px; width: 320px">
+						</el-date-picker>
+
+						<div class="erp-query-title" style="margin-left: 28px">
+							{{$lang('店铺')}}
+						</div>
+						<section :class="[{'focus-border': storeOptionsShow},'erp-select']"
+							@click.stop="storeOptionsShow = !storeOptionsShow">
+							<div class="all-txt" v-if="storeChecked.length === 0 || storeChecked.length == storeData.length">
+								{{ $lang('全部')}}
+							</div>
+							<div v-else style="display: flex;">
+								<div class="txt-box name" :title="storeName">
+									{{storeNameForSelect}}
+									<i class="el-icon-close" @click.stop="storeCheckedDel"></i>
+								</div>
+								<div class="txt-box num" v-if="storeChecked.length > 1">
+									+{{storeChecked.length - 1}}
+								</div>
+							</div>
+							<div class="siffix">
+								<i class="el-icon-arrow-up" :class="storeOptionsShow ? 'is-reverse' : ''"></i>
+							</div>
+						</section>
+					</section>
+				</section>
+
+			</div>
+    </div>
+    <section class="query-option" v-show="storeOptionsShow" @click.stop>
+			<section class="head">
+				<div>{{$lang('店铺')}}</div>
+				<el-checkbox v-model="invertStore" :disabled="invertStoreDisabled" @change="invertStoreChange"
+					class="erp-el-checkbox erp-el-checkbox--invert" :title="$lang('反选')">
+					{{$lang('反选')}}</el-checkbox>
+			</section>
+			<section class="body">
+				<el-checkbox v-model="allStoreChecked" :disabled="allStoreChecked" class="erp-el-checkbox" :title="$lang('全部')">
+					{{$lang('全部')}}</el-checkbox>
+				<el-checkbox v-for="(item,index) in storeData" :key="item.store_id" :label="item.store_id" v-model="item.checked"
+					:title="item.store_name" class="erp-el-checkbox" @change="storeCheckedChange">
+					{{item.store_name}}
+				</el-checkbox>
+			</section>
+		</section>
+
+    <div class="charts">
+      <chart-wrapper :title="$lang('访问用户趋势')" :date-range="userTrendChartData.date"
+        :date-range-explain="$lang(rangeDateInfo)" class="user-trend" chart-height="285px"
+        ref="userTrendChart">
+        <template #header-right>
+          <div class="chart-operate">
+            <div class="operate-title">
+              {{$lang('维度')}}
+            </div>
+            <el-select v-model="chartLabel" @change="userTrendDateLabelChanged" class="erp-el-select2">
+              <el-option v-for="item in dimensionalityOptions" :key="item.value" :label="$lang(item.label)"
+                :value="item.value">
+              </el-option>
+            </el-select>
+            <div class="operate-title" style="margin-left: 12px">
+              {{$lang('粒度')}}
+            </div>
+            <el-select v-model="dateLabel" @change="userTrendDateLabelChanged" class="erp-el-select2" :disabled="granularityDisabled">
+              <el-option v-for="item in granularityOptions" :key="item.value" :label="$lang(item.label)"
+                :value="item.value">
+              </el-option>
+            </el-select>
+            <div class="export-box" @click="exportChart">
+              <i class="export-icon"></i>
+              <span>{{$lang('导出图表')}}</span>
+            </div>
+            <div class="compared-box" @click="userComparison" v-show="userCompareShow">
+              <i class="compared-icon"></i>
+              <span>{{$lang('对比')}}</span>
+            </div>
+            <el-button @click="userBack" v-show="!userCompareShow" class="erp-button">{{$lang('返回')}}</el-button>
+          </div>
+        </template>
+        <section class="erp-chart__info-cards">
+          <div class="card">
+            <div class="title">{{$lang('访问用户')}}
+              <erp-tooltip :content="$lang('所选时间内访问GP的用户总数，按用户访问身份标识去重统计')"></erp-tooltip>
+            </div>
+            <div class="body">
+              <div class="subtitle">{{$lang('本期')}}</div>
+              <div class="subtitle">{{$lang('上期')}}</div>
+              <div class="subtitle">{{$lang('环比')}}</div>
+                
+              <div class="data" v-if="userTrendGatherData">
+                {{userTrendGatherData.visist_user | formatNum}}
+              </div>
+              <div class="data" v-if="userTrendGatherData">
+                  {{userTrendGatherData.pre_visist_user | formatNum}}</div>
+                <div class="data" v-if="userTrendGatherData">
+                  {{userTrendGatherData.vu_link_relative | formatNum(true)}}</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="title">{{$lang('登录用户')}}
+              <erp-tooltip :content="$lang('所选时间内登录GP的用户总数，按用户ID去重统计')"></erp-tooltip>
+            </div>
+            <div class="body">
+              <div class="subtitle">{{$lang('本期')}}</div>
+              <div class="subtitle">{{$lang('上期')}}</div>
+              <div class="subtitle">{{$lang('环比')}}</div>
+
+              <div class="data" v-if="userTrendGatherData">
+                  {{userTrendGatherData.regeister_users | formatNum}}</div>
+              <div class="data" v-if="userTrendGatherData">
+                  {{userTrendGatherData.pre_regeister_users | formatNum}}</div>
+                  <div class="data" v-if="userTrendGatherData">
+                  {{userTrendGatherData.ru_link_relative | formatNum(true)}}</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="title">{{$lang('回访用户(登录)')}}
+              <erp-tooltip :content="$lang('所选时间内回访的登录用户总数，按用户ID去重统计')"></erp-tooltip>
+            </div>
+            <div class="body">
+              <div class="subtitle">{{$lang('本期')}}</div>
+              <div class="subtitle">{{$lang('上期')}}</div>
+              <div class="subtitle">{{$lang('环比')}}</div>
+
+              <div class="data" v-if="userTrendGatherData">
+                  {{userTrendGatherData.back_users | formatNum}}</div>
+                <div class="data" v-if="userTrendGatherData">
+                  {{userTrendGatherData.pre_back_users | formatNum}}</div>
+              <div class="data" v-if="userTrendGatherData">
+                  {{userTrendGatherData.bu_link_relative | formatNum(true)}}</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="title">{{$lang('新增注册用户')}}
+              <erp-tooltip :content="$lang('所选时间内新增注册用户总数，按用户ID去重统计')"></erp-tooltip>
+            </div>
+            <div class="body">
+              <div class="subtitle">{{$lang('本期')}}</div>
+              <div class="subtitle">{{$lang('上期')}}</div>
+              <div class="subtitle">{{$lang('环比')}}</div>
+
+              <div class="data" v-if="userTrendGatherData">
+                  {{userTrendGatherData.new_register_users | formatNum}}</div>
+                <div class="data" v-if="userTrendGatherData">
+                  {{userTrendGatherData.pre_new_register_users | formatNum}}</div>
+                <div class="data" v-if="userTrendGatherData">
+                  {{userTrendGatherData.nu_link_relative | formatNum(true)}}</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="title">{{$lang('注册用户回访率')}}
+              <erp-tooltip :content="$lang('所选时间内回访用户总数/登录用户总数')"></erp-tooltip>
+            </div>
+            <div class="body">
+              <div class="subtitle">{{$lang('本期')}}</div>
+              <div class="subtitle">{{$lang('上期')}}</div>
+              <div class="subtitle">{{$lang('环比')}}</div>
+
+              <div class="data" v-if="userTrendGatherData">
+                  {{userTrendGatherData.bu_rate_users | formatNum(true)}}</div>
+                <div class="data" v-if="userTrendGatherData">
+                  {{userTrendGatherData.pre_bu_rate_users | formatNum(true)}}</div>
+              <div class="data" v-if="userTrendGatherData">
+                  {{userTrendGatherData.bur_link_relative | formatNum(true)}}</div>
+            </div>
+          </div>
+        </section>
+      </chart-wrapper>
+
+      <div class="user-visited-distribute">
+        <header class="erp-chart__header">
+          <section>
+            <div class="erp-chart__title">
+              {{$lang('访问用户分布')}}
+              <el-tooltip effect="light" placement="right-end"
+                :visible-arrow="false" popper-class="erp-el-tooltip">
+                <div slot="content">
+                  1.{{$lang('下方表图展示按不同维度统计周期内的访问用户数绘制的饼图')}}<br/>
+                  2.{{$lang('图表交互：饼图色块可点击，点击后，分析的用户将缩小至所点击色块所代表的用户范围，页面全局图表将更新，例如点击“国家”饼图中的“中国”色块，则页面将展示周期内“中国”地区的用户的的分析情况')}}<br />
+                  3.{{$lang('维度发散情况及处理说明：按单一维度统计时，用户以维度内不同形式访问GP时，会重复计算访问用户数。例如：用户在同一天分别访问GP中国、美国站点，按国家统计时，中国、美国站各统计到该用户')}}
+                </div>
+                <i class="el-icon-question"></i>
+              </el-tooltip>
+            </div>
+            <div class="erp-chart__date">
+              {{userTrendChartData.date}}
+              <span> | </span>
+              {{ $lang(rangeDateInfo) }}
+            </div>
+          </section>
+      </header>
+      <section class="wrapper" ref="userVisitedDistribute">
+        <chart-wrapper :title="$lang('站点分布')" :chart-data="siteDistributionChartData"
+          :title-tip="$lang(`XX站点访问用户：访问GP XX站点的用户`)"
+          chart-height="273px" ref="siteDistributionChart" v-loading="siteDistributionLoading">
+          <template #header-right>
+            <div class="erp-chart__operate">
+              <el-button @click="resetPieChart(4)" v-show="siteDistributionOperate" class="erp-button">{{ $lang('返回') }}
+              </el-button>
+            </div>
+          </template>
+        </chart-wrapper>
+        <chart-wrapper v-loading="userConuntryLoading" :chart-data="userConuntryChartData"
+          :title="popoverTableShow ? $lang('选择国家(地区)') : $lang('国家(地区)分布')" :show-chart="!popoverTableShow"
+          :title-tip="$lang(`XX国访问用户：以XX国IP访问GP的用户`)" chart-height="273px" ref="userConuntryChart">
+          <template #header-right>
+            <div class="erp-chart__operate">
+              <el-button @click="resetPieChart(1)" v-show="userConuntryOperate" class="erp-button">{{ $lang('返回') }}</el-button>
+              <el-button @click="clickMore" v-show="!popoverTableShow && !userConuntryOperate" class="erp-button">
+                {{$lang('更多')}}</el-button>
+              <el-button @click="popoverTableShow=false" v-show="popoverTableShow" class="erp-button">{{$lang('返回')}}
+              </el-button>
+            </div>
+          </template>
+          <div style="margin: 20px 0;font-size: 12px;white-space: initial; line-height: 18px;" v-show="popoverTableShow">
+            <div style="margin-bottom: 4px;"><span
+                style="font-weight: 600;">{{$lang('表格说明')}}：</span><span>{{$lang('表格展示所选时间段内，各个国家(地区)确定统计的访问用户数及占总访问用户数的占比，其中国家(地区)以用户的访问IP确定')}}</span>
+            </div>
+            <div><span
+                style="font-weight: 600;">{{$lang('操作说明')}}：</span><span>{{$lang('点击要查看的国家所在的表行，饼图将展示被点击国家的用户数统计情况')}}</span>
+            </div>
+          </div>
+          <el-table v-show="popoverTableShow" :data="conuntryTableData" max-height="165"
+            :default-sort="{prop: 'countryUserCount',order: 'descending'}"
+            @sort-change="countryUserChange" highlight-current-row @current-change="rowChange" stripe
+            class="erp-el-table country-table">
+            <el-table-column prop="countryName" align="left" :label="$lang('国家(地区)')" :render-header="renderTableHeader"
+              show-overflow-tooltip></el-table-column>
+            <el-table-column align="right" prop="countryUserCount" :label="$lang('访问用户数')" sortable="custom"
+              :render-header="renderTableHeader">
+              <template slot-scope="scope">
+                <span>{{scope.row.countryUserCount | formatNum}}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="percentage" align="right" :label="$lang('占比')" :render-header="renderTableHeader">
+            </el-table-column>
+          </el-table>
+        </chart-wrapper>
+        <chart-wrapper v-loading="storeDistributionLoading" :title="$lang('店铺分布')" :chart-data="storeDistributionChartData"
+          :title-tip="$lang(`XX店铺访问用户：访问过GP XX店铺主页（https://www.gshopper.com/store/storeID）或店铺商品详情页的用户，其中浏览不属于GP新后台店铺的商品的访问用户，归类为Gshopper店铺的访问用户`)"
+          chart-height="273px" ref="storeDistributionChart" :show-chart="storeDistributionTableHidden">
+          <template #header-right>
+            <div class="erp-chart__operate">
+              <el-button v-if="storeDistributionTableHidden && !storeDistributionOperate" @click="storeDistributionTableHiddenChange"
+                class="erp-button">{{
+                $lang('更多') }}</el-button>
+              <el-button v-if="!storeDistributionTableHidden && !storeDistributionOperate" @click="storeDistributionTableHiddenChange"
+                class="erp-button">{{ $lang('返回') }}</el-button>
+              <el-button v-if="storeDistributionOperate" @click="resetPieChart(5)" class="erp-button">{{
+                $lang('返回') }}</el-button>
+            </div>
+          </template>
+          <section class="table-wrapper" v-if="!storeDistributionTableHidden">
+            <el-table :data="storeDistributionTableData.datas" @sort-change="storeDistributionTableSort"
+              :default-sort="{prop: 'current_uv',order: 'descending'}" class="erp-el-table" stripe>
+              <el-table-column prop="store_name" :label="$lang('店铺')" show-overflow-tooltip :render-header="renderTableHeader">
+              </el-table-column>
+              <el-table-column prop="current_uv" align="right" :label="$lang('访问用户')" :render-header="renderTableHeader"
+                sortable="custom" :sort-orders="tableSortOrders">
+                <template slot-scope="scope">
+                  {{scope.row.current_uv | formatNum}}
+                </template>
+              </el-table-column>
+              <el-table-column prop="uv_link" align="right" :label="$lang('访问用户环比增长')" :render-header="renderTableHeader"
+                sortable="custom" :sort-orders="tableSortOrders">
+                <template slot-scope="scope">
+                  {{scope.row.uv_link | formatNum(true, true)}}
+                  <i class="el-icon-caret-bottom" v-if="scope.row.uv_link < 0"></i>
+                  <i class="el-icon-caret-top" v-else-if="scope.row.uv_link > 0"></i>
+                </template>
+              </el-table-column>
+              <el-table-column prop="current_pv" align="right" :label="$lang('浏览量')" :render-header="renderTableHeader"
+                sortable="custom" :sort-orders="tableSortOrders">
+                <template slot-scope="scope">
+                  {{scope.row.current_pv | formatNum}}
+                </template>
+              </el-table-column>
+              <el-table-column prop="pv_link" align="right" :label="$lang('浏览量环比')"
+                :render-header="(h, obj) => renderTableHeader(h, obj, true)" sortable="custom" :sort-orders="tableSortOrders">
+                <template slot-scope="scope">
+                  {{scope.row.pv_link | formatNum(true, true)}}
+                  <i class="el-icon-caret-bottom" v-if="scope.row.pv_link < 0"></i>
+                  <i class="el-icon-caret-top" v-else-if="scope.row.pv_link > 0"></i>
+                </template>
+              </el-table-column>
+            </el-table>
+            <el-pagination background @current-change="storeDistributionTableDataGet"
+              :current-page.sync="storeDistributionTablePage" layout="prev, pager, next"
+              :total="storeDistributionTableData.totalCount" :page-size="4" class="erp-el-pagination">
+            </el-pagination>
+          </section>
+        </chart-wrapper>
+        <chart-wrapper v-loading="channelDistributeLoading" :title="$lang('渠道分布')" :chart-data="channelDistributeChartData"
+          :title-tip="$lang(`XX渠道访问用户：访问过XX渠道推广链接的用户，其中推广链接由ERP-营销管理生成，周期内无推广渠道访问记录的用户视为自然渠道访问用户`)"
+          chart-height="273px" ref="userSourceChart">
+          <template #header-right>
+            <div class="erp-chart__operate">
+              <el-button @click="resetPieChart(2)" v-show="userSourceOperate" class="erp-button">{{ $lang('返回') }}</el-button>
+            </div>
+          </template>
+        </chart-wrapper>
+        <chart-wrapper v-loading="clientDistributionLoading" :title="$lang('客户端分布')" :chart-data="clientDistributionChartData"
+          :title-tip="$lang(`XX来源访问用户：以XX形式访问GP的访问用户`)" chart-height="273px"
+          ref="clientDistributionChart">
+          <template #header-right>
+            <div class="erp-chart__operate">
+              <el-button @click="resetPieChart(3)" v-show="clientDistributionOperate" class="erp-button">{{ $lang('返回') }}
+              </el-button>
+            </div>
+          </template>
+        </chart-wrapper>
+        
+      </section>
+        </div>
+
+      <section class="buy-trans-wrap">
+        <div class="conversion-trend">
+          <chart-wrapper ref="buyTransLineChart" chart-height="288px">
+            <template #header-left>
+              <div class="erp-chart__title">
+                {{ $lang('购买转化率趋势') }}
+                <el-tooltip effect="light" placement="right-end" :visible-arrow="false" popper-class="erp-el-tooltip">
+                  <div slot="content">
+                    1.{{$lang('下方展示所选周期内，按最小粒度连续统计的购买转化率绘制的趋势图表。其中最小粒度内的购买转化率计算方式为：购买用户数（去重）/访问用户数（去重）*100%')}}<br />
+                    2.{{$lang('图表右上角提供粒度切换功能，支持按天、周、月、季切换')}}<br />
+                    3.{{$lang('图表右上角提供对比功能，选中后，图表将展示本期（页面筛选区域选定的时间范围，默认为今日）与对比上一个相同周期（对比期）内的转化率趋势，其中实线部分为本期，虚线为对比期')}}
+                  </div>
+                  <i class="el-icon-question"></i>
+                  </el-tooltip>
+                  </div>
+              <div class="erp-chart__date">
+                {{buyTransLineData.date}}
+                <span v-show="rangeDateInfo"> | </span>
+                {{ $lang(rangeDateInfo) }}
+                <span class="subtitle__item">{{ $lang('站点') }}
+                  <span class="keyword-search__sitename">{{ $lang(siteName) }}</span>
+                </span>
+                <span class="subtitle__item">{{ $lang('渠道') }}
+                  <span class="keyword-search__sitename">{{ $lang(channelName || '全部') }}</span>
+                </span>
+              </div>
+            </template>
+            <template #header-right>
+              <section style="display: flex; align-items: center;">
+                <el-select class="erp-el-select2" style="margin-right: 12px;" v-model="buyConversionRateDateLabel"
+                  @change="buyConversionRateDateLabelChanged">
+                  <el-option v-for="item in granularityOptions" :key="item.value" :label="$lang(item.label)"
+                    :value="item.value">
+                  </el-option>
+                </el-select>
+                <div class="compared-box" @click="buyComparison" v-show="buyCompareShow">
+                  <i class="compared-icon"></i>
+                  <span>{{$lang('对比')}}</span>
+                </div>
+                <el-button @click="buyBack" v-show="!buyCompareShow" class="erp-button">{{$lang('返回')}}</el-button>
+              </section>
+            </template>
+          </chart-wrapper>
+        </div>
+        <div class="buy-trans">
+          <chart-wrapper ref="buyTransChart" chart-height="232px">
+            <template #header-left>
+              <div class="erp-chart__title">
+                {{ $lang('购买转化漏斗') }}
+              </div>
+              <div class="erp-chart__date">
+                {{buyTransLineData.date}}
+                <span v-show="rangeDateInfo"> | </span>
+                {{ $lang(rangeDateInfo) }}
+                <span class="subtitle__item">{{ $lang('站点') }}
+                  <span class="keyword-search__sitename">{{ $lang(siteName) }}</span>
+                </span>
+                <span class="subtitle__item">{{ $lang('渠道') }}
+                  <span class="keyword-search__sitename">{{ $lang(channelName || '全部') }}</span>
+                </span>
+              </div>
+            </template>
+            <section class="overall-rate" v-show="buyCompareShow">
+              <div class="overall-rate__item">
+                <span>{{ $lang('整体转化率') }}</span>
+                <span class="overall-rate__num">{{ buyTransData.overall }}%</span>
+              </div>
+            </section>
+
+            <section class="overall-rate-box" v-show="!buyCompareShow">
+              <div class="overall-rate-item-wrap">
+                <div v-show="!buyCompareShow">
+                  <div class="overall-rate-lit-title">
+                    <div style="width: 10px;height: 10px;background: rgb(3,117,222)"></div>
+                    <div>{{$lang('本期') + buyDate.date}}</div>
+                  </div>
+                </div>
+                <div class="overall-rate-item">
+                  <span>{{ $lang('整体转化率') }}</span>
+                  <span class="overall-rate__num">{{ buyTransData.overall }}%</span>
+                </div>
+              </div>
+              <div class="overall-rate-item-wrap">
+                <div v-show="!buyCompareShow">
+                  <div class="overall-rate-lit-title">
+                    <div style="width: 10px;height: 10px;background: rgb(255,154,24)"></div>
+                    <div>{{$lang('上期') + buyDate.preDate}}</div>
+                  </div>
+                </div>
+                <div class="overall-rate-item">
+                  <span>{{ $lang('整体转化率') }}</span>
+                  <span class="overall-rate__num">{{ buyTransDataOverall }}%</span>
+                </div>
+              </div>
+
+            </section>
+          </chart-wrapper>
+          <chart-wrapper>
+            <template #header-left>
+              <div class="erp-chart__title">
+                {{ $lang('用户分组统计') }}
+              </div>
+              <div class="erp-chart__date">
+                {{keywordSearchDistributeData.datas.date}}
+                <span v-show="rangeDateInfo"> | </span>
+                {{ $lang(rangeDateInfo) }}
+
+                <span class="subtitle__item">{{ $lang('站点') }}
+                  <span class="keyword-search__sitename">{{ $lang(siteName) }}</span>
+                </span>
+                <span class="subtitle__item">{{ $lang('渠道') }}
+                  <span class="keyword-search__sitename">{{ $lang(channelName || '全部') }}</span>
+                </span>
+              </div>
+            </template>
+            <template #header-right>
+              <div class="erp-chart__operate">
+                <el-button :class="['erp-button', {'erp-button--clicked': userGroupTableType==='1027'}]"
+                  @click="userGroupTableReset('1027')">
+                  {{ $lang('站点统计') }}
+                </el-button>
+                <el-button :class="['erp-button', {'erp-button--clicked': userGroupTableType==='1028'}]"
+                  @click="userGroupTableReset('1028')">
+                  {{ $lang('渠道统计') }}
+                </el-button>
+              </div>
+            </template>
+            <section class="table-wrapper">
+              <el-table v-show="buyCompareShow" ref="userGroupTable" :default-sort="userGroupTableDefaultSort"
+                @sort-change="userGroupTableSort" @cell-click="showUserGroupDialog"
+                :cell-style="userGroupTableCellStyle" :data="userGroupData.datas.dataInfo"
+                v-loading="userGroupTableLoading" stripe class="erp-el-table">
+                <el-table-column prop="name" show-overflow-tooltip fixed="left" width="120" show-overflow-tooltip>
+                  <template slot="header" slot-scope="scope">
+                    <div v-if="userGroupTableType === '1027'">{{ $lang('站点') }}</div>
+                    <div v-else>{{ $lang('渠道') }}</div>
+                  </template>
+                </el-table-column>
+                <el-table-column :label="$lang('访问网站')" width="140" align="right" sortable="custom"
+                  :sort-orders="tableSortOrders" prop="visitwebsite" :render-header="renderTableHeader">
+                  <template slot-scope="scope">
+                    {{scope.row.visitwebsite | formatNum}}
+                  </template>
+                </el-table-column>
+                <el-table-column :label="$lang('浏览商品')" width="140" align="right" sortable="custom"
+                  :sort-orders="tableSortOrders" prop="browsegoods" :render-header="renderTableHeader">
+                  <template slot-scope="scope">
+                    {{scope.row.browsegoods | formatNum}}
+                  </template>
+                </el-table-column>
+                <el-table-column :label="$lang('加购物车/立即购买')" width="200" align="right" sortable="custom"
+                  :sort-orders="tableSortOrders" prop="purchase" :render-header="renderTableHeader">
+                  <!-- <template slot="header" slot-scope="scope">
+                                                                                            <div class="header--line2">
+                                                                                              <div :title="$lang('加购物车')" class="title">{{$lang('加购物车')}}</div>
+                                                                                              <div :title="$lang('立即购买')" class="title">{{$lang('立即购买')}}</div>
+                                                                                              <span class="caret-wrapper"><i class="sort-caret ascending"></i><i class="sort-caret descending"></i></span>
+                                                                                            </div>
+                                                                                          </template> -->
+                  <template slot-scope="scope">
+                    {{scope.row.purchase | formatNum}}
+                  </template>
+                </el-table-column>
+                <el-table-column :label="$lang('提交订单')" width="140" align="right" sortable="custom"
+                  :sort-orders="tableSortOrders" prop="submitorder" :render-header="renderTableHeader">
+                  <template slot-scope="scope">
+                    {{scope.row.submitorder | formatNum}}
+                  </template>
+                </el-table-column>
+                <el-table-column :label="$lang('支付成功')" width="140" align="right" sortable="custom"
+                  :sort-orders="tableSortOrders" prop="paysuccess" :render-header="renderTableHeader">
+                  <template slot-scope="scope">
+                    {{scope.row.paysuccess | formatNum}}
+                  </template>
+                </el-table-column>
+                <el-table-column :label="$lang('整体转化率')" width="160" align="right" sortable="custom"
+                  :sort-orders="tableSortOrders" prop="overall"
+                  :render-header="(h, obj) => renderTableHeader(h, obj, true)">
+                  <template slot-scope="scope">
+                    {{scope.row.overall | formatNum(true, true)}}
+                  </template>
+                </el-table-column>
+              </el-table>
+              <el-table v-show="!buyCompareShow" ref="userGroupTable2" :default-sort="{prop: 'uv',order: 'descending'}"
+                @sort-change="userGroupTableSort" @cell-click="showUserGroupDialog"
+                :cell-style="userGroupTableCellStyle" :data="userGroupData.datas.dataInfo"
+                v-loading="userGroupTableLoading" stripe class="erp-el-table">
+                <el-table-column prop="name" show-overflow-tooltip fixed width="120" show-overflow-tooltip>
+                  <template slot="header" slot-scope="scope">
+                    <div v-if="userGroupTableType === '1027'">{{ $lang('站点') }}</div>
+                    <div v-else>{{ $lang('渠道') }}</div>
+                  </template>
+                  <el-table-column width="120" :label="$lang('周期')" prop="name"></el-table-column>
+                </el-table-column>
+                <el-table-column :label="$lang('访问网站')" width="140" align="right" sortable="custom"
+                  :sort-orders="tableSortOrders" prop="uv" :render-header="renderTableHeader">
+                  <template v-if="!buyCompareShow">
+                    <el-table-column :label="$lang('本期')" width="70" align="right">
+                      <template slot-scope="scope">
+                        {{scope.row.uv | formatNum}}
+                      </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('上期')" :key="3" width="70" align="right">
+                      <template slot-scope="scope">
+                        {{scope.row.pre_uv | formatNum}}
+                      </template>
+                    </el-table-column>
+                  </template>
+                </el-table-column>
+                <el-table-column :label="$lang('浏览商品')" width="140" align="right" sortable="custom"
+                  :sort-orders="tableSortOrders" prop="look_spu" :render-header="renderTableHeader">
+
+                  <el-table-column :label="$lang('本期')" width="70" align="right" prop="look_spus">
+                    <template slot-scope="scope">
+                      {{scope.row.look_spu | formatNum}}
+                    </template>
+                  </el-table-column>
+                  <el-table-column :label="$lang('上期')" width="70" align="right" prop="pre_look_spu">
+                    <template slot-scope="scope">
+                      {{scope.row.pre_look_spu | formatNum}}
+                    </template>
+                  </el-table-column>
+                </el-table-column>
+                <el-table-column :label="$lang('加购物车/立即购买')" width="200" align="right" sortable="custom"
+                  :sort-orders="tableSortOrders" prop="buy_and_cart" :render-header="renderTableHeader">
+
+                  <el-table-column :label="$lang('本期')" width="100" align="right">
+                    <template slot-scope="scope">
+                      {{scope.row.buy_and_cart | formatNum}}
+                    </template>
+                  </el-table-column>
+                  <el-table-column :label="$lang('上期')" width="100" align="right">
+                    <template slot-scope="scope">
+                      {{scope.row.pre_buy_and_cart | formatNum}}
+                    </template>
+                  </el-table-column>
+                </el-table-column>
+                <el-table-column :label="$lang('提交订单')" width="140" align="right" sortable="custom"
+                  :sort-orders="tableSortOrders" prop="orders" :render-header="renderTableHeader">
+
+                  <el-table-column :label="$lang('本期')" width="70" align="right">
+                    <template slot-scope="scope">
+                      {{scope.row.orders | formatNum}}
+                    </template>
+                  </el-table-column>
+                  <el-table-column :label="$lang('上期')" width="70" align="right">
+                    <template slot-scope="scope">
+                      {{scope.row.pre_orders | formatNum}}
+                    </template>
+                  </el-table-column>
+                </el-table-column>
+                <el-table-column :label="$lang('支付成功')" width="140" align="right" sortable="custom"
+                  :sort-orders="tableSortOrders" prop="pay" :render-header="renderTableHeader">
+
+                  <el-table-column :label="$lang('本期')" width="70" align="right">
+                    <template slot-scope="scope">
+                      {{scope.row.pay | formatNum}}
+                    </template>
+                  </el-table-column>
+                  <el-table-column :label="$lang('上期')" width="70" align="right">
+                    <template slot-scope="scope">
+                      {{scope.row.pre_pay | formatNum}}
+                    </template>
+                  </el-table-column>
+                </el-table-column>
+                <el-table-column :label="$lang('整体转化率')" width="160" align="right" sortable="custom"
+                  :sort-orders="tableSortOrders" prop="all_rate"
+                  :render-header="(h, obj) => renderTableHeader(h, obj, true)">
+
+                  <el-table-column :label="$lang('本期')" align="right">
+                    <template slot-scope="scope">
+                      {{scope.row.all_rate | formatNum(true, true)}}
+                    </template>
+                  </el-table-column>
+                  <el-table-column :label="$lang('上期')" align="right">
+                    <template slot-scope="scope">
+                      {{scope.row.pre_all_rate | formatNum(true, true)}}
+                    </template>
+                  </el-table-column>
+                </el-table-column>
+              </el-table>
+              <el-pagination class="erp-el-pagination" background :page-size="6" :current-page="userGroupTablePage"
+                hide-on-single-page @current-change="userGroupTablePageChange" layout="total, prev, pager, next, jumper"
+                :total="userGroupData.totalCount">
+              </el-pagination>
+            </section>
+          </chart-wrapper>
+        </div>
+
+        <el-dialog v-if="userGroupDialogVisible" width="960px" top="24px" :visible.sync="userGroupDialogVisible"
+          :title="$lang('商品分析')" class="erp-el-dialog user-group-dialog">
+          <section class="user-group-dialog__info">
+            <section class="user-group-dialog__info-item">
+              <div v-if="userGroupTableType === '1027'">{{ $lang('站点') }}</div>
+              <div v-else>{{ $lang('渠道') }}</div>
+              <div class="user-group-dialog__info-data">{{ userGroupTableSelectedRow.name }}</div>
+            </section>
+            <section v-if="userGroupTableType === '1027'" class="user-group-dialog__info-item">
+              <div>{{ $lang('渠道') }}</div>
+              <div class="user-group-dialog__info-data">{{ $lang(channelName || '全部') }}</div>
+            </section>
+            <section v-else class="user-group-dialog__info-item">
+              <div>{{ $lang('站点') }}</div>
+              <div class="user-group-dialog__info-data">{{ siteName }}</div>
+            </section>
+            <section class="user-group-dialog__info-item">
+
+            </section>
+            <section class="user-group-dialog__info-item">
+              <div>{{ $lang('有效用户（UV）') }}</div>
+              <div class="user-group-dialog__info-data">{{ goodsAnalysisData.datas.validatedUserTotal | formatNum }}
+              </div>
+            </section>
+            <section class="user-group-dialog__info-item">
+              <div>{{ $lang('浏览量（PV）') }}</div>
+              <div class="user-group-dialog__info-data">{{ goodsAnalysisData.datas.pageViewTotal | formatNum }}</div>
+            </section>
+            <section class="user-group-dialog__info-item">
+              <div>{{ $lang('平均停留时长') }}</div>
+              <div class="user-group-dialog__info-data">{{ goodsAnalysisData.datas.averageTimeTotal | formatNum }} s
+              </div>
+            </section>
+          </section>
+          <el-table :data="goodsAnalysisData.datas.dataInfo" :default-sort="{prop: 'pageview', order: 'descending'}"
+            @sort-change="goodsAnalysisTableSort" v-loading="goodsAnalysisTableLoading" stripe class="erp-el-table"
+            height="540" style="margin-bottom: 20px;">
+            <el-table-column width="110px" :label="$lang('商品图片')" fixed="left" prop="picture"
+              :render-header="renderTableHeader">
+              <template slot-scope="scope">
+                <el-image style="width: 60px; height: 60px" :src="scope.row.picture">
+                  <div slot="error">
+                    <el-image style="width: 60px; height: 60px" src="./Application/Tpl/Home/DataCenter/img/place.png">
+                    </el-image>
+                  </div>
+                </el-image>
+              </template>
+            </el-table-column>
+            <el-table-column width="150px" :label="$lang('商品标题')" prop="goods" show-overflow-tooltip
+              :render-header="renderTableHeader">
+            </el-table-column>
+            <el-table-column width="110px" :label="$lang('SPU ID')" prop="spu_id" :render-header="renderTableHeader">
+            </el-table-column>
+            <el-table-column width="80px" :label="$lang('UV')" align="right" prop="validateduser"
+              :render-header="renderTableHeader" sortable="custom" :sort-orders="tableSortOrders">
+              <template slot-scope="scope">
+                {{scope.row.validateduser | formatNum}}
+              </template>
+            </el-table-column>
+            <el-table-column width="80px" :label="$lang('PV')" align="right" prop="pageview"
+              :render-header="renderTableHeader" sortable="custom" :sort-orders="tableSortOrders">
+              <template slot-scope="scope">
+                {{scope.row.pageview | formatNum}}
+              </template>
+            </el-table-column>
+            <el-table-column width="140px" :label="$lang('平均停留时长')" align="right" sortable="custom"
+              :sort-orders="tableSortOrders" prop="averagetime" :render-header="renderTableHeader">
+              <template slot-scope="scope">
+                {{scope.row.averagetime | formatNum}}
+              </template>
+            </el-table-column>
+            <el-table-column width="90px" :label="$lang('销量')" align="right" prop="sales"
+              :render-header="renderTableHeader" sortable="custom" :sort-orders="tableSortOrders">
+              <template slot-scope="scope">
+                {{scope.row.sales | formatNum}}
+              </template>
+            </el-table-column>
+            <el-table-column width="160px" fixed="right" :label="$lang('销售额($)')" align="right" prop="saleroom"
+              :render-header="(h, obj) => renderTableHeader(h, obj, true)" sortable="custom"
+              :sort-orders="tableSortOrders">
+              <template slot-scope="scope">
+                {{scope.row.saleroom | formatNum}}
+              </template>
+            </el-table-column>
+          </el-table>
+          <el-pagination class="erp-el-pagination" background :page-size="6" :current-page="goodsAnalysisTablePage"
+            hide-on-single-page @current-change="goodsAnalysisTablePageChange" layout="total, prev, pager, next, jumper"
+            :total="goodsAnalysisData.totalCount" style="text-align: right;">
+          </el-pagination>
+        </el-dialog>
+      </section>
+
+      <section class="keyword-search-wrap">
+        <div class="keyword-search-top">
+          <chart-wrapper ref="keywordSearchTransferLineChart" class="search-trend" chart-height="250px">
+            <template #header-left>
+              <div class="erp-chart__title">
+                {{ $lang('搜索趋势') }}
+                <el-tooltip effect="light" placement="right-end" :visible-arrow="false" popper-class="erp-el-tooltip">
+                  <div slot="content">
+                    1.{{$lang('下方展示所选周期内，按最小粒度连续统计的搜索转化率绘制的趋势图表。其中最小粒度内的搜索转化率计算方式为：搜索关键词后成功支付订单的次数/关键词搜索次数*100%')}}<br />
+                    2.{{$lang('图表右上角提供粒度切换功能，支持按天、周、月、季切换')}}<br />
+                    3.{{$lang('图表右上角提供对比功能，选中后，图表将展示本期（页面筛选区域选定的时间范围，默认为今日）与对比上一个相同周期（对比期）内的搜索转化率趋势，其中实线部分为本期，虚线为对比期')}}
+                  </div>
+                  <i class="el-icon-question"></i>
+                  </el-tooltip>
+                  </div>
+              <div class="erp-chart__date">
+                {{searchTrendGatherData.date}}
+                <span v-show="rangeDateInfo"> | </span>
+                {{ $lang(rangeDateInfo) }}
+                <span class="subtitle__item">{{ $lang('站点') }}<span
+                    class="keyword-search__sitename">{{ $lang(siteName) }}</span></span>
+                <span class="subtitle__item">{{ $lang('渠道') }}
+                  <span class="keyword-search__sitename">{{ $lang(channelName || '全部') }}</span>
+                </span>
+                <span class="subtitle__item">{{ $lang('关键词') }}<span
+                    class="keyword-search__sitename">{{ keyword || $lang('全部') }}</span></span>
+              </div>
+            </template>
+            <template #header-right>
+              <section style="display: flex; align-items: center;">
+                <el-select v-model="searchTrendDateLabel" @change="searchTrendDateLabelChanged" class="erp-el-select2"
+                  style="margin-right: 20px;">
+                  <el-option v-for="item in granularityOptions" :key="item.value" :label="$lang(item.label)"
+                    :value="item.value">
+                  </el-option>
+                </el-select>
+                <div class="compared-box" @click="keywordComparison" v-show="keywordCompareShow">
+                  <i class="compared-icon"></i>
+                  <span>{{$lang('对比')}}</span>
+                </div>
+                <el-button @click="keywordBack" v-show="!keywordCompareShow" class="erp-button">{{$lang('返回')}}</el-button>
+              </section>
+            </template>
+            <section class="erp-chart__info-cards" style="grid-template-columns: repeat(4, 1fr);">
+              <div class="card">
+                <div class="title">{{$lang('整体转化率')}}
+                </div>
+                <div class="body">
+                  <div class="subtitle">{{$lang('本期')}}</div>
+                  <div class="subtitle">{{$lang('上期')}}</div>
+                  <div class="subtitle">{{$lang('环比')}}</div>
+                
+                  <div class="data">
+                    {{searchTrendGatherData.data.all_rate | formatNum(true, true)}}
+                  </div>
+                  <div class="data">
+                    {{searchTrendGatherData.data.pre_all_rate | formatNum(true, true)}}</div>
+                  <div class="data">
+                    {{searchTrendGatherData.data.rate_link_relative | formatNum(true, true)}}</div>
+                </div>
+              </div>
+              <div class="card">
+                <div class="title">{{$lang('关键词')}}
+                </div>
+                <div class="body">
+                  <div class="subtitle">{{$lang('本期')}}</div>
+                  <div class="subtitle">{{$lang('上期')}}</div>
+                  <div class="subtitle">{{$lang('环比')}}</div>
+                
+                  <div class="data">
+                    {{searchTrendGatherData.data.keywords | formatNum}}</div>
+                  <div class="data">
+                    {{searchTrendGatherData.data.pre_keywords | formatNum}}</div>
+                  <div class="data">
+                    {{searchTrendGatherData.data.keywords_link_relative | formatNum(true, true)}}</div>
+                </div>
+              </div>
+              <div class="card">
+                <div class="title">{{$lang('搜索量')}}
+                </div>
+                <div class="body">
+                  <div class="subtitle">{{$lang('本期')}}</div>
+                  <div class="subtitle">{{$lang('上期')}}</div>
+                  <div class="subtitle">{{$lang('环比')}}</div>
+                
+                  <div class="data">
+                    {{searchTrendGatherData.data.searchs | formatNum}}</div>
+                  <div class="data">
+                    {{searchTrendGatherData.data.pre_searchs | formatNum}}</div>
+                  <div class="data">
+                    {{searchTrendGatherData.data.searchs_link_relative | formatNum(true, true)}}</div>
+                </div>
+              </div>
+              <div class="card">
+                <div class="title">{{$lang('人均搜索量')}}
+                </div>
+                <div class="body">
+                  <div class="subtitle">{{$lang('本期')}}</div>
+                  <div class="subtitle">{{$lang('上期')}}</div>
+                  <div class="subtitle">{{$lang('环比')}}</div>
+                
+                  <div class="data">
+                    {{searchTrendGatherData.data.searchs_per | formatNum}}</div>
+                  <div class="data">
+                    {{searchTrendGatherData.data.pre_searchs_per | formatNum}}</div>
+                  <div class="data">
+                    {{searchTrendGatherData.data.searchs_per_link_relative | formatNum(true, true)}}</div>
+                </div>
+              </div>
+            </section>
+          </chart-wrapper>
+        </div>
+        <section class="erp-tabs">
+          <div v-for="item in searchTrendChartTypes" @click="searchTrendTypeChanged(item.value)" :key="item.value" class="tab"
+            :class="{'tab--active': searchTrendChartType === item.value}">{{$lang(item.label)}}</div>
+          <div class="tab"></div>
+        </section>
+        <div class="keyword-search">
+          <chart-wrapper ref="keywordSearchTransferChart" chart-height="248px">
+            <template #header-left>
+              <div class="erp-chart__title">
+                {{ $lang('关键词搜索转化漏斗') }}
+              </div>
+              <div class="erp-chart__date">
+                {{keywordSearchDistributeData.datas.date}}
+                <span v-show="rangeDateInfo"> | </span>
+                {{ $lang(rangeDateInfo) }}
+                <span class="subtitle__item">{{ $lang('站点') }}<span
+                    class="keyword-search__sitename">{{ $lang(siteName) }}</span></span>
+                <span class="subtitle__item">{{ $lang('渠道') }}
+                  <span class="keyword-search__sitename">{{ $lang(channelName || '全部') }}</span>
+                </span>
+                <span class="subtitle__item">{{ $lang('关键词') }}<span
+                    class="keyword-search__sitename">{{ keyword || $lang('全部') }}</span></span>
+              </div>
+            </template>
+            <section class="overall-rate" v-show="keywordCompareShow">
+              <div class="overall-rate__item">
+                <span>{{ $lang('整体转化率') }}</span>
+                <span class="overall-rate__num">{{ keywordSearchTransferData.overall }}%</span>
+              </div>
+            </section>
+            <section class="keyword-search-trans__period" v-show="!keywordCompareShow">
+              <div class="keyword-search-trans__period-item"><span>{{$lang('本期')}}</span><span
+                  style="margin-left: 10px;">{{keywordSearchTransComparisonData.date}}</span></div>
+              <div class="keyword-search-trans__period-item"><span>{{$lang('上期')}}</span><span
+                  style="margin-left: 10px;">{{keywordSearchTransComparisonData.preDate}}</span></div>
+            </section>
+            <section class="overall-rate-box" v-show="!keywordCompareShow">
+              <div class="overall-rate-item-wrap">
+                <div class="overall-rate-item">
+                  <span>{{ $lang('整体转化率') }}</span>
+                  <span class="overall-rate__num">{{ keywordSearchTransferDataOverall }}%</span>
+                </div>
+              </div>
+              <div class="overall-rate-item-wrap">
+                <div class="overall-rate-item">
+                  <span>{{ $lang('整体转化率') }}</span>
+                  <span class="overall-rate__num">{{ keywordSearchComparisonTransferDataOverall }}%</span>
+                </div>
+              </div>
+            </section>
+          </chart-wrapper>
+
+          <chart-wrapper>
+            <template #header-left>
+              <div class="erp-chart__title">
+                {{ $lang('关键词搜索量统计') }}
+              </div>
+              <div class="erp-chart__date">
+                {{keywordSearchDistributeData.datas.date}}
+                <span v-show="rangeDateInfo"> | </span>
+                {{ $lang(rangeDateInfo) }}
+                <span class="subtitle__item">{{ $lang('站点') }}<span
+                    class="keyword-search__sitename">{{ $lang(siteName) }}</span></span>
+                <span class="subtitle__item">{{ $lang('渠道') }}
+                  <span class="keyword-search__sitename">{{ $lang(channelName || '全部') }}</span>
+                </span>
+              </div>
+            </template>
+              <section class="keyword-search-box">
+                <el-input :placeholder="$lang('请输入关键词')" v-model="searchKeyword" size="small" style="width: 160px;"
+                  @keyup.enter.native="doSearchKeyword">
+                  <i slot="suffix" class="el-input__icon el-icon-search" style="cursor: pointer;"
+                    @click="doSearchKeyword"></i>
+                </el-input>
+                <el-button plain class="erp-button"
+                  @click="keywordSearchTableExport">
+                  {{ $lang('导出') }}
+                </el-button>
+              </section>
+
+              <section class="table-wrapper">
+                <el-table v-show="keywordCompareShow" ref="keywordSearchDistributeTable"
+                  :default-sort="keywordSearchDistributeTableDefaultSort" @sort-change="keywordSearchTableSort"
+                  :data="keywordSearchDistributeData.datas.dataInfo" v-loading="keywordSearchDistributeLoading" stripe
+                  class="erp-el-table" :row-class-name="setRowClass" :cell-class-name="setCellClass">
+                  <el-table-column :label="$lang('关键词')" prop="name" show-overflow-tooltip :render-header="renderTableHeader">
+                  </el-table-column>
+                  <el-table-column :label="$lang('搜索量')" align="right" sortable="custom" :sort-orders="tableSortOrders"
+                    prop="keyword_account" :render-header="renderTableHeader">
+                    <template slot-scope="scope">
+                      {{scope.row.keyword_account | formatNum}}
+                    </template>
+                  </el-table-column>
+                  <el-table-column :label="$lang('占总搜索量')" align="right" sortable="custom" :sort-orders="tableSortOrders"
+                    prop="search_pro" :render-header="renderTableHeader">
+                    <template slot-scope="scope">
+                      {{scope.row.search_pro | formatNum(true, true)}}
+                    </template>
+                  </el-table-column>
+                  <el-table-column :label="$lang('环比增长')" align="right" sortable="custom" :sort-orders="tableSortOrders"
+                    prop="link_ratio" :render-header="renderTableHeader">
+                    <template slot-scope="scope">
+                      {{scope.row.link_ratio | formatNum}}
+                    </template>
+                  </el-table-column>
+                  <el-table-column :label="$lang('环比增长率')" align="right" sortable="custom" :sort-orders="tableSortOrders"
+                    prop="link_ratio_pro" :render-header="renderTableHeader">
+                    <template slot-scope="scope">
+                      {{scope.row.link_ratio_pro | formatNum(true, true)}}
+                    </template>
+                  </el-table-column>
+                  <el-table-column :label="$lang('整体转化率')" align="right" sortable="custom" :sort-orders="tableSortOrders" prop="sion"
+                    :render-header="renderTableHeader">
+                    <template slot-scope="scope">
+                      {{scope.row.sion | formatNum(true, true)}}
+                    </template>
+                  </el-table-column>
+                  <el-table-column :label="$lang('操作')" align="center" :render-header="renderTableHeader">
+                    <template slot-scope="scope">
+                      <div>
+                        <el-link class="funnel-analysis" :underline="false" @click="changeKeywordSearchTransferChart(scope.row.name)">
+                          {{ keyword === scope.row.name ? $lang('返回') : $lang('选择') }}</el-link>
+                      </div>
+                    </template>
+                  </el-table-column>
+                </el-table>
+                <el-table v-show="!keywordCompareShow" ref="keywordSearchDistributeTable2"
+                  :default-sort="{ prop: 'searchs',order:'descending'}" @sort-change="keywordSearchComparisoTableSort"
+                  :data="keywordSearchDistributeData.datas.dataInfo" v-loading="keywordSearchDistributeLoading" stripe
+                  class="erp-el-table" :row-class-name="setRowClass" :cell-class-name="setCellClass">
+                  <el-table-column :label="$lang('关键词')" width="120" prop="name" show-overflow-tooltip
+                    :render-header="renderTableHeader">
+                    <el-table-column :label="$lang('周期')" width="120" prop="name" show-overflow-tooltip>
+                    </el-table-column>
+                  </el-table-column>
+                  <el-table-column :label="$lang('搜索量')" align="center" width="200" sortable="custom" :sort-orders="tableSortOrders"
+                    prop="searchs" :render-header="renderTableHeader">
+                    <template v-if="!keywordCompareShow">
+                      <el-table-column :label="$lang('本期')" align="right" show-overflow-tooltip>
+                        <template slot-scope="scope">
+                          {{scope.row.searchs | formatNum}}
+                        </template>
+                      </el-table-column>
+                      <el-table-column :label="$lang('上期')" align="right" show-overflow-tooltip>
+                        <template slot-scope="scope">
+                          {{scope.row.pre_searchs | formatNum}}
+                        </template>
+                      </el-table-column>
+                      <el-table-column :label="$lang('环比增长')" align="right" show-overflow-tooltip>
+                        <template slot-scope="scope">
+                          {{scope.row.searchs_link_realtive | formatNum(true,true)}}
+                        </template>
+                      </el-table-column>
+                    </template>
+                  </el-table-column>
+                  <el-table-column :label="$lang('整体转化率')" width="200" align="center" sortable="custom" :sort-orders="tableSortOrders"
+                    prop="all_rate" :render-header="renderTableHeader">
+                    <el-table-column :label="$lang('本期')" align="right" show-overflow-tooltip>
+                      <template slot-scope="scope">
+                        {{scope.row.all_rate | formatNum(true, true)}}
+                      </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('上期')" align="right" show-overflow-tooltip>
+                      <template slot-scope="scope">
+                        {{scope.row.pre_all_rate | formatNum(true, true)}}
+                      </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('环比增长')" align="right" show-overflow-tooltip>
+                      <template slot-scope="scope">
+                        {{scope.row.all_rate_link_realtive | formatNum(true, true)}}
+                      </template>
+                    </el-table-column>
+                  </el-table-column>
+                  <el-table-column :label="$lang('操作')" align="center" width="100" :render-header="renderTableHeader">
+                    <el-table-column label="-" align="center">
+                      <template slot-scope="scope">
+                        <div>
+                          <el-link class="funnel-analysis" :underline="false" @click="changeKeywordSearchTransferChart(scope.row.name)">
+                            {{ keyword === scope.row.name ? $lang('返回') : $lang('选择') }}</el-link>
+                        </div>
+                      </template>
+                    </el-table-column>
+                  </el-table-column>
+                </el-table>
+                <el-pagination class="erp-el-pagination" background :page-size="5" :current-page="keywordSearchDistributeTablePage"
+                  hide-on-single-page @current-change="keywordSearchDistributeTablePageChange" layout="total, prev, pager, next, jumper"
+                  :total="keywordSearchDistributeData.totalCount">
+                </el-pagination>
+              </section>
+          </chart-wrapper>
+        </div>
+
+        <el-dialog v-if="keywordSearchTransDialogVisible" width="960px" top="24px"
+          :visible.sync="keywordSearchTransDialogVisible" :title="$lang('搜索转化-浏览商品详情')"
+          class="erp-el-dialog keyword-search-trans-dialog">
+          <section class="keyword-search-trans__info">
+            <section style="display: flex;">
+              <section class="keyword-search-trans__info-item">
+                <div>{{ $lang('周期') }}</div>
+                <div class="keyword-search-trans__info-data">
+                  {{keywordSearchTransferData.date}}
+                  <span v-show="rangeDateInfo"> | </span>
+                  {{ $lang(rangeDateInfo) }}
+                </div>
+              </section>
+              <section class="keyword-search-trans__info-item">
+                <div>{{ $lang('站点') }}</div>
+                <div class="keyword-search-trans__info-data">{{ $lang(siteName) }}</div>
+              </section>
+              <section class="keyword-search-trans__info-item">
+                <div>{{ $lang('渠道') }}</div>
+                <div class="keyword-search-trans__info-data">{{ $lang(channelName || '全部') }}</div>
+              </section>
+              <section class="keyword-search-trans__info-item">
+                <div>{{ $lang('关键词') }}</div>
+                <div class="keyword-search-trans__info-data">{{ keyword || $lang('全部') }}</div>
+              </section>
+            </section>
+            <el-button plain class="erp-el-button" style="width: 78px; background: #0375DE; color: #fff;"
+              @click="keywordSearchTransDialogTableExport">
+              {{ $lang('导出') }}
+            </el-button>
+          </section>
+          <el-table :data="keywordSearchTransDialogData.datas" :default-sort="{prop: 'look_num', order: 'descending'}"
+            @sort-change="keywordSearchTransDialogTableSort" v-loading="keywordSearchTransDialogTableLoading" stripe
+            class="erp-el-table" height="560" style="margin-bottom: 20px;">
+            <el-table-column fixed="left" width="110px" :label="$lang('图片')" prop="picture"
+              :render-header="renderTableHeader">
+              <template slot-scope="scope">
+                <el-image style="width: 60px; height: 60px" :src="scope.row.images">
+                  <div slot="error">
+                    <el-image style="width: 60px; height: 60px" src="./Application/Tpl/Home/DataCenter/img/place.png">
+                    </el-image>
+                  </div>
+                </el-image>
+              </template>
+            </el-table-column>
+            <el-table-column width="100px" :label="$lang('SPU ID')" prop="spu" :render-header="renderTableHeader">
+            </el-table-column>
+            <el-table-column width="140px" :label="$lang('商品标题')" prop="title" :render-header="renderTableHeader">
+              <template slot-scope="scope">
+                <el-link type="primary" :href="'https://www.gshopper.com/product/detail/' + scope.row.spu"
+                  target="_blank">
+
+                  <span class="ellipsis-3">{{scope.row.title}}</span>
+                </el-link>
+              </template>
+            </el-table-column>
+            <el-table-column width="120px" align="right" :label="$lang('浏览用户数')" prop="look_num"
+              :render-header="keywordSearchTransDialogTableHeader" sortable="custom" :sort-orders="tableSortOrders">
+              <template slot-scope="scope">
+                {{scope.row.look_num | formatNum}}
+              </template>
+            </el-table-column>
+            <el-table-column width="120px" align="right" :label="$lang('支付订单数')" prop="pay_num"
+              :render-header="keywordSearchTransDialogTableHeader" sortable="custom" :sort-orders="tableSortOrders">
+              <template slot-scope="scope">
+                {{scope.row.pay_num | formatNum}}
+              </template>
+            </el-table-column>
+            <el-table-column width="120px" align="right" :label="$lang('加购人数')" sortable="custom"
+              :render-header="keywordSearchTransDialogTableHeader" :sort-orders="tableSortOrders" prop="add_cart_num">
+              <template slot-scope="scope">
+                {{scope.row.add_cart_num | formatNum}}
+              </template>
+            </el-table-column>
+            <el-table-column width="120px" align="right" :label="$lang('下单转化率')" prop="orders_uv"
+              :render-header="keywordSearchTransDialogTableHeader" sortable="custom" :sort-orders="tableSortOrders">
+              <template slot-scope="scope">
+                {{scope.row.orders_uv | formatNum(true)}}
+              </template>
+            </el-table-column>
+            <el-table-column fixed="right" width="160px" align="right" :label="$lang('支付转化率')" prop="pay_orders_uv"
+              :render-header="(h, obj) => keywordSearchTransDialogTableHeader(h, obj, true)" sortable="custom"
+              :sort-orders="tableSortOrders">
+              <template slot-scope="scope">
+                {{scope.row.pay_orders_uv | formatNum(true)}}
+              </template>
+            </el-table-column>
+          </el-table>
+          <el-pagination class="erp-el-pagination" background :page-size="10"
+            :current-page="keywordSearchTransDialogPage" hide-on-single-page
+            @current-change="keywordSearchTransDialogTablePageChange" layout="total, prev, pager, next, jumper"
+            :total="keywordSearchTransDialogData.totalCount" style="text-align: right;">
+          </el-pagination>
+        </el-dialog>
+      </section>
+
+      <div class="user-track" style="display: none">
+        <div class="chart-head">
+          <div class="chart-title">
+            {{$lang('流量分布及用户行为追踪')}}
+            <div class="date">{{$lang('站点')}}： {{ $lang(siteName) }}</div>
+          </div>
+        </div>
+        <div class="chart-operate">
+          <div class="operate-title">
+            {{$lang('展示设置')}}
+          </div>
+          <div class="operate-item">
+            {{$lang('横向')}}
+            <el-select v-model="lengthwaysNode" @change="getUserTrackMoudleData">
+              <el-option value="5"></el-option>
+              <el-option value="10"></el-option>
+            </el-select>
+            {{$lang('个节点')}},
+          </div>
+          <div class="operate-item">
+            {{$lang('纵向')}}
+            <el-select v-model="acrossNode" @change="getUserTrackMoudleData">
+              <el-option value="5"></el-option>
+              <el-option value="10"></el-option>
+            </el-select>
+            {{$lang('个页面')}}
+          </div>
+        </div>
+        <div class="chart-tooltip">
+          <strong>{{$lang('图表说明')}}</strong>：{{$lang('下图中，由蓝色矩形及黄色矩形组成的矩形代表一个具体页面，其中蓝色矩形代表')}}
+          <strong>{{$lang('未跳出会话数')}}</strong>,{{$lang('黄色矩形代表')}}
+          <strong>{{$lang('跳出会话数')}}</strong>
+        </div>
+        <div class="chart-info">
+          <div v-for="item in userTrackGather" class="info__item" :style="{width: infoItemWidth + 'px'}">
+            <div class="info__title">{{$lang(item.node)}}</div>
+            <div><span class="info__name">{{$lang('会话')}}</span> <span
+                class="info__num">{{item.session_num | formatNum}}</span></div>
+            <div><span class="info__name">{{$lang('跳出')}}</span> <span
+                class="info__num">{{item.flow_away_num | formatNum}}</span></div>
+          </div>
+        </div>
+
+        <div ref="userTrackChart" style="width: 100%; height: 1000px;"></div>
+      </div>
+
+    </div>
+
+  </div>
+  <script src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+  <script src="./Application/Tpl/Home/Public/js/vue-2.6.10.js"></script>
+  <script src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+  <script src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+  <script src="./Application/Tpl/Home/Public/js/element-ui-2.13.0.js"></script>
+  <script src="./Application/Tpl/Home/Public/js/queryString.js"></script>
+  <script src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+  <script src="./Application/Tpl/Home/Public/js/echarts-4.7.0.js"></script>
+  <script src="./Application/Tpl/Home/Public/js/lodash-4.17.15.js"></script>
+  <script src="./Application/Tpl/Home/DataCenter/components/ChartWrapper.js?v=<{$Think.config.VER_NUM}>">
+  </script>
+  <script src="./Application/Tpl/Home/DataCenter/components/ErpTooltip.js?v=<{$Think.config.VER_NUM}>">
+  </script>
+  <script src="./Application/Tpl/Home/DataCenter/utils/globalConstAndFunc.js?v=<{$Think.config.VER_NUM}>">
+  </script>
+
+  <script src="./Application/Tpl/Home/DataCenter/js/gp_user_analysis.js?v=<{$Think.config.VER_NUM}>">
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.config.VER_NUM}>">
+    <title>需求列表</title>
+</head>
+<style>
+    .el-input {
+        width: 95%;
+    }
+
+    .el-date-editor .el-range-input {
+        width: 35%;
+    }
+    .el-form-item__label{
+        display: flex;
+        line-height: normal;
+        height: 40px;
+        align-items: center;
+        overflow: hidden;
+    }
+    .custom-form-item .el-form-item__content{
+        margin: 0 !important;
+    }
+</style>
+
+<body class="orderList">
+    <div id="list" class="list-common" v-cloak style="margin-bottom:220px">
+        <!-- 搜索查询 start-->
+        <div class="orderList-search search-common">
+            <div class="search-toggle">
+                <el-row>
+                    <el-col :span="4" class="title-info-container">
+                        <div class="title-info">
+                           {{$lang('需求流程节点')}}
+                        </div>
+                    </el-col>
+                    <el-col :span="20" class="search-item-i">
+                        <span :class="{active:item.flag}" @click="selectAllProgress(item, index)" class="channel-item" v-for="(item, index) in baseData.scm_step">{{$lang(item.CD_VAL)}}</span>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="4" class="title-info-container">
+                        <div class="title-info">
+                            {{$lang('需求节点状态')}}
+                        </div>
+                    </el-col>
+                    <el-col :span="20" class="search-item-i">
+                        <span :class="{active:item.flag}" @click="selectSaleProgress(item, index)" class="channel-item" v-for="(item, index) in baseData.scm_demand_status">{{$lang(item.CD_VAL)}}</span>
+                    </el-col>
+                </el-row>
+            </div>
+            <!-- 排序方式 end-->
+            <!-- 搜索查询 start-->
+            <el-form ref="form" label-width="90px" :label-position="labelPosition">
+                <el-row>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('需求类型')">
+                            <el-select :popper-append-to-body="false" multiple v-model="demand_type" :placeholder="$lang('请选择需求类型')" style="width:100%;padding:0;">
+                                <el-option v-for="item in baseData.sell_demand_type" :label="$lang(item.CD_VAL)" :value="item.CD" :key="item.CD"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('业务类型')">
+                            <el-select :popper-append-to-body="false" multiple v-model="business_type" :placeholder="$lang('请选择业务类型')" style="width:100%;padding:0;">
+                                <el-option v-for="item in baseData.business_type" :label="item.CD_VAL" :value="item.CD" :key="item.CD"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('发货方式')">
+                            <el-select :popper-append-to-body="false" multiple v-model="receive_mode" :placeholder="$lang('请选择发货方式')" style="width:100%;padding:0;">
+                                <el-option v-for="item in baseData.delivery_type" :label="item.CD_VAL" :value="item.CD" :key="item.CD"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('CE评级')">
+                            <el-select :popper-append-to-body="false" multiple v-model="ce_level" :placeholder="$lang('请选择CE评级')" style="width:100%;padding:0;">
+                                <el-option v-for="(item, index) in ceRating" :key="index" :label="item" :value="item"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item class="custom-form-item" :label="$lang('需求编号/销售PO单号')">
+                            <el-input style="width: 68%" v-model="demand_code" :placeholder="$lang('请输入需求编号/销售PO单号')"></el-input>
+                            <!-- <el-select v-model="searchType" style="width:110px;padding: 0;" @change="third_po_no = '';demand_code = ''">
+                                <el-option :label="$lang('需求编号')" value="0"></el-option>
+                                <el-option :label="$lang('PO编号')" value="1"></el-option>
+                            </el-select> -->
+                            <!-- <el-input style="width: 68%" v-if="searchType == 0" v-model="demand_code" :placeholder="$lang('请输入需求编号')"></el-input>
+                            <el-input style="width: 68%" v-else v-model="third_po_no" :placeholder="$lang('请输入PO编号')"></el-input> -->
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('目标客户')">
+                            <el-input v-model="customer" :placeholder="$lang('请输入目标客户')"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('销售同事/销售助理')">
+                            <el-input v-model="seller" :placeholder="$lang('请输入销售同事/销售助理')"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('销售团队')">
+                            <el-select filterable v-model="form.sell_team" :placeholder="$lang('请选择销售团队')" style="width:100%;padding:0;">
+                                <el-option v-for="item in baseData.sell_team" :label="item.CD_VAL" :value="item.CD" :key="item.CD"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('创建人')">
+                            <el-input v-model="create_user" :placeholder="$lang('请输入创建人')"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('供应商')">
+                            <el-input v-model="supplier" :placeholder="$lang('请输入供应商')"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('采购同事')">
+                            <el-input v-model="purchaser" :placeholder="$lang('请输入采购同事')"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('采购团队')">
+                            <el-select filterable v-model="form.purchaser_team" :placeholder="$lang('请选择采购团队')" style="width:100%;padding:0;">
+                                <el-option v-for="item in baseData.purchase_team" :label="item.CD_VAL" :value="item.CD" :key="item.CD"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-input :placeholder="$lang('请输入内容')" v-model="keyword" class="input-with-select" style="margin-left: 1%;">
+                            <el-select v-model="keyword_type" slot="prepend" :placeholder="$lang('商品名称')">
+                                <el-option :label="$lang('商品名称')" value="0"></el-option>
+                                <el-option label="BarCode/SKUID" value="1"></el-option>
+                            </el-select>
+                        </el-input>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :title="$lang('毛利率（退税后）')" :label="$lang('毛利率（退税后）')">
+                            <el-input v-model="min_profit_margin" style="width:34%;margin-left: 20px;" :placeholder="$lang('最小')"></el-input> -
+                            <el-input v-model="max_profit_margin" style="width:42%;" :placeholder="$lang('最大')"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('创建日期')">
+                            <el-date-picker style="width:95%;height: 40px;" value-format="yyyy-MM-dd" size="small" v-model="form.dateRange" type="daterange"
+                                align="right" unlink-panels :range-separator="$lang('至')" :start-placeholder="$lang('开始日期')"
+                                :end-placeholder="$lang('结束日期')" :picker-options="pickerOptions"></el-date-picker>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('法务审批人')">
+                            <el-input v-model="legal_man" :placeholder="$lang('请输入法务审批人')"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                            <el-form-item :label="$lang('销售领导')">
+                                <el-input v-model="sales_leader" :placeholder="$lang('销售领导')"></el-input>
+                            </el-form-item>
+                    </el-col>
+                </el-row>
+
+                <div class="btns">
+                    <button @click="doSearch" class="btn-search" name="search" type="button">
+                        {{$lang('搜索')}}
+                    </button>
+                    <button @click="doReset" class="btn-reset" name="reset" type="button">
+                        {{$lang('重置')}}
+                    </button>
+                </div>
+
+            </el-form>
+            <!-- 搜索查询 end-->
+        </div>
+        <!-- 分割线 start-->
+        <div class="orderList-line line-split"></div>
+        <!-- 分割线 end-->
+        <!-- 订单表格主体 start-->
+        <div class="orderList-Main list-common-main">
+            <header>
+                <el-row>
+                    <el-col :span="16">
+                        {{$lang('搜索结果:共')}}
+                            <span class="num-bold">{{totalCount}}</span>
+                            {{$lang('条记录')}}
+                    </el-col>
+                    <el-col :span="8" class="text-right">
+                        <el-button type="primary" @click="createDemand()">
+                            {{$lang('创建需求')}}
+                        </el-button>
+                    </el-col>
+                </el-row>
+            </header>
+
+            <el-table border show-header :data="listData" tooltip-effect="dark" style="width: 100%" class="order-list-table table-common"
+                v-loading="tableLoading">
+                <el-table-column prop="demand_code" :label="$lang('需求编号')"></el-table-column>
+                <el-table-column :label="$lang('需求类型')">
+                    <template scope="scope">
+                        {{$lang(scope.row.demand_type)}}
+                    </template>
+                </el-table-column>
+                <el-table-column  :label="$lang('目标客户')">
+                        <template scope="scope">
+                                {{$lang(scope.row.customer)}}
+                            </template>
+                </el-table-column>
+                <el-table-column prop="goods_name" :label="$lang('商品名称')">
+                    <template scope="scope">
+                        {{$lang(scope.row.goods_name)}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('销售金额（含税）')">
+                    <template slot-scope="scope">
+                        {{scope.row.sell_currency}} {{scope.row.sell_amount | separatNum}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('毛利率(退税后)')">
+                    <template slot-scope="scope">
+                        {{scope.row.gross_profit_rate_after_tax_refund | percentage}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="ce_level" :label="$lang('CE(退税后)')"></el-table-column>
+                <el-table-column prop="sell_team" :label="$lang('销售团队')"></el-table-column>
+                <el-table-column prop="seller" :label="$lang('销售同事')"></el-table-column>
+                <el-table-column prop="create_user" :label="$lang('创建人')"></el-table-column>
+                <el-table-column  :label="$lang('需求流程节点')">
+                        <template scope="scope">
+                                {{$lang(scope.row.step)}}
+                        </template>
+                </el-table-column>
+                <el-table-column  :label="$lang('需求节点状态')">
+                        <template scope="scope">
+                                {{$lang(scope.row.status)}}
+                        </template>
+                </el-table-column>
+                <!-- <el-table-column prop="sales_team" label="待修改"></el-table-column> -->
+                <!-- <el-table-column prop="sales_team" label="法务审批人"></el-table-column> -->
+                <el-table-column prop="create_time" :label="$lang('创建时间')"></el-table-column>
+                <el-table-column :label="$lang('操作')">
+                    <template slot-scope="scope">
+                        <el-button type="success" size="small" @click="viewDraft(scope.row.id)">
+                            {{$lang('查看')}}
+                        </el-button>
+                        <!-- <el-button type="success" size="small"><a href="/index.php?g=scm&m=display&a=demand&type=36">查看</a></el-button> -->
+                    </template>
+                </el-table-column>
+            </el-table>
+
+            <el-pagination background @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="form.p"
+                :page-sizes="[10, 30, 50, 100]" :page-size="form.rows" layout="sizes,prev, pager, next, jumper" :total="totalCount"></el-pagination>
+        </div>
+        <!-- 订单表格主体 end-->
+    </div>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js?<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script>
+        if(getCookie('think_language') !== "zh-cn" ){
+            ELEMENT.locale(ELEMENT.lang.en)
+        }
+
+        de = new Vue({
+            el: '#list',
+            data: {
+                tableLoading: true,
+                labelPosition: 'left',
+                listData: [],
+                totalCount: 10,
+                baseData: {},
+                stepIndex: [0],
+                salesIndex: [0],
+                ceRating: ["S", "A", "B", "C", "D", "F"],
+                demand_code: "",
+                third_po_no:'',
+                legal_man: '',
+                sales_leader:'',
+                customer: "",
+                seller: "",
+                create_user: "",
+                supplier: "",
+                purchaser: "",
+                keyword_type: '',
+                keyword: "",
+                demand_type: [],
+                business_type: [],
+                receive_mode: [],
+                ce_level: [],
+                searchType:'0',
+                min_profit_margin: undefined,
+                max_profit_margin: undefined,
+                createInterface:1,
+                form: {
+                    step: [],
+                    status: [],
+                    demand_type: [],
+                    business_type: [],
+                    receive_mode: [],
+                    demand_code: '',
+                    legal_man: '',
+                    sales_leader:'',
+                    customer: '',
+                    seller: '',
+                    third_po_no:'',
+                    sell_team: '',
+                    create_user: '',
+                    supplier: '',
+                    purchaser: '',
+                    purchaser_team: '',
+                    keyword: '',
+                    keyword_type: '',
+                    ce_level: [],
+                    min_profit_margin: undefined,
+                    max_profit_margin: undefined,
+                    min_create_time: undefined,
+                    max_create_time: undefined,
+                    dateRange: '',
+                    rows: 10,
+                    p: 1,
+                },
+                pickerOptions: {
+
+                },
+                queryPost: function (url, param) {
+                    var headers = {
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    }
+                    return axios.post(url, Qs.stringify(param), headers);
+                },
+                storageKey:'storage0001',
+            },
+            created: function () {
+                this.pickerOptions = {
+                    shortcuts: [{
+                        text: this.$lang("最近一周"),
+                        onClick: function (picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: this.$lang("最近一个月"),
+                        onClick: function (picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: this.$lang("最近三个月"),
+                        onClick: function (picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }]
+                }
+              
+                this.getBaseData();
+                this.getListData();
+                this.monitorStorage();
+            },
+            methods: {
+                monitorStorage:function(){
+                    var _this = this;
+                    window.onstorage = function(storage){
+                        if(storage.key == _this.storageKey){
+                            _this.getListData();
+                            localStorage.removeItem(storage.key);
+                        }
+                    }
+                },
+                setStatus:function(data,keys){
+                    data[0].flag = !keys.length;
+                    data.forEach(function (item) {
+                        keys.forEach(function (key) {
+                            item.flag = item.CD == key;
+                        })
+                    })
+                },
+                getBaseData() {
+                    this.step = ["N002120400"];
+                    let param = {
+                        cd_type: {
+                            scm_demand_status: false,
+                            sell_demand_type: false,
+                            purchase_team: false,
+                            business_type: false,
+                            delivery_type: false,
+                            sell_team: false,
+                            scm_step: false
+                        }
+                    }
+                    this.queryPost("/index.php?g=common&m=index&a=get_cd", param).then((res) => {
+                        var _data = res.data;
+                        if (_data.code === 2000) {
+                            _data.data.scm_demand_status.unshift({
+                                CD: "",
+                                flag: true,
+                                CD_VAL: this.$lang('全部')
+                            });
+                            _data.data.scm_step.unshift({
+                                CD: "",
+                                flag: true,
+                                CD_VAL: this.$lang('全部')
+                            });
+                            this.baseData = _data.data;
+                        } else {
+                            this.$message.error(this.$lang(_data.msg));
+                        }
+                        // this.getStorageValue()
+                    }).catch(function (err) {
+                        console.log(err);
+                    });
+                },
+                getListData: function () {
+                    this.tableLoading = true;
+                    this.form.min_create_time = this.form.dateRange && this.form.dateRange[0];
+                    this.form.max_create_time = this.form.dateRange && this.form.dateRange[1];
+                    this.queryPost("./index.php?g=scm&m=demand&a=demand_list&p=" + this.form.p, this.form).then((res) => {
+                        var _data = res.data;
+                        if (_data.code == 2000) {
+                            this.tableLoading = false;
+                            this.listData = _data.data.list;
+                            this.totalCount = _data.data.page.total_rows - 0;
+                        } else {
+                            this.$message.error(this.$lang("获取列数据失败"));
+                        }
+                    }).catch(function (err) {
+                        console.log(err);
+                    });
+                },
+                selectAllProgress: function (item, index) {
+                    this.$set(item, "flag", !item.flag);
+                    this.multiSelect('scm_step', 'step', item);
+                    this.form.p = 1;
+                },
+                selectSaleProgress: function (item, index) {
+                    this.$set(item, "flag", !item.flag);
+                    this.multiSelect('scm_demand_status', 'status', item);
+                    this.form.p = 1;
+                },
+                //按钮多选
+                multiSelect: function (baseName, selName, item) {
+                    if (item.CD) {
+                        item.flag && this.form[selName].push(item.CD) || (this.form[selName] = this.form[selName].filter(v => v != item.CD));
+                        this.baseData[baseName][0].flag = !this.form[selName].length;
+                    } else {
+                        this.form[selName].splice(0, this.form[selName].length);
+                        this.baseData[baseName].map(v => v.flag = false);
+                        this.baseData[baseName][0].flag = true;
+                    }
+                },
+                doSearch: function () {
+                    //优化input的oninput时form监听请求多次
+                    this.form.demand_code = this.demand_code;
+                    this.form.third_po_no = this.third_po_no;
+                    this.form.legal_man = this.legal_man;
+                    this.form.sales_leader = this.sales_leader;
+                    this.form.customer = this.customer;
+                    this.form.seller = this.seller;
+                    this.form.create_user = this.create_user;
+                    this.form.supplier = this.supplier;
+                    this.form.purchaser = this.purchaser;
+                    this.form.keyword = this.keyword;
+                    this.form.min_profit_margin = this.min_profit_margin;
+                    this.form.max_profit_margin = this.max_profit_margin;
+                    this.form.keyword_type = this.keyword_type;
+                    this.form.demand_type = this.demand_type;
+                    this.form.business_type = this.business_type;
+                    this.form.receive_mode = this.receive_mode;
+                    this.form.ce_level = this.ce_level;
+
+                    this.getListData(this.form);
+
+                },
+                doReset: function () {
+                    //优化input的oninput时form监听请求多次
+                    this.demand_type = [];
+                    this.business_type = [];
+                    this.receive_mode = [];
+                    this.ce_level = [];
+                    this.demand_code = '';
+                    this.third_po_no = '';
+                    this.legal_man = '';
+                    this.sales_leader = '',
+                    this.customer = '';
+                    this.seller = '';
+                    this.create_user = '';
+                    this.supplier = '';
+                    this.purchaser = '';
+                    this.keyword = '';
+                    this.min_profit_margin = undefined;
+                    this.max_profit_margin = undefined;
+
+                    this.resetButton(this.baseData.scm_demand_status);
+                    this.resetButton(this.baseData.scm_step);
+
+                    this.form = {
+                        step: [],
+                        status: [],
+                        demand_type: [],
+                        business_type: [],
+                        receive_mode: [],
+                        demand_code: '',
+                        legal_man: '',
+                        sales_leader:'',
+                        customer: '',
+                        seller: '',
+                        sell_team: '',
+                        create_user: '',
+                        supplier: '',
+                        purchaser: '',
+                        purchaser_team: '',
+                        keyword: '',
+                        keyword_type: '',
+                        ce_level: [],
+                        min_profit_margin: undefined,
+                        max_profit_margin: undefined,
+                        min_create_time: undefined,
+                        max_create_time: undefined,
+                        dateRange: '',
+                        rows: 10,
+                        p: 1,
+                    };
+                    this.stepIndex = 0;
+                    this.salesIndex = 0;
+                },
+                resetButton: function (_arr) {
+                    for (var i = 0, len = _arr.length; i < len; i++) {
+                        _arr[i].flag = i ? false : true;
+                    };
+                },
+                handleSizeChange: function (val) {
+                    this.form.rows = val;
+                },
+                handleCurrentChange: function (val) {
+                    this.form.p = val;
+                },
+
+                createDemand: function () {
+                    this.createInterface = sessionStorage.getItem('demandCreateInterface') || 1;
+                    this.route(this.$lang('创建需求'), "demand_detail", "create",this.createInterface++);
+                    sessionStorage.setItem('demandCreateInterface',this.createInterface);
+                },
+                viewDraft: function (id) {
+                    this.queryPost("/index.php?g=scm&m=demand&a=demand_detail", {
+                        id: id
+                    }).then((res) => {
+                        var _data = res.data;
+                        if (_data.code == 2000) {
+                            if (_data.data.status_list.step === "N002120100" || _data.data.status_list.step === "N002120200" || _data.data.status_list.step === "N002120300") { // 草稿
+                                this.route(this.$lang('需求详情'), "demand_draft", id);
+                            } else {
+                                this.route(this.$lang('需求详情'), "demands", id + '&storageKey=storage0001');
+                            };
+                        } else {
+                            this.$message.error(this.$lang("请求失败"));
+                        };
+                    }).catch(function (err) {
+                        console.log(err);
+                    });
+
+                },
+                //跳转详情页
+                route: function (title, _html, id, multiple) {
+                    var dom = document.createElement("a"),
+                        multiple = multiple ? "&multiple=" + multiple:'',
+                        _href = "/index.php?g=scm&m=display&a=" + _html + "&type=" + id + multiple;
+                    dom.setAttribute("onclick", "opennewtab(this,'" + title + "')");
+                    dom.setAttribute("_href", _href);
+                    dom.click();
+                },
+
+            },
+            //监听数据
+            watch: {
+                form: {
+                    handler(newValue, oldValue) {
+                        this.getListData(newValue);
+                    },
+                    deep: true
+                }
+
+            },
+            //过滤器
+            filters: {
+                separatNum: function (num) {//千分位方法
+                    if (!num) {
+                        return
+                    };
+                    num = num + "";
+                    var _arr = num.split(".");
+                    return _arr[1] === "00" ? (num - 0).toLocaleString() + ".00" : (num - 0).toLocaleString();
+                },
+                percentage: function (num) {
+
+                    return num ? ((num * 100).toFixed(2) + "%") : '';
+                },
+            }
+        })
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<link rel="stylesheet" type="text/css" href="../Public/css/H-ui.min.css" />
+<link rel="stylesheet" type="text/css" href="../Public/css/stock_new.css" />
+<link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+<style>
+    .show_warehouse_params_content {
+        padding: 10px;
+    }
+    .label-secondary, .badge-secondary{
+        background-color: #3bb4f2; width: 165px;
+        text-align: center;
+        line-height: 30px;
+        margin-bottom: 10px;
+        height: 32px;
+        cursor: pointer;
+    }
+    .label-success, .badge-success{
+        background-color:#5eb95e; width: 165px;
+        text-align: center;
+        line-height: 30px;
+        margin-bottom: 10px;
+        height: 32px;
+        cursor: pointer;
+    }
+    .layui-layer-title{
+        height:50px !important;
+        line-height: 50px !important;
+        font-size: 0.9rem !important;
+        font-weight: bold;
+    }
+    #layui-layer1{
+        height:620px !important;
+        width: 893px !important;
+    }
+</style>
+<body>
+<div id="tab_demo" class="HuiTab warehouse_country">
+    <!--已选-->
+    <div class="panel panel-default">
+        <div class="panel-header"><{$Think.lang.已支持国家}>({{total}})</div>
+        <div class="show_warehouse_params_content">
+            <label v-for="(key, list) in warehouse_params">
+                <span class="label label-success radius" @click="delCountry(list, key)" title="{{list.three_char}}{{list.zh_name}}">{{list.three_char}}{{list.zh_name}}</span>
+            </label>
+        </div>
+    </div>
+    <div class="panel panel-default">
+        <div class="panel-header"><{$Think.lang.未支持国家}></div>
+        <!--未选-->
+        <div class="tabCon show_warehouse_params_content">
+            <label v-for="(key, list) in countries">
+                <span class="label label-secondary radius" @click="addCountry(list, key)" title="{{list.three_char}}{{list.zh_name}}">{{list.three_char}}{{list.zh_name}}</span>
+            </label>
+        </div>
+    </div>
+</div>
+<script src="../Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script src="../Public/js/H-ui.js"></script>
+<script src="../Public/js/vue.1.7.js"></script>
+<script src="../Public/lib/layer-v3.0.3/layer/layer.js"></script>
+<script>
+    $(function(){
+        $.Huitab("#tab_demo .tabBar span", "#tab_demo .tabCon", "current", "click", "0");
+    });
+    var vm = new Vue({
+        el: '#tab_demo',
+        data: {
+            countries: <{$countries}>,
+            warehouse_params: <{$warehouse_params}>,
+            warehouse_id: <{$warehouse_id}>,
+            total: <{$total}>
+        },
+        watch:{
+
+        },
+        methods: {
+            addCountry: function(e, i) {
+                if (!this.warehouse_params) this.warehouse_params = [];
+                this.pushCountry(e, false);
+                this.popCountry(i, true);
+                this.sendRequest(e);
+                this.total = this.total+1;
+            },
+            delCountry: function(e, i) {
+                if (!this.countries) this.countries = [];
+                this.pushCountry(e, true);
+                this.popCountry(i, false);
+                this.sendRequest(e);
+                this.total = this.total-1;
+            },
+            popCountry: function(i, bool) {
+                if (bool == true) this.countries.splice(i, 1);
+                else this.warehouse_params.splice(i, 1);
+            },
+            pushCountry: function (e, bool) {
+                if (bool == true) this.countries.push(e);
+                else this.warehouse_params.push(e);
+            },
+            sendRequest: function (e) {
+                var url = '<{:U("StockExtend/update_country")}>';
+                var data = {'area': e.id, 'warehouse_id': this.warehouse_id, 'sort': e.rank};
+                $.ajax({
+                    type: "POST",
+                    async: true,
+                    url: url,
+                    data: data,
+                    beforeSend: function () {
+                        layer.msg('<{$Think.lang.处理中}>', {icon: 16, shade: 0.3, time: 2});
+
+                    },
+                    success: function (response) {},
+                    error: function () {}
+                });
+            }
+        }
+    });
+</script>
+</body>
+</html>

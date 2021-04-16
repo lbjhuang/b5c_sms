@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>B2B应收报表</title>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/../Hr/hrstyle.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+</head>
+
+<style>
+    [v-cloak] {
+        display: none;
+    }
+    .btn-pub{
+        outline: none;
+    }
+    .show-list .table-list tr th{
+        padding:0px 6px;
+    }
+    .use-row .col-100{
+        overflow: auto;
+    }
+    .el-pagination{
+        height: 200px;
+    }
+    .show-list .el-form-item__label{
+        padding-top:0px;
+        padding-bottom:0px;
+    }
+    .select_box{
+        padding: 0.1rem 0.3rem;
+        font-size: 0.7rem;
+        color: #263238;
+        border-radius: 0.2rem;
+        border: 1px solid #D7DADD;
+        width: calc(90% - 80px);
+        height: 1.6rem;
+        box-sizing: border-box;
+        min-width: 220px;
+    }
+</style>
+
+<body>
+<div id="cost" class="show-list" v-cloak>
+    <div style="display: flex;    align-items: center;">
+        <span style="    font-size: 16px;font-weight: bold;">{{$lang('距今天数')}}：</span>
+        <el-checkbox-group v-model="data.days">
+            <el-checkbox-button v-for="day in select.select1" :label="day.key" :key="day.key">{{$lang(day.days)}}</el-checkbox-button>
+        </el-checkbox-group>
+    </div>
+    <el-form ref="form" :model="form" :label-position="labelPosition" label-width="130px">
+        <div class="use-row">
+            <div class="col-100">
+                <table class="search-table">
+                    <tbody>
+                    <tr>
+                        <td>
+                            <el-form-item :label="$lang('客户名称')">
+                                <el-select :filterable="true"  multiple  :placeholder="$lang('全部')"
+                                           v-model="searchData.client_name" clearable>
+                                    <el-option :key="item.ID" :label="item.SP_NAME" :value="item.SP_NAME" v-for="item in select.client_name"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </td>
+                        <td>
+                            <el-form-item :label="$lang('销售团队')">
+                                <el-select :filterable="true"  multiple  :placeholder="$lang('全部')"
+                                           v-model="searchData.sales_team" clearable>
+                                    <el-option :key="item.CD" :label="item.CD_VAL" :value="item.CD" v-for="item in baseData.sell_team"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </td>
+                        <td>
+                            <div class="col-lg-3 col-md-3 col-sm-3">
+                                <select class="select_box" name="orderId" v-model="searchData.order_number.type" style="width: 130px;min-width: 130px;">
+                                    <option value="po">{{$lang('PO单号')}}</option>
+                                    <option value="b2b">{{$lang('B2B订单号')}}</option>
+                                    <option value="ship">{{$lang('发货单号')}}</option>
+                                </select>
+                                <input class="select_box" type="text" v-model="searchData.order_number.value"  style="width: 50%;min-width: 230px;" >
+                            </div>
+<!--                            <el-form-item :label="$lang('B2B订单号')">
+                                <el-select :filterable="true" collapse-tags multiple :placeholder="$lang('全部')"
+                                           v-model="form.sale_team" clearable>
+                                    <el-option :key="item.CD" :label="item.CD_VAL" :value="item.CD" v-for="item in baseData.sell_team"></el-option>
+                                </el-select>
+                            </el-form-item>-->
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <el-form-item :label="$lang('销售同事')">
+                                <el-select :filterable="true"  multiple filterable    :placeholder="$lang('全部')"
+                                           v-model="searchData.po_user" clearable>
+                                    <el-option :key="item.id" :label="item.name" :value="item.name" v-for="item in select.users"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </td>
+                        <td>
+                            <el-form-item :label="$lang('我方公司')">
+                                <el-select :filterable="true"   multiple :placeholder="$lang('全部')"
+                                           v-model="searchData.our_company" clearable>
+                                    <el-option :key="item.CD" :label="item.CD_VAL" :value="item.CD_VAL" v-for="item in baseData.our_company"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </td>
+                        <td>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </el-form>
+    <div class="btns">
+        <el-button type="primary" size="mini" @click="search">{{$lang('查询')}}</el-button>
+        <el-button size="mini" @click="res">{{$lang('重置')}}</el-button>
+    </div>
+    <div class="baseline"></div>
+    <div class="use-row create-wrap">
+        <div class="col-20 result-num occupy">
+            {{$lang('搜索结果')}}：&nbsp;&nbsp;{{$lang('共')}}
+            <b>{{totalCount}}</b> {{$lang('条')}}
+        </div>
+        <div class="col-20 result-num occupy">
+            {{$lang('应收金额')}}：&nbsp;&nbsp;CNY
+            <b>{{sum_current_receivable_cny}}</b>
+        </div>
+        <div class="col-20 result-num occupy">
+            {{$lang('应收金额')}}：&nbsp;&nbsp;USD
+            <b>{{sum_current_receivable_usd}}</b>
+        </div>
+        <div class="col-40 text-right occupy" style="width: 50%">
+            <el-button type="primary" @click="getB2bReportExcel()">{{$lang('查看历史应收')}}</el-button>
+            <?php if(ButtonAction::hidden()){ ?>
+            <el-button type="primary" @click="exportList()">{{$lang('导出')}}</el-button>
+            <?php }?>
+        </div>
+    </div>
+    <div class="use-row">
+        <div class="col-100">
+            <table class="table-list" v-loading="tableLoading">
+                <thead>
+                <tr>
+                    <th>{{$lang('B2B订单号')}}</th>
+                    <th>{{$lang('PO单号')}}</th>
+                    <th>{{$lang('发货单号')}}</th>
+                    <th>{{$lang('客户名称')}} </th>
+                    <th>{{$lang('我方公司')}} </th>
+                    <th>{{$lang('销售团队')}} </th>
+                    <th>{{$lang('销售同事')}}</th>
+                    <th>{{$lang('订单币种')}}</th>
+                    <th>{{$lang('初始应收(订单币种)')}}</th>
+                    <th>{{$lang('剩余应收(订单币种)')}}</th>
+                    <th>{{$lang('剩余应收(CNY)')}}</th>
+                    <th>{{$lang('剩余应收(USD)')}}</th>
+                    <th>{{$lang('应收产生日期')}}</th>
+                    <th>{{$lang('距今天数')}}</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="(item,index) in dataList">
+                    <td>{{item.b2b_order_no}}</td>
+                    <td>{{item.po_no}}</td>
+                    <td>{{item.ship_no}}</td>
+                    <td>{{$lang(item.client_name)}}</td>
+                    <td>{{$lang(item.our_company)}}</td>
+                    <td>{{item.SALES_TEAM_val}}</td>
+                    <td>{{item.po_user}}</td>
+                    <td>{{item.order_currency_cd_val}}</td>
+                    <td>{{item.order_currency_cd_val}} {{item.initial_receivabl}}</td>
+                    <td>{{item.order_currency_cd_val}} {{item.remaining_receivabl}}</td>
+                    <td>CNY {{item.remaining_receivabl_cny}}</td>
+                    <td>USD {{item.remaining_receivabl_usd}}</td>
+                    <td>{{item.due_date}}</td>
+                    <td>{{item.from_today	}}</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="use-row">
+        <div class="col-100 text-right">
+            <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="form.page"
+                           :page-sizes="[10,20, 50, 100, 200]" :page-size="form.page_size" layout="sizes, prev, pager, next,jumper"
+                           :total="totalCount"></el-pagination>
+        </div>
+    </div>
+</div>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+<script src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script>
+    if (getCookie('think_language') !== "zh-cn") {
+        ELEMENT.locale(ELEMENT.lang.en)
+    }
+    var way = new Vue({
+        el: '#cost',
+        data: {
+            loading:false,
+            data:{
+              days:[1],
+            },
+            select:{
+                users:[],
+                select1:[{
+                    key:1,
+                    days:'全部'
+                },{
+                    key:2,
+                    days:'<30天'
+                },{
+                    key:3,
+                    days:'30-59天'
+                },{
+                    key:4,
+                    days:'60-89天'
+                },{
+                    key:5,
+                    days:'90-120天'
+                },{
+                    key:6,
+                    days:'>120天'
+                }],
+                client_name:[]
+            },
+            sum_current_receivable_usd:0,
+            sum_current_receivable_cny:0,
+            clearDate: false,
+            labelPosition: 'left',
+            totalCount: 0,
+            tableLoading: false,
+            onwayAmount: 0,
+            searchData:{
+                "from_today": [],
+                "client_name": [],
+                "sales_team": [],
+                "order_number": {
+                    "type": "b2b",
+                    "value": ""
+                },
+                our_company:[],
+                "po_user": []
+            },
+            form: {
+                zd_date: [],
+                sale_no:"",
+                our_company: [],
+                sale_team: [],
+                po_date: [],
+                warehouse: [],
+                sku_upc_id:"",
+                spu_name:"",
+                zd_user:[],
+                relation_type:[],
+                plat_cd:[],
+                store_id:[],
+                customer:'',
+                page: 1,
+                page_size: 10
+            },
+            baseData: {
+            },
+            storeList:[],
+            dataList: [],
+            userList: [],
+            pickerOptions: {},
+            dateNow: utils.dateFormat(new Date(), 'yyyy-MM-dd'),
+        },
+        watch:{
+            'data.days':function(v,oldv){
+                if(v.length === 0){
+                    this.data.days = [1]
+                }else if(oldv.indexOf(1) === -1 && v.indexOf(1) > -1){
+                    this.data.days = [1]
+                }else if(v.indexOf(1) === -1 && v.length === this.select.select1.length-1){
+                    this.data.days = [1]
+                }else if(v.length>1){
+                    this.data.days.remove(1)
+                }
+                this.search()
+            }
+        },
+        created: function () {
+            this.pickerOptions = {
+                disabledDate(time) {
+                    return time.getTime() < new Date('2018-07-31');
+                },
+                shortcuts: [{
+                    text: this.$lang("最近一周"),
+                    onClick: function (picker) {
+                        const end = new Date();
+                        const start = new Date();
+                        start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+                        picker.$emit('pick', [start, end]);
+                    }
+                }, {
+                    text: this.$lang("最近一个月"),
+                    onClick: function (picker) {
+                        const end = new Date();
+                        const start = new Date();
+                        start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+                        picker.$emit('pick', [start, end]);
+                    }
+                }, {
+                    text: this.$lang("最近三个月"),
+                    onClick: function (picker) {
+                        const end = new Date();
+                        const start = new Date();
+                        start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+                        picker.$emit('pick', [start, end]);
+                    }
+                }]
+            }
+
+            this.getBaseData();
+            this.getStoreList();
+            this.search();
+        },
+        methods: {
+            res:function(){
+                this.searchData = {
+                    "from_today": [],
+                    "client_name": [],
+                    "sales_team": [],
+                    "order_number": {
+                        "type": "b2b",
+                        "value": ""
+                    },
+                    our_company:[],
+                    "po_user": []
+                }
+                this.form.page = 1
+                this.data.days = [1]
+            },
+            remoteMethod:function(value){
+                console.log(value)
+            },
+            getBaseData: function () {
+                var _this = this;
+                var param = {
+                    cd_type: {
+                        our_company: false,
+                        warehouse:false,
+                        sell_team:false,
+                        plat:false,
+                        relation_type:false
+                    }
+                }
+                axios.post("/index.php?g=common&m=index&a=get_cd", param).then(function (res) {
+                    if (res.data.code == 2000) {
+                        _this.baseData = res.data.data;
+                    }
+                })
+                axios.post("/index.php?g=common&m=user&a=search_user", {name:''}).then(function (res) {
+                    if (res.data.code == 2000) {
+                        _this.select.users = res.data.data;
+                    }
+                })
+
+
+                axios.post("/index.php?g=common&m=index&a=search_customer_or_supplier", {
+                    "supplier_id":"",
+                    "type":1,
+                    "all":true
+                }).then(function (res) {
+                    if (res.data.code == 2000) {
+                        _this.select.client_name = res.data.data;
+                    }
+                })
+
+            },
+            selectPlatform(val){
+                this.getStoreList(val)
+            },
+            getStoreList(platform){
+                var _this = this;
+                var param = {
+                    plat_form:platform
+                }
+                axios.post("/index.php?g=Oms&m=Order&a=storesGet", param).then(function (res) {
+                    if (res.data.status == 200000) {
+                        _this.storeList = (res.data.data.length>0)?res.data.data:[];
+                    }
+                })
+            },
+            remoteMethod(query) {
+                var _this = this;
+                if (query !== '') {
+                    axios.post('/index.php?g=common&m=user&a=search_user', Qs.stringify({ name: query }))
+                        .then(function (res) {
+                            _this.userList = res.data.data || [];
+                        })
+                } else {
+                    this.userList = [];
+                }
+            },
+            search: function () {
+                var _this = this;
+                this.searchData.from_today = this.data.days
+                if(this.searchData.from_today.length === 1 && this.searchData.from_today[0] === 1){
+                    this.searchData.from_today = []
+                }
+                var param = {
+                    "search": this.searchData,
+                    "pages": {
+                        "per_page": this.form.page_size,
+                        "current_page": this.form.page
+                    }
+                };
+                this.tableLoading = true;
+
+                axios.post("/index.php?m=Report&a=b2bReceivable", param).then(function (res) {
+                    var data = res.data;
+                    _this.tableLoading = false;
+                    if (data.code == 200) {
+                        _this.dataList = data.data.list;
+                        _this.totalCount = Number(data.data.page.total);
+                        _this.sum_current_receivable_cny = data.data.sum_current_receivable_cny
+                        _this.sum_current_receivable_usd = data.data.sum_current_receivable_usd
+                    } else {
+                        _this.$message({
+                            message: _this.$lang('获取数据失败'),
+                            type: 'warning'
+                        });
+                    }
+                })
+            },
+            handleSizeChange: function (size) {
+                this.form.page_size = size;
+                this.search();
+            },
+            handleCurrentChange: function (currentPage) {
+                this.form.page = currentPage;
+                this.search();
+            },
+            reset: function () {
+                this.form = {
+                    zd_date: [],
+                    sale_no:"",
+                    our_company: [],
+                    sale_team: [],
+                    po_date: [],
+                    warehouse: [],
+                    sku_upc_id:"",
+                    spu_name:"",
+                    zd_user:[],
+                    relation_type:[],
+                    plat_cd:[],
+                    store_id:[],
+                    customer:'',
+                    page: 1,
+                    page_size:this.form.page_size
+                }
+            },
+            download (data) {
+                if (!data) {
+                    return
+                }
+                let url = window.URL.createObjectURL(new Blob([data]))
+                let link = document.createElement('a')
+                link.style.display = 'none'
+                link.href = url
+                link.setAttribute('download', 'excel.xlsx')
+
+                document.body.appendChild(link)
+                link.click()
+            },
+            getB2bReportExcel: function (){
+                var dom = document.createElement('a');
+                var _href = "/index.php?g=report&m=receivable&a=receivable_excel";
+                dom.setAttribute("onclick", "opennewtab(this,'" + this.$lang('B2B历史应收') + "')");
+                dom.setAttribute("_href", _href);
+                dom.click();
+            },
+            exportList: function () {
+                var _this = this;
+                this.searchData.from_today = this.data.days
+                if(this.searchData.from_today.length === 1 && this.searchData.from_today[0] === 1){
+                    this.searchData.from_today = []
+                }
+                var param = {
+                    "search": this.searchData,
+                    "pages": {
+                        "per_page": this.form.page_size,
+                        "current_page": this.form.page
+                    }
+                };
+                axios.post('/index.php?m=Report&a=b2bReceivableExport', param, {
+                    responseType: 'blob'
+                }).then(res => {
+                    let blob = res.data
+                    let reader = new FileReader()
+                    reader.readAsDataURL(blob)
+                    reader.onload = (e) => {
+                        let a = document.createElement('a')
+                        a.download = '导出表格'
+                        a.href = e.target.result
+                        document.body.appendChild(a)
+                        a.click()
+                        document.body.removeChild(a)
+                    }
+                })
+
+               /* loginDown(param)*/
+               /* axios.post({
+                    method: 'post',
+                    url: '/index.php?m=Report&a=b2bReceivableExport',
+                    data: param,
+                    responseType: 'blob'
+                }).then(function (res) {
+                    _this.download(res)
+                })*/
+            },
+        },
+        filters: {
+            numberFormat: function (val) {
+                if (val) {
+                    var num = parseFloat(val).toLocaleString();
+                    return num.indexOf('.') > 0 ? num : num + ".00";
+                }
+            }
+        },
+    })
+
+    Array.prototype.remove = function(val) {
+        var index = this.indexOf(val);
+        if (index > -1) {
+            this.splice(index, 1);
+        }
+    };
+    function DownLoadFile(options) {
+        var config = $.extend(true, { method: 'post' }, options);
+        var $iframe = $('<iframe id="down-file-iframe" />');
+        var $form = $('<form target="down-file-iframe" method="' + config.method + '" />');
+        $form.attr('action', config.url);
+        for (var key in config.data) {
+            $form.append('<input type="hidden" name="' + key + '" value="' + config.data[key] + '" />');
+        }
+        $iframe.append($form);
+        $(document.body).append($iframe);
+        $form[0].submit();
+        $iframe.remove();
+    }
+
+    function loginDown(data){
+
+        var url = "/index.php?m=Report&a=b2bReceivable";
+
+        DownLoadFile({
+            url:url, //请求的url
+            data:data//要发送的数据
+        });
+
+    }
+</script>
+</body>
+
+</html>

@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>关联交易订单</title>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>" />
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>" />
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+</head>
+
+<style>
+    /* 公共 */
+    [v-cloak] {
+        display: none;
+    }
+    #rel_trans_list{
+        padding: 20px;
+        width: 100%;
+        height: 100%; 
+        box-sizing: border-box;
+    }
+    .header .el-col{
+        display: flex;
+        align-items: center;
+        padding: 0 20px;
+        margin-bottom: 20px;
+    }
+    .header .form_input{
+        display: flex;
+        flex: 1;
+        padding: 1px;
+    }
+    .header .form_span{
+        margin-right: 15px;
+        min-width: 100px;
+    }
+    .dividing_line{
+        display: block;
+        height: 1px;
+        width: 100%;
+        margin: 20px 0;
+        background-color: #DCDFE6;
+    }
+    /* table */
+    .export_btn{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    .related_transaction_pagination{
+        text-align: right;
+        margin: 20px 0 100px;
+    }
+    .el-table__header thead th{
+        background: #546E7A;
+        color: #fff;
+        border-bottom: 1px solid #668491;
+        border-right: 1px solid #668491;
+    }
+    .sales_company_select .el-select__tags span{
+        display: flex;
+        flex-wrap: wrap;
+    }
+    .sales_company_select .el-select__tags span>span:first-child{
+        position: relative;
+        padding-right: 10px;
+    }
+    .sales_company_select .el-select__tags span>span:first-child span{
+        display: block;
+        max-width: 150px;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+    .sales_company_select .el-select__tags span>span:first-child i{
+        position: absolute;
+        right: 0;
+        top: 6px;
+    }
+
+</style>
+
+<body>
+    <div id="rel_trans_list" v-cloak>
+        <!-- 筛选的条件 -->
+        <div type="flex" class="header">
+            <el-row>
+                <el-col :span="6">
+                    <span class="form_span">{{$lang('关联交易订单号')}}</span>
+                    <el-input class="form_input" v-model="form.rel_trans_no" ></el-input>
+                </el-col>
+                <el-col :span="6">
+                    <span class="form_span">{{$lang('销售公司')}}</span>
+                    <el-select class="form_input sales_company_select" v-model="form.sell_company_cd" filterable multiple collapse-tags :placeholder="$lang('请选择')">
+                        <el-option v-for="(item,index) in sales_company" 
+                            :key="index"
+                            :label="$lang(item.CD_VAL)"
+                            :value="item.CD">
+                        </el-option>
+                    </el-select>
+                </el-col>
+                <el-col :span="6">
+                    <span class="form_span">{{$lang('采购公司')}}</span>
+                    <el-select class="form_input sales_company_select" v-model="form.pur_company_cd" filterable multiple collapse-tags :placeholder="$lang('请选择')">
+                        <el-option v-for="(item,index) in purchasing_company" 
+                            :key="index"
+                            :label="item.CD_VAL"
+                            :value="item.CD">
+                        </el-option>
+                    </el-select>
+                </el-col>
+                <el-col :span="6">
+                    <span class="form_span">{{$lang('SKU/条形码')}}</span>
+                    <el-input class="form_input" v-model="form.sku_upc" ></el-input>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="6">
+                    <span class="form_span">{{$lang('商品名称')}}</span>
+                    <el-input class="form_input" v-model="form.GUDS_NM" ></el-input>
+                </el-col>
+                <el-col :span="6">
+                    <span class="form_span">{{$lang('交易日期')}}</span>
+                    <el-date-picker
+                        v-model="form.transaction_date"
+                        class="form_input"
+                        style="padding: 3px 10px;"
+                        type="daterange"
+                        unlink-panels
+                        range-separator="至"
+                        :start-placeholder="$lang('开始日期')"
+                        :end-placeholder="$lang('结束日期')"
+                        value-format="yyyy-MM-dd">
+                    </el-date-picker>
+                </el-col>
+                <el-col :span="6">
+                    <span class="form_span">{{$lang('操作人')}}</span>
+                    <el-select class="form_input" v-model="form.operation_user" filterable multiple collapse-tags :placeholder="$lang('请选择')">
+                        <el-option v-for="(item,index) in operator" 
+                            :key="index"
+                            :label="item.mName"
+                            :value="item.mName">
+                        </el-option>
+                    </el-select>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="12">
+                    <el-button size="medium" type="primary" @click="search">{{$lang('查询')}}</el-button>
+                    <el-button size="medium" @click="reset">{{$lang('重置')}}</el-button>
+                </el-col>
+            </el-row>
+            <div class="dividing_line"></div>
+        </div>
+        <!-- table -->
+        <div class="export_btn">
+            <span>搜索结果：共 {{page.count}} 条</span>
+            <el-button size="medium" type="primary" @click="export_excel">{{$lang('导出')}}</el-button>
+        </div>
+        <div class="related_transaction_table">
+            <el-table :data="tableData" border style="width: 100%">
+                <el-table-column align="center"  :label="$lang('关联交易订单号')"> 
+                    <template slot-scope="scope">
+                        <span>{{scope.row.rel_trans_no}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('触发操作')"> 
+                    <template slot-scope="scope">
+                        <span>{{$lang(scope.row.trigger_type_val)}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('销售公司')"> 
+                    <template slot-scope="scope">
+                        <span>{{$lang(scope.row.sell_company_cd_val)}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('采购公司')"> 
+                    <template slot-scope="scope">
+                        <span>{{$lang(scope.row.pur_company_cd_val)}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('SKU')"> 
+                    <template slot-scope="scope">
+                        <span>{{scope.row.sku_id}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('条形码')"> 
+                    <template slot-scope="scope">
+                        <span>{{scope.row.upc_id}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('商品名称')"> 
+                    <template slot-scope="scope">
+                        <span>{{scope.row.GUDS_NM}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('商品属性')"> 
+                    <template slot-scope="scope">
+                        <span>{{scope.row.GUDS_OPT_VAL_MPNG}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('数量')"> 
+                    <template slot-scope="scope">
+                        <span>{{scope.row.sku_quantity}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('交易币种')"> 
+                    <template slot-scope="scope">
+                        <span>{{scope.row.rel_currency_cd_val}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('交易价格（交易币种）')"> 
+                    <template slot-scope="scope">
+                        <span>{{scope.row.rel_price}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('交易时间')"> 
+                    <template slot-scope="scope">
+                        <span>{{scope.row.rel_time}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('操作人')"> 
+                    <template slot-scope="scope">
+                        <span>{{scope.row.operation_user}}</span>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <!-- 分页 -->
+            <div class="related_transaction_pagination">
+                <el-pagination
+                        background
+                        @current-change="handleCurrentChange"
+                        @size-change="handleSizeChange"
+                        :current-page.sync="page.this_page"
+                        :page-size="page.page_count"
+                        :page-sizes="[10, 30, 50, 100]"
+                        layout="total, sizes, prev, pager, next, jumper"
+                        :total="page.count">
+                </el-pagination>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script>
+        if (getCookie("think_language") !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en);
+        }
+        var VM = new Vue({
+            el: "#rel_trans_list",
+            data: {
+                form:{
+                    rel_trans_no:'',
+                    sell_company_cd:[],
+                    pur_company_cd:[],
+                    sku_upc:'',
+                    GUDS_NM:'',
+                    transaction_date:'',
+                    operation_user:[]
+                },
+                page:{
+                    count:0,
+                    this_page:1,
+                    page_count:10,
+                },
+                sales_company:[],
+                purchasing_company:[],
+                operator:[],
+                tableData:[]
+            },
+            created() {
+                this.getCommonData()
+                this.getTabledata()
+            },
+            methods: {
+                search:function(){
+                    this.getTabledata()
+                },
+                reset:function(){
+                    this.form = {
+                        rel_trans_no:'',
+                        sell_company_cd:[],
+                        pur_company_cd:[],
+                        sku_upc:'',
+                        GUDS_NM:'',
+                        transaction_date:'',
+                        operation_user:[]
+                    }
+                    this.page.this_page = 1
+                    this.page.page_count = 10
+                    this.getTabledata()
+                },
+                getCommonData:function(){
+                    var _this = this
+                    axios.post('/index.php?g=oms&m=CommonData&a=commonData', {
+                        "data": {
+                            "query": {
+                                users: true,
+                            },
+                            "type":"sorting"
+                        }
+                    }).then(function (res) {
+                        if(res.data.code == 2000){
+                            _this.operator = res.data.data.users
+                        }
+                    })
+
+                    axios.post('/index.php?g=common&m=index&a=get_cd', {
+                        "cd_type": {
+                            "our_company": "false", 
+                        }
+                    }).then(function (res) {
+                        if(res.data.code == 2000){
+                            _this.sales_company = res.data.data.our_company
+                            _this.purchasing_company = res.data.data.our_company
+                        }
+                    })
+                },
+                getTabledata:function(){
+                    var _this = this
+                    var sell_company_cd = _this.form.sell_company_cd.join(",");
+                    var pur_company_cd = _this.form.pur_company_cd.join(",");
+                    var operation_user = _this.form.operation_user.join(",");
+                    var rel_time_start  = _this.form.transaction_date[0] ? _this.form.transaction_date[0] : ''
+                    var rel_time_end  = _this.form.transaction_date[1] ? _this.form.transaction_date[1] : ''
+                    
+                    axios.post('/index.php?m=finance&a=rel_trans_data', {
+                        search: {
+                            "rel_trans_no":_this.form.rel_trans_no,
+                            "sell_company_cd":sell_company_cd,
+                            "pur_company_cd":pur_company_cd,
+                            "GUDS_NM":_this.form.GUDS_NM,
+                            "sku_upc":_this.form.sku_upc,
+                            "rel_time_start":rel_time_start,
+                            "rel_time_end":rel_time_end,
+                            "operation_user":operation_user
+                        },
+                        pages: {
+                            "per_page": _this.page.page_count,
+                            "current_page": _this.page.this_page
+                        }
+                    }).then(function (res) {
+                        if(res.data.code == 2000){
+                            _this.tableData = res.data.data.data
+                            _this.page.count = Number(res.data.data.page.total_rows)
+                        }
+                    })
+                },
+                export_excel:function(){
+                    var _this = this
+                    var sell_company_cd = _this.form.sell_company_cd.join(",");
+                    var pur_company_cd = _this.form.pur_company_cd.join(",");
+                    var operation_user = _this.form.operation_user.join(",");
+                    var rel_time_start  = _this.form.transaction_date[0] ? _this.form.transaction_date[0] : ''
+                    var rel_time_end  = _this.form.transaction_date[1] ? _this.form.transaction_date[1] : ''
+
+                    var where = {
+                        search: {
+                            "rel_trans_no":_this.form.rel_trans_no,
+                            "sell_company_cd":sell_company_cd,
+                            "pur_company_cd":pur_company_cd,
+                            "GUDS_NM":_this.form.GUDS_NM,
+                            "sku_upc":_this.form.sku_upc,
+                            "rel_time_start":rel_time_start,
+                            "rel_time_end":rel_time_end,
+                            "operation_user":operation_user
+                        },
+                        pages: {
+                            "per_page": _this.page.page_count,
+                            "current_page": _this.page.this_page
+                        }
+                    }
+
+                    var tmep = document.createElement('form');
+                    tmep.action = '/index.php?m=finance&a=rel_trans_export';
+                    tmep.method = "post";
+                    tmep.style.display = "none";
+                    var opt = document.createElement("input");
+                    opt.name = 'post_data';
+                    opt.value = JSON.stringify(where);
+                    tmep.appendChild(opt);
+                    document.body.appendChild(tmep);
+                    tmep.submit();
+                    $(tmep).remove();
+                    tmep = null
+                },
+                //切换每页展示的数目
+                handleSizeChange:function (val) {
+                    this.page.this_page = 1;
+                    this.page.page_count = val;
+                    this.getTabledata()
+                },
+                //翻页切换不同页面
+                handleCurrentChange:function(val) {
+                    var _this = this
+                    _this.page.this_page = val;
+                    _this.getTabledata()
+                },
+            },
+        })
+    </script>
+</body>
+</html>

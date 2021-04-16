@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>安全库存</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Scm/style.css?v=<{$Think.config.VER_NUM}>">
+
+    <style>
+        #onway {
+            padding: 20px 20px 0px 40px;
+            margin-bottom: 220px;
+        }
+    
+        .v-cloak {
+            display: none;
+        }
+    
+        .width-95 {
+            width: 95%
+        }
+    
+        .preview-wrap {
+            position: relative;
+            display: contents;
+            width: 100%;
+        }
+    
+        .preview-wrap img {
+            cursor: pointer;
+        }
+    
+        .preview-wrap .big-img {
+            position: absolute;
+            bottom: 0px;
+            left: 80px;
+            box-shadow: 1px 2px 15px #606266;
+            z-index: 999;
+        }
+        .mg-left{
+            margin-left: 50px;
+        }
+        .el-date-editor .el-range__close-icon{
+            margin-left: -5px;
+            width: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="" v-cloak id="onway">
+        <el-form ref="form" :model="form" label-width="90px" label-position="left">
+            <el-row>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('状态')">
+                        <el-select v-model="form.stock_status" filterable clearable multiple class="width-95" :placeholder="$lang('状态')">
+                            <el-option v-for="item in safeStatus" :key="item.cd" :label="$lang(item.cdVal)" :value="item.cd"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('仓库')">
+                        <el-select class="width-95" filterable clearable multiple v-model="form.warehouse_cd" :placeholder="$lang('仓库')">
+                            <el-option v-for="item in warehouseData" :key="item.cd" :label="$lang(item.cdVal)" :value="item.cd"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('SKU/条形码')">
+                        <el-input v-model="form.sku_id" class="width-95"></el-input>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('商品名称')">
+                        <el-input v-model="form.spu_name" class="width-95"></el-input>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="24">
+                    <el-button type="primary" @click="getData">{{$lang('查询')}}</el-button>
+                    <el-button @click="reset">{{$lang('重置')}}</el-button>
+                </el-col>
+            </el-row>
+        </el-form>
+        <div style="margin-top:20px;">
+            <div style="margin-bottom:10px;">
+                <b>{{$lang('结果：共')}} {{totalData}} {{$lang('记录')}}</b>
+                <el-button type="primary" @click="downData" size="mini" style="float:right;position:relative;bottom:10px;">{{$lang('导出')}}</el-button>
+            </div>
+            <el-table border show-header :data="listData" tooltip-effect="dark" style="width: 100%" v-loading="tableLoading" class="order-list-table table-common">
+                <el-table-column :label="$lang('仓库')">
+                    <template scope="scope">
+                        <div>{{$lang(scope.row.warehouse_name)}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="sku_id" :label="$lang('SKU编码')"> </el-table-column>
+                <el-table-column prop="upc_id" :label="$lang('条形码')"> </el-table-column>
+                <el-table-column :label="$lang('商品名称')">
+                    <template scope="scope">
+                        <div>{{$lang(scope.row.spu_name)}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('商品属性')">
+                    <template scope="scope">
+                        <div>{{$lang(scope.row.attributes)}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('商品图片')">
+                    <template scope="scope">
+                        <span class="preview-wrap">
+                            <img :src="scope.row.image_url" width="40" height="40" @mouseover="previewImg(scope.row,'showImg',true)" @mouseout="previewImg(scope.row,'showImg',false)">
+                            <div v-if="scope.row.showImg">
+                                <img :src="scope.row.image_url" width="300" height="300" class="big-img">
+                            </div>
+                        </span>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="sell_by_ninety" :label="$lang('90天日均动销')" :render-header="ninetyRenderHeader">
+                </el-table-column>
+                <el-table-column prop="sell_by_thirty" :label="$lang('30天日均动销')" :render-header="sellRenderHeader">
+                </el-table-column>
+                <el-table-column prop="sell_by_seven" :label="$lang('7天日均动销')" :render-header="sevenRenderHeader">
+                </el-table-column>
+                <el-table-column prop="pur_lead_time" :label="$lang('采购提前期')" :render-header="purRenderHeader"> </el-table-column>
+                <el-table-column prop="recommend_safety_stock" :label="$lang('推荐安全库存')" :render-header="recoRenderHeader"> </el-table-column>
+                <el-table-column prop="set_safety_stock" :label="$lang('设定安全库存')">
+                    <template slot-scope="scope">
+                        <div v-if="!scope.row.safeStockEdit">
+                            {{scope.row.set_safety_stock}}
+                        </div>
+                        <div v-if="scope.row.safeStockEdit">
+                            <el-input v-model="scope.row.set_safety_stock"></el-input>
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('在途库存')" :render-header="onwayRenderHeader">
+                    <template slot-scope="scope">
+                        <div class="third-order-num">
+                            <a class="to-detail-btn" @click="toOnwayindex(scope.row.warehouse_cd,scope.row.sku_id)">{{scope.row.onway_stock}}</a>
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('在库库存')" :render-header="realRenderHeader">
+                    <template slot-scope="scope">
+                        <div class="third-order-num">
+                            <a class="to-detail-btn" @click="toExtend(scope.row.warehouse_cd,scope.row.sku_id)">{{scope.row.real_stock}}</a>
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="trunover_for_real" :label="$lang('在库库存周转天数')" :render-header="trealRenderHeader"> </el-table-column>
+                <el-table-column prop="current_stock" :label="$lang('总库存')" :render-header="currRenderHeader"> </el-table-column>
+                <el-table-column prop="trunover_for_current" :label="$lang('总库存周转天数')" :render-header="tcurrRenderHeader"> </el-table-column>
+                <el-table-column :label="$lang('操作')" :width="200">
+                    <template slot-scope="scope">
+                        <el-button size="mini" v-if="!scope.row.safeStockEdit" type="primary" @click="edit(scope.row.id,scope.row.recommend_safety_stock)">{{$lang('编辑')}}</el-button>
+                        <el-button size="mini" v-if="scope.row.safeStockEdit" type="default" @click="save(scope.row.id,scope.row.recommend_safety_stock,scope.row.set_safety_stock)">{{$lang('保存')}}</el-button>
+                        <el-button size="mini" type="default" @click="synchronize(scope.row.id,scope.row.recommend_safety_stock)">{{$lang('同步推荐值')}}</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </div>
+        <div>
+            <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="form.page"
+                :page-sizes="[20, 50, 100, 200]" :page-size="form.page_size" layout="total, sizes, prev, pager, next, jumper" :total="totalData">
+            </el-pagination>
+        </div>
+    </div>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script>
+        if (getCookie('think_language') !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en)
+        }
+
+        var vm = new Vue({
+            el: '#onway',
+            data: {
+                safeStatus:[{
+                    cd: -1,
+                    cdVal: '低于设定安全库存'
+                },{
+                    cd: 1,
+                    cdVal: '高于或等于设定安全库存'
+                }],
+                form: {
+                    stock_status: '',
+                    sku_id: '',
+                    spu_name: '',
+                    warehouse_cd: '',
+                    page: 1,
+                    page_size: 20,
+                },
+                totalData:1,
+                warehouseData:[],
+                listData:[],
+                tableLoading:false,
+                isPageChange:false
+            },
+            created: function () {
+                this.getCd();
+                this.getData();
+            },
+            methods: {
+                ninetyRenderHeader (h, { column, $index }) {
+                    return (
+                        h('span', [
+                        h('span', column.label),
+                        h('el-tooltip', {
+                            props: {
+                            effect: 'light',
+                            content: this.$lang('该仓库该SKU，从查看当天之前90天起至今的所有真实出库的数量之和，除以90，四舍五入保留整数。'),
+                            placement: 'top'
+                            }
+                        }, [
+                            h('i', {
+                            class: 'el-icon-question'
+                            })
+                        ])
+                        ])
+                    )
+                },
+                sellRenderHeader (h, { column, $index }) {
+                    return (
+                        h('span', [
+                        h('span', column.label),
+                        h('el-tooltip', {
+                            props: {
+                            effect: 'light',
+                            content: this.$lang('该仓库该SKU，从查看当天之前30天起至今的所有真实出库的数量之和，除以30，四舍五入保留整数。'),
+                            placement: 'top'
+                            }
+                        }, [
+                            h('i', {
+                            class: 'el-icon-question'
+                            })
+                        ])
+                        ])
+                    )
+                },
+                sevenRenderHeader (h, { column, $index }) {
+                    return (
+                        h('span', [
+                        h('span', column.label),
+                        h('el-tooltip', {
+                            props: {
+                            effect: 'light',
+                            content: this.$lang('该仓库该SKU，从查看当天之前7天起至今的所有真实出库的数量之和，除以7，四舍五入保留整数。'),
+                            placement: 'top'
+                            }
+                        }, [
+                            h('i', {
+                            class: 'el-icon-question'
+                            })
+                        ])
+                        ])
+                    )
+                },
+                purRenderHeader (h, { column, $index }) {
+                    return (
+                        h('span', [
+                        h('span', column.label),
+                        h('el-tooltip', {
+                            props: {
+                            effect: 'light',
+                            content: this.$lang('该仓库该SKU，历史真实入库批次的采购下单时间到入库时间的平均值，四舍五入至整数天。'),
+                            placement: 'top'
+                            }
+                        }, [
+                            h('i', {
+                            class: 'el-icon-question'
+                            })
+                        ])
+                        ])
+                    )
+                },
+                recoRenderHeader (h, { column, $index }) {
+                    return (
+                        h('span', [
+                        h('span', column.label),
+                        h('el-tooltip', {
+                            props: {
+                            effect: 'light',
+                            content: this.$lang('【推荐安全库存】=【30天日均动销】*【采购提前期】'),
+                            placement: 'top'
+                            }
+                        }, [
+                            h('i', {
+                            class: 'el-icon-question'
+                            })
+                        ])
+                        ])
+                    )
+                },
+                onwayRenderHeader (h, { column, $index }) {
+                    return (
+                        h('span', [
+                        h('span', column.label),
+                        h('el-tooltip', {
+                            props: {
+                            effect: 'light',
+                            content: this.$lang('【在途库存】=该SKU&由该SKU组合的组合商品部分的，预计到该仓的在途总数。'),
+                            placement: 'top'
+                            }
+                        }, [
+                            h('i', {
+                            class: 'el-icon-question'
+                            })
+                        ])
+                        ])
+                    )
+                },
+                realRenderHeader (h, { column, $index }) {
+                    return (
+                        h('span', [
+                        h('span', column.label),
+                        h('el-tooltip', {
+                            props: {
+                            effect: 'light',
+                            content: this.$lang('【在库库存】=该SKU&由该SKU组合的组合商品部分的，在该仓的在库总数。'),
+                            placement: 'top'
+                            }
+                        }, [
+                            h('i', {
+                            class: 'el-icon-question'
+                            })
+                        ])
+                        ])
+                    )
+                },
+                trealRenderHeader (h, { column, $index }) {
+                    return (
+                        h('span', [
+                        h('span', column.label),
+                        h('el-tooltip', {
+                            props: {
+                            effect: 'light',
+                            content: this.$lang('【在库库存周转天数】=【在库库存】/【30天日均动销】，四舍五入至天。'),
+                            placement: 'top'
+                            }
+                        }, [
+                            h('i', {
+                            class: 'el-icon-question'
+                            })
+                        ])
+                        ])
+                    )
+                },
+                currRenderHeader (h, { column, $index }) {
+                    return (
+                        h('span', [
+                        h('span', column.label),
+                        h('el-tooltip', {
+                            props: {
+                            effect: 'light',
+                            content: this.$lang('该SKU&由该SKU组成的组合商品部分的当前在库+在途总数。'),
+                            placement: 'top'
+                            }
+                        }, [
+                            h('i', {
+                            class: 'el-icon-question'
+                            })
+                        ])
+                        ])
+                    )
+                },
+                tcurrRenderHeader (h, { column, $index }) {
+                    return (
+                        h('span', [
+                        h('span', column.label),
+                        h('el-tooltip', {
+                            props: {
+                            effect: 'light',
+                            content: this.$lang('【总库存周转天数】=【总库存】/【30天日均动销】，四舍五入至天。'),
+                            placement: 'top'
+                            }
+                        }, [
+                            h('i', {
+                            class: 'el-icon-question'
+                            })
+                        ])
+                        ])
+                    )
+                },
+                //跳转仓储管理-在途库存
+                toOnwayindex: function toOnwayindex(warehouse_cd, sku_id) {
+                    var dom = document.createElement('a');
+                    var _href = "/index.php?g=Home&m=warehouse&a=onwayindex&warehouse_cd=" + warehouse_cd + "&sku_id=" + sku_id;
+                    dom.setAttribute("onclick", "opennewtab(this,'" + this.$lang('在途库存') + "')");
+                    dom.setAttribute("_href", _href);
+                    dom.click();
+                },
+                //跳转仓储管理-现存量
+                toExtend: function toExtend(warehouse_cd, sku_id) {
+                    var dom = document.createElement('a');
+                    var _href = "/index.php?g=Home&m=stock&a=existing_extend_new&warehouse_cd=" + warehouse_cd + "&sku_id=" + sku_id;
+                    dom.setAttribute("onclick", "opennewtab(this,'" + this.$lang('现存量') + "')");
+                    dom.setAttribute("_href", _href);
+                    dom.click();
+                },
+                getCd:function(){
+                    var _this = this;
+                    var params = {
+                        type_cd: 'N002590100'
+                    }
+                    axios.post('/index.php?m=warehouse&a=warehouse',params).then(function (res) {
+                        if(res.data.code == 2000){
+                            _this.warehouseData = res.data.data;
+                        }else{
+                            _this.$message.error(_this.$lang("获取码表数据失败"));
+                        }
+                    })
+                },
+
+                getData:function(){
+                    var _this = this;
+                    this.tableLoading = true;
+                    for(var x in this.form){
+                        if(typeof(this.form[x])=='string'){
+                            this.form[x] = this.form[x].trim();
+                            this.form[x] = this.form[x].replace(/[\r\n]/g,"");
+                            this.form[x] = this.form[x].replace(/[\r\n&\|\\\*^%$#@\-]/g,"");
+                        }
+
+                    }
+                    axios.post('/index.php?m=warehouse&a=safeStockList',this.form).then(function (res) {
+                        _this.tableLoading = false;
+                        if(res.data.code == 2000){
+                                _this.listData = res.data.data.list;
+                            _this.totalData = res.data.data.total;
+                            _this.isPageChange = false;
+                        }else{
+                            _this.$message.error(_this.$lang("获取数据失败"));
+                        }
+                    })
+                },
+                downData:function(){
+                    var _this = this;
+                    axios.post('/index.php?m=warehouse&a=exportSafeStock', this.form, {
+                        responseType: 'blob'
+                    }).then(res => {
+                        let blob = res.data
+                        let reader = new FileReader()
+                        reader.readAsDataURL(blob)
+                        reader.onload = (e) => {
+                            let a = document.createElement('a')
+                            a.download = '导出表格.xls'
+                            a.href = e.target.result
+                            document.body.appendChild(a)
+                            a.click()
+                            document.body.removeChild(a)
+                        }
+                    })
+                },
+                edit:function(rowId,safeStock){
+                    var _this = this
+                    _this.listData.forEach(function(item, index) {
+                        if (item.id == rowId) {
+                            Vue.set(item, 'safeStockEdit', true);
+                            Vue.set(item, 'set_safety_stock', safeStock);
+                        }
+                    })
+                    
+                },
+                save:function(rowId,safeStock,setStock){
+                    var _this = this
+                    if(setStock <= safeStock){
+                        var param = {
+                            id:rowId,
+                            set_safety_stock: setStock
+                        }
+                        axios.post('/index.php?m=warehouse&a=updateSafeStock',param).then(function (res) {
+                            if(res.data.code == 2000){
+                                _this.$message.success(_this.$lang("保存成功"));
+                                _this.getData();
+                            }else{
+                                _this.$message.error(_this.$lang("保存失败"));
+                            }
+                        })
+                    }else{
+                        _this.$message.error(_this.$lang("设定库存要小于等于推荐安全库存"));
+                    }
+                    
+                },
+                synchronize:function(rowId,rowStock){
+                    var _this = this
+                    var param = {
+                        id:rowId,
+                        set_safety_stock: rowStock
+                    }
+                    axios.post('/index.php?m=warehouse&a=updateSafeStock',param).then(function (res) {
+                        if(res.data.code == 2000){
+                            _this.$message.success(_this.$lang("同步成功"));
+                            _this.getData();
+                        }else{
+                            _this.$message.error(_this.$lang("同步失败"));
+                        }
+                    })
+                },
+                previewImg: function (item, tag, type) {
+                    this.$set(item, tag, type);
+                },
+                handleSizeChange: function(val) {
+                    this.form.page = 1;
+                    this.form.page_size = val;
+                },
+                handleCurrentChange: function(val) {
+                    this.isPageChange = true;
+                    this.form.page = val;
+                },
+                reset: function () {
+                    this.form = {
+                        stock_status: [],
+                        sku_id: '',
+                        spu_name: '',
+                        warehouse_cd: [],
+                        page: 1,
+                        page_size: 20,
+                    }
+                }
+            },
+            watch: {
+                form: {
+                    handler: function handler(newValue, oldValue) {
+                        console.log(this.isPageChange)
+                        if(!this.isPageChange){
+                            this.form.page = 1
+                            this.getData();
+                        }else{
+                            this.getData();
+                        }                      
+                    },
+                    deep: true
+                }
+            }
+        })
+    </script>
+</body>
+
+</html>

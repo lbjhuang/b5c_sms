@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title><{:L('优惠券详情')}></title>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" type="text/css" href="/Application/Tpl/Home/Public/utils/css/public.style.css?v=20170306" />
+    <style>
+        .row+.row{margin: 30px 0;}
+        [v-cloak]{display: none !important;}
+        .layui-layer-content{width:500px;background:white !important;border:1px solid #cccccc;border-right:2px solid #cccccc}
+    </style>
+</head>
+<style>
+    .row+.row {margin: 30px 0;}
+    [v-cloak]{display: none !important;}
+</style>
+<body>
+    <div id="couponDetail">
+        <h3 class="use-title"><{:L('优惠券详情')}></h3>
+        <!-- 基本信息 -->
+        <div class="row">
+            <div class="col-100">
+                <table class="use-table-two" cellspacing="0" cellpadding="0">
+                    <caption><{:L('基本信息')}></caption>
+                    <colgroup>
+                        <col width="15%">
+                        <col width="35%">
+                        <col width="15%">
+                        <col width="35%">
+                    </colgroup>
+                    <tbody class="use-body">
+                    <tr>
+                        <td><{:L('优惠券ID')}></td>
+                        <td id="couponDetailId"><{$couponData['id']}></td>
+                        <td><{:L('启用状态')}></td>
+                        <td><if condition="$couponData['status'] eq 1"> <{:L('启用')}> <else /> <{:L('停用')}> </if></td>
+                    </tr>
+                    <tr>
+                        <td><{:L('优惠券名称')}></td>
+                        <td><{$couponData['title']}></td>
+                        <td><{:L('适合店铺')}></td>
+                        <td><{$shopData}></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!-- 规则限制 -->
+        <div class="row">
+            <div class="col-100">
+                <table class="use-table-two" cellspacing="0" cellpadding="0">
+                    <caption><{:L('规则限制')}></caption>
+                    <colgroup>
+                        <col width="15%">
+                        <col width="35%">
+                        <col width="15%">
+                        <col width="35%">
+                    </colgroup>
+                    <tbody class="use-body">
+                    <tr>
+                        <td><{:L('发放方式')}></td>
+                        <td><{:L($commData['sendWay'][$couponData['send_way']]['CD_VAL'])}></td>
+                        <td><{:L('发放对象')}></td>
+                        <td class="use-btn">
+                            <span style="line-height: 32px;"><if condition="$couponData['send_way'] eq 1"> <{:L($onceSendObject[$couponData['send_object']]['CD_VAL'])}><else /> <{:str_replace('n',$couponData['order_num'],L($continuedSendObject[$couponData['send_object']]['CD_VAL']))}></if></span>
+                            <if  condition="($couponData['send_way'] eq 1) AND ($couponData['send_object'] neq 'N001850100')"><button type="button" class="btn-pub btn-blue" id="viewUsersListId" @click="viewUsersList('open',1)" data-href="<{:U('coupon/coupon/showUserList','&id=')}><{$couponData['id']}>"><{:L(查看列表)}></button></if>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><{:L('使用门槛')}></td>
+                        <td><{$thresholdVal}></td>
+                        <td><{:L('优惠类型')}></td>
+                        <td><{$couponTypeVal}></td>
+                    </tr>
+                    <tr>
+                        <td><{:L('使用时间')}></td>
+                        <td><{$timeValue}></td>
+                        <td><{:L('叠加规则')}></td>
+                        <td><{:L($commData['superpositionRule'][$couponData['superposition_rule']]['CD_VAL'])}></td>
+                    </tr>
+                    <tr>
+                        <td><{:L('适用范围')}></td>
+                        <td colspan="3" class="use-btn">
+                            <span style="line-height: 32px;">【<{:L($commData['useRange'][$couponData['use_range']]['CD_VAL'])}>】</span>
+                            <if condition="$couponData['use_range'] eq 2"><button class="btn-pub btn-blue" @click="viewGudsList('open','1')" id="viewGudsListId" data-href="<{:U('coupon/coupon/showGudsList','&id=')}><{$couponData['id']}>" ><{:L(查看列表)}></button></if>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!-- 流程信息 -->
+        <div class="row">
+            <div class="col-100">
+                <table class="use-table-two" cellspacing="0" cellpadding="0">
+                    <caption><{:L('流程信息')}></caption>
+                    <colgroup>
+                        <col width="15%">
+                        <col width="35%">
+                        <col width="15%">
+                        <col width="35%">
+                    </colgroup>
+                    <tbody class="use-body">
+                    <tr>
+                        <td><{:L('创建人')}></td>
+                        <td><{$couponData['creator_name']}></td>
+                        <td><{:L('创建时间')}></td>
+                        <td><{:date('Y-m-d H:i:s',$couponData['add_time'])}></td>
+                    </tr>
+                    <volist name="couponOptData" id="vo">
+                        <tr>
+                            <td><{:L($optTypeData[$vo['opt_type']]['CD_VAL'])}><{:L('人')}></td>
+                            <td><{$vo.opt_user_name}></td>
+                            <td><{:L($optTypeData[$vo['opt_type']]['CD_VAL'])}><{:L('时间')}></td>
+                            <td><{:date('Y-m-d H:i:s',$vo['add_time'])}></td>
+                        </tr>
+                    </volist>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-100 use-btn text-center">
+                <if condition = "$couponData['start_time'] eq 0">
+                    <a class="btn-pub btn-default" onclick="changenewtab(this,'<{$Think.lang.优惠券编辑}>')" _href="<{:U('coupon/coupon/changePage','id=')}><{$couponData['id']}>"><{:L('编辑')}></a>
+                </if>
+                <if condition = "$couponData['status'] eq 0">
+                    <a class="btn-pub btn-blue mg-l-20" data-href="<{:U('coupon/coupon/operateCoupon','type=start&id=')}><{$couponData['id']}>" @click="startCoupon()"><{:L('启用')}><{:L('优惠卷')}></a>
+                    <elseif condition="$couponData['send_way'] eq 1" />
+                    <else />
+                    <a class="btn-pub btn-blue mg-l-20" data-href="<{:U('coupon/coupon/operateCoupon','type=stop&id=')}><{$couponData['id']}>" @click="stopCoupon()"><{:L('停用')}><{:L('优惠卷')}></a>
+                </if>
+                <a class="btn-pub btn-yellow mg-l-20" onclick="backNewtab(this,'<{$Think.lang.优惠券列表}>')" _href="<{:U('coupon/coupon/index')}>"><{:L('返回列表页')}></a>
+            </div>
+        </div>
+        <div class="coupon-addPop-manual coupon-addPop" v-cloak v-if="couponAddPopManual">
+            <div class="coupon-addPop-main">
+                <form action="">
+                    <p><i @click="viewUsersList('close')">×</i></p>
+                    <div>
+                        <select name="" id="couponAddPopManualSelect">
+                            <option value="mobile"><{:L('请选择')}></option>
+                            <option value="mobile"><{:L('手机号')}></option>
+                            <option value="nickname"><{:L('昵称')}></option>
+                            <option value="email"><{:L('邮件')}></option>
+                        </select>
+                        <input type="text" placeholder="<{:L('请输入内容')}>" id="couponAddPopManualInput">
+                        <button type="button" class="btn" @click="couponAddPopManualSearch()"><{:L('查询')}></button>
+                        <button type="reset" class="btn"><{:L('重置')}></button>
+                    </div>
+                    <h3><{:L('搜索结果')}>：<{:L('共')}><{:L('条记录')}></h3>
+                    <table class="use-table-two" cellspacing="0" cellpadding="0">
+                        <thead>
+                        <tr>
+                            <th width=""><{:L('归属店铺')}></th>
+                            <th width=""><{:L('手机号')}></th>
+                            <th width=""><{:L('用户名称')}></th>
+                            <th width=""><{:L('邮箱')}></th>
+                        </tr>
+                        </thead>
+                        <tbody class="use-body use-form">
+                        <template v-for="(a,index) in usersList">
+                            <tr>
+                                <td>{{a.plat}}</td>
+                                <td>{{a.mobile}}</td>
+                                <td>{{a.nickName}}</td>
+                                <td>{{a.email}}</td>
+                            </tr>
+                        </template>
+                        </tbody>
+                    </table>
+                    <div class="block">
+                        <el-pagination
+                                @current-change="handleCurrentChange"
+                                :current-page.sync="pageManul.sePage"
+                                :page-size="pageManul.pageSize"
+                                layout="prev, pager, next"
+                                :total="pageManul.pageLength">
+                        </el-pagination>
+                    </div>
+                    <div class="coupon-addPop-submit">
+                        <button type="button" class="btn" @click="viewUsersList('close')"><{:L('确认')}></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="coupon-addPop-partsGoods coupon-addPop" v-cloak  v-if="partsGoodsItems">
+            <div class="coupon-addPop-main">
+                <form action="">
+                    <p><i @click="viewGudsList('close')">×</i></p>
+                    <div>
+                        <select name="" id="couponAddPopGudsSelect">
+                            <option value=""><{:L('请选择')}></option>
+                            <option value="skuId">skuId</option>
+                            <option value="gudsId">gudsId</option>
+                            <option value="gudsName"><{:L('商品名')}></option>
+                        </select>
+                        <input type="text" placeholder="<{:L('请输入内容')}>" id="couponAddPopGudsInput">
+                        <button type="button" class="btn" @click="couponAddPopGudsSearch()"><{:L('查询')}></button>
+                        <button type="reset" class="btn" ><{:L('重置')}></button>
+                    </div>
+                    <h3><{:L('搜索结果')}>：<{:L('共')}>{{pageGuds.pageLength}}<{:L('条记录')}></h3>
+                    <table class="use-table-two" cellspacing="0" cellpadding="0">
+                        <thead>
+                        <tr>
+                            <th width="">SPU ID</th>
+                            <th width="">G_SKU ID</th>
+                            <th width=""><{:L('商品名')}></th>
+                        </tr>
+                        </thead>
+                        <tbody class="use-body use-form">
+                        <template v-for="(guds,index) in gudsList">
+                            <tr>
+                                <td>{{guds.spuId}}</td>
+                                <td>{{guds.skuId}}</td>
+                                <td>{{guds.gudsName}}</td>
+                            </tr>
+                        </template>
+                        </tbody>
+                    </table>
+                    <div class="block">
+                        <el-pagination
+                                @current-change="handleCurrentChangeGuds"
+                                :current-page.sync="pageGuds.sePage"
+                                :page-size="pageGuds.pageSize"
+                                layout="prev, pager, next"
+                                :total="pageGuds.pageLength">
+                        </el-pagination>
+                    </div>
+                    <div class="coupon-addPop-submit">
+                        <button type="button" class="btn" @click="viewGudsList('close')"><{:L('确认')}></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+<script src="/Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/stock/alert.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/vue.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/lib/layer-v3.0.3/layer/layer.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/element-ui.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public//utils/utils.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Coupon/public/Coupon/detail.js"></script>
+</html>

@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <title>{{$lang('报告列表')}}</title>
+    <style>
+        ul,p,li{
+            margin:0
+        }
+        [v-cloak] {
+            display: none !important;
+        }
+
+    </style>
+
+</head>
+
+<body class="orderDetail">
+<div id="main" v-cloak>
+    <div>
+        <el-form ref="form" :model="form" label-width="150px">
+            <el-row style="display: flex;">
+                <el-form-item :label="$lang('报告时间')">
+                    <el-select v-model="form.fin_date" @change="getData" clearable :placeholder="$lang('请选择报告时间')">
+                        <el-option v-for="(v,k) in get_fin_date" :label="v" :value="v"></el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item :label="$lang('创建时间')">
+                    <el-col :span="11">
+                        <el-date-picker   :picker-options="pickerOptions0" @change="getData" type="date" :placeholder="$lang('开始时间')" v-model="form.create_start_date" value-format="yyyy-MM-dd"></el-date-picker>
+                    </el-col>
+                    <el-col class="line" :span="2">-</el-col>
+                    <el-col :span="11">
+                        <el-date-picker  :picker-options="pickerOptions0" @change="getData" type="date" :placeholder="$lang('结束时间')" v-model="form.create_end_date"  value-format="yyyy-MM-dd"></el-date-picker>
+                    </el-col>
+                </el-form-item>
+                <el-form-item :label="$lang('创建人')" label-width="180px">
+                    <el-select @change="getData" v-model="form.create_by" clearable :placeholder="$lang('请选择创建人')">
+                        <el-option v-for="(v,k) in create_by" :label="v" :value="v"></el-option>
+                    </el-select>
+                </el-form-item>
+            </el-row>
+            <el-row>
+                <el-button @click="orderDetal('',$lang('财报配置'))" style="float: right;margin-bottom: 10px">{{$lang('新增报告')}}</el-button>
+            </el-row>
+        </el-form>
+    </div>
+    <el-table
+            :data="tableData"
+            border
+            style="width: 100%">
+        <el-table-column
+                prop="year"
+                :label="$lang('报告时间')"
+                width="180">
+            <template  slot-scope="scope">
+                {{scope.row.year + scope.row.quarter}}
+            </template>
+        </el-table-column>
+        <el-table-column
+                prop="title"
+                :label="$lang('报告标题')"
+                width="180">
+            <template  slot-scope="scope">
+                <div :title="scope.row.title">
+                    {{scope.row.title.length>50? scope.row.title.substring(0,50) + '...':scope.row.title}}
+                </div>
+
+            </template>
+        </el-table-column>
+        <el-table-column
+                prop="create_at"
+                :label="$lang('创建时间')">
+        </el-table-column>
+        <el-table-column
+                prop="create_by"
+                :label="$lang('创建人')">
+        </el-table-column>
+        <el-table-column
+                prop="update_at"
+                :label="$lang('最后修改时间')">
+        </el-table-column>
+        <el-table-column
+                prop="update_by"
+                :label="$lang('最后修改人')">
+        </el-table-column>
+        <el-table-column
+                prop="address"
+                :label="$lang('操作')">
+            <template  slot-scope="scope">
+                <el-button @click="orderDetal(scope.row.fin_report_id+'.'+scope.row.year+'.'+scope.row.quarter,$lang('财报配置'))">{{$lang('查看')}}</el-button>
+            </template>
+        </el-table-column>
+    </el-table>
+    <div style="display: flex;flex-direction: row-reverse;">
+        <el-pagination
+                @current-change="handleCurrentChange"
+                :current-page.sync="pages.current_page"
+                :page-sizes="[10]"
+                :page-size="pages.per_page"
+                layout="prev, pager, next"
+                :total="total">
+        </el-pagination>
+    </div>
+
+</div>
+<!--引入js-->
+<script type="text/javascript" src="/Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/wang-editor/release/wangEditor2.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/html2canvas.min.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script>
+  var VM = new Vue({
+    el: '#main',
+    components: {},
+    data:{
+      pickerOptions0: {
+        disabledDate(time) {
+          return time.getTime() > Date.now() - 8.64e6
+        }
+      },
+      total:0,
+      pages:{
+        "per_page": 10,
+        "current_page":1
+      },
+      create_by:[],
+      get_fin_date:[],
+      tableData:[],
+      form:{
+        fin_date:'',
+        create_start_date:'',
+        create_end_date	: '',
+        create_by:''
+      }
+    },
+    methods: {
+      handleCurrentChange:function(e){
+        this.pages.current_page = e
+        this.getData()
+      },
+      orderDetal: function (orderId, title) {
+        var dom = document.createElement('a');
+        var _href = '';
+        if(orderId){
+          _href = '/index.php?g=report&m=financial&a=form&id='+orderId
+        }else{
+            _href = '/index.php?g=report&m=financial&a=form&edit=1'
+
+        }
+        dom.setAttribute("onclick", "opennewtab(this,'"+this.$lang(title) + "')");
+        dom.setAttribute("_href", _href);
+        dom.click();
+      },
+      getData:function(){
+        var _this = this;
+        axios.post("/index.php?g=Report&m=FinanceConfig&a=get_list",{
+          search:this.form,
+          "pages": this.pages
+        })
+          .then(function(res) {
+            if(res.data.code === 2000) {
+              _this.total = Number(res.data.data.total)
+              var data = res.data.data.data
+              _this.tableData =data
+            }
+          });
+      },
+      getUser:function(){
+        var _this = this;
+        axios.get("/index.php?g=Report&m=FinanceConfig&a=get_create_by")
+          .then(function(res) {
+            if(res.data.code === 2000) {
+             _this.create_by = res.data.data
+            }
+          });
+      },
+      getDate:function(){
+        var _this = this;
+        axios.get("/index.php?g=Report&m=FinanceConfig&a=get_fin_date")
+          .then(function(res) {
+            if(res.data.code === 2000) {
+              _this.get_fin_date = res.data.data
+            }
+          });
+      }
+    },
+    created: function () {
+      this.getUser()
+      this.getDate()
+      this.getData()
+    },
+    beforeCreate: function () {},
+
+    mounted: function () {
+
+    },
+    filters: {
+    }
+  });
+</script>
+</body>
+
+</html>

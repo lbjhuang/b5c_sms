@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>code管理</title>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+          href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+    href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+          href="./Application/Tpl/Home/Public/../Hr/hrstyle.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+          href="./Application/Tpl/Home/Public/css/btn-new.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+          href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+</head>
+
+<style>
+    [v-cloak] {
+        display: none;
+    }
+
+    .el-row + .el-row {
+        margin-top: 15px;
+    }
+
+    .el-pagination {
+        margin-bottom: 180px;
+    }
+
+    .normal {
+        white-space: normal !important;
+        word-wrap: break-word;
+        word-break: break-all;
+    }
+
+    .create-wrap {
+        white-space: nowrap;
+    }
+
+
+    .show-list .el-form-item__label {
+        padding: 0px 10px 0px 0px;
+        font-weight: 600;
+        font-size: 16px;
+    }
+
+    .show-list .el-select {
+        width: 300px;
+    }
+
+    .utils-btn {
+        margin: 0px 30px;
+        color: #409EFF;
+        cursor: pointer;
+        text-decoration: underline;
+    }
+
+    .show-list .table-list tr th {
+        padding: 0px 6px;
+    }
+
+    .show-list .table-list tr td {
+        white-space: normal;
+    }
+
+    .sort-item {
+        display: flex;
+        justify-content: center;
+    }
+
+    .sort-item span {
+        line-height: 30px;
+    }
+
+    .caret-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin-left: 10px;
+    }
+
+    .caret-wrapper i {
+        cursor: pointer;
+        font-size: 18px;
+    }
+
+    .caret-wrapper i.active {
+        color: #409eff;
+    }
+
+    .descending {
+        margin-top: -8px;
+    }
+
+    .left-item {
+        float: left;
+    }
+
+    .right-btn {
+        float: right;
+        transition: 500ms all;
+        margin-bottom: 6px;
+    }
+
+    .result-num.occupy {
+        width: 100%;
+    }
+
+    .el-table__header tr th {
+        background: #546e7a;
+        color: #ffffff;
+    }
+    .code_search{
+      align-items: center;
+    }
+    .code_search .el-col{
+      text-align: center;
+    }
+    .code_search .codeType{
+      text-align: center;
+      color: rgb(84, 110, 122);
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .code_search .el-select,.code_search .el-input{
+      width: 88%;
+    }
+    .paginationCode .el-select{
+      width: 100%;
+    }
+    .paginationCode{
+      text-align: right;
+      margin-top: 20px;
+    }
+</style>
+
+<body>
+<div id="codeTypeList" class="show-list" v-cloak>
+    <!-- <el-form ref="formSearch" :model="form" :label-position="labelPosition" label-width="130px">
+        <el-form-item label="Code Type">
+            <el-select v-model="form.type" placeholder="ALL" filterable>
+                <el-option v-for="(typeItem,key) in typeList" :label="typeItem" :value="key" :key="key"></el-option>
+            </el-select>
+        </el-form-item>
+    </el-form> -->
+    <el-row class="code_search" type="flex">
+        <el-col :span="2">
+            <div class="codeType">Code Type</div>
+        </el-col>
+        <el-col :span="4">
+            <div>
+              <el-select v-model="form.type" placeholder="ALL" clearable  filterable>
+                  <el-option v-for="(typeItem,key) in typeList" :label="typeItem" :value="key" :key="key"></el-option>
+              </el-select>
+            </div>
+        </el-col>
+        <el-col :span="3">
+            <div>
+              <el-input placeholder="Code Id" v-model="form.code_id"></el-input>
+            </div>
+        </el-col>
+        <el-col :span="3">
+            <div>
+              <el-input placeholder="Code Value" v-model="form.code_value"></el-input>
+            </div>
+        </el-col>
+        <el-col :span="3">
+              <el-select v-model="form.comment_type" >
+                <el-option v-for="item in commentList" :key="item.value" :label="item.label" :value="item.value"></el-option>
+              </el-select>
+        </el-col>
+        <el-col :span="3">
+            <div>
+              <el-input placeholder="ALL" v-model="form.comment_content"></el-input>
+            </div>
+        </el-col>
+        <el-col :span="6">
+          <div>
+            <el-button type="primary" @click="search">{{$lang('查询')}}</el-button>
+            <el-button type="info" @click="reset">{{$lang('重置')}}</el-button>
+            <el-button type="primary" @click="exportData">{{$lang('导出')}}</el-button>
+          </div>
+        </el-col>
+    </el-row>
+
+    <div class="baseline"></div>
+    <div class="use-row create-wrap">
+        <div class="result-num occupy">
+            <div class="left-item">
+                {{$lang('当前展示数据量')}} : {{count.all_num}} , &nbsp;&nbsp;
+                {{$lang('开启数据')}} : {{count.open_num}}
+            </div>
+            <?php if(ButtonAction::hidden()){ ?>
+            <div class="right-btn">
+                <span class="utils-btn" href="javascript:;" @click="toCodeType">Code Type {{$lang('管理')}}</span>
+                <el-button type="success" @click="doAddCodeValue">{{$lang('创建')}} Code Value</el-button>
+                <el-button type="success" :disabled="!isFinished" v-if="isAdd" @click="submitAdd">{{$lang('保存')}}
+                </el-button>
+            </div>
+            <?php }?>
+        </div>
+    </div>
+    <el-dialog :title="$lang('创建成功信息')" :visible.sync="dialogSaveResult">
+        <el-table :data="resultData" border>
+            <el-table-column property="cd" label="Code Id"></el-table-column>
+            <el-table-column property="val" label="Code Value"></el-table-column>
+        </el-table>
+    </el-dialog>
+    <div class="use-row">
+        <div class="col-100">
+
+						<el-table :data="dataList" border @selection-change="selectChange">
+							<el-table-column type="selection" width="60" align="center"></el-table-column>
+							<el-table-column label="Code Type Name" prop="CD_NM" width="220" align="center"></el-table-column>
+							<el-table-column label="Code Id" prop="CD" align="center" sortable></el-table-column>
+							<el-table-column label="Code Value" prop="CD_VAL" align="center">
+								<template slot-scope="scope">
+									<span v-if="!scope.row.isEditStatus">{{scope.row.CD_VAL}}</span>
+                  <el-input v-else v-model="scope.row.CD_VAL"></el-input>
+								</template>
+							</el-table-column>
+							<el-table-column label="Avaliable" prop="USE_YN" align="center" sortable>
+								<template slot-scope="scope">
+									<span v-if="!scope.row.isEditStatus">{{scope.row.USE_YN === 'Y' ? 'On' : 'Off'}}</span>
+									<el-switch v-else v-model="scope.row.USE_YN" active-value="Y" inactive-value="N" active-text="On" inactive-text="Off">
+									</el-switch>
+								</template>
+							</el-table-column>
+							<el-table-column label="Sort No" prop="SORT_NO" align="center" width="230" sortable>
+								<template slot-scope="scope">
+									<span v-if="!scope.row.isEditStatus">{{scope.row.SORT_NO}}</span>
+                  <el-input-number v-else v-model="scope.row.SORT_NO" :min="0" :max="9999"></el-input-number>
+								</template>
+							</el-table-column>
+							<el-table-column label="Comment1" prop="ETC" align="center">
+								<template slot-scope="scope">
+									<span v-if="!scope.row.isEditStatus">{{scope.row.ETC}}</span>
+                  <el-input v-else v-model="scope.row.ETC"></el-input>
+								</template>
+							</el-table-column>
+							<el-table-column label="Comment2" prop="ETC2" align="center">
+								<template slot-scope="scope">
+									<span v-if="!scope.row.isEditStatus">{{scope.row.ETC2}}</span>
+                  <el-input v-else v-model="scope.row.ETC2"></el-input>
+								</template>
+							</el-table-column>
+							<el-table-column label="Comment3" prop="ETC3" align="center">
+								<template slot-scope="scope">
+									<span v-if="!scope.row.isEditStatus">{{scope.row.ETC3}}</span>
+                  <el-input v-else v-model="scope.row.ETC3"></el-input>
+								</template>
+							</el-table-column>
+							<el-table-column label="Comment4" prop="ETC4" align="center">
+								<template slot-scope="scope">
+									<span v-if="!scope.row.isEditStatus">{{scope.row.ETC4}}</span>
+                  <el-input v-else v-model="scope.row.ETC4"></el-input>
+								</template>
+							</el-table-column>
+							<el-table-column label="Comment5" prop="ETC5" align="center">
+								<template slot-scope="scope">
+									<span v-if="!scope.row.isEditStatus">{{scope.row.ETC5}}</span>
+                  <el-input v-else v-model="scope.row.ETC5"></el-input>
+								</template>
+							</el-table-column>
+							<el-table-column :label="$lang('操作')" align="center">
+								<template slot-scope="scope">
+									<el-button v-if="!scope.row.isEditStatus && !scope.row.isAddStatus" @click="editSingle(scope.row)" type="primary" size="small">
+										{{$lang('编辑')}}
+                  </el-button>
+									<el-button v-if="scope.row.isEditStatus && !scope.row.isAddStatus" @click="submitAdd('single',scope.row)"	type="success" size="small">
+										{{$lang('保存')}}
+									</el-button>
+									<el-button v-if="scope.row.isAddStatus" @click="clearSingle(scope.$index)" type="error"	size="small">
+											{{$lang('清除')}}
+									</el-button>
+								</template>
+							</el-table-column>
+						</el-table>
+            <div class="paginationCode">
+              <el-pagination
+                background 
+                @size-change="handleSizeChange" 
+                @current-change="handleCurrentChange" 
+                :current-page.sync="pages.current_page" 
+                :page-sizes="[10, 30, 50, 100]" 
+                :page-size="pages.per_page" 
+                layout="sizes,prev, pager, next, jumper" 
+                :total="pages.total">
+              </el-pagination>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.form.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script>
+  if (getCookie('think_language') !== "zh-cn") {
+    ELEMENT.locale(ELEMENT.lang.en)
+  }
+  var way = new Vue({
+    el: '#codeTypeList',
+    data: {
+			multipleTable: [],
+      typeList: {},
+      isFinished: true,
+      isAdd: false,
+      dialogSaveResult: false,
+      existListLength: 0,
+      resultData: [],
+      sort: {
+        CD: {
+          isAbled: true,
+          value: true
+        },
+        SORT_NO: {
+          isAbled: false,
+          value: ''
+        },
+        Avaliable: {
+          isAbled: false,
+          value: ''
+        }
+      },
+      commentList:[{
+          label:'Comment1',
+          value:'1'
+        },
+        {
+          label:'Comment2',
+          value:'2'
+        },
+        {
+          label:'Comment3',
+          value:'3'
+        },
+        {
+          label:'Comment4',
+          value:'4'
+        },
+          {
+              label:'Comment5',
+              value:'5'
+          }],
+      form: {
+        type: 'N00068',
+        code_id:'',
+        code_value:'',
+        comment_type:'',
+        comment_content:''
+      },
+      pages:{
+        per_page:10,
+        current_page:1,
+        total:0
+      },
+      count: {
+        all_num: 0,
+        open_num: 0
+      },
+      sortOrders: ['ascending', 'descending'],
+      labelPosition: 'left',
+      dataList: [],
+      codeNewArr:[],
+      cdList:[]
+    },
+    created: function () {
+      this.getTypeList();
+      this.getCdTypeList('first');
+    },
+    mounted: function () {
+      this.scroll()
+    },
+    methods: {
+      // 获取当前时间YYYYMMDD格式作为导出文件命名
+      getNowDate() {
+        let nowDate = new Date();
+        let year = nowDate.getFullYear();
+        let month = nowDate.getMonth() + 1 < 10 ? "0" + (nowDate.getMonth() + 1) : nowDate.getMonth() + 1;
+        let day = nowDate.getDate() < 10 ? "0" + nowDate.getDate() : nowDate.getDate();
+        return year + month + day;
+      },
+			exportData() {
+        let ids = this.multipleTable.map(item => {
+          return item.CD;
+        })
+				var param = {
+          "search": {
+            "prefix" : this.form.type,
+            "code_id" : this.form.code_id,
+            "code_value" : this.form.code_value,
+            "comment_type" : this.form.comment_type,
+            "comment_content": this.form.comment_content,
+            "need_count" : 1,
+            "ids": ids
+          },
+        }
+        axios({
+          method: "post",
+          url: "/index.php?g=universal&m=dictionary&a=exportCodeList",
+          responseType: "blob",
+          data: param,
+        }).then(res => {
+          console.log(res.data)
+            let url = URL.createObjectURL(new Blob([res.data]));
+            let link = document.createElement("a");
+            link.style.display = "none";
+            link.href = url;
+            link.setAttribute("download",  `code管理${this.getNowDate()}.xls`);
+
+            document.body.appendChild(link);
+
+            link.click();
+            URL.revokeObjectURL(url); //释放blob对象
+            document.body.removeChild(link); //下载完成移除元素
+           
+          
+        })
+			},
+			selectChange(val) {
+				console.log(val)
+				this.multipleTable = val
+			},
+      getTypeList: function () {
+        var _this = this;
+        var param = {
+          "status": 1
+        };
+        axios.post('/index.php?g=universal&m=dictionary&a=getCdTypeKeyVal', Qs.stringify(param)).then(function (res) {
+          var data = res.data;
+          if (data.code == 200) {
+            _this.typeList = data.data;
+          } else {
+            _this.$message({
+              message: _this.$lang('获取数据失败'),
+              type: 'error'
+            });
+          }
+        })
+      },
+      getCdTypeList: function (type) {
+        var _this = this;
+        var param = {
+          "search": {
+            "prefix" : _this.form.type,
+            "code_id" : _this.form.code_id,
+            "code_value" : _this.form.code_value,
+            "comment_type" : _this.form.comment_type,
+            "comment_content": _this.form.comment_content,
+            "need_count" : 1,
+          },
+          "pages": {       
+            "per_page": _this.pages.per_page,
+            "current_page":_this.pages.current_page
+          }
+        };
+        axios.post('/index.php?g=universal&m=dictionary&a=getCodeList',param).then(function (res) {
+          if(res.data.code == 200){
+            var data_list_arr = res.data.data.data
+            var cdList = []
+            for (const item in data_list_arr) {
+              cdList.push(data_list_arr[item].CD)
+            }
+            this.cdList = cdList
+            if(type === 'getLastCode'){
+              var param2 = {
+                "prefix": _this.form.type,
+                "need_count": 1,
+              };
+              axios.post('/index.php?g=universal&m=dictionary&a=getDictionaryList',Qs.stringify(param2)).then(function (res) {
+                if(res.data.code == 200){
+                  var data = res.data;
+                  // 列出所有code id
+                  if(res.data.data.count.all_num > 0){
+                    var keyArr = Object.keys(data.data[_this.form.type])
+                  }else{
+                    var keyArr = []
+                  }
+                  // var keyArr = Object.keys(data.data[_this.form.type])
+                  // 列出所有code id number
+                  var codeArr = []
+                  for (var item in keyArr) {
+                    keyArr[item] = keyArr[item].substr(1);
+                    codeArr.push(Number(keyArr[item]))
+                  }
+                  // console.log(codeArr);
+                  
+                  // 新增的加到初始数据里
+                  var codeNewArr = []
+                  if(_this.codeNewArr.length == 0){
+                    codeNewArr = []
+                  }else{
+                    codeNewArr = _this.codeNewArr
+                    codeArr.push(...codeNewArr);
+                  }
+                  // console.log(codeArr);
+                  
+                  // 取最大值
+                  if(codeArr.length == 0){
+                    var codeFirst = _this.form.type
+                    var codeFirstStr = (codeFirst + '0001').substr(1)
+                    var maxNumber = Number(codeFirstStr)
+                  }else{
+                    var maxNumber = Math.max(...codeArr) + 1
+                  }
+                  codeNewArr.push(maxNumber)
+                  _this.codeNewArr = codeNewArr
+
+                  // console.log(_this.codeNewArr);
+                  
+                  
+                  // 生成code id
+                  var num = ('00000000'+maxNumber.toString()).slice(-9)
+                  var newCode = 'N' + num
+                
+                  
+
+                  _this.dataList.unshift({
+                    CD: newCode,
+                    CD_NM: _this.typeList[_this.form.type],
+                    CD_VAL: "",
+                    USE_YN: "N",
+                    SORT_NO: '',
+                    ETC: '',
+                    ETC2: '',
+                    ETC3: '',
+                    ETC4: '',
+                    isAddStatus: true,
+                    isEditStatus: true
+                  })
+                  
+
+                }
+             
+                });
+            }else if (type !== 'getCount') {
+              var dataListArr = []
+              var temp = res.data.data.data;
+              for (var key in temp) {
+                temp[key].isEditStatus = false;
+                dataListArr.push(temp[key])
+              }
+              _this.dataList = dataListArr
+         
+              _this.count.all_num = res.data.data.count.all_num
+              _this.count.open_num = res.data.data.count.open_num
+      
+              _this.pages.total = Number(res.data.data.pages.total)
+            }
+
+          } else {
+            _this.$message({
+              message: res.data.msg,
+              type: 'error'
+            });
+          }
+
+
+        })
+
+
+      },
+      toCodeType: function () {
+        var dom = document.createElement('a');
+        var _href = "/index.php?m=code&a=code_type";
+        dom.setAttribute("onclick", "opennewtab(this,'" + this.$lang('Code Type 管理') + "')");
+        dom.setAttribute("_href", _href);
+        dom.click();
+      },
+      clearSingle: function (index) {
+        // console.log(index);
+        
+        var _this = this;
+        var codeNewArr3 = []
+        var codeNewArr = _this.codeNewArr
+        // var cdStr = _this.dataList[index].CD
+        // for (var item in codeNewArr) {
+        //   if(cdStr.indexOf(codeNewArr[item].toString()) != -1){
+        //     _this.codeNewArr.splice(item,1)
+        //   }
+        // }
+        // console.log(_this.codeNewArr);
+        // this.$delete(this.codeNewArr, index);
+
+        // this.$delete(this.dataList, index);
+        // console.log(_this.codeNewArr);
+        // var flag = true;
+        for (var i = 0;  i < _this.dataList.length;i++) {
+          var cdStr = _this.dataList[i].CD
+          if(i == index){
+            
+            
+            // for (var item in codeNewArr) {
+            //   // console.log(cdStr);
+            //   // console.log(codeNewArr[item]);
+            //   if(cdStr.indexOf(codeNewArr[item].toString()) != -1){
+            //     // console.log(codeNewArr[item]);
+            //     // _this.xx = item
+                
+                
+            //     // _this.codeNewArr.splice(item,1)
+            //   }
+            // }
+            
+            
+            // this.$delete(this.dataList, index);
+            break;
+          }else{
+
+            // console.log(cdStr);
+            // for (var item in codeNewArr) {
+            //   if(cdStr.indexOf(codeNewArr[item].toString()) != -1){ 
+               
+            //     codeNewArr2.push(codeNewArr[item] -1)
+                
+            //     // console.log(codeNewArr[item]);
+            //     // codeNewArr[item] = codeNewArr[item] -1
+            //     // _this.codeNewArr.splice(item,1)
+            //   }
+            // }
+            
+            
+            
+            _this.$set(_this.dataList[i],'CD',_this.autoAdd(_this.dataList[i].CD, -1));
+            // this.$delete(this.dataList, index);
+          }
+          
+          
+          
+          // _this.codeNewArr = codeNewArr2
+          
+        }
+        // _this.codeNewArr.splice(_this.xx,1)
+
+        this.$delete(this.dataList, index);
+        // console.log(_this.codeNewArr);
+        // console.log(_this.dataList);
+        var codeNewArr2 = this.dataList
+        var codeArr2 = []
+        for (var item in codeNewArr2) {
+          if(codeNewArr2[item].isEditStatus){
+            var cd = codeNewArr2[item].CD
+            cd = cd.substr(1);
+            codeArr2.push(Number(cd))
+          }
+        }
+        _this.codeNewArr = codeArr2
+        
+        
+
+        // this.dataList.forEach(function (el) {
+        //   if (el.isAddStatus) {
+        //     flag = false
+        //   }
+        // });
+        // if (flag) {
+        //   this.isAdd = false
+        // }
+        // console.log(this.dataList);
+        
+      },
+      /**
+       * fix 新增保存按钮
+       */
+      scroll: function () {
+        var btn = document.querySelector('.right-btn');
+        var btnTop = btn.offsetTop;
+        window.addEventListener('scroll', function () {
+          if (window.scrollY > btnTop) {
+            btn.style.position = 'fixed';
+            btn.style.top = '0px';
+            btn.style.right = '28px';
+            btn.style.backgroundColor = 'rgba(255,255,255,.6)';
+          } else {
+            btn.style.position = 'static';
+          }
+        })
+      },
+      /**
+       * 新增Code Value
+       */
+      doAddCodeValue: function () {
+        var _this = this;
+        if(_this.form.type){
+          this.isAdd = true;
+          this.getCdTypeList('getLastCode');
+        }else{
+            _this.$message({
+              message: '请先选择Code Type',
+              type: 'warning'
+            });
+        }
+      },
+      editSingle: function (item) {
+        item.isEditStatus = true;
+      },
+      autoAdd: function (str, n) {
+        if (str.length === 6) {
+          return str + '0001'
+        } else {
+          var startStr = str.substr(0, 6);
+          var endStr = str.substr(-4);
+          var resultEndStr = +endStr + +n;
+          while (String(resultEndStr).length < 4) {
+            resultEndStr = '0' + resultEndStr;
+          }
+          return startStr + resultEndStr;
+        }
+      },
+      submitAdd: function (type, item) {
+        
+        
+
+        var _this = this;
+        var flag = true;
+        var param = {};
+        var paramObj = [];
+        var dataList = JSON.parse(JSON.stringify(this.dataList));
+        console.log(dataList);
+
+        // 单个编辑
+        if (type === 'single') {
+          item.CD_VAL = this.trimStr(item.CD_VAL)?this.trimStr(item.CD_VAL):'';
+          item.ETC = this.trimStr(item.ETC)?this.trimStr(item.ETC):'';
+          item.ETC2 = this.trimStr(item.ETC2)?this.trimStr(item.ETC2):'';
+          item.ETC3 = this.trimStr(item.ETC3)?this.trimStr(item.ETC3):'';;
+          item.ETC4 = this.trimStr(item.ETC4)?this.trimStr(item.ETC4):'';;
+          item.ETC5 = this.trimStr(item.ETC5)?this.trimStr(item.ETC5):'';;
+
+            item.is_add = 'N'
+
+          if (!item.CD_VAL) {
+            flag = false;
+            _this.$message({
+              message: 'Code Value为必填',
+              type: 'error'
+            });
+            return;
+          }
+          paramObj.push(item)
+        } else {
+          // 多个新增
+          for (var key in dataList) {
+            dataList[key].CD_VAL = this.trimStr(dataList[key].CD_VAL)?this.trimStr(dataList[key].CD_VAL):'';
+            dataList[key].ETC = this.trimStr(dataList[key].ETC)?this.trimStr(dataList[key].ETC):'';
+            dataList[key].ETC2 = this.trimStr(dataList[key].ETC2)?this.trimStr(dataList[key].ETC2):'';
+            dataList[key].ETC3 = this.trimStr(dataList[key].ETC3)?this.trimStr(dataList[key].ETC3):'';
+            dataList[key].ETC4 = this.trimStr(dataList[key].ETC4)?this.trimStr(dataList[key].ETC4):'';
+            dataList[key].ETC5 = this.trimStr(dataList[key].ETC5)?this.trimStr(dataList[key].ETC5):'';
+
+            if (!dataList[key].CD_VAL) {
+              flag = false;
+              _this.$message({
+                message: 'Code Value为必填',
+                type: 'error'
+              });
+              return;
+            }
+            if(cdList.indexOf(dataList[key].CD) == -1){
+              dataList[key].is_add = 'Y'
+            }else{
+              dataList[key].is_add = 'N'
+            }
+            
+           
+            if (dataList[key].isEditStatus) {
+              paramObj.push(dataList[key])
+            }
+          }
+          
+        }
+        var valueList = [];
+        paramObj.forEach(function (el) {
+          valueList.push(el.CD_VAL)
+        });
+        if (!this.unique(valueList)) {
+          _this.$message({
+            message: 'Code Value不能重复',
+            type: 'error'
+          });
+          return
+        } else {
+          paramObj.forEach(function (el) {
+             el.isEditStatus = false
+            _this.$delete(el, 'isAddStatus');
+            _this.$delete(el, 'FLAG');
+          })
+        }
+        var paramObjCopy = JSON.parse(JSON.stringify(paramObj))
+          paramObjCopy.forEach(function (el) {
+              _this.$delete(el, 'isEditStatus');
+          })
+        param = {
+          "cd_type": _this.form.type,
+          "data": paramObjCopy
+        };
+        // 多个新增 加is_add标识
+        // if (type !== 'single') {
+        //   param.is_add = 1;
+        // }
+        console.log(param);
+        
+        if (flag) {
+          this.isFinished = false;
+          axios.post('/index.php?g=universal&m=dictionary&a=saveDictionaryByCdType', Qs.stringify(param)).then(function (res) {
+            var data = res.data;
+            _this.isFinished = true;
+            if (data.code == 200) {
+              _this.$message({
+                message: data.msg,
+                type: 'success'
+              });
+              // if (type !== 'single') {
+              //   _this.isAdd = false;
+              // }
+                if(type !== 'single'){
+                    setTimeout(function () {
+                        _this.search()
+                        //window.location.reload()
+                        // if (type !== 'single') {
+                        //   _this.dialogSaveResult = true;
+                        //   _this.resultData = data.data;
+                        //   _this.getCdTypeList();
+                        // } else {
+                        //   _this.getCdTypeList('getCount');
+                        //   _this.$set(item, 'isEditStatus', false);
+                        // }
+                    }, 1000)
+                }
+
+            } else {
+              _this.$message({
+                message: data.msg,
+                type: 'error'
+              });
+              _this.getCdTypeList();
+            }
+          }).catch(function (error) {
+            console.log(error);
+            _this.isFinished = true;
+          });
+        }
+
+      },
+      trimStr: function (str) {
+        if(str){
+          return str.replace(/(^\s*)|(\s*$)/g, "");
+        }
+
+      },
+      handleSizeChange: function handleSizeChange(val) {
+            this.pages = {
+                  per_page: val,
+                  current_page: 1
+              },
+            this.getCdTypeList();
+            this.isAdd = false;
+      },
+      handleCurrentChange: function handleCurrentChange(val) {
+          this.pages.current_page = val
+          this.getCdTypeList();
+          this.isAdd = false;
+      },
+      unique: function (arr) {
+        var result = [];
+        var hash = {};
+        for (var i = 0; i < arr.length; i++) {
+          var key = (typeof arr[i]) + arr[i];
+          if (!hash[key]) {
+            result.push(arr[i]);
+            hash[key] = true;
+          }
+        }
+        return result.length === arr.length;
+      },
+			search:function(){
+          this.getCdTypeList();
+          this.isAdd = false;
+      },
+      reset:function(){
+        this.form={
+          type: 'N00068',
+          code_id:'',
+          code_value:'',
+          comment_type:'',
+          comment_content:''
+        }
+        this.getCdTypeList();
+        this.isAdd = false;
+      },
+    },
+    filters: {
+      numberFormat: function (val) {
+        if (val) {
+          var num = parseFloat(val).toLocaleString();
+          return num.indexOf('.') > 0 ? num : num + ".00";
+        }
+      }
+    },
+    watch: {
+      // form: {
+      //   handler: function handler(newValue, oldValue) {
+      //     this.getCdTypeList();
+      //     this.isAdd = false;
+      //   }
+      //   ,
+      //   deep: true
+      // }
+    }
+    ,
+  })
+</script>
+</body>
+
+</html>

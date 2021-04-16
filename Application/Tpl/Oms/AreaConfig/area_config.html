@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>偏远地区</title>
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+  <link rel="stylesheet"
+        href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+  <link rel="stylesheet"
+        href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+  <link rel="stylesheet"
+        href="./Application/Tpl/Home/Public/../Hr/hrstyle.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+  <link rel="stylesheet"
+        href="./Application/Tpl/Home/Public/css/btn-new.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+  <link rel="stylesheet"
+        href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+</head>
+
+<style>
+    [v-cloak] {
+        display: none;
+    }
+
+    .el-row + .el-row {
+        margin-top: 15px;
+    }
+
+    .el-pagination {
+        margin-bottom: 180px;
+    }
+
+    .normal {
+        white-space: normal !important;
+        word-wrap: break-word;
+        word-break: break-all;
+    }
+
+    .create-wrap {
+        white-space: nowrap;
+    }
+
+    .create-wrap .occupy {
+        display: inline-block;
+        width: 49.5%;
+    }
+
+    .show-list .el-form-item__label {
+        padding: 0px 10px 0px 0px;
+    }
+
+    .utils-btn {
+        margin-left: 30px;
+        color: #409EFF;
+        text-decoration: underline;
+    }
+
+    .show-list .table-list tr th {
+        padding: 0px 6px;
+    }
+
+    .show-list .table-list tr td {
+        white-space: normal;
+    }
+
+    .el-tabs__nav-wrap::after {
+        height: 0px;
+    }
+
+    .el-tabs__item {
+        outline: none !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    .el-tabs__item {
+        font-size: 18px;
+    }
+
+    .el-table th.is-leaf {
+        background-color: #546e7a;
+        color: #fff;
+    }
+
+    .right-btn {
+        display: flex;
+        justify-content: flex-end;
+    }
+</style>
+
+<body>
+<div id="remote" class="show-list" v-cloak>
+  <el-tabs v-model="activeName" @tab-click="changeTab">
+    <el-tab-pane :label="$lang('偏远地区邮编配置列表')" name="remote">
+      <el-form ref="formSearch" :model="form" label-position="left" label-width="130px">
+        <div class="use-row">
+          <div class="col-100">
+            <table class="search-table">
+              <tbody>
+              <tr>
+                <td width="50%">
+                  <el-select style="width:120px" v-model="form.country_id" :placeholder="$lang('国家')"
+                             fIlterable>
+                    <el-option v-for="item in baseData" :key="item.id" :label="item.zh_name"
+                               :value="item.id">
+                    </el-option>
+                  </el-select>
+
+                  <el-input style="width:300px" v-model="form.prefix_postal_code"
+                            :placeholder="$lang('邮编输入')">
+
+                  </el-input>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="btns">
+                    <button type="button" class="btn-search" @click="search">
+                      {{$lang('搜索')}}
+                    </button>
+                    <button type="button" class="btn-reset" @click="reset('formSearch')">
+                      {{$lang('重置')}}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </el-form>
+      <div class="baseline"></div>
+      <div class="use-row create-wrap">
+        <div class="col-100 result-num occupy">
+          {{$lang('配置')}}:&nbsp
+          <b>{{totalCount}}</b> &nbsp{{$lang('条')}}{{$lang('偏远地区')}}
+          <div class="right-btn">
+            <el-button v-if="batchAddState" :loading="isLoading" type="success" size="small"
+                       style="float: right;margin-left:24px;" @click="doAddBatch">{{$lang('批量保存')}}
+            </el-button>
+            <el-button type="primary" size="small" style="margin-left: 15px" @click="onTemplateDownload">{{$lang('模板下载')}}
+            </el-button>
+            <!--                        <el-button type="primary" size="small" @click="onImport">{{$lang('导入')}}-->
+            <!--                        </el-button>-->
+            <el-upload
+                data-test="file"
+                class="upload-demo"
+                ref="upload"
+                accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                name="excel"
+                :action="fileUploadUrl"
+                :on-success="onUploadSuccess"
+                :on-error="onUploadError"
+                :before-upload="beforeUpload"
+                :on-change="onUploadChange"
+                :auto-upload="true"
+                :limit="2"
+                :multiple="false"
+                :disabled="isUploadDisabled"
+                :show-file-list="false"
+            >
+              <el-button
+                  style="margin-left: 15px"
+                  :disabled="isUploadDisabled"
+                  size="small"
+                  type="primary"
+              >{{$lang('导入')}}
+              </el-button
+              >
+            </el-upload>
+            <el-button type="primary" size="small" style="margin-left: 15px" @click="addRow">{{$lang('新增')}}
+            </el-button>
+          </div>
+        </div>
+      </div>
+      <div class="use-row">
+        <div class="col-100">
+          <el-table :data="tableData" show-header border stripe
+                    style="width: 100%">
+            <el-table-column align="center" :label="$lang('序号')" width="180">
+              <template slot-scope="scope">
+                {{scope.$index + 1 + pageForm.per_page * (pageForm.current_page - 1)}}
+              </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('国家')" width="180">
+              <template slot-scope="scope">
+                <div v-if="!scope.row.isAddState && !scope.row.isEditState">{{scope.row.country_name}}
+                </div>
+                <el-select v-if="scope.row.isAddState ||scope.row.isEditState" style="width:120px"
+                           size="small"
+                           v-model="scope.row.country_id"
+                           :placeholder="$lang('国家')"
+                           fIlterable>
+                  <el-option v-for="item in baseData" :key="item.id" :label="item.zh_name"
+                             :value="item.id">
+                  </el-option>
+                </el-select>
+              </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('地区/描述')">
+              <template slot-scope="scope">
+                <div v-if="!scope.row.isAddState && !scope.row.isEditState">{{scope.row.description }}
+                </div>
+                <el-input size="small" v-if="scope.row.isAddState ||scope.row.isEditState"
+                          v-model="scope.row.description"></el-input>
+              </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('邮编前n位')">
+              <template slot-scope="scope">
+                <div v-if="!scope.row.isAddState && !scope.row.isEditState">
+                  {{scope.row.prefix_postal_code}}
+                </div>
+                <el-input size="small" v-if="scope.row.isAddState ||scope.row.isEditState"
+                          v-model="scope.row.prefix_postal_code"></el-input>
+              </template>
+            </el-table-column>
+
+            <el-table-column align="center" :label="$lang('物流公司')">
+              <template slot-scope="scope">
+                <div v-if="!scope.row.isAddState && !scope.row.isEditState">
+                  {{scope.row.logistics_company_name}}
+                </div>
+                <el-select v-if="scope.row.isAddState ||scope.row.isEditState" size="small"
+                           v-model="scope.row.logistics_company" :placeholder="$lang('物流公司')" fIlterable>
+                  <el-option v-for="(item,index) in logisticsCompany" :key="index" :label="item.cdVal"
+                             :value="item.cd"></el-option>
+                </el-select>
+              </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('物流方式')">
+              <template slot-scope="scope">
+                <div v-if="!scope.row.isAddState && !scope.row.isEditState">
+                  {{scope.row.logistics_mode_name}}
+                </div>
+                <el-select v-if="scope.row.isAddState ||scope.row.isEditState" size="small"
+                           v-model="scope.row.logistics_mode" :placeholder="$lang('物流方式')" fIlterable>
+                  <el-option v-for="(item,index) in logisticsType" :key="index" :label="item.logisticsMode"
+                             :value="item.id"></el-option>
+                </el-select>
+              </template>
+            </el-table-column>
+
+            <el-table-column align="center" :label="$lang('更新记录')">
+              <template slot-scope="scope">
+                <div v-if="!scope.row.isAddState">{{scope.row.updated_by}} &nbsp;{{scope.row.updated_at}}
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('操作')">
+              <template slot-scope="scope">
+                <el-button v-if="!scope.row.isAddState && !scope.row.isEditState" type="danger"
+                           size="small"
+                           @click="doDelete(scope.row)">{{$lang('删除')}}
+                </el-button>
+                <el-button v-if="!scope.row.isAddState && !scope.row.isEditState" type="primary"
+                           size="small"
+                           @click="getRowInfo(scope.row,scope.$index)">{{$lang('编辑')}}
+                </el-button>
+                <el-button v-if="scope.row.isAddState" type="default" size="small"
+                           @click="doCancel('add',scope.$index)">{{$lang('取消')}}
+                </el-button>
+                <el-button v-if="scope.row.isEditState" type="default" size="small"
+                           @click="doCancel('edit',scope.$index)">{{$lang('取消')}}
+                </el-button>
+                <el-button v-if="scope.row.isAddState || scope.row.isEditState" type="success"
+                           size="small"
+                           @click="doAdd(scope.row)">{{$lang('保存')}}
+                </el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </div>
+      <div class="use-row">
+        <div class="col-100 text-right">
+          <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange"
+                         :current-page.sync="pageForm.current_page"
+                         :page-sizes="[10, 50, 100]" :page-size="pageForm.per_page"
+                         layout="sizes, prev, pager, next,jumper"
+                         :total="totalCount"></el-pagination>
+        </div>
+      </div>
+    </el-tab-pane>
+    <el-tab-pane :label="$lang('日志记录')" name="log">
+      <el-form ref="formLog" :model="formLog" label-position="left" label-width="130px" style="margin:20px 0;">
+        <el-date-picker
+            value-format="yyyy-MM-dd"
+            v-model="logTime"
+            type="daterange"
+            :range-separator="$lang('至')"
+            :start-placeholder="$lang('开始日期')"
+            :end-placeholder="$lang('结束日期')">
+        </el-date-picker>
+        <div class="btns" style="display: inline-block;">
+          <button type="button" class="btn-search" @click="search">
+            {{$lang('搜索')}}
+          </button>
+        </div>
+      </el-form>
+      <div class="use-row">
+        <div class="col-100">
+          <el-table :data="tableDataLog" show-header border stripe
+                    style="width: 100%">
+            <el-table-column align="center" :label="$lang('序号')" width="100px;">
+              <template slot-scope="scope">
+                {{scope.$index + 1 + pageFormLog.per_page * (pageFormLog.current_page - 1)}}
+              </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('操作人')" width="240px;">
+              <template slot-scope="scope">
+                {{scope.row.updated_by}}
+              </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('操作日期')" width="360px;">
+              <template slot-scope="scope">
+                {{scope.row.updated_at}}
+              </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('操作内容')">
+              <template slot-scope="scope">
+                <div v-for="item in JSON.parse(scope.row.content)">{{item.content}}</div>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </div>
+      <div class="use-row">
+        <div class="col-100 text-right">
+          <el-pagination @size-change="handleSizeChangeLog" @current-change="handleCurrentChangeLog"
+                         :current-page.sync="pageFormLog.current_page"
+                         :page-sizes="[10, 50, 100]" :page-size="pageFormLog.per_page"
+                         layout="sizes, prev, pager, next,jumper"
+                         :total="totalCountLog"></el-pagination>
+        </div>
+      </div>
+    </el-tab-pane>
+  </el-tabs>
+
+  <el-dialog :title="$lang('Excel导入异常')" :visible.sync="dialogTableVisible" v-if="dialogTableVisible">
+    <el-table :data="errorData" style="width: 100%">
+      <el-table-column :label="$lang('错误行')" width="150">
+        <template slot-scope=scope>
+          <div>{{$lang(scope.row.errorColumn)}}</div>
+        </template>
+      </el-table-column>
+      <el-table-column :label="$lang('错误消息')">
+        <template slot-scope=scope>
+          <div v-for="(item,index) in scope.row.errorMessage "><span :key="index">{{$lang(item)}}</span></div>
+        </template>
+      </el-table-column>
+    </el-table>
+  </el-dialog>
+</div>
+
+<script type="text/javascript"
+        src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript"
+        src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.form.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+<script src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript"
+        src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script>
+    if (getCookie('think_language') !== "zh-cn") {
+        ELEMENT.locale(ELEMENT.lang.en)
+    }
+    var way = new Vue({
+        el: '#remote',
+        data: {
+            activeName: 'remote',
+            tableLoading: false,
+            isLoading: false,
+            batchAddState: false,
+            totalCount: 0,
+            totalCountLog: 0,
+            baseData: [],
+            tableData: [],
+            tableDataLog: [],
+            logTime: [],
+            form: {},
+            formLog: {},
+            pageForm: {
+                per_page: 10,
+                current_page: 1
+            },
+            pageFormLog: {
+                per_page: 10,
+                current_page: 1
+            },
+            logisticsCompany: [], // 物流公司列表
+            logisticsType: [], // 物流方式列表
+            fileUploadUrl: '/index.php?g=OMS&m=AreaConfig&a=import',
+            isUploadDisabled: false,
+            fileListLength: 0,
+            dialogTableVisible:false,
+            errorData:[]
+        },
+        created: function () {
+            this.initData();
+            this.getLog();
+            this.search();
+            this.getLogistics();
+        },
+        mounted: function () {
+            this.scroll()
+        },
+        methods: {
+            getLogistics() {
+                var param = {
+                    data: {
+                        query: {
+                            logisticsCompany: "true",
+                            logisticsType: "true",
+                        },
+                        type: "sorting"
+                    }
+                };
+
+                axios.post('/index.php?g=oms&m=CommonData&a=commonData', param).then((res) => {
+                    var data = res.data;
+                    console.log(data)
+                    if (data.code == 2000) {
+                        this.logisticsCompany = data.data.logisticsCompany;
+                        this.logisticsType = data.data.logisticsType;
+                    } else {
+                        this.$message({
+                            message: data.msg,
+                            type: 'error'
+                        });
+                    }
+                })
+            },
+            changeTab: function (val) {
+                if (val.name == 'remote') {
+                    this.search()
+                } else {
+                    this.logTime = [];
+                }
+                var tables = document.querySelectorAll('table');
+                for (var i = 0; i < tables.length; i++) {
+                    tables[i].style.width = '100%'
+                }
+                ;
+                var elHeaders = document.querySelectorAll('.el-table__header');
+                for (var j = 0; j < elHeaders.length; j++) {
+                    elHeaders[j].style.tableLayout = 'inherit'
+                }
+            },
+            initData: function () {
+                var _this = this;
+                var param = {
+                    parent_no: 0
+                };
+                axios.post('/index.php?g=common&m=index&a=get_area', param).then(function (res) {
+                    var data = res.data;
+                    if (data.code == 2000) {
+                        _this.baseData = data.data;
+                    } else {
+                        _this.$message({
+                            message: data.msg,
+                            type: 'error'
+                        });
+                    }
+                })
+            },
+            search: function () {
+                var _this = this;
+                var param = {
+                    search: this.form,
+                    pages: this.pageForm
+                };
+                axios.post('/index.php?g=OMS&m=AreaConfig&a=configList', param).then(function (res) {
+                    var data = res.data;
+                    if (data.code == 200) {
+                        _this.tableData = data.data.data ? data.data.data : [];
+                        _this.totalCount = +data.data.pages.total;
+                    } else {
+                        _this.$message({
+                            message: data.msg,
+                            type: 'error'
+                        });
+                    }
+                })
+            },
+            scroll: function () {
+                var btn = document.querySelector('.right-btn');
+                var btnTop = btn.offsetTop;
+                window.addEventListener('scroll', function () {
+                    if (window.scrollY > btnTop + 90) {
+                        btn.style.position = 'fixed';
+                        btn.style.top = '0px';
+                        btn.style.zIndex = '999';
+                        btn.style.right = '28px';
+                        btn.style.backgroundColor = 'rgba(255,255,255,.6)';
+                    } else {
+                        btn.style.position = 'static';
+                    }
+                })
+            },
+            getLog: function () {
+                var _this = this;
+                var param = {
+                    search: {
+                        updated_at: {
+                            start: this.logTime && this.logTime[0] ? this.logTime[0] : '',
+                            end: this.logTime && this.logTime[1] ? this.logTime[1] : ''
+                        }
+                    },
+                    pages: this.pageFormLog,
+                    table_map: "area_config"
+                };
+                axios.post('/index.php?g=common&m=index&a=getLogs', param).then(function (res) {
+                    var data = res.data;
+                    if (data.code == 200) {
+                        console.log(data.data);
+                        _this.tableDataLog = data.data.data && data.data.data.length ? data.data.data : [];
+                        _this.totalCountLog = +data.data.pages.total;
+                    } else {
+                        _this.$message({
+                            message: data.msg,
+                            type: 'error'
+                        });
+                    }
+                })
+            },
+            reset: function (formName) {
+                this.form = {};
+                this.search()
+            },
+            onTemplateDownload() {
+                const responseType = "blob";
+                axios.get(`/index.php?g=common&m=file&a=template_download&name=area_config_import.xlsx`, {
+                    responseType: responseType
+                }).then((response) => {
+                    let alink = document.createElement("a");
+                    alink.href = URL.createObjectURL(response.data);
+                    alink.download = 'area_config_import.xlsx';
+                    alink.click();
+                });
+            },
+            beforeUpload(file) {
+                if (file.name.substr(-4) !== "xlsx") {
+                    this.$message.error(this.$lang(`请选择正确的导入excel文件！`));
+                    return false;
+                }
+            },
+            onUploadChange(file, filelist) {
+                if (file.status === "ready" && filelist.length > 1) {
+                    filelist.splice(0, 1);
+                }
+                this.fileListLength = filelist.length;
+            },
+            onUploadSuccess(response) {
+                if (response.code === 2000) {
+                    this.$message.success(this.$lang('导入成功'));
+                    this.search();
+
+                } else {
+                    if (response.data.length !== 0) {
+                        let dataMessage = response.data;
+                        this.errorData = [];
+                        Object.keys(dataMessage).forEach((key) => {
+                            this.errorData.push({
+                                errorColumn:key,
+                                errorMessage:dataMessage[key].errors
+                            })
+                        });
+                        this.dialogTableVisible = true;
+
+                    } else {
+                        this.$message.error(this.$lang(response.msg));
+                    }
+
+                }
+                console.log("文件上传成功", response);
+            },
+            onUploadError(error) {
+                console.log("文件上传失败", error);
+                this.$error.show(error, "文件上传失败");
+            },
+            onImport() {
+
+            },
+            addRow: function () {
+                this.tableData.unshift({
+                    isAddState: true,
+                    country_id: '',
+                    description: '',
+                    prefix_postal_code: '',
+                    logistics_company: '', // 物流公司
+                    logistics_mode: '', // 物流方式
+                })
+                this.batchAddState = true;
+            },
+            doCancel: function (type, index) {
+                if (type === 'add') {
+                    var flag = false;
+                    this.$delete(this.tableData, index);
+                    this.tableData.forEach(function (el) {
+                        if (el.isAddState) {
+                            flag = true;
+                        }
+                    });
+                    this.batchAddState = flag;
+                } else {
+                    this.$delete(this.tableData[index], 'isEditState');
+                }
+            },
+            doAddBatch: function () {
+                var _this = this;
+                var flag = true;
+                var param = [];
+                this.tableData.forEach(function (el) {
+                    if (el.isAddState) {
+                        param.push(el)
+                    }
+                });
+                console.log(param)
+                param.forEach(function (el) {
+                    if (!el.country_id) {
+                        _this.$message({
+                            message: _this.$lang('请选择国家'),
+                            type: 'error'
+                        });
+                        flag = false;
+                        return;
+                    } else if (!el.prefix_postal_code) {
+                        _this.$message({
+                            message: _this.$lang('请填写邮编'),
+                            type: 'error'
+                        });
+                        flag = false;
+                        return;
+                    }
+                    if (!el.logistics_company) {
+                        _this.$message({
+                            message: _this.$lang('请选择物流公司'),
+                            type: 'error'
+                        });
+                        flag = false;
+                        return;
+                    }
+                    if (!el.logistics_mode) {
+                        _this.$message({
+                            message: _this.$lang('请选择物流方式'),
+                            type: 'error'
+                        });
+                        flag = false;
+                        return;
+                    }
+                });
+                if (!flag) return false;
+                // param.forEach(function (el) {
+                //   _this.$delete(el,'isAddState')
+                // });
+                this.isLoading = true;
+                axios.post('/index.php?g=OMS&m=AreaConfig&a=saveConfig', param).then(function (res) {
+                    var data = res.data;
+                    _this.isLoading = false;
+                    if (data.code == 200) {
+                        _this.$message({
+                            message: 'Success',
+                            type: 'success'
+                        });
+                        _this.batchAddState = false;
+                        _this.search();
+                    } else {
+                        _this.$message({
+                            message: data.msg,
+                            type: 'warning'
+                        });
+                    }
+                })
+            },
+            getRowInfo: function (row, index) {
+                var _this = this;
+                var param = {
+                    config_id: row.id
+                };
+                axios.post('/index.php?g=OMS&m=AreaConfig&a=configInfo', param).then(function (res) {
+                    var data = res.data;
+                    if (data.code == 200) {
+                        _this.$set(_this.tableData[index], 'isEditState', true);
+                    } else {
+                        _this.$message({
+                            message: data.msg,
+                            type: 'error'
+                        });
+                    }
+                })
+            },
+            doDelete: function (row) {
+                var _this = this;
+                this.$confirm("确认要删除\"" + row.prefix_postal_code + "\"这条邮编信息吗？", {
+                    distinguishCancelAndClose: true,
+                    confirmButtonText: '确认',
+                    cancelButtonText: '取消'
+                }).then(function () {
+                    var param = {
+                        config_id: row.id
+                    };
+                    axios.post('/index.php?g=OMS&m=AreaConfig&a=deleteConfig', param).then(function (res) {
+                        var data = res.data;
+                        if (data.code == 200) {
+                            _this.$message({
+                                message: 'Success',
+                                type: 'success'
+                            });
+                            _this.search();
+                        } else {
+                            _this.$message({
+                                message: data.msg,
+                                type: 'error'
+                            });
+                        }
+                    })
+                }).catch(function (action) {
+
+                });
+
+            },
+            doAdd: function (row) {
+                var _this = this;
+                if (!row.country_id) {
+                    _this.$message({
+                        message: _this.$lang('请选择国家'),
+                        type: 'error'
+                    });
+                    return false;
+                } else if (!row.prefix_postal_code) {
+                    _this.$message({
+                        message: _this.$lang('请填写邮编'),
+                        type: 'error'
+                    });
+                    return false;
+                } else if (!/^\d+$/.test(row.prefix_postal_code)) {
+                    _this.$message({
+                        message: _this.$lang('邮编只能为数字'),
+                        type: 'error'
+                    });
+                    return false;
+                } else if (!row.logistics_company) {
+                    _this.$message({
+                        message: _this.$lang('请选择物流公司'),
+                        type: 'error'
+                    });
+                    return false
+                } else if (!row.logistics_mode) {
+                    _this.$message({
+                        message: _this.$lang('请选择物流方式'),
+                        type: 'error'
+                    });
+                    return false
+                }
+                console.log(row);
+                var param;
+                if (row.isAddState) { // 新增
+                    var param = [{
+                        country_id: row.country_id,
+                        description: row.description,
+                        prefix_postal_code: row.prefix_postal_code,
+                        logistics_company: row.logistics_company, // 物流公司
+                        logistics_mode: row.logistics_mode, // 物流方式
+                    }];
+                } else { // 编辑
+                    param = {
+                        country_id: row.country_id,
+                        description: row.description,
+                        prefix_postal_code: row.prefix_postal_code,
+                        logistics_company: row.logistics_company, // 物流公司
+                        logistics_mode: row.logistics_mode, // 物流方式
+                        config_id: row.id
+                    };
+                }
+                axios.post('/index.php?g=OMS&m=AreaConfig&a=saveConfig', param).then(function (res) {
+                    var data = res.data;
+                    if (data.code == 200) {
+                        _this.$message({
+                            message: 'Success',
+                            type: 'success'
+                        });
+                        _this.batchAddState = false;
+                        _this.search();
+                    } else {
+                        _this.$message({
+                            message: data.msg,
+                            type: 'warning'
+                        });
+                    }
+                })
+            },
+            handleSizeChangeLog: function (size) {
+                this.pageFormLog = {
+                    current_page: 1,
+                    per_page: size
+                }
+            },
+            handleSizeChange: function (size) {
+                this.pageForm = {
+                    current_page: 1,
+                    per_page: size
+                }
+            },
+            handleCurrentChangeLog: function (page) {
+                this.pageFormLog = {
+                    current_page: page,
+                    per_page: this.pageFormLog.per_page
+                }
+            },
+            handleCurrentChange: function (page) {
+                this.pageForm = {
+                    current_page: page,
+                    per_page: this.pageForm.per_page
+                }
+            }
+        },
+        filters: {
+            numberFormat: function (val) {
+                if (val) {
+                    var num = parseFloat(val).toLocaleString();
+                    return num.indexOf('.') > 0 ? num : num + ".00";
+                }
+            }
+        },
+        watch: {
+            pageForm: {
+                handler: function handler(newValue, oldValue) {
+                    this.search();
+                },
+                deep: true
+            },
+            logTime: {
+                handler: function handler(newValue, oldValue) {
+                    this.getLog();
+                },
+                deep: true
+            },
+            pageFormLog: {
+                handler: function handler(newValue, oldValue) {
+                    this.getLog();
+                },
+                deep: true
+            }
+        },
+    })
+</script>
+</body>
+
+</html>

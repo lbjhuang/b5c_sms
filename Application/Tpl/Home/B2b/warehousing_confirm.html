@@ -1,0 +1,681 @@
+﻿<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="../Public/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="../Public/icon/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../Public/css/send.css"/>
+    <link rel="stylesheet" href="../Public/utils/css/public.style.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link href="/Application/Tpl/Home/Public/lib/My97DatePicker/skin/WdatePicker.css" rel="stylesheet" type="text/css">
+    <title><{$Think.lang.理货确认}></title>
+    <script type="text/javascript">
+        var url = window.location.href;
+    </script>
+    <style>
+        .wrap {
+            box-sizing: border-box;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .row {
+            margin: 0;
+        }
+
+        .row + .row {
+            margin-top: 20px;
+        }
+
+        [class*="col-"] {
+            padding: 0;
+        }
+        .thumbnail-wrap {
+            position: relative;
+            z-index: 999;
+        }
+
+        .thumbnail-wrap .img-wrap {
+            position: absolute;
+            top: -80px;
+            left: 180px;
+            width: 300px;
+            height: 300px;
+            border: 1px solid #eef5f9;
+        }
+
+        .thumbnail-wrap img {
+            box-shadow: 4px 4px 20px #242525;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .el-select .el-input {
+            width: 130px;
+        }
+        .input-with-select .el-input-group__prepend {
+            background-color: #fff;
+        }
+        .el-input__inner{
+            margin-left: -2px;
+        }
+        .el-new .el-select .el-input__inner {
+            width: 100%;
+        }
+        .el-new .el-select .el-input {
+            width: 100%;
+        }
+        .el-new .el-select{
+            width: 100%;
+        }
+    </style>
+</head>
+<div id="warehousing_detail" v-cloak="" class="wrap">
+
+    <form :action="'<{:U('warehouseing_save')}>'+url" method="post" id="form" enctype="multipart/form-data">
+        <div class="row">
+            <div class="col-lg-12 col-md-12 col-sm-12 use-title">
+                <span>{{$lang('理货确认')}}</span>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12 col-md-12">
+                <table class="b2b-table-one">
+                    <caption>{{$lang('基础信息')}}</caption>
+                    <tbody class="use-body">
+                    <tr>
+                        <td><label>{{$lang('发货单号')}}</label></td>
+                        <td>{{warehousing_info.SHIP_LIST_ID}}</td>
+                        <td><label>{{$lang('B2B订单号')}}</label></td>
+                        <td>{{warehousing_info.PO_ID}}</td>
+                    </tr>
+                    <tr>
+                        <td><label>{{$lang('PO单号')}}</label></td>
+                        <td>{{warehousing_info.THR_PO_ID}}</td>
+                        <td><label>{{$lang('客户名称')}}</label></td>
+                        <td>{{warehousing_info.CLIENT_NAME}}</td>
+                    </tr>
+                    <tr>
+                        <td><label>{{$lang('目的地')}}</label></td>
+                        <td>{{join_ares(warehousing_info.TARGET_PORT)}}</td>
+                        <td><label>{{$lang('PO发起人')}}</label></td>
+                        <td>{{warehousing_info.PO_USER}}( <span v-if="warehousing_info.SALES_TEAM in initdata.sales_team">{{initdata.sales_team[warehousing_info.SALES_TEAM].CD_VAL}}</span>) </td>
+                    </tr>
+                    <tr>
+                        <td><label>{{$lang('交货方式')}}</label></td>
+                        <td><span v-if="warehousing_info.DELIVERY_METHOD in initdata.shipping">{{initdata.shipping[warehousing_info.DELIVERY_METHOD].CD_VAL}}</span></td>
+                        <td><label>{{$lang('PO时间')}}</label></td>
+                        <td>{{warehousing_info.po_time}}</td>
+                    </tr>
+                    <tr>
+                        <td><label>{{$lang('订单备注')}}</label></td>
+                        <td>{{$lang(warehousing_info.remarks)}}</td>
+                        <td><label>{{$lang('提单号')}}</label></td>
+                        <td>{{ship_list[0].BILL_LADING_CODE}}</td>
+                    </tr>
+                    <tr>
+                        <td><label>{{$lang('发货时间')}}</label></td>
+                        <td>{{GetDateStr(ship_list[0].ship_delivery_time)}}</td>
+                        <td><label>{{$lang('发货数量')}}</label></td>
+                        <td>{{king(warehousing_info.SHIPMENTS_NUMBER_all)}}</td>
+                        <!-- <td><label>{{$lang('商品成本（含税）')}}</label></td> -->
+                        <!-- <td>RMB <input type="text" name="power_all_sum"  @change="upd('power_all_sum')" v-model="warehousing_info.power_all_sum" class="input-form" style="width: auto"> </td> -->
+                        
+                        <!-- <td><label>{{$lang('物流成本')}}</label></td> -->
+                        <!-- <td>
+                            <span v-if="warehousing_info.LOGISTICS_CURRENCY in initdata.currency">
+                                <select style="background: #FFFFFF;border: 1px solid #C8D2D7;display: inline-block;width: 75px;height: 1.6rem;box-sizing: border-box;border-right: none;border-radius: 0.25rem 0 0 0.25rem;margin-right: -5px;" name="LOGISTICS_CURRENCY" v-model="warehousing_info.LOGISTICS_CURRENCY">
+                                    <option v-for="c in initdata.currency" :value="c.CD">{{c.CD_VAL}}</option>
+                                </select>
+                            </span>
+                            <span v-else>
+                                <select style="background: #FFFFFF;border: 1px solid #C8D2D7;display: inline-block;width: 75px;height: 1.6rem;box-sizing: border-box;border-right: none;border-radius: 0.25rem 0 0 0.25rem;    margin-right: -5px;" name="LOGISTICS_CURRENCY" v-model="warehousing_info.LOGISTICS_CURRENCY">
+                                    <option v-for="c in initdata.currency" :value="c.CD">{{c.CD_VAL}}</option>
+                                </select>
+                            </span>
+                            <input type="text" name="logistics_costs_sum" @change="upd('logistics_costs_sum')" v-model="warehousing_info.logistics_costs_sum" class="input-form" style="width: auto">
+                            <input type="hidden" name="ship_list_id" v-model="warehousing_info.SHIP_LIST_ID" >
+                        </td> -->
+                        <!--<td><label><{$Think.lang.发货总成本}></label></td>
+                        <td>RMB&nbsp;
+                            <input type="text" name="power_all_sum"  @change="upd('power_all_sum')" v-model="warehousing_info.power_all_sum" class="input-form" style="width: auto">
+                        </td>-->
+                    </tr>
+                    <tr>
+                        <td><label>{{$lang('发货人')}}</label></td>
+                        <td>{{warehousing_info.AUTHOR}}</td>
+                        <td><label>{{$lang('发货提交时间')}}</label></td>
+                        <td>{{warehousing_info.SUBMIT_TIME}}</td>
+                    </tr>
+                    <tr>
+                        <td><label>{{$lang('预计到港时间')}}</label></td>
+                        <td>{{GetDateStr(ship_list[0].Estimated_arrival_DATE)}}</td>
+                        <td><label>{{$lang('理货类型')}}</label></td>
+                        <td class="el-new" >
+                            <el-select @change="typeChange" v-model="options.value" placeholder="请选择">
+                                <el-option
+                                        v-for="item in options.options"
+                                        :key="item.value"
+                                        :label="item.label"
+                                        :value="item.value">
+                                </el-option>
+                            </el-select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><label>{{$lang('发货备注')}}</label></td>
+                        <td style="color: #263238;border-right: 1px solid #CADEE7;">{{$lang(ship_list[0].REMARKS)}}</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12 col-md-12" v-for="(s,key) in ship_list" v-if="!s.submit_user">
+                <table class="b2b-table-three">
+                    <caption>{{$lang('商品信息')}}&nbsp;(<{$Think.lang.币种}>：<span v-if="warehousing_info.po_currency">{{initdata.currency[warehousing_info.po_currency].CD_VAL}})</span></caption>
+                    <thead class="use-head">
+                    <tr>
+                        <th><{$Think.lang.SKUID}></th>
+                        <th><{$Think.lang.BarCode}></th>
+                        <th>{{$lang('商品名称')}}</th>
+                        <th>{{$lang('商品图片')}}</th>
+                        <th>{{$lang('SKU信息')}}</th>
+                        <th>{{$lang('发货数')}}</th>
+                        <th  v-if="options.value === '1'">{{$lang('合格品数量')}}</th>
+                        <th  v-if="options.value === '1'">{{$lang('差异数')}}</th>
+                        <th v-if="options.value === '1'">{{$lang('预计结算金额')}}</th>
+                        <th v-if="options.value === '1'">{{$lang('残次品数量')}}</th>
+                        <th v-if="options.value === '1'">{{$lang('备注')}}</th>
+                        <th  v-if="options.value === '0'">{{$lang('本次发起退货数')}}</th>
+                    </tr>
+                    </thead>
+                    <tbody class="use-body">
+                    <tr v-for="(g,gkey) in s.goods">
+                        <td >{{g.warehouse_sku}}</td>
+                        <td style="white-space: pre-line">{{g.bar_code}}</td>
+                        <td>{{g.goods_title}}</td>
+                        <td>
+                            <span v-if="g.guds_img_cdn_addr"> <img @mouseover="showThumbnail(key,'act',s.goods)" @mouseout="showThumbnail(key,'close',s.goods)" width="60" height="60" :src="g.guds_img_cdn_addr" alt=""> </span>
+                            <div v-if="g.show_img" class="thumbnail-wrap">
+                                <div class="img-wrap">
+                                    <img :src="g.guds_img_cdn_addr" alt="" width="300" height="300">
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{g.goods_info}}</td>
+                        <td>{{g.TOBE_WAREHOUSING_NUM}}</td>
+                        <td   v-if="options.value === '1'">
+                            <input type="text" name="" placeholder="" class="input-form" v-model="g.DELIVERED_NUM" @change="upd_end_amount(key,gkey,g)" >
+                        </td>
+                        <td   v-if="options.value === '1'">{{Math.abs(g.TOBE_WAREHOUSING_NUM - g.DELIVERED_NUM)}}</td>
+                        <td   v-if="options.value === '1'">{{(g.price_goods * g.DELIVERED_NUM).toFixed(2)}}</td>
+                        <td   v-if="options.value === '1'">
+                            <input type="text" name="" :placeholder="$lang('客户不收，货权归属我方的数量')" class="input-form" v-model="g.incomplete_number" @change="changeIncNum()">
+                        </td>
+                        <td   v-if="options.value === '1'">
+                            <input type="text" name="" placeholder="" class="input-form" v-model="g.REMARKS">
+                        </td>
+                        <td  v-if="options.value === '0'">
+                            {{king(g.TOBE_WAREHOUSING_NUM)}}
+                        </td>
+                    </tr>
+                    <tr v-if="s.goods && s.goods.length !== 0">
+                        <td><{$Think.lang.合计}>:</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td>{{all(s.goods,'TOBE_WAREHOUSING_NUM')}}</td>
+                        <td  v-if="options.value === '1'">{{all(s.goods,'DELIVERED_NUM')}}</td>
+                        <td  v-if="options.value === '1'">{{Math.abs(all(s.goods,'TOBE_WAREHOUSING_NUM') - all(s.goods,'DELIVERED_NUM'))}}</td>
+                        <td v-if="options.value === '1'">{{price_goods_all(s.goods,'price_goods','DELIVERED_NUM').toFixed(2)}}</td>
+                        <td v-if="options.value === '1'">{{ all(s.goods,'incomplete_number')}}</td>
+                        <td v-if="options.value === '1'"></td>
+                        <td  v-if="options.value === '0'">{{all(s.goods,'TOBE_WAREHOUSING_NUM')}}</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+        <div class="row" v-if="options.value === '1'">
+            <div class="col-lg-12 col-md-12" v-for="(s,key) in ship_list">
+                <table class="b2b-table-one">
+                    <caption>{{$lang('入库信息')}}</caption>
+                    <tbody class="use-body">
+                    <tr>
+                        <td>{{$lang('预计入库时间')}}</td>
+                        <td>{{GetDateStr(s.Estimated_arrival_DATE)}}</td>
+                        <td>{{$lang('实际入库时间')}}</td>
+			<!--<td>{{$lang('实际入库时间')}}  <span v-if="required" style="color:red">*</span></td>-->
+                        <td>
+                            <input type="text" autocomplete="off"  name="WAREING_DATE" id="WAREING_DATE"  class="input-form" onfocus="WdatePicker({maxDate:'%y-%M-%d'})" @focus="checkdata" :placeholder="$lang('请选择日期')"  >
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>{{$lang('入库仓库')}}<span v-if="checkWarehous" style="color:red">*</span></td>
+                        <td>
+                            <el-select v-model="initdata.return_warehouse_cd" placeholder="请选择" clearable filterable>
+                                <el-option v-for="item in warehouses" :key="item.CD" :label="item.CD_VAL" :value="item.CD"></el-option>
+                            </el-select>
+                            <input type="text"   name="return_warehouse_cd" v-model="initdata.return_warehouse_cd" style="display:none">
+                        </td>
+                        <td>{{$lang('入库凭证')}} <!--<span v-if="required" style="color:red">*</span>--><span v-if="checkWarehous" style="color:red">*</span></td>
+                        <td class="use-btn">
+                            <p id="showfile"></p>
+                            <button onclick="javascript:$('#payment_voucher').click();" type="button" class="btn-pub btn-yellow" data-toggle="modal" data-target="#fileModal">{{$lang('上传凭证')}}</button>
+                            <input  style="display:none" @change="showFileName"  multiple id="payment_voucher" type="file" name="file[]">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>{{$lang('预计结算金额')}}</td>
+                        <td>
+                           <span v-if="warehousing_info.po_currency">{{initdata.currency[warehousing_info.po_currency].CD_VAL}}</span>  {{king(totalAmount)}}
+                        </td>
+                        <td>{{$lang('理货说明')}}</td>
+                        <td class="use-btn">
+                            <input type="text" id="tally_statement" name="tally_statement" class="input-form">
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        </div>
+        <div class="row" v-if="options.value === '0'">
+            <div class="col-lg-12 col-md-12" v-for="(s,key) in ship_list">
+                <table class="b2b-table-one">
+                    <caption>{{$lang('物流信息')}}</caption>
+                    <tbody class="use-body">
+                    <tr>
+                        <td>{{$lang('退回仓库')}}<span style="color: red;">*</span></td>
+                        <td class="el-new">
+                            <el-select v-model="formData.warehouse_cd" placeholder="请选择" clearable filterable>
+                                <el-option v-for="item in warehouses" :key="item.CD" :label="item.CD_VAL" :value="item.CD"></el-option>
+                            </el-select>
+                        </td>
+                        <td>{{$lang('物流单号')}}</td>
+                        <td>
+                            <input type="text"   class="input-form" v-model="formData.logistics_number">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>{{$lang('预计到仓日期')}}<span style="color: red;">*</span></td>
+                        <td>
+                            <el-date-picker
+                                    v-model="formData.expected_arrival_date"
+                                    type="date"
+                                    value-format="yyyy-MM-dd"
+                                    placeholder="选择日期">
+                            </el-date-picker>
+                        </td>
+                        <td>{{$lang('预估物流费用')}} <span style="color: red;">*</span></td>
+                        <td class="use-btn">
+                            <el-input placeholder="请输入预估物流费用" v-model="formData.expected_logistics_cost" class="input-with-select">
+                                <el-select v-model="formData.expected_logistics_cost_currency" slot="prepend" placeholder="请选择">
+                                    <el-option :key="k" v-for="(v,k) in curr" :label="v.CD_VAL" :value="v.CD"></el-option>
+                                </el-select>
+                            </el-input>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="row use-btn">
+            <div class="col-lg-12 col-md-12" style="text-align: center;">
+                <input type="hidden" name="wareshousing_goods" id="wareshousing_goods">
+                <button v-if="options.value === '1'" @click="save()" type="button" class="btn-pub btn-green">{{$lang('确定')}}</button>
+                <button v-if="options.value === '0'" @click="postMessage" type="button" class="btn-pub btn-green">{{$lang('确定')}}</button>
+                <button @click="clean_this()" type="button" class="btn btn-blue mg-l-10" style="height: 34px;">{{$lang('取消')}}</button>
+            </div>
+        </div>
+    </form>
+
+</div>
+<script src="../Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="../Public/js/stock/alert.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="../Public/js/axios.min.js"></script>
+<script src="/Application/Tpl/Home/Public/lib/My97DatePicker/WdatePicker.js"></script>
+<script type="text/javascript" src="../Public/lib/bootstrap/js/tether.min.js"></script>
+<script type="text/javascript" src="../Public/lib/bootstrap/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="../Public/utils/utils.js?v=<{$Think.const.V}>"></script>
+<script>
+    function getQueryString(name) {
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+        var r = window.location.search.substr(1).match(reg);
+        if (r != null) return unescape(r[2]); return null;
+    }
+
+    var ID = getQueryString('ID');
+    var type = getQueryString('type');
+    var vm = new Vue({
+        el: '#warehousing_detail',
+        data: {
+            curr:[],
+            options:{
+                options: [{
+                    value: '0',
+                    label: '未理货退货'
+                }, {
+                    value: '1',
+                    label: '正常理货'
+                }],
+                value: type
+            },
+            select:{
+                select:'',
+                value:''
+            },
+            formData:{warehouse_cd:'',logistics_number:'',expected_logistics_cost:'',expected_logistics_cost_currency:'',expected_arrival_date:'',id:ID},
+            warehousing_info: <{$warehousing_info}>,
+            initdata: <{$initdata}>,
+            initdata_json: <{$initdata}>,
+            ship_list: <{$ship_list}>,
+            url: "<{$url}>",
+            dd:[],
+            totalAmount:0,
+            required:false,
+            warehouses:[],
+            checkWarehous:false,
+        },
+        created(){
+            var _this = this;
+            this.totalAmount = this.ship_list[0].goods.reduce(function(res,item){
+                res += item.price_goods * item.DELIVERED_NUM;
+                return res;
+            },0)
+
+
+            if(!this.options.value && this.warehousing_info.status === '0'){
+                this.options.value = '1'
+            }
+            this.getCd();
+            this.getCurr();
+        },
+        methods: {
+            price_goods_all:function(arr,type1,type2){
+                var p = 0;
+                for(var x = 0;x<arr.length;x++){
+                    p += arr[x][type1]*arr[x][type2]
+                }
+                return p
+            },
+            all:function(arr,type){
+                var n = 0
+                if(arr){
+                    for(var x = 0;x<arr.length;x++){
+console.log(Number(arr[x][type]))
+                        n += Number(arr[x][type])
+                    }
+                }
+                return n
+            },
+            typeChange:function(value){
+                var _this = this
+                console.log(value)
+                switch (value) {
+                    case '1':
+                    _this.formData = {warehouse_cd:'',logistics_number:'',expected_logistics_cost:'',expected_logistics_cost_currency:'',expected_arrival_date:'',id:ID}
+                        break;
+                    case '0':
+                        _this.initdata = JSON.parse(JSON.stringify(_this.initdata_json))
+                        break
+                }
+            },
+            /**
+             * 获取币种
+             */
+            getCurr:function(){
+                var _this = this;
+                axios.post('/index.php?g=common&m=index&a=get_cd', {
+
+                    cd_type:{
+                        currency:true
+                    }
+
+                }).then(function (response) {
+                    if(response.data.code === 2000){
+                        _this.curr = response.data.data.currency
+                    }
+                })
+            },
+            postMessage:function(){
+                var _this = this;
+                axios.post('/index.php?m=B2b&a=warehouse_return', this.formData)
+                    .then(function (res) {
+                        if(res.data.code === 2000){
+                            sessionStorage.setItem('f5','理货确认页面')
+                            _this.$message({
+                                message: '操作成功',
+                                type: 'success'
+                            });
+                            setTimeout(function(){var url = window.location.pathname + window.location.search;
+                                sessionStorage.setItem('closeWindow',url)},1500)
+                        }else{
+                            _this.$message({
+                                message: res.data.msg,
+                                type: 'warning'
+                            });
+                        }
+                    })
+            },
+            getCd: function () {
+                var _this = this,
+                    param = {
+                        cd_type: {
+                            warehouse:true
+                        }
+                    };
+                axios.post('/index.php?g=common&m=index&a=get_cd', param)
+                    .then(function (res) {
+                        _this.warehouses = res.data.data.warehouse;
+                    })
+            },
+            save(){
+                var goods = this.ship_list[0].goods;
+                var checkQcheckNum = this.ship_list[0].goods.every(function(item){
+                    return (+item.DELIVERED_NUM || 0) + (+item.incomplete_number || 0) > (+item.TOBE_WAREHOUSING_NUM || 0);
+                })
+
+
+                for(var i = 0;i<goods.length;i++){
+                    if(goods[i].TOBE_WAREHOUSING_NUM != goods[i].DELIVERED_NUM && goods[i].incomplete_number !== "0" && !goods[i].incomplete_number){
+                        this.$message.warning(this.$lang('请填写第'+ (i+1) + '一行商品的残次品数量，可填为0'));
+                        return false;
+                    }
+                }
+             
+                if(checkQcheckNum){
+                    this.$message.warning(this.$lang('合格品数量 + 残次品数量总和 不能大于发货数'));
+                    return false;
+                }
+
+                if(this.checkWarehous && !this.initdata.return_warehouse_cd){
+                    this.$message.warning(this.$lang('入库仓库必填'));
+                    return false;
+                }
+                if(this.required && !$("#payment_voucher").val()){
+                    this.$message.warning( this.$lang('入库凭证为必填'));
+                    return false;
+                }
+                if(this.check_null(vm.ship_list[0])){
+                    $("#wareshousing_goods").val(JSON.stringify(vm.ship_list[0]))
+                    $("#form").submit()
+                    sessionStorage.setItem('f5','理货确认页面')
+                }
+            },
+            showFileName:function(){
+                var val = '';
+                [].forEach.call($("#payment_voucher")[0].files,function(res){
+                    val += res.name + "<br/>";
+                })
+                $('#showfile').html(val);
+            },
+            check_null(e){
+                for(v in e.goods){
+                    if(e.goods[v].DEVIATION_NUM != 0 && e.goods[v].DEVIATION_REASON == null){
+                        this.$message({
+                            type: 'error',
+                            message: this.$lang('第') + (parseInt(v)+1) + this.$lang('行') + this.$lang('偏差原因未选择')
+                        })
+                        return false
+                    }
+                }
+                var wareing_date_val = $("#WAREING_DATE").val();
+                if(this.required && !wareing_date_val){
+                     this.$message({
+                        type: 'warn',
+                        message: this.$lang('实际入库时间未选择')
+                    })
+                    return false
+                }
+                return true
+            },
+            clean_this(){
+                history.go(0)
+            },
+            buttongroups_ben(name,key,e){
+                var name_arr = name.split('-')
+                var key_arr = key.split('_')
+                var show_key = 'SHOW_'+key_arr[1]
+                this.ship_list[name_arr[0]].goods[name_arr[1]][show_key] = 0
+                if(e === 0)this.ship_list[name_arr[0]].goods[name_arr[1]][show_key] = 1
+                this.ship_list.splice(1,0)
+            },
+            join_ares(e){
+                if(e != null){
+                    e_data = JSON.parse(e)
+                    var initdata = this.initdata
+                    var area = ''
+                    if (e_data.country) area = initdata.area[e_data.country]
+                    if (e_data.stareet) area += '-'+initdata.area[e_data.stareet]
+                    if (e_data.city) area += '-'+initdata.area[e_data.city]
+                    if (e_data.targetCity) area += '-'+e_data.targetCity
+                    return area
+                }
+                return e
+            },
+            king:function(e){
+                if(e == 0) return '0.00';
+                if (!e) return null
+                var k = (+e).toFixed(2).toString().split('.')
+                if(e.toString().indexOf('.') > 0){
+                    var s = '.'+k[1]
+                }else{
+                    var s = ''
+                }
+                return k[0].toString().replace(/\d{1,3}(?=(\d{3})+(\.\d*)?$)/g, '$&,')+s;
+            },
+            time_to_date(e){
+
+                return e
+            },
+            GetDateStr(times,AddDayCount) {
+                if(!times)return null
+                var dd = new Date(times);
+                if(AddDayCount){
+                    dd.setDate(dd.getDate()+parseInt(AddDayCount));
+                }else{
+                    dd.setDate(dd.getDate());
+                }
+                var y = dd.getFullYear();
+                var m = dd.getMonth()+1;
+                var d = dd.getDate();
+                return y+"-"+m+"-"+d;
+            },
+            upd_end_amount(k,gk,g){
+                var kgk  = this.ship_list[k].goods[gk]
+                kgk.end_amount = this.unking(kgk.price_goods) * kgk.DELIVERED_NUM
+                kgk.end_amount = kgk.end_amount.toFixed(2)
+                var defective_stored = kgk.TOBE_WAREHOUSING_NUM - kgk.DELIVERED_NUM
+                kgk.defective_stored = 0
+                if(defective_stored < 0)defective_stored = 0
+                kgk.defective_stored = defective_stored
+
+                this.totalAmount = this.ship_list[0].goods.reduce(function (res, item) {
+                    res += item.price_goods * item.DELIVERED_NUM;
+                    return res;
+                }, 0)
+                this.required = g.DELIVERED_NUM != g.TOBE_WAREHOUSING_NUM;
+            },
+            changeIncNum: function () {
+                var _this = this;
+                _this.checkWarehous = false;
+                this.ship_list[0].goods.forEach(function (item) {
+                    if (item.incomplete_number > 0) {
+                        _this.checkWarehous = true;
+                    }
+                })
+            },
+            upd_num(k,gk){
+                var kgk  = this.ship_list[k].goods[gk]
+                if(!this.check_val(kgk.DELIVERED_NUM,'int')){
+                    this.$message({
+                        type: 'error',
+                        message: this.$lang('入库数量非正整数')
+                    })
+                    kgk.DELIVERED_NUM = 0
+                }
+                kgk.DEVIATION_NUM = Math.abs(kgk.TOBE_WAREHOUSING_NUM - kgk.DELIVERED_NUM)
+                if(kgk.DEVIATION_NUM != 0){
+                    this.$children[k+2*gk].actions = 0
+                }
+            },
+            check_val(v,type){
+                switch (type){
+                    case 'int':
+                        var re = /^[1-9]+[0-9]*]*$/
+                        break
+                    default:
+                        return false
+                }
+                return re.test(v)
+            },
+            unking(num) {
+                if (isNaN(num) && typeof(num) == 'string') {
+                    var x = num.split(',');
+                    return parseFloat(x.join(""));
+                } else {
+                    return num
+                }
+            },
+            upd(e){
+                var uk = this.unking(this.warehousing_info[e])
+                this.warehousing_info[e] = this.king(uk)
+            },
+            checkdata(){
+                var wareing_date = $("#WAREING_DATE").val()
+                 var do_date = this.GetDateStr(this.ship_list[0].DELIVERY_TIME,0)
+                wareing_date = this.GetDateStr(wareing_date,0)
+                if((wareing_date != null && wareing_date != '') && new Date(wareing_date) < new Date(do_date)){
+                    this.$message({
+                        type: 'error',
+                        message: this.$lang('实际入库时间不能小于发货时间')
+                    })
+                    $("#WAREING_DATE").val('')
+                    return false
+                }
+            },
+            showThumbnail (key, type,data_event) {
+                if ('act' == type) {
+                    data_event[key].show_img = true
+                } else {
+                    data_event[key].show_img = false
+                }
+            }
+        }
+    })
+</script>
+</body>
+
+</html>

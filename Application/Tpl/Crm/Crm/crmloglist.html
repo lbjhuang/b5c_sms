@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.config.VER_NUM}>">
+    <title>日志列表</title>
+</head>
+<style>
+    .el-input {
+        width: 95%;
+    }
+    
+    .el-date-editor .el-range-input {
+        width: 35%;
+    }
+    
+    .el-form-item__label {
+        display: flex;
+        line-height: normal;
+        height: 40px;
+        align-items: center;
+    }
+</style>
+
+<body class="orderList">
+    <div id="list" class="list-common" v-cloak style="margin-bottom:220px">
+        <!-- 搜索查询 start-->
+        <div class="orderList-search search-common">
+            <!-- 搜索查询 start-->
+            <el-form ref="form" label-width="90px" :label-position="labelPosition">
+                <el-row>
+                    <el-col :span="10">
+                        <el-form-item :label="$lang('操作时间')">
+                            <el-date-picker style="width:70%;height: 40px;" value-format="yyyy-MM-dd" size="small" v-model="form.dateRange" type="daterange" align="right" unlink-panels :range-separator="$lang('至')" :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')"
+                                :picker-options="pickerOptions"></el-date-picker>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="5">
+                        <el-form-item :label="$lang('提交人')">
+                            <el-select v-model="form.update_user">
+                                <el-option v-for="(item,index) in updateuser_data" :label="item.value" :value="item.id" :key="index"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="5">
+                        <el-form-item :label="$lang('用户ID')">
+                            <el-input v-model="cust_id"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <div class="btns">
+                    <button @click="doSearch" class="btn-search" name="search" type="button">
+                        {{$lang('搜索')}}
+                    </button>
+                    <button @click="doReset" class="btn-reset" name="reset" type="button">
+                        {{$lang('重置')}}
+                    </button>
+                </div>
+            </el-form>
+            <!-- 搜索查询 end-->
+        </div>
+        <!-- 分割线 start-->
+        <div class="orderList-line line-split"></div>
+        <!-- 分割线 end-->
+        <!-- 订单表格主体 start-->
+        <div class="orderList-Main list-common-main">
+            <header>
+                <el-row>
+                    <el-col :span="8">
+                        {{$lang('搜索结果:共')}}
+                        <span class="num-bold">{{totalCount}}</span> {{$lang('条记录')}}
+                    </el-col>
+                </el-row>
+            </header>
+
+            <el-table border show-header :data="listData" tooltip-effect="dark" style="width: 100%" class="order-list-table table-common" v-loading="tableLoading">
+                <el-table-column prop="update_time" :label="$lang('时间')"></el-table-column>
+                <el-table-column prop="cust_id" :label="$lang('用户ID')"></el-table-column>
+                <el-table-column :label="$lang('提交人')">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.update_user)}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('操作内容')">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.detail)}}
+                    </template>
+                </el-table-column>
+            </el-table>
+
+            <el-pagination v-if="listData.length!=0" background @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="form.currentPage" :page-sizes="[10, 30, 50, 100]" :page-size="form.perpage" layout="sizes,prev, pager, next, jumper"
+                :total="totalCount"></el-pagination>
+        </div>
+        <!-- 订单表格主体 end-->
+    </div>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script>
+        if (getCookie('think_language') !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en)
+        }
+        re = new Vue({
+            el: '#list',
+            data: {
+                baseURL: '',
+                tableLoading: false,
+                labelPosition: 'left',
+                listData: [],
+                totalCount: 0,
+                cust_id: '',
+                form: {
+                    cust_id: '',
+                    update_user: '0',
+                    start_time: undefined,
+                    end_time: undefined,
+                    dateRange: '',
+                    perpage: 10,
+                    currentPage: 1,
+                },
+                updateuser_data: [],
+                pickerOptions: {
+
+                },
+            },
+            created: function() {
+                this.baseURL = (window.location.host === 'erp.gshopper.com' ? '//crm.gshopper.com' :
+                    '//crm.gshopper.stage.com');
+                this.pickerOptions = {
+                    shortcuts: [{
+                        text: this.$lang('最近一周'),
+                        onClick: function(picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: this.$lang('最近一个月'),
+                        onClick: function(picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: this.$lang('最近三个月'),
+                        onClick: function(picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }]
+                }
+                this.updateuser_data = [{
+                    "id": "0",
+                    "value": this.$lang('非系统'),
+                }, {
+                    "id": "1",
+                    "value": this.$lang('系统'),
+                }, ]
+                this.getListData();
+            },
+            methods: {
+                getListData: function() {
+                    var _this = this;
+                    _this.tableLoading = true;
+
+                    _this.form.start_time = _this.form.dateRange && _this.form.dateRange[0];
+                    _this.form.end_time = _this.form.dateRange && _this.form.dateRange[1];
+                    var data = {
+                        cust_id: _this.form.cust_id,
+                        update_user: _this.form.update_user,
+                        start_time: _this.form.start_time,
+                        end_time: _this.form.end_time,
+                        perpage: _this.form.perpage,
+                        currentPage: _this.form.currentPage,
+                    }
+
+                    axios.post(_this.baseURL + '/cust/getLog', data, {
+                        headers: {
+                            'Auth-Token': utils.getCookie('PHPSESSID')
+                        }
+                    }).then(function(res) {
+                        var data = res.data;
+                        _this.tableLoading = false;
+                        if (data.code == 2000) {
+                            if (data.data.list) {
+                                _this.listData = data.data.list;
+                                _this.totalCount = data.data.total;
+                            } else {
+                                _this.listData = [];
+                                _this.totalCount = 0;
+                            }
+
+                        } else {
+                            _this.$message({
+                                message: _this.$lang('获取数据失败'),
+                                type: 'warning'
+                            });
+                        }
+                    })
+                },
+                doSearch: function() {
+                    this.form.cust_id = this.cust_id;
+                    this.getListData();
+                },
+                doReset: function() {
+                    this.cust_id = '',
+                        this.form = {
+                            cust_id: '',
+                            update_user: '0',
+                            start_time: undefined,
+                            end_time: undefined,
+                            dateRange: '',
+                            perpage: 10,
+                            currentPage: 1,
+                        };
+                },
+                handleSizeChange: function(val) {
+                    this.form.perpage = val;
+                },
+                handleCurrentChange: function(val) {
+                    this.form.currentPage = val;
+                },
+            },
+            //监听数据
+            watch: {
+                form: {
+                    handler(newValue, oldValue) {
+                        this.getListData(newValue);
+                    },
+                    deep: true
+                }
+
+            },
+        })
+    </script>
+</body>
+
+</html>

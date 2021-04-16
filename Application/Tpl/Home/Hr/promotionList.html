@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>晋升列表</title>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.13.0.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>">
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+        .promotion-list {
+            padding: 20px 0;
+        }
+
+        .search-form {
+            padding: 0 20px;
+        }
+        .promotion-list .el-row{
+            width: 100%;
+        }
+        .promotion-list .el-form-item {
+            width: 100%;
+            display: flex;
+        }
+        .promotion-list .el-form-item__label{
+            /* text-align: justify;
+            text-align-last: justify; */
+        }
+
+        .promotion-list .el-form-item__content {
+            flex: 1;
+        }
+        .promotion-list .el-form-item__content .el-date-editor {
+            width: 100%;
+        }
+
+        .promotion-list .el-form-item__content .el-select {
+            width: 100%;
+        }
+        .promotion-list .el-form-item__content .el-cascader{
+            width: 100%;
+        }
+        .created-form .el-input-group__append{
+            padding: 0 8px;
+        }
+        .created-form .el-input__inner{
+            padding-right: 15px;
+        }
+        .created-form .el-input-group__prepend {
+            background: #ffffff;
+        }
+        .created-form .is-disabled .el-input-group__prepend {
+            background: #F5F7FA;
+        }
+        .content {
+            padding: 0 20px;
+        }
+
+        .add-btn-box {
+            margin-right: 20px;
+        }
+
+        .result-text {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 0px 15px 0;
+        }
+
+        .table-box tr th {
+            background: #546E7A !important;
+            color: #fff;
+        }
+        .option-btn{
+            width: 115px;
+        }
+        .page-box {
+            text-align: right;
+        }
+
+        .ceo-promote-content {
+            margin: 15px 0;
+        }
+
+        .ceo-promote-content>span {
+            margin-right: 20px;
+        }
+
+        /* 隐藏数字输入框加减按钮 */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            appearance: none;
+            margin: 0;
+        }
+        input{
+            -moz-appearance:textfield;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="promotion-list" id="promotionList" v-cloak>
+        <el-form :inline="true" ref="searchFrom" :model="serachForm" class="search-form" size="small" label-width="100px">
+            <el-row :gutter="50">
+                <el-col :span="6">
+                    <el-form-item :label="$lang('晋升加薪单号')" prop="promotion_no">
+                        <el-input v-model="serachForm.promotion_no" :placeholder="$lang('请输入晋升单号')"></el-input>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('晋升加薪单状态')" prop="status" label-width="110px">
+                        <el-select v-model="serachForm.status" filterable multiple collapse-tags
+                            :placeholder="$lang('请选择')">
+                            <el-option v-for="(item,index) in promotionStaus" :key="index" :label="$lang(item.cdVal)"
+                                :value="item.cd"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('当前审批人')" prop="current_approver">
+                        <el-select v-model="serachForm.current_approver" filterable :placeholder="$lang('请选择')"
+                            clearable>
+                            <el-option v-for="(item,index) in userData" :key="index" :label="item.name"
+                                :value="item.name"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('申请晋升加薪员工')" prop="empl_id" label-width="130px">
+                        <el-select v-model="serachForm.empl_id" filterable multiple collapse-tags
+                            :placeholder="$lang('请选择')">
+                            <el-option v-for="(item,index) in userData" :key="index" :label="item.name"
+                                :value="item.empl_id"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row :gutter="50">
+                <el-col :span="6">
+                    <el-form-item :label="$lang('发起时间')" prop="date">
+                        <el-date-picker v-model="serachForm.date" type="datetimerange" range-separator="-"
+                            :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')"
+                            :default-time="['00:00:00']" value-format="yyyy-MM-dd HH:mm:ss"></el-date-picker>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('发起人')" prop="created_by" label-width="110px">
+                        <el-select v-model="serachForm.created_by" filterable multiple collapse-tags
+                            :placeholder="$lang('请选择')">
+                            <el-option v-for="(item,index) in userData" :label="item.name" :value="item.name">
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('晋升加薪年月')" prop="promotion_time">
+                        <el-date-picker v-model="serachForm.promotion_time" type="month" value-format="yyyy-MM"
+                            :picker-options="pickerOptions" :placeholder="$lang('请选择')">
+                        </el-date-picker>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('类型')" prop="promotion_raise_type_cd" label-width="130px">
+                        <el-select v-model="serachForm.promotion_raise_type_cd" filterable multiple collapse-tags
+                            :placeholder="$lang('请选择')">
+                            <el-option v-for="(item,index) in promotionType" :key="index" :label="$lang(item.CD_VAL)" :value="item.CD">
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row :gutter="50">
+                <el-col :span="6">
+                    <el-form-item :label="$lang('部门')" prop="dept_id">
+                        <el-cascader :options="deptAll"  v-model="serachForm.dept_id" :props="{ checkStrictly: true }" clearable></el-cascader>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            
+            <el-row>
+                <el-col :span="6">
+                    <el-form-item>
+                        <el-button type="primary" @click="search">{{$lang('查询')}}</el-button>
+                        <el-button type="detault" @click="rest">{{$lang('重置')}}</el-button>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+        </el-form>
+        <div class="content" v-loading="tableLoading">
+            <div class="result-text">
+                <span>{{$lang('搜索结果')}}：{{$lang('共')}} {{total}} {{$lang('条')}}</span>
+                <div>
+                    <el-button size="small" class="add-btn-box" type="primary" @click="addPromotion">{{$lang('新建晋升单')}}</el-button>
+                </div>
+
+            </div>
+
+            <el-table :data="tableData" border class="table-box">
+                <el-table-column prop="promotion_no" :label="$lang('晋升加薪单号')" width="200" align="center">
+                </el-table-column>
+                <el-table-column prop="status_name" :label="$lang('类型')" width="200" align="center">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.promotion_raise_type_cd == 'N003750002' ? '加薪' : '晋升')}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="status_name" :label="$lang('晋升加薪单状态')" width="200" align="center">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.status_name)}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="current_approver" :label="$lang('当前审批人')" align="center"></el-table-column>
+                <el-table-column prop="M_NAME" :label="$lang('申请晋升加薪员工')" align="center" width="135"></el-table-column>
+                <el-table-column prop="DEPT_NM" :label="$lang('部门')" align="center"></el-table-column>
+                <el-table-column prop="current_job_name" :label="$lang('当前职位')" align="center">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.current_job_name)}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="promotion_job_name" :label="$lang('晋升后职位')" align="center">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.promotion_job_name)}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="created_at" :label="$lang('发起时间')" align="center" width="160"></el-table-column>
+                <el-table-column prop="promotion_time" :label="$lang('晋升加薪年月')" align="center"></el-table-column>
+                <el-table-column prop="created_by" :label="$lang('发起人')" align="center"></el-table-column>
+                <el-table-column :label="$lang('操作')" align="center" width="135">
+                    <template slot-scope="scope">
+                        <div>
+                            <el-button type="primary" size="small" @click="seeDetail(scope.row)" class="option-btn">{{$lang('查看')}}</el-button>
+                        </div>
+                        <div style="margin-top: 8px;" v-if="scope.row.status == 'N003630006'">
+                            <el-button type="primary" :loading="btnLoading" size="small" @click="ceoApproval(scope.row)" class="option-btn">{{$lang('推送CEO审批')}}</el-button>
+                        </div>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <div class="page-box">
+                <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange"
+                    :current-page="page" :page-sizes="[10, 30, 50, 100]" :page-size="size"
+                    layout="total, sizes, prev, pager, next, jumper" :total="total">
+                </el-pagination>
+            </div>
+        </div>
+        <el-dialog :title="$lang('发起晋升加薪申请')" :visible.sync="dialogVisible" width="1000px" center top="8vh"
+            @close="createdDialogclose" :close-on-click-modal="false" :close-on-press-escape="false">
+            <el-form :model="createdForm" :rules="rulesFrom" class="created-form" size="small" ref="createdForm"
+                label-width="120px" :inline="true">
+                <el-row :gutter="20">
+                    <el-col :span="12">
+                        <el-form-item :label="$lang('类型')" prop="promotion_raise_type_cd">
+                            <el-select v-model="createdForm.promotion_raise_type_cd" filterable :placeholder="$lang('请选择')" @change="promotionTypeChange">
+                                <el-option v-for="(item,index) in promotionType" :key="index" :label="$lang(item.CD_VAL)"
+                                    :value="item.CD"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row :gutter="20">
+                    <el-col :span="12">
+                        <el-form-item :label="$lang('候选人')" prop="empl_id">
+                            <el-select v-model="createdForm.empl_id" filterable :placeholder="$lang('请选择')"
+                                @change="emplChange" clearable>
+                                <el-option v-for="(item,index) in candidateUser" :key="index" :label="item.name"
+                                    :value="item.empl_id"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="12" v-if="createdForm.empl_id && deptData && deptData.length > 1">
+                        <el-form-item label="" label-width="0px" prop="dept_id">
+                            <el-select v-model="createdForm.dept_id" filterable clearable :placeholder="$lang('归属部门')"
+                                @change="departmentChange">
+                                <el-option v-for="(item,index) in deptData" :key="index" :label="item.DEPT_NM"
+                                    :value="item.ID"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row :gutter="20">
+                    <el-col :span="24">
+                        <el-form-item :label="$lang('主要工作内容')" prop="work_content">
+                            <el-input type="textarea" :autosize="{ minRows: 1, maxRows: 4}" v-model="createdForm.work_content" :placeholder="$lang('请输入工作内容')"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row :gutter="20">
+                    <el-col :span="24">
+                        <el-form-item :label="$lang('努力程度评级')" prop="rating">
+                            <el-input v-model="createdForm.rating" type="number" :placeholder="$lang('请输入数字')">
+                            </el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row :gutter="20" v-if="createdForm.promotion_raise_type_cd == 'N003750001'">
+                    <el-col :span="7">
+                        <el-form-item :label="$lang('上次晋升记录')"
+                            :prop="createdForm.is_first_promote ? '' : 'last_promotion_time'">
+                            <el-date-picker :disabled="createdForm.is_first_promote"
+                                v-model="createdForm.last_promotion_time" value-format="yyyy-MM" type="month"
+                                :placeholder="$lang('选择日期')" :clearable="false">
+                            </el-date-picker>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="5">
+                        <el-form-item label="" label-width="0px"
+                            :prop="createdForm.is_first_promote ? '' : 'last_promotion_before_job_id'">
+                            <el-select :disabled="createdForm.is_first_promote"
+                                v-model="createdForm.last_promotion_before_job_id" filterable
+                                :placeholder="$lang('上次晋升前职位')">
+                                <el-option v-for="(item,index) in jobData" :key="index" :label="item.CD_VAL"
+                                    :value="item.ID"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="2">
+                        <div style="line-height: 32px;text-align: center;">{{$lang('晋升为')}}</div>
+                    </el-col>
+                    <el-col :span="5">
+                        <el-form-item label="" label-width="0px" prop="current_job_id">
+                            <el-select v-model="createdForm.current_job_id" disabled filterable
+                                :placeholder="$lang('当前职位')">
+                                <el-option v-for="(item,index) in jobData" :key="index" :label="item.CD_VAL"
+                                    :value="item.ID"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="5">
+                        <el-form-item label="" label-width="0px" prop="is_first_promote">
+                            <el-checkbox v-model="createdForm.is_first_promote" @change="checkChange">
+                                {{$lang('之前未晋升过')}}</el-checkbox>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row :gutter="10" v-if="createdForm.promotion_raise_type_cd == 'N003750001'">
+                    <el-col :span="10">
+                        <el-form-item :label="$lang('本次晋升情况')" prop="current_job_id">
+                            <el-select v-model="createdForm.current_job_id" disabled filterable
+                                :placeholder="$lang('当前职位')">
+                                <el-option v-for="(item,index) in jobData" :key="index" :label="item.CD_VAL"
+                                    :value="item.ID"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="2">
+                        <div style="line-height: 32px;text-align: center;">{{$lang('晋升为')}}</div>
+                    </el-col>
+                    <el-col :span="7">
+                        <el-form-item label="" label-width="0px" prop="promotion_job_id">
+                            <el-select v-model="createdForm.promotion_job_id" filterable
+                                :placeholder="$lang('本次晋升后职位')">
+                                <el-option v-for="(item,index) in jobData" :key="index" :label="item.CD_VAL"
+                                    :value="item.ID"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row :gutter="20" v-if="createdForm.promotion_raise_type_cd == 'N003750002'">
+                    <el-col :span="7">
+                        <el-form-item :label="$lang('上次加薪记录')"
+                            :prop="createdForm.is_first_promote ? '' : 'last_promotion_time'">
+                            <el-date-picker :disabled="createdForm.is_first_promote"
+                                v-model="createdForm.last_promotion_time" value-format="yyyy-MM" type="month"
+                                :placeholder="$lang('选择日期')" :clearable="false">
+                            </el-date-picker>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item label="" :prop="createdForm.is_first_promote ? '' : 'last_salary_amount'">
+                            <el-input :disabled="createdForm.is_first_promote" v-model.number="createdForm.last_salary_amount" type="number" :placeholder="$lang('上次加薪前月薪')">
+                                <el-select slot="prepend" :disabled="createdForm.is_first_promote" v-model="createdForm.currency_cd" :placeholder="$lang('币种')" style="width: 80px;">
+                                    <el-option v-for="(item,index) in currency" :key="index" :label="item.CD_VAL":value="item.CD"></el-option>
+                                </el-select>
+                            </el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="2">
+                        <div style="line-height: 32px;text-align: center;">{{$lang('加薪为')}}</div>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item label="" :prop="createdForm.is_first_promote ? '' : 'raise_salary_amount_after'">
+                            <el-input :disabled="createdForm.is_first_promote" v-model.number="createdForm.raise_salary_amount_after" type="number" :placeholder="$lang('上次加薪后月薪')" @input="inputChange">
+                                <el-select slot="prepend" :disabled="createdForm.is_first_promote" v-model="createdForm.currency_cd" :placeholder="$lang('币种')" style="width: 80px;">
+                                    <el-option v-for="(item,index) in currency" :key="index" :label="item.CD_VAL":value="item.CD"></el-option>
+                                </el-select>
+                            </el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="3">
+                        <el-form-item label="" label-width="0px" prop="is_first_promote">
+                            <el-checkbox v-model="createdForm.is_first_promote" @change="checkChange">
+                                {{$lang('之前未加薪过')}}</el-checkbox>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row :gutter="10" v-if="createdForm.promotion_raise_type_cd == 'N003750002'">
+                    <el-col :span="10">
+                        <el-form-item :label="$lang('本次加薪情况')" prop="now_salary_amount">
+                            <el-input :disabled="!createdForm.is_first_promote" v-model.number="createdForm.now_salary_amount" type="number" :placeholder="$lang('当前薪资')">
+                                <el-select slot="prepend" :disabled="!createdForm.is_first_promote" v-model="createdForm.currency_cd" :placeholder="$lang('币种')" style="width: 80px;">
+                                    <el-option v-for="(item,index) in currency" :key="index" :label="item.CD_VAL":value="item.CD"></el-option>
+                                </el-select>
+                            </el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="2">
+                        <div style="line-height: 32px;text-align: center;">{{$lang('加薪为')}}</div>
+                    </el-col>
+                    <el-col :span="7">
+                        <el-form-item label="" prop="raise_salary_amount">
+                            <el-input v-model.number="createdForm.raise_salary_amount" type="number" :placeholder="$lang('本次加薪后月薪')">
+                                <el-select slot="prepend" v-model="createdForm.currency_cd" :placeholder="$lang('币种')" style="width: 80px;">
+                                    <el-option v-for="(item,index) in currency" :key="index" :label="item.CD_VAL":value="item.CD"></el-option>
+                                </el-select>
+                            </el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row :gutter="20">
+                    <el-col :span="10">
+                        <el-form-item :label="$lang(createdForm.promotion_raise_type_cd == 'N003750001' ? '晋升年月' : '加薪年月')" prop="promotion_time_year">
+                            <el-date-picker v-model="createdForm.promotion_time_year" value-format="yyyy" type="year"
+                                :placeholder="$lang('选择年份')">
+                            </el-date-picker>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="7">
+                        <el-form-item label="" prop="promotion_time_month">
+                            <el-select v-model="createdForm.promotion_time_month" filterable :placeholder="$lang('月份')">
+                                <el-option :label="$lang('一月')" value="01"></el-option>
+                                <el-option :label="$lang('七月')" value="07"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row :gutter="20" v-if="departmentType == 'N003640002' && createdForm.promotion_time_month">
+                    <el-col :span="9">
+                        <el-form-item :label="$lang('个人前6个月销售金额（USD）')" prop="personal_last_month_sale_amount1" label-width="225px">
+                            <el-input v-model="createdForm.personal_last_month_sale_amount1" type="number"
+                                :placeholder="$lang(createdForm.promotion_time_month == 07 ? '1月' : '7月')">
+                            </el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="3">
+                        <el-form-item label="" prop="personal_last_month_sale_amount2">
+                            <el-input v-model="createdForm.personal_last_month_sale_amount2" type="number"
+                                :placeholder="$lang(createdForm.promotion_time_month == 07 ? '2月' : '8月')">
+                            </el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="3">
+                        <el-form-item label="" prop="personal_last_month_sale_amount3">
+                            <el-input v-model="createdForm.personal_last_month_sale_amount3" type="number"
+                                :placeholder="$lang(createdForm.promotion_time_month == 07 ? '3月' : '9月')">
+                            </el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="3">
+                        <el-form-item label="" prop="personal_last_month_sale_amount4">
+                            <el-input v-model="createdForm.personal_last_month_sale_amount4" type="number"
+                                :placeholder="$lang(createdForm.promotion_time_month == 07 ? '4月' : '10月')">
+                            </el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="3">
+                        <el-form-item label="" prop="personal_last_month_sale_amount5">
+                            <el-input v-model="createdForm.personal_last_month_sale_amount5" type="number"
+                                :placeholder="$lang(createdForm.promotion_time_month == 07 ? '5月' : '11月')">
+                            </el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="3">
+                        <el-form-item label="" prop="personal_last_month_sale_amount6">
+                            <el-input v-model="createdForm.personal_last_month_sale_amount6" type="number"
+                                :placeholder="$lang(createdForm.promotion_time_month == 07 ? '6月' : '12月')">
+                            </el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row :gutter="20" v-if="departmentType == 'N003640002' && createdForm.promotion_time_month">
+                    <el-col :span="9">
+                        <el-form-item :label="$lang('个人前6个月盈亏（USD）')" prop="personal_last_month_sale_earning1" label-width="225px">
+                            <el-input v-model="createdForm.personal_last_month_sale_earning1" type="number"
+                                :placeholder="$lang(createdForm.promotion_time_month == 07 ? '1月' : '7月')">
+                            </el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="3">
+                        <el-form-item label="" prop="personal_last_month_sale_earning2">
+                            <el-input v-model="createdForm.personal_last_month_sale_earning2" type="number"
+                                :placeholder="$lang(createdForm.promotion_time_month == 07 ? '2月' : '8月')">
+                            </el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="3">
+                        <el-form-item label="" prop="personal_last_month_sale_earning3">
+                            <el-input v-model="createdForm.personal_last_month_sale_earning3" type="number"
+                                :placeholder="$lang(createdForm.promotion_time_month == 07 ? '3月' : '9月')">
+                            </el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="3">
+                        <el-form-item label="" prop="personal_last_month_sale_earning4">
+                            <el-input v-model="createdForm.personal_last_month_sale_earning4" type="number"
+                                :placeholder="$lang(createdForm.promotion_time_month == 07 ? '4月' : '10月')">
+                            </el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="3">
+                        <el-form-item label="" prop="personal_last_month_sale_earning5">
+                            <el-input v-model="createdForm.personal_last_month_sale_earning5" type="number"
+                                :placeholder="$lang(createdForm.promotion_time_month == 07 ? '5月' : '11月')">
+                            </el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="3">
+                        <el-form-item label="" prop="personal_last_month_sale_earning6">
+                            <el-input v-model="createdForm.personal_last_month_sale_earning6" type="number"
+                                :placeholder="$lang(createdForm.promotion_time_month == 07 ? '6月' : '12月')">
+                            </el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row :gutter="20" v-if="departmentType == 'N003640002' && createdForm.promotion_time_month">
+                    <el-col :span="14">
+                        <el-col :span="15" style="padding-left: 0;">
+                            <el-form-item :label="$lang('GP收入情况')" prop="gp_earning1_amount">
+                                <el-input v-model="createdForm.gp_earning1_amount" type="number"
+                                    :placeholder="$lang(createdForm.promotion_time_month == 07 ? '个人Q1 GP收入金额（USD）' : '个人Q3 GP收入金额（USD）')">
+                                </el-input>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="9">
+                            <el-form-item label="" prop="gp_earning1">
+                                <el-input v-model="createdForm.gp_earning1" type="number"
+                                    :placeholder="$lang(createdForm.promotion_time_month == 07 ? '个人Q1 GP收入占比' : '个人Q3 GP收入占比')">
+                                    <template slot="append">%</template>
+                                </el-input>
+                            </el-form-item>
+                        </el-col>
+                        
+                    </el-col>
+                    <el-col :span="10">
+                        <el-col :span="11">
+                            <el-form-item label="" label-width="0px" prop="gp_earning2_amount">
+                                <el-input v-model="createdForm.gp_earning2_amount" type="number"
+                                    :placeholder="$lang(createdForm.promotion_time_month == 07 ? '个人Q2 GP收入金额（USD）' : '个人Q4 GP收入金额（USD）')">
+                                </el-input>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="13" style="padding-right: 0;">
+                            <el-form-item label="" label-width="0px" prop="gp_earning2">
+                                <el-input v-model="createdForm.gp_earning2" type="number"
+                                    :placeholder="$lang(createdForm.promotion_time_month == 07 ? '个人Q2 GP收入占比' : '个人Q4 GP收入占比')">
+                                    <template slot="append">%</template>
+                                </el-input>
+                            </el-form-item>
+                        </el-col>
+                        
+                    </el-col>
+                </el-row>
+                <el-row :gutter="20" v-if="departmentType == 'N003640002' && createdForm.promotion_time_month">
+                    <el-col :span="14">
+                        <el-col :span="15" style="padding-left: 0;">
+                            <el-form-item :label="$lang('ODM收入情况')" prop="odm_earning1_amount">
+                                <el-input v-model="createdForm.odm_earning1_amount" type="number"
+                                    :placeholder="$lang(createdForm.promotion_time_month == 07 ? '个人Q1 ODM收入金额（USD）' : '个人Q3 ODM收入占比')">
+                                </el-input>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="9">
+                            <el-form-item label="" prop="odm_earning1">
+                                <el-input v-model="createdForm.odm_earning1" type="number"
+                                    :placeholder="$lang(createdForm.promotion_time_month == 07 ? '个人Q1 ODM收入占比' : '个人Q3 ODM收入占比')">
+                                    <template slot="append">%</template>
+                                </el-input>
+                            </el-form-item>
+                        </el-col>
+                        
+                    </el-col>
+                    <el-col :span="10">
+                        <el-col :span="11">
+                            <el-form-item label="" label-width="0px" prop="odm_earning2_amount">
+                                <el-input v-model="createdForm.odm_earning2_amount" type="number"
+                                    :placeholder="$lang(createdForm.promotion_time_month == 07 ? '个人Q2 ODM收入金额（USD）' : '个人Q4 ODM收入金额（USD）')">
+                                </el-input>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="13" style="padding-right: 0;">
+                            <el-form-item label="" label-width="0px" prop="odm_earning2">
+                                <el-input v-model="createdForm.odm_earning2" type="number"
+                                    :placeholder="$lang(createdForm.promotion_time_month == 07 ? '个人Q2 ODM收入占比' : '个人Q4 ODM收入占比')">
+                                    <template slot="append">%</template>
+                                </el-input>
+                            </el-form-item>
+                        </el-col>
+                        
+                    </el-col>
+                </el-row>
+                <el-row :gutter="20">
+                    <el-col :span="24">
+                        <el-form-item :label="$lang('奖惩记录')" prop="reward_punishment_record">
+                            <el-input type="textarea" :rows="4" :placeholder="$lang('奖惩记录')"
+                                v-model="createdForm.reward_punishment_record">
+                            </el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row :gutter="20">
+                    <el-col :span="24">
+                        <el-form-item :label="$lang('直属领导意见')" prop="direct_leadership_opinion">
+                            <el-input type="textarea" :rows="4" :placeholder="$lang('直属领导意见')"
+                                v-model="createdForm.direct_leadership_opinion">
+                            </el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+            </el-form>
+
+            <span slot="footer" class="dialog-footer">
+                <el-button type="primary" @click="submit">{{$lang('提交')}}</el-button>
+            </span>
+        </el-dialog>
+    </div>
+</body>
+
+</html>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue-2.6.10.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="\Application\Tpl\Home\Public\js\H-ui.admin.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.13.0.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script>
+    if (getCookie('think_language') !== "zh-cn") {
+        ELEMENT.locale(ELEMENT.lang.en)
+    }
+    let VM = new Vue({
+        el: '#promotionList',
+        data() {
+            return {
+                serachForm: {
+                    promotion_no: '',
+                    status: '',
+                    current_approver: '',
+                    empl_id: '',
+                    date: [],
+                    created_by: '',
+                    promotion_time: '',
+                    promotion_raise_type_cd: '',
+                    dept_id: ''
+                },
+                createdForm: {
+                    promotion_raise_type_cd: 'N003750001', // 类型
+                    empl_id: '', // 候选人
+                    dept_id: '', // 候选人归属部门
+                    work_content: '', // 主要工作内容
+                    rating: '', // 努力程度
+                    last_promotion_time: '', // 上次晋升时间
+                    last_promotion_before_job_id: '', // 上次晋升前职位
+                    current_job_id: '', // 当前职位
+                    promotion_job_id: '', // 晋升后职位
+                    promotion_time_year: '', // 年
+                    promotion_time_month: '', // 月
+                    currency_cd: '', // 加薪币种
+                    last_salary_amount: '', // 上次加薪前月薪
+                    raise_salary_amount_after: '', // 上次加薪后月薪
+                    now_salary_amount: '', // 当前月薪
+                    raise_salary_amount: '', // 本次加薪后月薪
+                    personal_last_month_sale_amount1: '', // 销售金额前6个月
+                    personal_last_month_sale_amount2: '', // 销售金额前6个月
+                    personal_last_month_sale_amount3: '', // 销售金额前6个月
+                    personal_last_month_sale_amount4: '', // 销售金额前6个月
+                    personal_last_month_sale_amount5: '', // 销售金额前6个月
+                    personal_last_month_sale_amount6: '', // 销售金额前6个月
+                    personal_last_month_sale_earning1: '', // 盈亏金额前6个月
+                    personal_last_month_sale_earning2: '', // 盈亏金额前6个月
+                    personal_last_month_sale_earning3: '', // 盈亏金额前6个月
+                    personal_last_month_sale_earning4: '', // 盈亏金额前6个月
+                    personal_last_month_sale_earning5: '', // 盈亏金额前6个月
+                    personal_last_month_sale_earning6: '', // 盈亏金额前6个月
+                    reward_punishment_record: '', // 奖惩
+                    direct_leadership_opinion: '', // 领导意见
+                    is_first_promote: false, // 是否第一次晋升
+                    gp_earning1_amount: '', // GP收入金额
+                    gp_earning2_amount: '', // GP收入金额
+                    gp_earning1: '', // GP收入占比
+                    gp_earning2: '', // GP收入占比
+                    odm_earning1_amount: '', // ODM收入金额
+                    odm_earning2_amount: '', // ODM收入金额
+                    odm_earning1: '', // ODM收入占比
+                    odm_earning2: '', // ODM收入占比
+                },
+                tableData: [],
+                page: 1,
+                size: 10,
+                total: 0,
+                dialogVisible: false,
+                tableLoading: false,
+                promotionStaus: [],
+                currency: [], // 币种
+                promotionType: [], // 类型
+                userData: [], // 人员
+                candidateUser: [], // 晋升候选人员
+                deptData: [], // 部门
+                departmentType: '', // 部门类型
+                jobData: [], // 职位
+                deptAll: [], // 全部部门
+                rulesFrom: {
+                    promotion_raise_type_cd: { required: true, message: this.$lang('请选择类型'), trigger: 'change' },
+                    empl_id: { required: true, message: this.$lang('请选择候选人'), trigger: 'change' },
+                    dept_id: { required: true, message: this.$lang('请选择候选人归属部门'), trigger: 'change' },
+                    work_content: { required: true, message: this.$lang('请输入主要工作内容'), trigger: 'blur' },
+                    rating: { required: true, validator: this.validateRating, trigger: 'blur' },
+                    last_promotion_time: { validator: this.promotionTimeValid, trigger: 'change' },
+                    last_promotion_before_job_id: { validator: this.promotionTimeValid, trigger: 'change' },
+                    current_job_id: { required: true, message: this.$lang('请选择当前职位'), trigger: 'change' },
+                    promotion_job_id: { required: true, message: this.$lang('请选择晋升后职位'), trigger: 'change' },
+                    last_salary_amount: { validator: this.salaryAmountvalid, trigger: 'blur' },
+                    now_salary_amount: { validator: this.salaryAmountvalid, trigger: 'blur' },
+                    raise_salary_amount: { validator: this.salaryAmountvalid, trigger: 'blur' },
+                    raise_salary_amount_after: { validator: this.salaryAmountvalid, trigger: 'blur' },
+
+                    promotion_time_year: { required: true, message: this.$lang('请选择年份'), trigger: 'change' },
+                    promotion_time_month: { required: true, message: this.$lang('请选择月份'), trigger: 'change' },
+                    personal_last_month_sale_amount1: { required: true, message: this.$lang('请输入销售金额'), trigger: 'blur' },
+                    personal_last_month_sale_amount2: { required: true, message: this.$lang('请输入销售金额'), trigger: 'blur' },
+                    personal_last_month_sale_amount3: { required: true, message: this.$lang('请输入销售金额'), trigger: 'blur' },
+                    personal_last_month_sale_amount4: { required: true, message: this.$lang('请输入销售金额'), trigger: 'blur' },
+                    personal_last_month_sale_amount5: { required: true, message: this.$lang('请输入销售金额'), trigger: 'blur' },
+                    personal_last_month_sale_amount6: { required: true, message: this.$lang('请输入销售金额'), trigger: 'blur' },
+                    personal_last_month_sale_earning1: { required: true, message: this.$lang('请输入盈亏金额'), trigger: 'blur' },
+                    personal_last_month_sale_earning2: { required: true, message: this.$lang('请输入盈亏金额'), trigger: 'blur' },
+                    personal_last_month_sale_earning3: { required: true, message: this.$lang('请输入盈亏金额'), trigger: 'blur' },
+                    personal_last_month_sale_earning4: { required: true, message: this.$lang('请输入盈亏金额'), trigger: 'blur' },
+                    personal_last_month_sale_earning5: { required: true, message: this.$lang('请输入盈亏金额'), trigger: 'blur' },
+                    personal_last_month_sale_earning6: { required: true, message: this.$lang('请输入盈亏金额'), trigger: 'blur' },
+                    gp_earning1_amount: { required: true, message: this.$lang('请输入GP收入金额'), trigger: 'blur' },
+                    gp_earning2_amount: { required: true, message: this.$lang('请输入GP收入金额'), trigger: 'blur' },
+                    gp_earning1: { required: true, message: this.$lang('请输入GP收入占比'), trigger: 'blur' },
+                    gp_earning2: { required: true, message: this.$lang('请输入GP收入占比'), trigger: 'blur' },
+                    odm_earning1_amount: { required: true, message: this.$lang('请输入ODM收入金额'), trigger: 'blur' },
+                    odm_earning2_amount: { required: true, message: this.$lang('请输入ODM收入金额'), trigger: 'blur' },
+                    odm_earning1: { required: true, message: this.$lang('请输入ODM收入占比'), trigger: 'blur' },
+                    odm_earning2: { required: true, message: this.$lang('请输入ODM收入占比'), trigger: 'blur' },
+                    reward_punishment_record: { required: true, message: this.$lang('请输入奖惩记录'), trigger: 'blur' },
+                    direct_leadership_opinion: { required: true, message: this.$lang('请输入直属领导意见'), trigger: 'blur' },
+                },
+                pickerOptions: {
+                    disabledDate(time) {
+                        const month = time.getMonth()
+                        return [1, 2, 3, 4, 5, 7, 8, 9, 10, 11].includes(month);
+                    },
+                },
+                btnLoading: false,
+            }
+        },
+        created() {
+            this.getList();
+            this.getCommonData();
+            this.getUser();
+            this.getCandidateUser();
+            this.getJob();
+            this.getPromotionType();
+            this.getCurrency();
+            this.getDeptAll();
+        },
+        methods: {
+            // 修改晋升类型清空薪资或者职位数据
+            promotionTypeChange(val) {
+                this.createdForm.last_promotion_time = '';
+                if(val == 'N003750001') {
+                    this.createdForm.last_salary_amount = '';
+                    this.createdForm.now_salary_amount = '';
+                    this.createdForm.raise_salary_amount = '';
+                    this.createdForm.raise_salary_amount_after = '';
+                } else {
+                    this.createdForm.last_promotion_before_job_id = '';
+                    this.createdForm.promotion_job_id = '';
+                }
+            },
+            // 薪资自定义校验规则
+            salaryAmountvalid(rule, value, callback) {
+                if(this.createdForm.is_first_promote && (rule.field === 'last_salary_amount' || rule.field === 'raise_salary_amount_after')) {
+                    callback();
+                    return false;
+                    console.log(1)
+                }
+                if(value === '') {
+                    callback(new Error(this.$lang('请输入薪资')))
+                } else if (this.createdForm.currency_cd ==='') {
+                    callback(new Error(this.$lang('请选择薪资币种')))
+                } else {
+                    callback();
+                }
+            },
+            departmentChange(val) {
+                this.departmentType = this.deptData.find(item => item.ID == val).TYPE; // N003640002为业务部门
+            },
+            // 职位和晋升时间自定义校验规则
+            promotionTimeValid(rule, value, callback) {
+                if(this.createdForm.is_first_promote) {
+                    callback();
+                    return false;
+                }
+                if(value === '') {
+                    let errStr = '';
+                    if(rule.field === 'last_promotion_time') {
+                        errStr = '请选择上次晋升时间'
+                    } else {
+                        errStr = '请选择上次晋升前职位'
+                    }
+                    callback(new Error(this.$lang(errStr)))
+                } else {
+                    callback()
+                }
+            },
+            validateRating(rule, value, callback) {
+                if (value == '') {
+                    callback(new Error(this.$lang('请输入努力程度评级')));
+                } else {
+                    callback()
+                }
+            },
+            inputChange(val) {
+                this.createdForm.now_salary_amount = Number(val);
+            },
+            checkChange(val) {
+                console.log(val)
+                if (val) {
+                    this.createdForm.last_promotion_time = '';
+                    this.$refs.createdForm.validateField('last_promotion_time', () => {})
+                    if(this.createdForm.promotion_raise_type_cd == 'N003750001') {
+                        this.createdForm.last_promotion_before_job_id = '';
+                        this.$refs.createdForm.validateField('last_promotion_before_job_id', () => {})
+                    } else {
+                        this.createdForm.last_salary_amount = '';
+                        this.createdForm.raise_salary_amount_after = '';
+                        this.$refs.createdForm.validateField('last_salary_amount', () => {})
+                        this.$refs.createdForm.validateField('raise_salary_amount_after', () => {})
+                    }
+                }
+            },
+            search() {
+                this.page = 1;
+                this.size = 10;
+                this.getList();
+            },
+            emplChange(val) {
+                console.log(val);
+                if (val) {
+                    this.deptData = [];
+                    this.createdForm.dept_id = "";
+                    axios.get('index.php?m=hrApi&a=getDeptByUser&empl_id=' + val).then(res => {
+                        if (res.status == 200 && res.data.code == 200) {
+                            this.deptData = res.data.data.dept;
+                            console.log(this.deptData)
+                            if (this.deptData && this.deptData.length == 1) {
+                                this.createdForm.dept_id = this.deptData[0].ID;
+                                this.departmentType = this.deptData[0].TYPE;
+                            }
+                            this.createdForm.current_job_id = res.data.data.job.JOB_ID
+                        } else {
+                            this.$message.error(this.$lang(res.data.msg))
+                        }
+                    }).catch(err => {
+                        console.log(err)
+                    })
+                }
+
+            },
+            getList() {
+                let param = {
+                    "data": {
+                        "promotion_no": this.serachForm.promotion_no,
+                        "status": this.serachForm.status,
+                        "current_approver": this.serachForm.current_approver,
+                        "empl_id": this.serachForm.empl_id,
+                        "created_at": {
+                            "start_date": this.serachForm.date[0],
+                            "end_date": this.serachForm.date[1]
+                        },
+                        "created_by": this.serachForm.created_by,
+                        "promotion_time": this.serachForm.promotion_time,
+                        "promotion_raise_type_cd": this.serachForm.promotion_raise_type_cd,
+                        "dept_id": this.serachForm.dept_id.length > 0 ? this.serachForm.dept_id[this.serachForm.dept_id.length - 1] : ''
+                    },
+                    "page": {
+                        "this_page": this.page,
+                        "page_size": this.size
+                    }
+                }
+                this.tableLoading = true;
+                axios.post('/index.php?m=hrApi&a=promotionList', param).then(res => {
+                    this.tableLoading = false;
+                    if (res.status == 200 && res.data.code == 200) {
+                        this.tableData = res.data.data.data;
+                        this.total = Number(res.data.data.page.count);
+                    } else {
+                        this.$message.error(this.$lang(res.data.msg))
+                    }
+                }).catch(err => {
+                    console.log(err)
+                })
+            },
+            getCommonData() {
+                let param = {
+                    "data": {
+                        "query": {
+                            "promotion_staus": "true",
+                        },
+                    }
+                }
+                axios.post('/index.php?g=oms&m=CommonData&a=commonData', param).then(res => {
+                    console.log(res)
+                    if (res.status == 200 && res.data.code == 2000) {
+                        this.promotionStaus = res.data.data.promotion_staus;
+                    } else {
+                        this.$message.error(this.$lang(res.data.msg))
+                    }
+                }).catch(err => {
+                    console.log(err)
+                })
+            },
+            getUser() {
+                axios.get('/index.php?g=common&m=user&a=search_user').then(res => {
+                    console.log(res)
+                    if (res.status == 200 && res.data.code == 2000) {
+                        this.userData = res.data.data;
+                    } else {
+                        this.$message.error(this.$lang(res.data.msg))
+                    }
+                }).catch(err => {
+                    console.log(err)
+                })
+            },
+            getDeptAll() {
+                axios.get('/index.php?m=hrApi&a=getDeptAll').then(res => {
+                    console.log(res)
+                    if (res.status == 200 && res.data.code == 200) {
+                        this.deptAll = res.data.data;
+                    } else {
+                        this.$message.error(this.$lang(res.data.msg))
+                    }
+                }).catch(err => {
+                    console.log(err)
+                })
+            },
+            getCurrency() {
+                axios.get('/index.php?m=hrApi&a=getCurrency').then(res => {
+                    console.log(res)
+                    if (res.status == 200 && res.data.code == 200) {
+                        this.currency = res.data.data;
+                    } else {
+                        this.$message.error(this.$lang(res.data.msg))
+                    }
+                }).catch(err => {
+                    console.log(err)
+                })
+            },
+            getPromotionType() {
+                axios.get('/index.php?m=hrApi&a=getPromotionType').then(res => {
+                    console.log(res)
+                    if (res.status == 200 && res.data.code == 200) {
+                        this.promotionType = res.data.data;
+                    } else {
+                        this.$message.error(this.$lang(res.data.msg))
+                    }
+                }).catch(err => {
+                    console.log(err)
+                })
+            },
+            getCandidateUser() {
+                let param = {
+                    name: ''
+                }
+                axios.post('/index.php?m=hrApi&a=searchUser', param).then(res => {
+                    console.log(res)
+                    if (res.status == 200 && res.data.code == 200) {
+                        this.candidateUser = res.data.data;
+                    } else {
+                        this.$message.error(this.$lang(res.data.msg))
+                    }
+                }).catch(err => {
+                    console.log(err)
+                })
+            },
+            getJob() {
+                axios.get('index.php?m=Api&a=choice').then(res => {
+                    console.log(res)
+                    if (res.status == 200 && res.data && res.data[0]) {
+                        this.jobData = res.data[0].job;
+                    } else {
+                        this.$message.error(this.$lang(res.data.msg))
+                    }
+                }).catch(err => {
+                    console.log(err)
+                })
+            },
+            rest() {
+                this.$refs.searchFrom.resetFields();
+                this.search();
+            },
+            addPromotion() {
+                this.dialogVisible = true
+            },
+            createdDialogclose() {
+                this.$refs.createdForm.resetFields();
+                this.createdForm.currency_cd = '';
+                this.createdForm.is_first_promote = false;
+            },
+            handleSizeChange(size) {
+                this.size = size;
+                this.getList();
+            },
+            handleCurrentChange(page) {
+                this.page = page;
+                this.getList();
+            },
+            encode(str){
+                // 对字符串进行编码
+                var encode = encodeURI(str);
+                // 对编码的字符串转化base64
+                var base64 = btoa(encode);
+                return base64;
+            },
+            submit() {
+                this.$refs.createdForm.validate(valid => {
+                    if (valid) {
+                        let param = {
+                            "promotion_raise_type_cd": this.createdForm.promotion_raise_type_cd,
+                            "empl_id": this.createdForm.empl_id,
+                            "dept_id": this.createdForm.dept_id,
+                            "work_content": this.encode(this.createdForm.work_content.replace(/\n/g,'<br/>')),
+                            "rating": this.createdForm.rating,
+                            "last_promotion_time": this.createdForm.last_promotion_time,
+                            "last_promotion_before_job_id": this.createdForm.last_promotion_before_job_id,
+                            "current_job_id": this.createdForm.current_job_id,
+                            "promotion_job_id": this.createdForm.promotion_job_id,
+                            "currency_cd": this.createdForm.currency_cd,
+                            "last_salary_amount": this.createdForm.last_salary_amount,
+                            "now_salary_amount": this.createdForm.now_salary_amount,
+                            "raise_salary_amount": this.createdForm.raise_salary_amount,
+                            "promotion_time": this.createdForm.promotion_time_year + '-' + this.createdForm.promotion_time_month,
+                            "reward_punishment_record": this.encode(this.createdForm.reward_punishment_record.replace(/\n/g,'<br/>')),
+                            "direct_leadership_opinion": this.encode(this.createdForm.direct_leadership_opinion.replace(/\n/g,'<br/>')),
+                            "is_first_promote": this.createdForm.is_first_promote ? 1 : 0, // 是否首次晋升  1为是  0为不是
+                            "personal_last_month_sale_amount": [this.createdForm.personal_last_month_sale_amount1,this.createdForm.personal_last_month_sale_amount2,this.createdForm.personal_last_month_sale_amount3,this.createdForm.personal_last_month_sale_amount4,this.createdForm.personal_last_month_sale_amount5,this.createdForm.personal_last_month_sale_amount6],
+                            "personal_last_month_sale_earning": [this.createdForm.personal_last_month_sale_earning1,this.createdForm.personal_last_month_sale_earning2,this.createdForm.personal_last_month_sale_earning3,this.createdForm.personal_last_month_sale_earning4,this.createdForm.personal_last_month_sale_earning5,this.createdForm.personal_last_month_sale_earning6],
+                            "gp_earning1_amount": this.createdForm.gp_earning1_amount,
+                            "gp_earning1": this.createdForm.gp_earning1,
+                            "gp_earning2_amount": this.createdForm.gp_earning2_amount,
+                            "gp_earning2": this.createdForm.gp_earning2,
+                            "odm_earning1_amount": this.createdForm.odm_earning1_amount,
+                            "odm_earning1": this.createdForm.odm_earning1,
+                            "odm_earning2_amount": this.createdForm.odm_earning2_amount,
+                            "odm_earning2": this.createdForm.odm_earning2,
+                        }
+                        if(this.createdForm.promotion_raise_type_cd === 'N003750002') { //  类型为加薪时校验
+                            if(this.createdForm.last_salary_amount >= this.createdForm.now_salary_amount && !this.createdForm.is_first_promote) {
+                                this.$message.warning(this.$lang('加薪后工资必须大于加新前工资'));
+                                return false;
+                            }
+                            if(this.createdForm.now_salary_amount >= this.createdForm.raise_salary_amount) {
+                                this.$message.warning(this.$lang('加薪后工资必须大于加新前工资'));
+                                return false;
+                            }
+                        }
+                        axios.post('index.php?m=hrApi&a=promotionAdd', param).then(res => {
+                            if (res.status && res.data.code == 200) {
+                                this.dialogVisible = false;
+                                this.$message.success(this.$lang('成功'));
+                                this.search();
+                            } else {
+                                this.$message.error(this.$lang(res.data.msg))
+                            }
+                        }).catch(err => {
+                            console.log(err)
+                        })
+                    } else {
+                        return false;
+                    }
+                })
+            },
+            seeDetail(row) {
+                newTab("/index.php?m=hr&a=promotionDetail&id=" + row.id, this.$lang('晋升详情'));
+            },
+            ceoApproval(item) {
+                const param = {
+                    id: item.id
+                }
+                this.btnLoading = true;
+                axios.post('/index.php?m=hrApi&a=batchPushToCeoNode', param).then(res => {
+                    this.btnLoading = false;
+                    if (res.status && res.data.code == 200) {
+                        this.$message.success(this.$lang(`成功推送${res.data.data.total_success}条晋升加薪单`));
+                        this.getList();
+                    } else {
+                        this.$message.error(this.$lang(res.data.msg))
+                    }
+                }).catch(err => {
+                    console.log(err)
+                    this.btnLoading = false;
+                })
+            }
+        },
+    })
+</script>

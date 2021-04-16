@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>$lang('自有物流仓配置')</title>
+  <meta name="viewport"
+    content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.default.css?v=<{$Think.const.V}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.8.2.css?v=<{$Think.const.V}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+  <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.const.V}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+  <style>
+    [v-cloak] {
+      display: none;
+    }
+    #warehouse-setting {
+      padding: 10px 20px;
+    }
+    .queryForm {
+      padding: 0 120px;
+    }
+    .queryForm .el-input {
+      width: 360px;
+    }
+    .el-form--inline .el-form-item {
+      width: 32%;
+    }
+    .result-num {
+      padding-top: 10px;
+    }
+    .el-dialog__header {
+      display: block;
+    }
+    .el-dialog__body {
+      padding: 30px 20px !important; 
+    }
+    .el-dialog__body .el-select {
+      width: 300px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="warehouse-setting" v-cloak>
+    <div class="queryForm">
+      <el-form inline :model="queryForm" label-width="80px">
+        <el-form-item :label="$lang('仓库名称')">
+          <el-input v-model="queryForm.warehouse"></el-input>
+        </el-form-item>
+        <el-form-item :label="$lang('物流公司')">
+          <el-input v-model="queryForm.logistics_company"></el-input>
+        </el-form-item>
+        <el-form-item :label="$lang('物流方式')">
+          <el-input v-model="queryForm.logistics_mode"></el-input>
+        </el-form-item>
+      </el-form>
+      <el-row type="flex" justify="end">
+        <el-button type="primary" @click="getTableData">{{$lang('搜索')}}</el-button>
+        <el-button type="info" @click="resetQueryForm">{{$lang('重置')}}</el-button>
+      </el-row>
+    </div>
+
+    <div class="list-common-main">
+        <el-row type="flex">
+          <el-col :span="2">
+            <div class="result-num">
+              <span>{{$lang('结果：总计')}} {{tableData.pages.total}} {{$lang('记录')}}</span>
+            </div>
+          </el-col>
+          <el-col :span="1">
+            <el-button @click="exportTable">{{$lang('导出')}}</el-button>
+          </el-col>
+          <el-col :span="1" :offset="20">
+            <el-button type="primary" @click="handleAdd">{{$lang('新增')}}</el-button>
+          </el-col>
+        </el-row>
+
+        <el-table border show-header :data="tableData.data" tooltip-effect="dark" style="width: 100%" class="order-list-table table-common"
+          v-loading="tableLoading">
+          <el-table-column prop="number" :label="$lang('编号')" width="50"></el-table-column>
+          </el-table-column>
+          <el-table-column :label="$lang('仓库名称')" prop="warehouse_code_val">
+          </el-table-column>
+          <el-table-column :label="$lang('物流公司')" prop="logistics_company_code_val">
+          </el-table-column>
+          <el-table-column :label="$lang('物流方式')" prop="logistics_mode">
+          </el-table-column>
+          <el-table-column :label="$lang('自有物流')" prop="is_own_logistics_warehouse_val">
+          </el-table-column>
+          <el-table-column :label="$lang('选项')">
+            <template slot-scope="scope">
+              <el-button size="mini" @click="handleEdit(scope.row)">{{$lang('编辑')}}</el-button>
+              <el-button size="mini" type="danger" @click="handleDelete(scope.row)">{{$lang('删除')}}
+              </el-button>
+            </template>
+          </el-table-column>
+          <el-table-column :label="$lang('修改时间')" prop="updated_at">
+          </el-table-column>
+          <el-table-column :label="$lang('操作人')" prop="updated_by">
+          </el-table-column>
+        </el-table>
+      
+      <el-pagination background @size-change="pageSizeChange" @current-change="currentPageChange"
+        :current-page.sync="page"
+        :total="tableData.pages.total" :page-sizes="[10, 30, 50, 100]" :page-size="pageSize" layout="sizes, prev, pager, next, jumper">
+      </el-pagination>
+
+      <el-dialog :title="$lang('新增')" :visible.sync="addDialogVisible" @closed="resetForm('addForm')">
+        <el-form :model="addForm" ref="addForm" :rules="rules">
+          <el-form-item :label="$lang('仓库名称')" prop="warehouse_code">
+            <el-select v-model="addForm.warehouse_code" filterable :placeholder="$lang('请选择')">
+              <el-option v-for="item in warehouseOptions" :key="item.CD" :label="item.CD_VAL" :value="item.CD"
+                :value-key="item.CD">
+              </el-option>
+            </el-select>
+          </el-form-item>
+          <el-form-item :label="$lang('物流公司')" prop="logistics_company_code">
+            <el-select v-model="addForm.logistics_company_code" filterable :placeholder="$lang('请选择')">
+              <el-option v-for="item in logisticsCompanyOptions" :key="item.cd" :label="item.cdVal" :value="item.cd">
+              </el-option>
+            </el-select>
+          </el-form-item>
+          <el-form-item :label="$lang('物流方式')" prop="logistics_mode_id">
+            <el-select v-model="addForm.logistics_mode_id" filterable :placeholder="$lang('请选择')">
+              <el-option v-for="item in logisticsWayOptions" :key="item.id" :label="item.logisticsMode"
+                :value="item.id">
+              </el-option>
+            </el-select>
+          </el-form-item>
+          <el-form-item :label="$lang('自有物流')" prop="is_own_logistics_warehouse">
+            <el-select v-model="addForm.is_own_logistics_warehouse" :placeholder="$lang('请选择')">
+              <el-option :label="$lang('是')" value="1">
+              </el-option>
+              <el-option :label="$lang('否')" value="0">
+              </el-option>
+            </el-select>
+          </el-form-item>
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+          <el-button @click="addDialogVisible = false">{{$lang('取消')}}</el-button>
+          <el-button type="primary" @click="saveAdd">{{$lang('确定')}}</el-button>
+        </div>
+      </el-dialog>
+      <el-dialog :title="$lang('编辑')" :visible.sync="editDialogVisible" @closed="resetForm('editForm')">
+        <el-form :model="editForm" ref="editForm" :rules="rules">
+          <el-form-item :label="$lang('仓库名称')" prop="warehouse_code">
+            <el-select v-model="editForm.warehouse_code" filterable :placeholder="$lang('请选择')">
+              <el-option v-for="item in warehouseOptions" :key="item.CD" :label="item.CD_VAL" :value="item.CD"
+                :value-key="item.CD">
+              </el-option>
+            </el-select>
+          </el-form-item>
+          <el-form-item :label="$lang('物流公司')" prop="logistics_company_code">
+            <el-select v-model="editForm.logistics_company_code" filterable :placeholder="$lang('请选择')">
+              <el-option v-for="item in logisticsCompanyOptions" :key="item.cd" :label="item.cdVal" :value="item.cd">
+              </el-option>
+            </el-select>
+          </el-form-item>
+          <el-form-item :label="$lang('物流方式')" prop="logistics_mode_id">
+            <el-select v-model="editForm.logistics_mode_id" filterable :placeholder="$lang('请选择')">
+              <el-option v-for="item in logisticsWayOptions" :key="item.id" :label="item.logisticsMode"
+                :value="item.id">
+              </el-option>
+            </el-select>
+          </el-form-item>
+          <el-form-item :label="$lang('自有物流')" prop="is_own_logistics_warehouse">
+            <el-select v-model="editForm.is_own_logistics_warehouse" :placeholder="$lang('请选择')">
+              <el-option :label="$lang('是')" value="1">
+              </el-option>
+              <el-option :label="$lang('否')" value="0">
+              </el-option>
+            </el-select>
+          </el-form-item>
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+          <el-button @click="editDialogVisible = false">{{$lang('取消')}}</el-button>
+          <el-button type="primary" @click="saveEdit">{{$lang('确定')}}</el-button>
+        </div>
+      </el-dialog>
+    </div>
+  </div>
+
+  <!--引入js-->
+  <script src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+  <script src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+  <script src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+  <script src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+  <script src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+  <script src="./Application/Tpl/Home/Public/js/element-ui-2.8.2.js?v=<{$Think.const.V}>">
+  </script>
+  <script src="./Application/Tpl/Home/Public/js/element-en.js">
+  </script>
+  <script src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>">
+  </script>
+  <script src="./Application/Tpl/Home/Location/setting.js?v=<{$Think.const.V}>"></script>
+</body>
+
+</html>

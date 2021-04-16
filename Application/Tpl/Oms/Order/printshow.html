@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <title>{{$lang('订单列表')}}</title>
+</head>
+<style>
+    .print-wrap {
+        display: none;
+    }
+
+    .show-wrap {
+        width: 500px;
+        margin: 0 auto;
+        padding: 30px;
+    }
+
+    button,a{
+        width: 100px;
+        height: 36px;
+        -webkit-box-shadow: 0 0 2px 0 rgba(0, 0, 0, 0.12), 0 2px 2px 0 rgba(0, 0, 0, 0.24);
+        box-shadow: 0 0 2px 0 rgba(0, 0, 0, 0.12), 0 2px 2px 0 rgba(0, 0, 0, 0.24);
+        -webkit-transition: .5s all;
+        transition: .5s all;
+        font-size: 14px;
+        border-radius: 4px;
+        outline: none;
+        background-color: #1e7eb4;
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        margin-right: 35px;
+    }
+</style>
+
+<body class="orderList">
+    <div style="text-align: right; padding: 10px 400px;" id="printShow">
+        <button @click="printFace()" type="button" :value="$lang('打印')">
+            {{$lang('打印')}}
+        </button>
+        <button style="background: rgb(43, 163, 132)" @click="pass()">
+            {{$lang('通过')}}
+        </button>
+
+        <button style="background: #03A9F4" @click="downPDF()">
+            {{$lang('单个下载')}}
+        </button>
+
+        <button style="background: #03A9F4" @click="downZIP()">
+            {{$lang('打包下载')}}
+        </button>
+    </div>
+    <div id="print"></div>
+    <!--引入js-->
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/LodopFuncs.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script src="https://cdn.bootcss.com/jszip/3.2.0/jszip.js"></script>
+    <script src="https://cdn.bootcss.com/jszip-utils/0.0.2/jszip-utils.js"></script>
+    <script src="https://cdn.bootcss.com/FileSaver.js/2014-11-29/FileSaver.js"></script>
+    <script>
+         vm = new Vue({
+            el: '#printShow',
+            data: {
+                params: JSON.parse(sessionStorage.getItem("queryPrintData")) || {},
+                data: []
+            },
+            created () {
+                this.queryData();
+            },
+            methods:{
+                queryData: function queryData() {
+                    axios.post("/index.php?g=OMS&m=Order&a=faceAlonePath", this.params).then(function (res) {
+                        if (res.data.status == 200000) {
+                            var data = res.data.data.data || [];
+                            data.forEach(function (item) {
+                                if (item) {
+                                    switch (item.type) {
+                                        case 'image':
+                                            item.path && item.path.length && item.path.forEach(function (e) {
+                                                //打印的图片
+                                                var printDiv = document.createElement('div');
+                                                printDiv.setAttribute('class', 'print-wrap');
+                                                printDiv.innerHTML = `<img src="${e}">`;
+                                                document.getElementById("print").appendChild(printDiv);
+                                                //展示的图片
+                                                var showDiv = document.createElement('div');
+                                                showDiv.setAttribute('class', 'show-wrap');
+                                                showDiv.innerHTML = `<img src="${e}" width="375" alt="图片加载失败，请刷新...">`;
+                                                document.getElementById("print").appendChild(showDiv);
+                                            })
+                                            break;
+                                        case 'html':
+                                            item.count && item.count.length && item.count.forEach(function (e) {
+                                                var div = document.createElement('div');
+                                                div.setAttribute('class', 'print-wrap');
+                                                div.innerHTML = e;
+                                                document.getElementById("print").appendChild(div)
+                                            });
+                                        default:
+                                            break;
+                                    }
+                                }
+                            })
+                        }
+                    })
+                },
+                printFace: function printFace () {
+                    var _this = this;
+                    var LODOP = getLodop();
+                    LODOP.PRINT_INIT();
+                    LODOP.On_Return = function (TaskID, Value) { 
+                        if (typeof Value == 'string' && Value >= 0) {
+                            _this.printing() 
+                        }
+                    };
+                    LODOP.SELECT_PRINTER();
+                    $('script').last().next().css({position:'fixed',top:window.parent.document.body.clientHeight/3})
+                },
+                printing: function printing () {
+                    this.params.show = 1;
+                    var htmlText = document.querySelectorAll(".print-wrap") || [],
+                        LODOP = getLodop();
+                    htmlText.forEach(function (item, index) {
+                        if (item.children[0].tagName == 'IMG') {
+                            LODOP.PRINT_INIT();
+                            LODOP.ADD_PRINT_IMAGE(0, 0, "100%", "100%", item.innerHTML);
+                            LODOP.SET_PRINT_STYLEA(0, "Stretch", 2);//按原图比例(不变形)缩放模式
+                            LODOP.PRINT();
+                        } else if (item.children[0].tagName != 'IMG') {
+                            LODOP.PRINT_INIT();
+                            LODOP.ADD_PRINT_HTM(0, 3, "100%", "100%", item.innerHTML);
+                            LODOP.PRINT();
+                        }
+                    })
+                },
+                pass: function pass () {
+                    this.params.show = 0;
+                    axios.post("/index.php?g=OMS&m=Order&a=faceAlonePath", this.params).then(function (res) {
+                        if (res.data.status == 200000) {
+                            backTab("/index.php?g=oms&m=pick_apart&a=PickApartList", "待分拣");
+                        }
+                    })
+                },
+                downPDF: function () {
+                    axios.post("/index.php?g=OMS&m=Order&a=faceAlonePath", this.params).then(function (res) {
+                        if (res.data.status == 200000) {
+                            var data = res.data.data.data || [];
+                            data.forEach(function (item,index) {
+                                if (item && item.type == 'image') {
+                                    item.path.forEach(function (e,i) {
+                                        var names = e.split('/'),
+                                            name = names[names.length - 1].replace(/.PNG/,'');
+                                        var downTag = document.createElement('a');
+                                        downTag.setAttribute('download', name);
+                                        downTag.setAttribute('href', e);
+                                        (function (time) {
+                                            setTimeout(function () {
+                                                downTag.click();
+                                            }, time)
+                                        })(1000 * index);
+                                    })
+                                }
+                            })
+                        }
+                    })
+                },
+                downZIP:function(){
+                    var zip = new JSZip(), images = zip.folder("images"),image = new Image();;
+                    axios.post("/index.php?g=OMS&m=Order&a=faceAlonePath", this.params).then(function (res) {
+                        if (res.data.status == 200000) {
+                            var data = res.data.data.data || [];
+                            data.forEach(function (item, index) {
+                                if (item && item.type == 'image') {
+                                    item.path.forEach(function (e, i) {
+                                        var names = e.split('/'),
+                                            name = names[names.length - 1];
+                                        image.src = location.origin + e;
+                                        var imgData = getBase64Image(image);
+                                        images.file(name, imgData, { base64: true });
+                                    })
+                                }
+                            })
+                            zip.generateAsync({ type: "blob" })
+                                .then(function (content) {
+                                    saveAs(content, "面单.zip");
+                                });
+                        }
+                    })
+
+                }
+            },
+        });
+
+        function getBase64Image(img) {
+            var canvas = document.createElement("canvas");
+            canvas.width = img.width;
+            canvas.height = img.height;
+
+            var ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, img.width, img.height);
+            var ext = img.src.substring(img.src.lastIndexOf(".") + 1).toLowerCase();
+            var dataURL = canvas.toDataURL("image/" + ext);
+            return dataURL.replace('data:image/png;base64,', '');
+        }
+          
+    </script>
+
+</body>
+
+</html>

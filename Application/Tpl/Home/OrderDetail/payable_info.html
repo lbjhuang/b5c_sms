@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" type="text/css" href="../Public/lib/icheck/icheck.css"/>
+    <link rel="stylesheet" href="../Public/lib/bootstrap/css/bootstrap.min.css">
+	<title><{$Think.lang.待确认}></title>
+	<script type="text/javascript" src="../Public/lib/My97DatePicker/WdatePicker.js"></script>
+    <script type="text/javascript" src="../Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="../Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <link rel="stylesheet" href="../Public/css/common.css?v=2017036"/>
+</head>
+<body>
+<div class="col-lg-12 col-md-12 col-sm-12 payable_detail">
+    <div class="row row_title">
+        <a onclick="opennewtab(this,'<{$Think.lang.订单详情}>')" _href="<{:U('order_detail',['id'=>$relevance['relevance_id']])}>"><{$Think.lang.订单详情}></a>
+        <a onclick="opennewtab(this,'<{$Think.lang.付款页}>')" _href="<{:U('payable_info',['id'=>$relevance['relevance_id']])}>" class="active"><{$Think.lang.付款}></a>
+        <a onclick="opennewtab(this,'<{$Think.lang.发货页}>')" _href="<{:U('ship_detail',['id'=>$relevance['relevance_id']])}>"><{$Think.lang.发货}></a>
+        <a onclick="opennewtab(this,'<{$Think.lang.入库页}>')" _href="<{:U('warehouse_info',['id'=>$relevance['relevance_id']])}>"><{$Think.lang.入库}></a>
+        <a onclick="opennewtab(this,'<{$Think.lang.发票页}>')" _href="<{:U('invoice_info',['relevance_id'=>$relevance['relevance_id']])}>"><{$Think.lang.发票}></a>
+        <a onclick="opennewtab(this,'<{$Think.lang.操作日志页}>')" _href="<{:U('purchase_log',['id'=>$relevance['relevance_id']])}>"><{$Think.lang.操作日志}></a>
+    </div>
+        <div class="detail_form">
+        <volist name="payment" id="v" key="k">
+        <table class="table">
+            <thead>
+            <th width="15%"></th>
+            <th width="35%"></th>
+            <th width="15%"></th>
+            <th width="35%"></th>
+            </thead>
+            <tbody>
+            <tr>
+                <td colspan="4" data-colspan="5"><{$Think.lang.基础信息}>(<{$k}>/<{$count}>)-
+                    <switch name="v.status">
+                        <case value="0">
+                            <{$Think.lang.待确认}>
+                            <if condition="$relevance['order_status'] neq 'N001320500'">
+                            <a onclick="opennewtab(this,'金额确认页')" _href='<{:U("payable_confirm",['id'=>$v["id"]])}>'"><{$Think.lang.金额确认}></a>
+                            </if>
+                        </case>
+                        <case value="1">
+                            <{$Think.lang.已确认}>
+                            <if condition="$relevance['order_status'] neq 'N001320500'">
+                            <a onclick="opennewtab(this,'付款详情页')" _href='<{:U("payable_write_off",['id'=>$v["id"]])}>'"><{$Think.lang.付款核销}></a>
+                            </if>
+                        </case>
+                        <case value="2">
+                            <{$Think.lang.已付款}>
+                        </case>
+                    </switch>
+                    <button type="button" style="display:none;"><{$Think.lang.付款核销}></button>
+                </td>
+            </tr>
+            <tr>
+                <td ><{$Think.lang.应付单号}></td>
+                <td ><a href="" class="payable_detail_A"><{$v.payment_no}></a></td>
+                <td ><{$Think.lang.采购单号}></td>
+                <td><{$relevance.procurement_number}><span class="purchase_commonBuy"><{:L($purchase_type[$relevance['purchase_type']])}></span></td>
+            </tr>
+            <tr>
+                <td ><{$Think.lang.采购总金额}></td>
+                <td><{:cdVal($relevance['amount_currency'])}> <{:number_format($relevance['amount'],2)}></td>
+                <td ><{$Think.lang.付款账期}></td>
+                <td><{:TbPurOrderDetailModel::$payment_type[$relevance['payment_type']]}>-<{:TbPurOrderDetailModel::$payment_period[$relevance['payment_period']]}></td>
+            </tr>
+            <tr>
+                <td ><{$Think.lang.本期节点}></td>
+                <td><{$v.payment_period}></td>
+                <td><{$Think.lang.预计付款时间}></td>
+                <td><{$v.payable_date}></td>
+            </tr>
+            <!-----待确认----->
+            <tr>
+                <td ><{$Think.lang.确认前-本期应付金额}></td>
+                <td><{:cdVal($relevance['amount_currency'])}> <{:number_format($v['amount_payable'],2)}></td>
+                <td ><{$Think.lang.我方公司}></td>
+                <td><{:cdVal($relevance['our_company'])}></td>
+            </tr>
+            <tr style="<if condition='$v["status"] lt 1'>display: none</if>">
+            <td style="color: red;"><{$Think.lang.确认后-本期应付金额}></td><!-----应付详情 此处与下为红色----->
+            <td style="color: red;"><{:cdVal($relevance['amount_currency'])}> <{:number_format($v['amount_confirm'],2)}></td>
+            <td><{$Think.lang.应付差额}></td>
+            <td class="payable_detail_input">
+                <div>
+                    <span><{:cdVal($relevance['amount_currency'])}> <{:number_format($v['amount_difference'],2)}></span>
+                    <span><{:cdVal($v['difference_reason'])}></span>
+                </div>
+            </td>
+            </tr>
+            <!----确认操作-- --  结束-->
+            <tr>
+                <td ><{$Think.lang.供应商名称}></td>
+                <td><{$relevance.supplier_id}></td>
+                <td ><{$Think.lang.供应商名称（英文）}></td>
+                <td><{$relevance.SP_NAME_EN}></td>
+            </tr>
+            <tr>
+                <td ><{$Think.lang.采购网站}></td>
+                <td><{:cdVal($relevance['online_purchase_website'])}></td>
+                <td ><{$Think.lang.下单账号}></td>
+                <td><{$relevance.online_purchase_account}></td>
+            </tr>
+            <tr>
+                <td ><{$Think.lang.PO单号}></td>
+                <td><{$relevance.online_purchase_order_number}></td>
+                <td ><{$Think.lang.供应商开户行}></td>
+                <td><{$relevance.supplier_opening_bank}></td>
+            </tr>
+            <tr>
+                <td ><{$Think.lang.收款账户名}></td>
+                <td><{$relevance.supplier_collection_account}></td>
+                <td ><{$Think.lang.银行账号}></td>
+                <td><{$relevance.supplier_card_number}></td>
+            </tr>
+            <tr>
+                <td ><{$Think.lang.SWIFT CODE}></td>
+                <td><{$relevance.supplier_swift_code}></td>
+                <td><{$Think.lang.销售团队}>&<{$Think.lang.销售同事}></td>
+                <td><{:cdVal($relevance['sell_team'])}>-<{$relevance['seller']}></td>
+            </tr>
+            <tr>
+                <td ><{$Think.lang.采购团队}></td>
+                <td><{:cdVal($relevance['payment_company'])}></td>
+                <td ><{$Think.lang.采购人}></td>
+                <td><{$relevance.prepared_by}></td>
+            </tr>
+            <tr>
+                <td ><{$Think.lang.订单状态}></td>
+                <td>
+                    <switch name="v.status" >
+                        <case value="0">待确认</case>
+                        <case value="1">待付款</case>
+                        <case value="2">已付款</case>
+                    </switch>
+                </td>
+                <td ><{$Think.lang.订单备注}></td>
+                <td><{$relevance.order_remark}></td>
+            </tr>
+            <if condition="$v.status neq 0">
+                <tr>
+                    <td ><{$Think.lang.确认时间}></td>
+                    <td><{$v.confirm_time}></td>
+                    <td ><{$Think.lang.确认人}></td>
+                    <td><{$v.confirm_user}></td>
+                </tr>
+            </if>
+            </tbody>
+        </table>
+        <if condition="$v['status'] eq 2">
+        <table class="table payment_info">
+            <tbody>
+            <tr>
+                <td colspan="4"><{$Think.lang.付款信息}></td>
+            </tr>
+            <tr>
+                <td width="15%"><{$Think.lang.本期付款}></td>
+                <td width="35%" class="payable_write_off_amount_paid"><b><{:cdVal($relevance['amount_currency'])}></b><span><{$v.amount_paid}></td>
+                <td><{$Think.lang.付款手续费}></td>
+                <td class="payable_write_off_amount_paid"><b><{:cdVal($relevance['amount_currency'])}></b><span><{$v.expense}></td>
+            </tr>
+            <tr>
+                <td width="15%"><{$Think.lang.付款时间}></td>
+                <td width="35%" class="payable_write_off_paid_date">
+                    <{$v.paid_date}>
+                </td>
+                <td><{$Think.lang.我方公司&付款账户}></td>
+                <td class="payable_write_off_our_company">
+                    <{:cdVal($v['our_company'])}><{:$v['open_bank']?' - '.$v['open_bank']:''}><{:$v['our_company_bank_account']?' - '.bankAccountFormat($v['our_company_bank_account']):''}>
+                </td>
+            </tr>
+            <tr>
+                <td><{$Think.lang.付款凭证}></td>
+                <td class="show_main payable_write_off_voucher">
+                    <a href="<{:U('download',['file'=>$v['voucher']])}>"><{$v.voucher}></a>
+                </td>
+                <td><{$Think.lang.公司评级}></td>
+                <td class="payable_detail_grade">
+                    <div>
+                        <switch name="risk_rating">
+                            <case value="1">
+                                <span style="border-color:#1E7EB4;color:#1E7EB4;" ><{$Think.lang.法务评级为}>:<{$Think.lang.低风险}></span>
+                            </case>
+                            <case value="2">
+                                <span class="" style="color: #C31207" ><{$Think.lang.法务评级为}>:<{$Think.lang.中风险}></span>
+                            </case>
+                            <case value="3">
+                                <span class="" style="color: #C31207;"><{$Think.lang.法务评级为}>:<{$Think.lang.高风险}></span>
+                            </case>
+                            <default />
+                            <span class="" id="risk_rating" style="display: none"></span>
+                        </switch>
+                        <if condition="$relevance['sp_charter_no'] eq ''">
+                            <span style="display: none;"></span>
+                            <elseif condition="$has_cooperate eq 1" />
+                            <span style="border-color:#1E7EB4;color:#1E7EB4;"><{$Think.lang.已合作}></span>
+                            <else />
+                            <span style="color: #C31207"><{$Think.lang.新合作}></span>
+                        </if>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td><{$Think.lang.提交时间}></td>
+                <td class="bg_gray"><{$v.payment_submit_time}></td>
+                <td><{$Think.lang.提交人}></td>
+                <td class="bg_gray"><{$v.payment_submit_user}></td>
+            </tr>
+            </tbody>
+        </table>
+        </if>
+        </volist>
+        <input type="hidden" name="id" value="<{$v.id}>">
+        <div class="col-lg-12  col-md-12 col-xs-12 col-lg-12-btn">
+            <button type="button" onclick="location='<{:U("order_list")}>'" class="btn-back"><{$Think.lang.返回列表}></button>
+        </div>
+    </div>
+</div>
+
+</body>
+<!--<div class="commom_Popup_parent">-->
+    <!--<div class="commom_Popup" >-->
+        <!--<div ><img src='../Public/images/ajax-loader.gif' alt=''></div>-->
+    <!--</div>-->
+<!--</div>-->
+
+</html>

@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>退货列表</title>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+          href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet"
+          href="./Application/Tpl/Home/Public/../Hr/hrstyle.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+          href="./Application/Tpl/Home/Public/css/btn-new.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+          href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+</head>
+
+<style>
+    [v-cloak] {
+        display: none;
+    }
+
+    .btns {
+      float: right;
+        margin: 0px 0px 0px 20px;
+    }
+
+    .show-list .search-table tr td {
+        padding: 1rem 1rem 1rem 0;
+    }
+
+    .btn-right .btn-right-item {
+        float: right;
+    }
+
+    .el-row + .el-row {
+        margin-top: 15px;
+    }
+
+    .el-pagination {
+        margin-bottom: 180px;
+    }
+
+    .normal {
+        white-space: normal !important;
+        word-wrap: break-word;
+        word-break: break-all;
+    }
+
+    .create-wrap {
+        white-space: nowrap;
+    }
+
+    .create-wrap .occupy {
+        display: inline-block;
+        width: 49.5%;
+    }
+
+    .show-list .el-form-item__label {
+        padding: 0px 10px 0px 0px;
+    }
+
+    .utils-btn {
+        margin-left: 30px;
+        color: #409EFF;
+        text-decoration: underline;
+    }
+
+    .show-list .table-list tr th {
+        padding: 0px 6px;
+    }
+
+    .show-list .table-list tr td {
+        white-space: normal;
+    }
+
+    .el-radio-button {
+        margin: 0px 10px;
+    }
+
+    .el-radio-button.is-active .el-radio-button__inner {
+        background: #1e7eb4 none repeat scroll 0 0;
+        border: none;
+        border-radius: 20px;
+
+    }
+
+    .el-radio-button__orig-radio:checked + .el-radio-button__inner {
+        background: #1e7eb4 none repeat scroll 0 0;
+        border: none;
+        border-radius: 20px;
+    }
+
+    .el-radio-button__inner {
+        border: none !important;
+        transition: 0s all;
+        padding: 8px 18px;
+        box-shadow: none !important;
+    }
+
+    .el-radio-button.is-active {
+        border: none;
+        background: #1e7eb4 none repeat scroll 0 0;
+        text-align: center;
+        padding: 0;
+        margin: 0px 10px;
+        line-height: 30px;
+        border-radius: 20px;
+        color: #fff;
+    }
+
+    .sort-item {
+        display: flex;
+        justify-content: center;
+    }
+
+    .sort-item span {
+        line-height: 30px;
+    }
+
+    .caret-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin-left: 10px;
+    }
+
+    .caret-wrapper i {
+        cursor: pointer;
+        font-size: 18px;
+    }
+
+    .caret-wrapper i.active {
+        color: #409eff;
+    }
+
+    .descending {
+        margin-top: -8px;
+    }
+
+    .td-item-25 {
+        width: 25%;
+    }
+    .input-with-select .el-select .el-input {
+      width: 140px;
+    }
+</style>
+
+<body>
+<div id="crmList" class="show-list" v-cloak>
+    <el-form ref="formSearch" :model="form" :label-position="labelPosition" label-width="100px">
+        <div class="use-row">
+            <div class="col-100">
+                <table class="search-table">
+                    <tbody>
+                    <tr>
+                        <td colspan="4">
+                            <el-form-item :label="$lang('退货状态')">
+                                <el-radio-group v-model="form.status_cd">
+                                    <el-radio-button v-for="item in baseData.purchase_return_status"
+                                                     :label="item.CD"
+                                                     :value="item.CD"
+                                                     :key="item.CD">{{$lang(item.CD_VAL)}}
+                                    </el-radio-button>
+                                </el-radio-group>
+                            </el-form-item>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td class="td-item-25">
+                            <el-form-item :label="$lang('采购退货单号')">
+                                <el-input v-model="form.return_no" :placeholder="$lang('请输入退货单号')"></el-input>
+                            </el-form-item>
+                        </td>
+                        <td class="td-item-25">
+                            <el-form-item :label="$lang('仓库')">
+                                <el-select :filterable="true" :placeholder="$lang('全部')"
+                                           multiple
+                                           clearable
+                                           collapse-tags
+                                           v-model="form.warehouse_cd">
+                                    <el-option :key="item.CD" :label="item.CD_VAL" :value="item.CD"
+                                               v-for="item in baseData.warehouse"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </td>
+                        <td class="td-item-25">
+                            <el-form-item :label="$lang('供应商')">
+                                <el-input v-model="form.supplier" :placeholder="$lang('请输入供应商')"></el-input>
+                            </el-form-item>
+                        </td>
+                        <td class="td-item-25">
+                            <el-form-item :label="$lang('我方公司')">
+                                <el-select :filterable="true" :placeholder="$lang('全部')"
+                                           multiple
+                                           clearable
+                                           collapse-tags
+                                           v-model="form.our_company_cd">
+                                    <el-option :key="item.CD" :label="item.CD_VAL" :value="item.CD"
+                                               v-for="item in baseData.our_company"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="td-item-25">
+                            <el-form-item :label="$lang('采购团队')">
+                                <el-select :filterable="true" :placeholder="$lang('全部')"
+                                           multiple
+                                           clearable
+                                           collapse-tags
+                                           v-model="form.purchase_team_cd">
+                                    <el-option :key="item.CD" :label="item.CD_VAL" :value="item.CD"
+                                               v-for="item in baseData.purchase_team"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </td>
+                        <td class="td-item-25">
+                            <el-form-item :label="$lang('发起人')">
+                                <el-input v-model="form.created_by" :placeholder="$lang('请输入发起人')"></el-input>
+                            </el-form-item>
+                        </td>
+                        <td class="td-item-25">
+                          <el-form-item :label="$lang('SKU/条形码')">
+                            <el-input :placeholder="$lang('请输入SKU/条形码')" v-model="form.sku_upc_id"></el-input>
+                          </el-form-item>
+                        </td>
+                        <td class="td-item-25">
+                            <!-- <el-input class="input-with-select" v-model="form.order_type_val">
+                            <el-select slot="prepend" v-model="form.order_type">
+                              <el-option label="采购PO单号" value="po_number"></el-option>
+                              <el-option label="采购单号" value="pur_number"></el-option>
+                            </el-select> -->
+
+                            <el-form-item :label="$lang('采购单号/采购PO单号')">
+                              <el-input class="input-with-select" v-model="form.order_type_val" :placeholder="$lang('请输入采购单号/采购PO单号')">
+                            </el-form-item>
+                        </td>
+                        
+                    </tr>
+                    <tr>
+                      <td class="td-item-25"></td>
+                      <td class="td-item-25"></td>
+                      <td class="td-item-25"></td>
+                      <td>
+                        <div class="btns">
+                          <button type="button" class="btn-search" @click="search">
+                            {{$lang('查询')}}
+                          </button>
+                          <button type="button" class="btn-reset" @click="reset">{{$lang('重置')}}</button>
+                        </div>
+                      </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </el-form>
+    <div class="baseline"></div>
+    <div class="use-row create-wrap">
+        <div class="col-50 result-num occupy">
+            {{$lang('搜索结果')}}：&nbsp;&nbsp;{{$lang('共')}}
+            <b>{{totalCount}}</b> {{$lang('条')}}
+        </div>
+        <div class="col-50 btn-right">
+            <el-button class="btn-right-item" type="primary" size="small" @click="initiateReturn">{{$lang('发起退货')}}
+            </el-button>
+        </div>
+    </div>
+    <div class="use-row">
+        <div class="col-100">
+            <table class="table-list" v-loading="tableLoading">
+                <thead>
+                <tr>
+                    <th>{{$lang('采购退货单号')}}</th>
+                    <th>{{$lang('退货状态')}}</th>
+                    <th>{{$lang('仓库')}}</th>
+                    <th>{{$lang('采购团队')}}</th>
+                    <th>{{$lang('发起人')}}</th>
+                    <th>{{$lang('供应商')}}</th>
+                    <th>{{$lang('我方公司')}}</th>
+                    <th>{{$lang('收货城市')}}</th>
+                    <th>{{$lang('预计到达日期')}}</th>
+                    <th style="width:140px">{{$lang('操作')}}</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="(item,index) in dataList">
+                    <td>{{item.return_no}}</td>
+                    <td>{{$lang(item.status)}}</td>
+                    <td>{{item.warehouse}}</td>
+                    <td>{{item.purchase_team}}</td>
+                    <td>{{item.created_by}}</td>
+                    <td>{{$lang(item.supplier)}}</td>
+                    <td>{{$lang(item.our_company)}}</td>
+                    <td>{{item.receive_address_country}} - {{item.receive_address_province}} -
+                        {{item.receive_address_area}}
+                    </td>
+
+                    <td>{{item.status === '待出库' ? '' :item.estimate_arrive_date}}</td>
+                    <td>
+                        <el-button @click="toDetial(item.id)" type="primary" size="small">{{$lang('查看')}}
+                        </el-button>
+                        <el-button v-if="item.status==='待出库'" @click="freezeCount(item.id)" type="danger" size="small">
+                            {{$lang('删除')}}
+                        </el-button>
+                        <el-button v-if="item.status==='待理货'" @click="toDetial(item.id,'do')" type="default"
+                                   size="small">{{$lang('理货')}}
+                        </el-button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="use-row">
+        <div class="col-100 text-right">
+            <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange"
+                           :current-page.sync="form.p"
+                           :page-sizes="[20, 50, 100, 200,300]" :page-size="form.rows"
+                           layout="sizes, prev, pager, next,jumper"
+                           :total="totalCount"></el-pagination>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript"
+        src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript"
+        src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.form.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+<script src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript"
+        src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script>
+  if (getCookie('think_language') !== "zh-cn") {
+    ELEMENT.locale(ELEMENT.lang.en)
+  }
+  var way = new Vue({
+    el: '#crmList',
+    data: {
+      baseData: {},
+      searchData: {
+        customerType: [],
+        authEmail: [],
+        statusList: [],
+        platformFrom: [],
+        platform: [],
+        options: []
+      },
+      form: {
+        status_cd: '',
+        return_no: '',
+        warehouse_cd: [],
+        supplier: '',
+        our_company_cd: [],
+        purchase_team_cd: [],
+        created_by: '',
+        p: 1,
+        rows: 20,
+        sku_upc_id: '',
+        order_type: 'po_number',
+        order_type_val: ''
+      },
+      labelPosition: 'left',
+      totalCount: 0,
+      tableLoading: false,
+      dataList: [],
+    },
+    created: function () {
+      this.getBaseData();
+      this.search();
+    },
+    methods: {
+      /**
+       * 获取基本数据
+       */
+      getBaseData: function () {
+        var _this = this;
+        // 获取url
+        function getQueryVariable(variable){
+              var query = window.location.search.substring(1);
+              var vars = query.split("&");
+              for (var i=0;i<vars.length;i++) {
+                      var pair = vars[i].split("=");
+                      if(pair[0] == variable){return pair[1];}
+              }
+              return(false);
+        }
+        // 发起人、退货状态传值
+        // _this.form.created_by = getQueryVariable('created_by')
+        // _this.form.status_cd = getQueryVariable('status_cd')
+        var param = {
+          "cd_type": {
+            warehouse: true,
+            our_company: false,  // 改用查询开启状态的公司
+            purchase_team: true,
+            purchase_return_status: true
+          }
+        };
+        axios.post('/index.php?g=common&m=index&a=get_cd', param).then(function (res) {
+          var data = res.data;
+          console.log(data)
+          if (data.code == 2000) {
+            _this.baseData = data.data;
+            _this.baseData.purchase_return_status.unshift({
+              CD: "",
+              CD_VAL: "全部",
+              ETC: "",
+              ETC2: ""
+            })
+          } else {
+            _this.$message({
+              message: _this.$lang('获取数据失败'),
+              type: 'warning'
+            });
+          }
+        })
+      },
+      /**
+       * 跳转至 发起退货
+       */
+      initiateReturn: function () {
+        var dom = document.createElement('a');
+        var _href = "/index.php?m=order_detail&a=initiate_return";
+        dom.setAttribute("onclick", "opennewtab(this,'" + this.$lang('发起退货') + "')");
+        dom.setAttribute("_href", _href);
+        dom.click();
+      },
+      /**
+       * 列表查询
+       */
+      search: function () {
+        var _this = this;
+        this.tableLoading = true;
+        _this.form.supplier = _this.trimStr(_this.form.supplier);
+        _this.form.return_no = _this.trimStr(_this.form.return_no);
+        _this.form.created_by = _this.trimStr(_this.form.created_by);
+        axios.post('/index.php?g=purchase&m=return&a=return_list', _this.form).then(function (res) {
+          var data = res.data;
+          _this.tableLoading = false;
+          if (data.code == 2000) {
+            _this.dataList = data.data.list;
+            _this.totalCount = +data.data.page.total_rows;
+          } else {
+            _this.$message({
+              message: _this.$lang('获取数据失败'),
+              type: 'warning'
+            });
+          }
+        })
+      },
+      /**
+       * 修改一页显示数量，进行查询
+       * @param size 一页展示数量
+       */
+      handleSizeChange: function (size) {
+        this.form.rows = size;
+        this.search();
+      },
+      /**
+       * 修改页码
+       * @param currentPage 当前页码
+       */
+      handleCurrentChange: function (currentPage) {
+        this.form.p = currentPage;
+        this.search();
+      },
+      /**
+       * 重置查询
+       */
+      reset: function () {
+        this.form = {
+          status_cd: '',
+          return_no: '',
+          warehouse_cd: [],
+          supplier: '',
+          our_company_cd: [],
+          purchase_team_cd: [],
+          created_by: '',
+          p: 1,
+          rows: this.form.rows,
+          sku_upc_id: '',
+          order_type: 'po_number',
+          order_type_val: ''
+        }
+
+      },
+      /**
+       * 删除 待出库的退货单
+       * @param custId 要删除的id
+       */
+      freezeCount: function (custId) {
+        var _this = this;
+        var param = {
+          id: custId
+        };
+        axios.post("/index.php?g=purchase&m=return&a=delete_return", param).then(function (res) {
+          var data = res.data;
+          if (data.code == 2000) {
+            _this.$message({
+              message: _this.$lang('删除成功'),
+              type: 'success'
+            });
+            _this.search();
+          } else {
+            _this.$message({
+              message: _this.$lang('删除失败'),
+              type: 'warning'
+            });
+          }
+        })
+      },
+      /**
+       * 跳转至退货详情
+       * @param custId 要跳转的详情id
+       * @param isDo 是否直接进入理货状态
+       */
+      toDetial: function (custId, isDo) {
+        var dom = document.createElement('a');
+        var _href = "/index.php?m=order_detail&a=return_detail&id=" + custId + "&do=" + isDo;
+        dom.setAttribute("onclick", "opennewtab(this,'" + this.$lang('退货详情') + "')");
+        dom.setAttribute("_href", _href);
+        dom.click();
+      },
+      trimStr: function (str) {
+        return str.replace(/(^\s*)|(\s*$)/g, "");
+      },
+      getValue: function (obj, index) {
+        var result = ''
+        for (var key in obj) {
+          if (obj[key].value == index) {
+            result = obj[key].name;
+            return result
+
+          }
+        }
+      }
+    },
+    watch: {
+      form: {
+        handler: function handler(newValue, oldValue) {
+          this.search();
+        },
+        deep: true
+      }
+    },
+  })
+</script>
+</body>
+
+</html>

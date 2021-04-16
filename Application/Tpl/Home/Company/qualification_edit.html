@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>资质详情</title>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <style>
+        .el-input{
+            width: 100%;
+        }
+        .el-select{
+            width: 100%;
+        }
+        .el-date-editor.el-input, .el-date-editor.el-input__inner{
+            width: 100%;
+        }
+        .el-upload-list{
+            width: 350px;
+        }
+        .el-checkbox-group{
+            display: inline-block;
+        }
+        .add_qua{
+            padding: 10px 50px;
+        }
+        .add_qua .title{
+            font-size: 28px;
+        }
+        .table{
+            border-bottom: 1px solid #000;
+            border-right: 1px solid #000;
+        }
+        .table td{
+            width: 300px;
+            height: 50px;
+            border-top: 1px solid #000;
+            border-left: 1px solid #000;
+            text-align: center;
+            line-height: 50px;
+            padding: 0 10px;
+        }
+        .submit-box{
+            text-align: center;
+            padding: 25px 0;
+        }
+        
+        .file-text{
+            margin: 0 8px;
+            color: #288bde;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        .file-text .el-icon-close{
+            color: #f00;
+        }
+    </style>
+</head>
+<body>
+    <div class="add_qua" id="addQua">
+        <p class="title">{{isdetail ? $lang('资质详情') : $lang('编辑资质')}}</p>
+        <table cellpadding="0" cellspacing="0" class="table">
+            <tbody>
+                <tr>
+                    <td>{{$lang('资质编号')}}</td>
+                    <td>
+                        <span v-if="isdetail">{{from.number}}</span>
+                        <el-input v-else v-model="from.number" auto-complete="off" disabled></el-input>
+                    </td>
+                    <td>{{$lang('所属公司')}}</td>
+                    <td>
+                        <span v-if="isdetail">{{$lang(from.our_company_code_val)}}</span>
+                        <el-select filterable v-model="from.our_company_code" :placeholder="$lang('请选择所属公司（必填）')"  v-else>
+                            <el-option v-for="(item,index) in ourCompany" :key="index"
+                                        :label="$lang(item.CD_VAL)"
+                                        :value="item.CD">
+                            </el-option>
+                        </el-select>
+                    </td>
+                    <td>{{$lang('证照名称（文件名称）')}}</td>
+                    <td>
+                        <span v-if="isdetail">{{from.name}}</span>
+                        <el-input v-model="from.name" auto-complete="off" :placeholder="$lang('请输入证件名称（必填）')"  v-else></el-input>
+                    </td>
+                </tr>
+                <tr>
+                    <td>{{$lang('发证日')}}</td>
+                    <td>
+                        <span v-if="isdetail">{{from.issue_date}}</span>
+                        <el-date-picker
+                            v-else
+                            v-model="from.issue_date"
+                            type="date"
+                            :placeholder="$lang('选择日期')"
+                            :picker-options="pickerOptions"
+                            value-format="yyyy-MM-dd">
+                        </el-date-picker>
+                    </td>
+                    <td>{{$lang('到期日')}}</td>
+                    <td>
+                        <span v-if="isdetail">{{from.is_long_time ==='0' ? from.expire_date : '长期'}}</span>
+                        <div v-else>
+                            <el-date-picker style="width: 75%;"
+                            v-model="from.expire_date"
+                            type="date"
+                            :disabled="is_long_time"
+                            :placeholder="$lang('选择日期')"
+                            value-format="yyyy-MM-dd">
+                            </el-date-picker>
+                            <el-checkbox v-model="is_long_time">{{$lang('长期')}}</el-checkbox>
+                        </div>
+                    </td>
+                    <td>{{$lang('续证时间')}}</td>
+                    <td>
+                        <span v-if="isdetail">{{from.renew_date}}</span>
+                        <el-date-picker
+                            v-else
+                            v-model="from.renew_date"
+                            type="date"
+                            :placeholder="$lang('选择日期')"
+                            value-format="yyyy-MM-dd">
+                        </el-date-picker>
+                    </td>
+                </tr>
+                <tr>
+                    <td>{{$lang('发证机关')}}</td>
+                    <td>
+                        <span v-if="isdetail">{{from.issue_office}}</span>
+                        <el-input v-model="from.issue_office" auto-complete="off" :placeholder="$lang('请输入发证机关')" v-else></el-input>
+                    </td>
+                    <td>{{$lang('续证地点')}}</td>
+                    <td>
+                        <span v-if="isdetail">{{from.renew_address}}</span>
+                        <el-input v-model="from.renew_address" auto-complete="off" :placeholder="$lang('请输入续证地点')" v-else></el-input>
+                    </td>
+                    <td>{{$lang('续证材料')}}</td>
+                    <td>
+                        <span v-if="isdetail">{{from.renew_material}}</span>
+                        <el-input v-model="from.renew_material" auto-complete="off" :placeholder="$lang('请输入续证材料')" v-else></el-input>
+                    </td>
+                </tr>
+                <tr>
+                    <td>{{$lang('对应负责部门')}}</td>
+                    <td>
+                        <span v-if="isdetail">{{from.department}}</span>
+                        <el-input v-model="from.department" auto-complete="off" :placeholder="$lang('请输入对应负责部门')" v-else></el-input>
+                    </td>
+                    <td>{{$lang('查询路径')}}</td>
+                    <td colspan="3">
+                        <span v-if="isdetail">{{from.query_path}}</span>
+                        <el-input v-model="from.query_path" auto-complete="off" :placeholder="$lang('请输入查询地址')" v-else></el-input>
+                    </td>
+                </tr>
+                <tr>
+                    <td>{{$lang('文件内容摘录')}}</td>
+                    <td colspan="5">
+                        <span v-if="isdetail">{{from.content}}</span>
+                        <el-input v-model="from.content" auto-complete="off" :placeholder="$lang('请输入文件内容摘录')" v-else></el-input>
+                    </td>
+                </tr>
+                <tr>
+                    <td>{{$lang('注意事项（备注）')}}</td>
+                    <td colspan="5">
+                        <span v-if="isdetail">{{from.precautions}}</span>
+                        <el-input v-model="from.precautions" auto-complete="off" :placeholder="$lang('请输入注意事项（备注）')" v-else></el-input>
+                    </td>
+                </tr>
+                <tr>
+                    <td>{{$lang('资质附件')}}<span style="color: #606266;font-size: 12px;">({{$lang('只能上传pdf/png文件')}})</span></td>
+                    <td colspan="5" style="text-align: left;padding-bottom: 15px;">
+                          <div v-if="isdetail">
+                                <el-button size="small" type="primary" @click="download">{{$lang('下载附件')}}</el-button>
+                                <el-checkbox-group v-model="checkList">
+                                    <el-checkbox v-for="(item, index) in from.attachment" :key="index" :label="item.save_name">
+                                        <span class="file-text" @click="open(item.save_name)">{{item.save_name}}</span>
+                                    </el-checkbox>
+                                    
+                                </el-checkbox-group>
+                          </div>
+                          <div v-else>
+                                <el-button size="small" type="primary" @click="upload" v-loading="loading" :disabled="loading">{{$lang('上传附件')}}</el-button>
+                                <span class="file-text" v-for="(item, index) in from.attachment" :key="index">
+                                    <i @click="open(item.save_name)">{{item.save_name}}</i>
+                                    <i class="el-icon-close" @click="close(index)"></i>
+                                </span>
+                          </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="submit-box">
+            <div v-if="isdetail">
+                    <el-button type="primary" @click="edit">{{$lang('编辑')}}</el-button>
+                    <el-button @click="clean">{{$lang('删除')}}</el-button>
+            </div>
+            <div v-else>
+                <el-button type="primary" @click="submit">{{$lang('保存')}}</el-button>
+                <el-button @click="cancel">{{$lang('取消')}}</el-button>
+            </div>
+        </div>
+            
+        
+        <form id="fileName" enctype="multipart/form-data" style="display:none;">
+            <el-input class="selectfile" type="file" accept="image/png,application/pdf" name="fileName" @change="fileChanged" v-model="filePath"/>
+        </form>
+    </div>
+</body>
+</html>
+
+<script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript">
+    var vm = new Vue({
+        el: '#addQua',
+        data() {
+            return {
+                from: {
+                    our_company_code: '',
+                    name: '',
+                    issue_date: '',
+                    expire_date: '',
+                    is_long_time: '0', //是否长期 0:非长期 1:长期
+                    renew_date: '',
+                    issue_office: '',
+                    renew_address: '',
+                    renew_material: '',
+                    department: '',
+                    query_path: '',
+                    content: '',
+                    precautions: '',
+                    attachment: []
+                },
+                is_long_time: false,
+                ourCompany: [], // 所属公司列表
+                pickerOptions:{
+                    disabledDate(time) {
+                        return time.getTime() > Date.now() - 8.64e6
+                    }
+                },
+                isdetail: true, // true 查看详情 false  编辑
+                filePath: '',
+                loading: false,
+                checkList: [], //多选框数据
+            }
+        },
+        watch: {
+            is_long_time: function(value) {
+                if(value) {
+                    this.from.is_long_time = '1';
+                    this.from.expire_date = '';
+                } else {
+                    this.from.is_long_time = '0';
+                }
+            }
+        },
+        methods: {
+            // 获取公司列表
+            getCompanyData:function(){
+                var _this = this;
+                axios.post('/index.php?g=common&m=index&a=get_cd', {
+                    cd_type:{
+                        our_company:'true'
+                    }
+                }).then(function (response) {
+                    if(response.data.code === 2000){
+                        _this.ourCompany = response.data.data.our_company
+                    }
+                })
+            },
+            // 上传相关
+            upload() {
+                console.log($(`input[type='file'][name='fileName']`))
+                $(`input[type='file'][name='fileName']`).click();
+            },
+            fileChanged() {
+                let fileElement = $(`input[type='file'][name='fileName']`);
+                let filename = fileElement.val();
+                let ext = filename.substring(filename.lastIndexOf('.')).toLowerCase();
+                console.log(ext);
+                let stop = ext === '.png' || ext === '.pdf';
+                if (!stop) {
+                    this.$alert('仅支持.png和.pdf格式', '提示');
+                    return;
+                }
+                let file = fileElement[0].files[0];
+                let formdata1 = new FormData();
+                formdata1.append('files', file, file.name);
+                this.loading = true;
+                // config['Content-Type'] = 'multipart/form-data';
+                axios.post('/index.php?g=common&m=file&a=file_upload', formdata1).then((response) => {
+                    console.log(this.filePath, response)
+                    let data = response.data;
+                    this.loading = false;
+                    this.filePath = '';
+                    if(data.status) {
+                        this.$message.success('操作成功');
+                        this.from.attachment.push({
+                            original_name: data.info[0].name,
+                            save_name: data.info[0].savename
+                            // 
+                        })
+                    } else {
+                        this.$message.warning(response.info);
+                    }
+                });
+                
+            },
+            // 删除上传
+            close(index) {
+                this.from.attachment.splice(index, 1);
+            },
+            // 预览
+            open(name) {
+                console.log(window.location.host)
+                let API_ROOT = window.location.host === 'erp.gshopper.com' ? 'http://erp.gshopper.com' : 'http://erp.gshopper.stage.com'
+                window.open(`${API_ROOT}/opt/b5c-disk/img/${name}`);
+            },
+            // 下载
+            download() {
+                let API_ROOT = window.location.host === 'erp.gshopper.com' ? 'http://erp.gshopper.com' : 'http://erp.gshopper.stage.com';
+                console.log(API_ROOT)
+                if(this.checkList.length > 0) {
+                    for(let i = 0 ;i<this.checkList.length;i++){
+                        var href = `${API_ROOT}/index.php?m=order_detail&a=download&file=${this.checkList[i]}`;
+                        var frame = $('<iframe style="display: none;" class="multi-download"></iframe>');
+                        frame.attr('src', href);
+                        $(document.body).append(frame);
+                        setTimeout(function() {
+                           frame.remove();
+                        }, 1000);
+                    }
+                } else{
+                    for(let i = 0 ;i<this.from.attachment.length;i++){
+                        var href = `${API_ROOT}/index.php?m=order_detail&a=download&file=${this.from.attachment[i].save_name}`;
+                        var frame = $('<iframe style="display: none;" class="multi-download"></iframe>');
+                        frame.attr('src', href);
+                        $(document.body).append(frame);
+                        setTimeout(function() {
+                           frame.remove();
+                        }, 1000);
+                    }
+                }
+            },
+            // 编辑
+            edit() {
+                
+                this.from.issue_date = this.dateFormatToStandard(this.from.issue_date);
+                this.from.expire_date = this.dateFormatToStandard(this.from.expire_date);
+                this.from.renew_date = this.dateFormatToStandard(this.from.renew_date);
+                this.is_long_time = this.from.is_long_time === '0' ? false : true
+                this.isdetail = false
+            },
+            cancel() {
+                var query = sessionStorage.getItem('qualification_detaile');
+                this.from = JSON.parse(query);
+                this.isdetail = true 
+            },
+
+            submit() {
+                if (!this.from.our_company_code) {
+                    this.$message({
+                        message: this.$lang('请选择所属公司'),
+                        type: 'error'
+                    })
+                    return;
+                }
+                if (!this.from.name) {
+                    this.$message({
+                        message: this.$lang('请输入证件名称'),
+                        type: 'error'
+                    })
+                    return;
+                }
+                
+                if (this.from.issue_date && this.from.expire_date) {
+                    if(new Date(Date.parse(this.from.issue_date)) >= new Date(Date.parse(this.from.expire_date))){
+                        this.$message({
+                            message: this.$lang('到期时间必须大于发证时间'),
+                            type: 'error'
+                        })
+                        return;
+                    }
+                }
+                axios.post("index.php?m=company&a=saveQualification",this.from).then(res => {
+                    console.log(res);
+                    if (res.data.code == 200) {
+                        this.$message({
+                            message: this.$lang('保存成功'),
+                            type: 'success'
+                        })
+                        setTimeout(() => {
+                            backTab('/index.php?m=company&a=qualification_list', this.$lang('证照资质管理'))
+                        }, 500);  
+                    }else{
+                        this.$message({
+                            message: this.$lang(res.data.msg),
+                            type: 'error'
+                        })
+                    }
+                })
+            },
+            clean() {
+                var _this = this;
+                _this.$confirm('是否确认删除此条数据', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(function () {
+                axios.post("index.php?m=company&a=deleteQualification",{
+                    "id": _this.from.id
+                }).then(function (res) {
+                    if (res.data.code == 200) {
+                        _this.$message({
+                            message: _this.$lang('删除成功'),
+                            type: 'success'
+                        })
+                        
+                        setTimeout(() => {
+                            backTab('/index.php?m=company&a=qualification_list', _this.$lang('证照资质管理'))
+                        }, 500);  
+                    }else{
+                        _this.$message({
+                            message: _this.$lang(res.data.msg),
+                            type: 'error'
+                        })
+                    }
+                })
+                }).catch(function () {
+                    _this.$message({
+                    type: 'info',
+                    message: '已取消删除'
+                    });
+                });
+            },
+            // 时间格式转换
+            dateFormatToStandard:function(val){
+                if(val == '' || val == null ){
+                    return('')
+                }else{
+                    return(val.replace('年','-').replace('月','-').replace('日',''))
+                }
+            },
+        },
+        created () {
+            this.getCompanyData();
+            var query = sessionStorage.getItem('qualification_detaile');
+            this.from = JSON.parse(query);
+            console.log(this.from);
+        }
+    })
+</script>

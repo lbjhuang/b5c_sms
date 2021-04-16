@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    
+    <title>$lang('我方公司管理')</title>
+    <style>
+        [v-cloak]{
+            display: none;
+        }
+        #companyManagement{
+            padding: 10px 20px;
+            width: 100%;
+            height: 100%; 
+            box-sizing: border-box;
+        }
+        .header .form_input{
+            display: flex;
+            align-items: center;
+        }
+        .header .form_input div{
+            width: 250px;
+        }
+        .header .form_span{
+            margin-right: 10px;
+        }
+        .header .header_middle,.form_add{
+            margin: 20px 0;
+        }
+        .companyManagement_pagination{
+            text-align: right;
+            margin-top: 20px;
+        }
+        .dividingLine{
+            width: 100%;
+            height: 1px;
+            background: #C9D8E0;
+            margin-top: 20px;
+        }
+        .el-table__header thead th{
+            background: #546E7A;
+            color: #fff;
+            border-bottom: 1px solid #668491;
+            border-right: 1px solid #668491;
+        }
+        .el-table__body tbody tr td{
+            border-right: 1px solid #668491;
+            border-bottom: 1px solid #668491;
+        }
+        .el-table__body tbody tr td:last-child{
+            border-right: none;
+        }
+        .el-table__body tbody tr:last-child td{
+            border-bottom: none;
+        }
+        .el-table--border, .el-table--group{
+            border-left: 1px solid #668491;
+            border-right: 1px solid #668491;
+            border-bottom: 1px solid #668491;
+        }
+        .FilterCondition{
+            display:flex;
+            align-items: center;
+        }
+        .FilterCondition>div{
+            display: flex;
+            flex: 1;
+        }
+        /* 注销中公司置灰 */
+        .el-table .cancellation {
+            background: #909399;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="companyManagement" v-cloak style="margin-bottom:220px;"> 
+        <!-- 筛选的条件 -->
+        <div class="header">
+            <el-row type="flex" :gutter="20">
+                <el-col class="FilterCondition" :span="8">
+                        <span class="form_span">{{$lang('公司名称')}}</span>
+                        <el-select @change="companyChangeForm" v-model="form.company_cd" filterable multiple collapse-tags :placeholder="$lang('请选择')">
+                            <el-option v-for="(item,index) in form.company" 
+                                :key="index"
+                                :label="$lang(item.CD_VAL)"
+                                :value="item.CD">
+                            </el-option>
+                        </el-select>
+                </el-col>
+                <el-col class="FilterCondition" :span="8">
+                        <span class="form_span">{{$lang('工商登记状态')}}</span>
+                        <el-select @change="BusinessRegistrationChangeForm" v-model="form.BusinessRegistration_cd" filterable multiple collapse-tags :placeholder="$lang('请选择')">
+                            <el-option v-for="(item,index) in form.BusinessRegistration" 
+                                :key="index"
+                                :label="$lang(item.CD_VAL)"
+                                :value="item.CD">
+                            </el-option>
+                        </el-select>
+                </el-col>
+                <el-col class="form_input FilterCondition" :span="8">
+                        <span class="form_span">{{$lang('法定代表人/董事/负责人')}}</span>
+                        <el-input class="form_input" v-model="form.representative" ></el-input>
+                </el-col>
+            </el-row>
+            <el-row class="header_middle" type="flex" :gutter="20">
+                    <el-col :span="12">
+                            <span class="form_span">{{$lang('注册区域')}}</span>
+                            <!--国家-->
+                            <el-select v-model="form.selectCountry"  filterable placeholder="<{$Think.lang.国家}>">
+                                <el-option v-for="item in form.country" 
+                                    :key="item.id" 
+                                    :label="$lang(item.zh_name)"
+                                    :value="item.id">
+                                </el-option>
+                            </el-select>
+                            <!--省-->
+                            <el-select  v-model="form.selectProvince" filterable placeholder="<{$Think.lang.省市}>">
+                                <el-option v-for="item in form.province" 
+                                    :key="item.id" 
+                                    :label="$lang(item.zh_name)"
+                                    :value="item.id">
+                                </el-option>
+                            </el-select>
+                            <!--市-->
+                            <el-select  v-model="form.selectCounty"  filterable  placeholder="<{$Think.lang.区县}>">
+                                <el-option v-for="item in form.county" 
+                                    :key="item.id" 
+                                    :label="$lang(item.zh_name)"
+                                    :value="item.id">
+                                </el-option>
+                            </el-select>
+                    </el-col>
+                    <el-col :span="12" class="form_input">
+                            <span class="form_span">{{$lang('股东')}}</span>
+                            <!-- 替换成股东字段 -->
+                            <el-input v-model="form.shareholder_name" ></el-input> 
+                    </el-col>
+            </el-row>
+            <el-row type="flex" :gutter="20">
+                    <el-col :span="6">
+                            <el-button @click="search()" type="primary">{{$lang('搜索')}}</el-button>
+                            <el-button @click="reset()">{{$lang('重置')}}</el-button>
+                    </el-col>
+            </el-row>
+
+        </div>
+        <div class="dividingLine"></div>
+        <!-- 记录 -->
+        <div class="form_add">
+            <el-row type="flex" class="row-bg" align="middle">
+                <el-col :span="12">
+                    <span>{{$lang('搜索结果')}}：{{$lang('共')}}<span> {{page.count}} </span>{{$lang('条记录')}}</span>
+                </el-col>
+                <el-col style="text-align: right" :span="12">
+                    <el-button type="primary" :disabled="click_disabled" @click="handleExport">{{$lang('导出')}}</el-button>
+                    <?php if(ButtonAction::hidden()){ ?>
+                        <el-button type="primary" @click="operating('add')" class="seacher">{{$lang('新增')}}</el-button>
+                    <?php } ?>
+                </el-col>
+            </el-row>
+        </div>
+       <!-- 表单内容 -->
+       <div class="logistics_table">
+            <el-table :data="tableData" border :row-class-name="handleCancellationCompany" style="width: 100%" v-loading="tableLoading">
+                <el-table-column align="center"  :label="$lang('公司名称')"> 
+                    <template slot-scope="scope">
+                        <span>{{scope.row.our_company_cd_val}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('工商登记状态')"> 
+                    <template slot-scope="scope">
+                        <span>{{$lang(scope.row.company_business_status_cd_val)}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('注册区域')"> 
+                    <template slot-scope="scope">
+                        <span v-show="scope.row.reg_country">{{scope.row.reg_country}}</span>
+                        <span v-show="scope.row.reg_province">-{{scope.row.reg_province}}</span>
+                        <span v-show="scope.row.reg_city">-{{scope.row.reg_city}}</span>
+                    </template>
+                </el-table-column>
+                <!-- <el-table-column align="center"  :label="$lang('注册区域二字码')"> 
+                    <template slot-scope="scope">
+                        <span>{{scope.row.two_char}}</span>
+                    </template>
+                </el-table-column> -->
+                <el-table-column align="center"  :label="$lang('注册资本')"> 
+                    <template slot-scope="scope">
+                        <span>{{scope.row.reg_amount_cd_val}}&nbsp;</span>
+                        <span>{{scope.row.reg_amount | thousandsDeal}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('法定代表人/董事/负责人')"> 
+                    <template slot-scope="scope">
+                        <span>{{scope.row.legal_name}}</span>
+                        <span v-show="scope.row.legal_alias_name">({{scope.row.legal_alias_name}})</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('股东')"> 
+                    <template slot-scope="scope">
+                        <span>{{scope.row.shareholder_name}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('Company No.')"> 
+                    <template slot-scope="scope">
+                        <span>{{scope.row.company_no}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('备注')"> 
+                    <template slot-scope="scope">
+                        <span>{{scope.row.remark}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('操作')"> 
+                    <template slot-scope="scope"> 
+                        <el-button @click="operating('toDetail',scope.row)" type="primary">{{$lang('查看')}}</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <!-- 分页 -->
+            <div class="companyManagement_pagination">
+                <el-pagination
+                        background
+                        @current-change="handleCurrentChange"
+                        @size-change="handleSizeChange"
+                        :current-page.sync="page.this_page"
+                        :page-size="page.page_count"
+                        :page-sizes="[10, 30, 50, 100]"
+                        layout="total, sizes, prev, pager, next, jumper"
+                        :total="page.count">
+                </el-pagination>
+            </div>
+        </div>
+
+    </div>
+
+    <!--引入js-->
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Company/managementlist.js?v=<{$Think.const.V}>"></script>
+
+</body>
+</html>

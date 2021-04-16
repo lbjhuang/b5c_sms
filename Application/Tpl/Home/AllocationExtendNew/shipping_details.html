@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>
+    <{$Think.lang.运输节点详情页}>
+  </title>
+  <link href="../Public/css/H-ui-3.1.min.css" rel="stylesheet" type="text/css">
+  <link rel="stylesheet" href="../Public/css/stock.css">
+  <link rel="stylesheet" type="text/css" href="../Public/css/style.css" />
+  <link rel="stylesheet" type="text/css" href="../Public/lib/Hui-iconfont/1.0.7/iconfont.css" />
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+  <style>
+    [v-cloak] {
+      display: none;
+    }
+
+    .ck-wrap-title {
+      font-size: 18px;
+      color: #263238;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body id="content" style="padding: 40px">
+  <div id="main" v-cloak>
+    <p class="ck-wrap-title">{{$lang('运输节点详情页')}}</p>
+    <!-- 原有运输节点详情页 -->
+    <el-table v-if="isNewTable === 0" :header-cell-style="{background:'#537a8c',color:'#ffffff'}" :data="tableData"
+    :row-style="row"
+       border style="width: 100%">
+       <el-table-column
+       prop="name"
+       :label="$lang('运输节点')"
+       >
+</el-table-column>
+<el-table-column
+       prop=""
+       :label="$lang('预计时间')"
+       >
+   <template slot-scope="scope">
+   <el-date-picker
+           :readonly="scope.row.node_plan_bool"
+           v-model="scope.row.node_plan"
+           format="yyyy-MM-dd"
+           value-format="yyyy-MM-dd"
+           type="date"
+           :placeholder="$lang('选择日期')"
+           >
+   </el-date-picker>
+   </template>
+</el-table-column>
+<el-table-column
+       prop="node_system_plan"
+       :label="$lang('系统预估时间')">
+</el-table-column>
+<el-table-column
+       prop="node_operate"x
+       :label="$lang('操作时间')">
+   <template slot-scope="scope">
+       <el-date-picker
+               :readonly="scope.row.node_operate_bool"
+               v-model="scope.row.node_operate"
+               v-if="scope.$index !== 7"
+               format="yyyy-MM-dd"
+               value-format="yyyy-MM-dd"
+               type="date"
+               :placeholder="$lang('选择日期')">
+       </el-date-picker>
+       <div v-if="scope.$index === 7">{{scope.row.node_operate}}</div>
+   </template>
+</el-table-column>
+<el-table-column
+       prop="is_unusual"
+       :label="$lang('误差原因')">
+   <template slot-scope="scope" v-if="scope.row.is_unusual === 1">
+       <img v-if="(scope.row.reason?(scope.row.reason.length === 0):false)" :src="img" alt="" style="width: 50px">
+       <el-popover
+               v-if="(scope.row.reason?(scope.row.reason.length>0):false)"
+               placement="bottom"
+               :title="$lang('标题')"
+               width="400"
+               trigger="hover"
+       >
+           <div v-for="(v,k) in scope.row.reason">{{v.reason_type+' '+v.reason_cate+' '+v.reason_val+' '+v.created_at}}</div>
+           <el-button slot="reference">{{$lang('详情')}}</el-button>
+       </el-popover>
+       <el-button   @click="edit(scope.$index)">{{$lang("编辑")}}</el-button>
+   </template>
+</el-table-column>
+    </el-table>
+    <!-- 针对jerry 业务团队提供不同的业务流程 -->
+    <el-table v-else :header-cell-style="{background:'#537a8c',color:'#ffffff'}" :data="tableData"
+      border>
+      <el-table-column :label="$lang('运输节点')" prop="name"></el-table-column>
+      <el-table-column :label="$lang('报价时间')">
+        <template slot-scope="scope">
+          <div v-if="scope.$index === 0">{{scope.row.node_plan}}</div>
+          <el-date-picker v-else :readonly="scope.row.node_plan_bool || canWrite" @change="handleChangeNodePlan(scope.row, scope.$index)" v-model="scope.row.node_plan" format="yyyy-MM-dd" value-format="yyyy-MM-dd" type="date"
+            :placeholder="$lang('选择日期')">
+          </el-date-picker>
+        </template>
+      </el-table-column>
+      <el-table-column :label="$lang('预计时间')">
+        <template slot-scope="scope">
+          <div v-if="scope.row.useAutoDate"></div>
+          <el-date-picker v-else @change="handleChangeScheduleDate(scope.row)" :readonly="scope.row.isEditScheduleDate || canWrite" v-model="scope.row.scheduled_date"
+            format="yyyy-MM-dd" value-format="yyyy-MM-dd" type="date" :placeholder="$lang('选择日期')">
+          </el-date-picker>
+        </template>
+      </el-table-column>
+      <el-table-column :label="$lang('实际完成时间')">
+        <template slot-scope="scope">
+          <div v-if="scope.row.useAutoDate || scope.row.nodeKey === 8">{{scope.row.node_operate}}</div>
+          <el-date-picker v-else v-model="scope.row.node_operate" :readonly="scope.row.isEditOperateDate || canWrite"
+            @change="handleChangeOperateDate(scope.row)" format="yyyy-MM-dd" value-format="yyyy-MM-dd" type="date"
+            :placeholder="$lang('选择日期')">
+          </el-date-picker>
+        </template>
+      </el-table-column>
+      <el-table-column :label="$lang('误差原因')">
+        <template slot-scope="scope">
+          <div v-if="scope.row.is_unusual === 1 && isNewTable !== 1">
+            <img :src="img" alt=""
+              v-if="scope.row.reason.length === 0"
+              style="width: 50px" />
+            <el-popover v-if="(scope.row.reason?(scope.row.reason.length>0):false)" placement="bottom"
+              :title="$lang('标题')" width="400" trigger="hover">
+              <div v-for="(v,k) in scope.row.reason">
+                {{v.reason_type+' '+v.reason_cate+' '+v.reason_val+''+v.created_at}}
+              </div>
+              <el-button slot="reference">{{$lang('详情')}}</el-button>
+            </el-popover>
+            <el-button @click="edit(scope.$index)">{{$lang("编辑")}}</el-button>
+          </div>
+          <div v-if="isNewTable === 1 && scope.row.showReasonAndEdit">
+            <img :src="img" alt=""
+              v-if="scope.row.reason.length === 0"
+              style="width: 50px" />
+            <el-popover v-if="(scope.row.reason?(scope.row.reason.length>0):false)" placement="bottom"
+              :title="$lang('标题')" width="400" trigger="hover">
+              <div v-for="(v,k) in scope.row.reason">
+                {{v.reason_type+' '+v.reason_cate+' '+v.reason_val+''+v.created_at}}
+              </div>
+              <el-button slot="reference">{{$lang('详情')}}</el-button>
+            </el-popover>
+            <el-button @click="edit(scope.$index)">{{$lang("编辑")}}</el-button>
+          </div>
+        </template>
+      </el-table-column>
+    </el-table>
+    <div style="display: flex;justify-content: center">
+      <el-button v-if="isNewTable === 1" @click="handleSubmit">{{$lang('确认')}}</el-button>
+      <el-button v-if="isNewTable !== 1" @click="save">{{$lang('确认')}}</el-button>
+      <el-button @click="top.closeTab()">{{$lang('取消')}}</el-button>
+    </div>
+    <el-dialog :title="$lang('提示')" :visible.sync="centerDialogVisible" width="50%" center>
+      <el-row style="line-height: 40px;">
+        <el-col :span="2">{{$lang('选择问题方')}}</el-col>
+        <el-col :span="6">
+          <el-select :placeholder="$lang('请选择')" v-model="error.reason_type">
+            <el-option :key="k" v-for="(v,k) in select" :label="$lang(k)" :value="k"></el-option>
+          </el-select>
+        </el-col>
+        <el-col :span="2">{{$lang('问题分类')}}</el-col>
+        <el-col :span="6">
+          <el-select :placeholder="$lang('请选择')" v-model="error.reason_cate">
+            <el-option :key="k" v-for="(v,k) in select[error.reason_type]" :label="$lang(v)" :value="v"></el-option>
+          </el-select>
+        </el-col>
+        <el-col :span="2">{{$lang('具体原因')}}</el-col>
+        <el-col :span="6">
+          <el-input v-model="error.reason_val"></el-input>
+        </el-col>
+      </el-row>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="centerDialogVisible = false">{{$lang('取 消')}}</el-button>
+        <el-button type="primary" @click="saveEdit">{{$lang('确 定')}}</el-button>
+      </span>
+    </el-dialog>
+  </div>
+</body>
+<script src="../Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script src="../Public/lib/layer-v3.0.3/layer/layer.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js?<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script>
+  if (getCookie('think_language') !== "zh-cn") {
+    ELEMENT.locale(ELEMENT.lang.en)
+  }
+</script>
+<script>
+  var vueApp = new Vue({
+    el: '#main',
+    data: {
+      top: top,
+      listIndex: '',
+      error: {
+        reason_type: '',
+        reason_cate: '',
+        reason_val: ''
+      },
+      select: {
+        'gshopper': ["<{$Think.lang.财务没有及时付款}>", "<{$Think.lang.供应商到货迟}>", "<{$Think.lang.仓库操作迟}>", "<{$Think.lang.物流人员操作迟}>", "<{$Think.lang.其他}>"],
+        '<{$Think.lang.物流商}>': ['<{$Think.lang.物流商放舱迟}>', '<{$Think.lang.甩柜}>', '<{$Think.lang.船公司不可抗力}>', '<{$Think.lang.清关问题}>', '<{$Think.lang.卡车派送问题}>', '<{$Think.lang.快递派送问题}>', '<{$Think.lang.其他}>'],
+        '<{$Think.lang.仓库}>': ['<{$Think.lang.收货问题}>', '<{$Think.lang.上架问题}>', '<{$Think.lang.其他}>']
+      },
+      centerDialogVisible: false,
+      img: 'data:image/png;base64,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',
+      types: [],
+      isChinese: true,
+      out_stock_id: getQueryVariable('out_stock_id'),
+      id: getQueryVariable('id'),
+      tableData: [],
+      base: {},
+      isNewTable: 0,
+      nodeKeys: [], // 节点keys
+      canWrite: false,
+    },
+    watch: {
+      'error.reason_type': function () {
+        this.error.reason_cate = ''
+      }
+    },
+    created: function () {
+      // this.load()
+      this.getData();
+    },
+    methods: {
+      getData() {
+        const url = `/index.php?m=AllocationExtendNew&a=getOutStockLogisticsNode&allo_id=${this.id}&out_stock_id=${this.out_stock_id}`;
+        axios.get(url).then(res => {
+          const result = res.data.data;
+          this.base = result.info;
+          this.isChinese = !!parseFloat(result.info.is_cn_warehouse);
+          this.isNewTable = result.info.show_new_table;
+          if (this.isNewTable === 1) {
+            this.nodeKeys = Object.keys(result.node_types);
+            this.tableData = result.list || new Array(this.isNewTable === 1 ?  this.nodeKeys.length : 8).fill({
+              node_plan: '',
+              scheduled_date: '',
+              node_operate: '',
+              reason: [],
+              isEditOperateDate: false,
+            });
+            this.tableData = this.tableData.map((column, index) => {
+              const newColumn = Object.assign({}, column);
+              const compare = index > 1 ? this.compareDate(newColumn.node_operate, newColumn.scheduled_date) : false;
+              newColumn.useAutoDate = index < 2 ? true : false;
+              newColumn.isEditScheduleDate = newColumn.node_operate ? true : false;
+              newColumn.mustReason = compare ? (newColumn.reason.length === true ? false : true) : false;
+              newColumn.showReasonAndEdit = compare ? (newColumn.reason.length === true ? false : true) : false;
+              newColumn.node_plan_bool = Boolean(newColumn.node_plan);
+              newColumn.node_operate_bool = Boolean(newColumn.node_operate);
+              newColumn.isEditOperateDate = newColumn.node_operate ? false : true;
+              if (index === 0 && this.isNewTable === 1) {
+                newColumn.node_plan = this.base.review_date;
+                newColumn.node_operate = this.base.review_date;
+              }
+              if (index === 1 && this.isNewTable === 1) {
+                newColumn.node_operate = this.base.out_stock_date;
+              }
+              newColumn.name = result.node_types[this.nodeKeys[index]];
+              newColumn.nodeKey = parseFloat(this.nodeKeys[index]);
+              if (newColumn.nodeKey === 8 && newColumn.node_operate) {
+                this.canWrite = true;
+              }
+              return newColumn;
+            })
+            this.tableData.map((item, index) => {
+              if (index > 0 && index < this.nodeKeys.length - 1) {
+                this.$set(this.tableData[index + 1], 'isEditOperateDate', item.node_operate ? false : true)
+                // 如需要误差原因，则需要填写完误差原因才开放填写
+                if (item.mustReason && item.reason.length === 0 && item.nodeKey < 8) {
+                  this.$set(this.tableData[index + 1], 'isEditOperateDate', true);
+                  this.$set(this.tableData[index + 1], 'showReasonAndEdit', false);
+                }
+              }
+            });
+          } else {
+              var _this = this;
+              _this.tableData = []
+              this.types = [this.$lang('下单'), this.$lang('出库'), this.$lang('离港'), this.$lang('到港'), this.$lang('清关'), this.$lang('送仓'), this.$lang('开始上架'), this.$lang('上架完成')]
+              for (var x = 0; x < this.types.length; x++) {
+                var obj = { name: this.types[x] }
+                this.tableData.push(obj)
+              }
+              var data = res.data.data.list || [];
+              _this.isChinese = Boolean(Number(res.data.data.info.is_cn_warehouse))
+              for (var x = 0; x < data.length; x++) {
+                var obj = data[x]
+                obj.name = _this.types[x];
+                obj.node_plan_bool = Boolean(obj.node_plan)
+                obj.node_operate_bool = Boolean(obj.node_operate)
+                Vue.set(_this.tableData, x, obj)
+              }
+          }
+        })
+      },
+      handleChangeNodePlan(node, $index) {
+        const idx = this.tableData.findIndex(item => item.name === node.name);
+        if ($index >= 2 && $index <= 7) {
+          node.scheduled_date = node.node_plan;
+        }
+        if ($index === 1) {
+          if (Date.parse(new Date(node.node_operate)) > Date.parse(new Date(node.node_plan))) {
+            node.showReason = true
+          }
+        }
+        this.tableData.splice(idx, 1, node);
+      },
+      handleChangeScheduleDate(node) {
+        // 比较预计时间
+        const index = this.tableData.findIndex(item => item.name === node.name);
+        const data = JSON.parse(JSON.stringify(this.tableData));
+        const newData = data.splice(index, this.tableData.length);
+        const lessArray = newData.filter(item => Date.parse(new Date(node.scheduled_date)) > Date.parse(new Date(item.scheduled_date)))
+        if (lessArray.length > 0) {
+          this.$message.warning(this.$lang('预计时间不能比下面预计时间迟'));
+        }
+      },
+      handleChangeOperateDate(node) {
+        const idx = this.tableData.findIndex(item => item.name === node.name);
+        let nextNode = this.tableData[idx + 1];
+        const nextIndex = this.tableData.findIndex(item => item.name === nextNode.name);
+        nextNode.isEditOperateDate = false;
+        this.tableData.splice(nextIndex, 1, nextNode);
+        if (this.compareDate(node.node_operate, node.scheduled_date)) {
+          node.mustReason = true;
+        } else {
+          node.mustReason = false;
+        }
+        this.tableData.splice(idx, 1, node);
+      },
+      handleSubmit() {
+        let canSubmit = true;
+        let params = {};
+        this.tableData = this.tableData.map((item, index) => {
+          params[item.nodeKey] = {
+            node_plan: item.node_plan,
+            scheduled_date: item.scheduled_date,
+            node_operate: item.node_operate
+          }
+          if (item.mustReason) {
+            canSubmit = false;
+          }
+          return item;
+        })
+        const idx = this.tableData.findIndex(item => item.mustReason === true && item.reason.length === 0);
+        if (idx !== -1) {
+          for (i = 1; i < this.tableData.length - idx; i++) {
+            params[this.tableData[idx + i].nodeKey].node_operate = '';
+            this.$set(this.tableData[idx + i], 'node_operate', '');
+          }
+        } else {
+          canSubmit = true;
+        }
+        const url = `/index.php?m=AllocationExtendNew&a=saveOutStockLogisticsNode&allo_id=${this.id}&out_stock_id=${this.out_stock_id}`
+        axios.post(url, params).then(response => {
+          if (response.data.code === 200) {
+            this.tableData = this.tableData.map((item, index) => {
+              if (item.mustReason) {
+                item.showReasonAndEdit = true;
+              } else {
+                item.showReasonAndEdit = false;
+              }
+              return item;
+            })
+            if (!canSubmit && this.isNewTable === 1) {
+              this.$message.warning(this.$lang('实际完成时间有误差，请填写误差原因'));
+            }
+            if (canSubmit) {
+              this.$message({
+                message: this.$lang('修改成功'),
+                type: 'success'
+              });
+              setTimeout(() => {
+                closeTab();
+                newTab(`/index.php?m=allocation_extend_new&a=transportation&id=${this.id}`, this.$lang('运输中'));
+                sessionStorage.setItem('reload.transportation', 'true');
+              }, 1700)
+            }
+            this.getData();
+          } else {
+            this.$message.error(response.data.msg);
+          }
+        })
+      },
+      compareDate(preDate, date) {
+        return Date.parse(new Date(preDate)) > Date.parse(new Date(date));
+      },
+      load: function () {
+        var _this = this;
+        _this.tableData = []
+        this.types = [this.$lang('下单'), this.$lang('出库'), this.$lang('离港'), this.$lang('到港'), this.$lang('清关'), this.$lang('送仓'), this.$lang('开始上架'), this.$lang('上架完成')]
+        for (var x = 0; x < this.types.length; x++) {
+          var obj = { name: this.types[x] }
+          this.tableData.push(obj)
+        }
+        var url = 'index.php?m=AllocationExtendNew&a=getOutStockLogisticsNode&allo_id=' + _this.id + '&out_stock_id=' + _this.out_stock_id
+        axios.get(url).then(function (response) {
+          if (response.data.code === 200) {
+            var data = response.data.data.list
+            _this.isChinese = Boolean(Number(response.data.data.info.is_cn_warehouse))
+            for (var x = 0; x < data.length; x++) {
+              var obj = data[x]
+              obj.name = _this.types[x];
+              obj.node_plan_bool = Boolean(obj.node_plan)
+              obj.node_operate_bool = Boolean(obj.node_operate)
+              Vue.set(_this.tableData, x, obj)
+            }
+          }
+        })
+      },
+      saveEdit: function (n) {
+        var _this = this;
+        axios.post('index.php?m=AllocationExtendNew&a=submitOutStockLogisticsNodeReason&allo_id=' + this.tableData[this.listIndex].allo_id + '&node_id=' + this.tableData[this.listIndex].id, this.error).then(function (response) {
+          if (response.data.code === 200) {
+            _this.$message({
+              message: _this.$lang('修改成功'),
+              type: 'success'
+            });
+            _this.getData()
+            _this.error = {
+              reason_type: '',
+              reason_cate: '',
+              reason_val: ''
+            }
+            //_this.load()
+            /*setTimeout(function(){
+              //location.href = 'index.php?m=allocation_extend_new&a=transportation&id='+id
+              top.closeTab()
+              sessionStorage.setItem('reload.transportation','true');
+            },1700)*/
+          } else {
+            _this.$message({
+              message: response.data.msg,
+              type: 'error'
+            });
+          }
+        })
+        this.centerDialogVisible = false
+      },
+      edit: function (n) {
+        this.listIndex = n
+        this.centerDialogVisible = true
+      },
+      row: function (obj) {
+        var i = obj.rowIndex
+        if ((i === 2 || i === 3 || i === 4) && this.isChinese) {
+          return { display: 'none' }
+        }
+      },
+      save: function () {
+        var _this = this;
+        var url = 'index.php?m=AllocationExtendNew&a=submitOutStockLogisticsNode&allo_id=' + _this.id + '&out_stock_id=' + _this.out_stock_id
+        var data = {
+          "place_order_plan": this.tableData[0].node_plan,
+          "out_stock_plan": this.tableData[1].node_plan,
+          "depart_port_plan": this.tableData[2].node_plan,
+          "arrival_port_plan": this.tableData[3].node_plan,
+          "custom_clear_plan": this.tableData[4].node_plan,
+          "send_warehouse_plan": this.tableData[5].node_plan,
+          "start_ground_plan": this.tableData[6].node_plan,
+          "end_ground_plan": this.tableData[7].node_plan,
+          "place_order_operate": this.tableData[0].node_operate,
+          "out_stock_operate": this.tableData[1].node_operate,
+          "depart_port_operate": this.tableData[2].node_operate,
+          "arrival_port_operate": this.tableData[3].node_operate,
+          "custom_clear_operate": this.tableData[4].node_operate,
+          "send_warehouse_operate": this.tableData[5].node_operate,
+          "start_ground_operate": this.tableData[6].node_operate
+        };
+        axios.post(url, data).then(function (response) {
+          if (response.data.code === 200) {
+            _this.$message({
+              message: _this.$lang('修改成功'),
+              type: 'success'
+            });
+            setTimeout(function () {
+              //location.href = 'index.php?m=allocation_extend_new&a=transportation&id='+id
+              top.closeTab()
+              sessionStorage.setItem('reload.transportation', 'true');
+            }, 1700)
+          } else {
+            _this.$message({
+              message: response.data.msg,
+              type: 'error'
+            });
+          }
+        })
+      },
+      /**
+       * 获取币种
+       */
+      getCurr: function () {
+        var _this = this;
+        axios.post('/index.php?g=common&m=index&a=get_cd', {
+
+          cd_type: {
+            currency: true
+          }
+
+        }).then(function (response) {
+          if (response.data.code === 2000) {
+            _this.curr = response.data.data.currency
+          }
+        })
+      }
+    },
+  })
+  function getQueryVariable(variable, url) {
+    var query = '';
+    if (url && url.indexOf('?') !== -1) {
+      query = url.substring(url.indexOf('?') + 1)
+    } else {
+      query = window.location.search.substring(1);
+    }
+    var vars = query.split("&");
+    if (!variable) {
+      var arr = {}
+      for (var i = 0; i < vars.length; i++) {
+        var pair = vars[i].split("=");
+        arr[pair[0]] = pair[1]
+      }
+      return arr
+    }
+    for (var i = 0; i < vars.length; i++) {
+      var pair = vars[i].split("=");
+      if (pair[0] == variable) {
+        return pair[1];
+      }
+    }
+    return false;
+  }
+</script>
+
+</html>

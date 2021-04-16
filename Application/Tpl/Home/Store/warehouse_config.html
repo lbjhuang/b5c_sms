@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="../Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <title>Document</title>
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+
+        .input-with-select .el-input-group__prepend {
+            background-color: #fff;
+        }
+
+        .table-list {
+            border-collapse: collapse;
+            border-spacing: 0;
+            width: 100%;
+            background: #FFFFFF;
+            border: 1px solid #CADEE7;
+        }
+
+        .table-list tr th {
+            background: #546E7A;
+            height: 40px;
+            text-align: center;
+            font-size: .7rem;
+            color: #FFFFFF;
+            letter-spacing: 0;
+            border: 1px solid #668491;
+            white-space: nowrap;
+        }
+
+        .table-list tr td {
+            font-size: 0.68rem;
+            color: #263238;
+            letter-spacing: 0;
+            text-align: center;
+            padding: 0.5rem;
+            border: 1px solid #CADEE7;
+            font-family: "Microsoft YaHei";
+            white-space: nowrap;
+        }
+
+        .table-list tr:nth-of-type(even) {
+            background: #F7F9FB;
+            border: 1px solid #CADEE7;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="warehouse" style="padding:10px 20px 200px;" v-cloak>
+        <el-row>
+            <el-col :span="24">
+                <el-input placeholder="<{$Think.lang.请输入内容}>" v-model="searchValue" class="input-with-select" style="width:25%">
+                    <el-select v-model="searchKey" slot="prepend" placeholder="<{$Think.lang.请选择}>" style="width: 150px;">
+                        <el-option v-for="item in searchSelect" :key="item.value" :label="item.label" :value="item.value"></el-option>
+                    </el-select>
+                </el-input>
+                &nbsp;&nbsp;
+                <el-button type="primary" @click="search">
+                    <{$Think.lang.搜索}>
+                </el-button>
+                <el-button @click="reset">
+                    <{$Think.lang.重置}>
+                </el-button>
+            </el-col>
+            <el-col :span="24" style="margin: 15px 0;text-align: right;">
+                <el-button type="success" @click="addEntry">
+                    <{$Think.lang.新增}>
+                </el-button>
+            </el-col>
+        </el-row>
+        <el-row>
+            <table cellpadding="0" cellspacing="0" width="100%" border="0" class="table-list">
+                <thead>
+                    <tr>
+                        <th>
+                            <{$Think.lang.编号}>
+                        </th>
+                        <th>
+                            <{$Think.lang.自有仓库}>
+                        </th>
+                        <th>
+                            <{$Think.lang.仓库类型}>
+                        </th>
+                        <th>
+                            <{$Think.lang.第三方仓库编码}>
+                        </th>
+                        <th>
+                            <{$Think.lang.第三方仓库归属}>
+                        </th>
+                        <th>
+                            <{$Think.lang.平台店铺/物流公司}>
+                        </th>
+                        <th>操作状态</th>
+                        <th width="180px">
+                            <{$Think.lang.操作}>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(item,index) in tableData">
+                        <td>{{index  + 1 + pageSize * (currentPage - 1)}}</td>
+                        <td>{{item.WAREHOUSE_CD_nm}}</td>
+                        <td>{{item.TYPE_nm}}</td>
+                        <td>{{item.THIRD_CD}}</td>
+                        <td>{{item.warehouse_belong_nm}}</td>
+                        <td>
+                            <span>{{item.plat_cd_nm}} {{item.STORE_ID_nm}} </span>
+                            <span v-if="item.LOGISTIC_CD_nm"> ; </span>
+                            {{item.LOGISTIC_CD_nm}}
+                        </td>
+                        <td>{{item.operate_type == 0 ? '发货物流匹配' : '拉单物流匹配'}}</td>
+                        <td>
+                            <el-button size="mini" type="info" @click="delEntry(item)">删除</el-button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </el-row>
+        <el-row style="text-align: right;margin-top: 20px;">
+            <el-col>
+                <el-pagination background @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="currentPage"
+                    :page-sizes="[10, 30, 50]" :page-size="pageSize" layout="sizes,prev, pager, next, jumper" :total="totalCount"></el-pagination>
+            </el-col>
+        </el-row>
+        <el-dialog title="<{$Think.lang.新增}>" :visible.sync="dialogAdd" width="600px" :before-close="cancelAdd">
+            <el-row>
+                <el-col :span="12" style="margin-bottom:10px;font-weight: 600;">
+                    <{$Think.lang.自有仓库}>
+                </el-col>
+                <el-col :span="12" style="margin-bottom:10px;font-weight: 600;">
+                    <{$Think.lang.第三方仓库归属}>
+                </el-col>
+                <el-col :span="24">
+                    <div>
+                        <el-select filterable clearable v-model="addForm.warehouse" placeholder="<{$Think.lang.请选择仓库}>" style="width:49%;">
+                            <el-option v-for="item in warehouses" :key="item.CD" :label="item.CD_VAL" :value="item.CD"> </el-option>
+                        </el-select>
+                        <el-select filterable clearable v-model="addForm.attribution" placeholder="<{$Think.lang.请选择归属}>" style="width:50%;">
+                            <el-option v-for="item in warehouseAttr" :key="item.value" :label="item.label" :value="item.value"> </el-option>
+                        </el-select>
+                    </div>
+                </el-col>
+                <el-col v-if="addForm.attribution == 1 || addForm.attribution == 3">
+                    <div style="margin: 20px 0 10px;font-weight: 600;">
+                        <{$Think.lang.物流公司}>
+                    </div>
+                    <div>
+                        <el-select v-model="addForm.logistics" clearable multipe filterable placeholder="请选择物流公司" style="width:100%;">
+                            <el-option v-for="item in logisticsCompany" :key="item.cd" :label="item.cdVal" :value="item.cd"> </el-option>
+                        </el-select>
+                    </div>
+                </el-col>
+                <el-col v-if="addForm.attribution == 2 || addForm.attribution == 3">
+                    <div style="margin: 20px 0 10px;font-weight: 600;">
+                        <{$Think.lang.平台店铺}>
+                    </div>
+                    <div>
+                        <el-select filterable clearable v-model="addForm.plat_cd" @change="checkPlat" placeholder="请选择平台" style="width:49%;">
+                            <el-option v-for="(item,key) in platform" :key="key" :label="item" :value="key"> </el-option>
+                        </el-select>
+                        <el-select :disabled="!stroes.length" collapse-tags filterable clearable v-model="addForm.store" multiple placeholder="<{$Think.lang.请选择店铺}>" style="width:50%;">
+                            <el-option v-for="item in stroes" :key="item.CD" :label="item.CD_VAL" :value="item.CD"> </el-option>
+                        </el-select>
+                    </div>
+                </el-col>
+                <el-col>
+                    <div style="margin: 20px 0 10px;font-weight: 600;">
+                        <{$Think.lang.第三方仓库类型}>
+                    </div>
+                    <div>
+                        <el-select filterable clearable v-model="addForm.thirdType" placeholder="<{$Think.lang.请选择仓库类型}>" style="width:49%;">
+                            <el-option v-for="item in warehouseType" :key="item.value" :label="item.label" :value="item.value"> </el-option>
+                        </el-select>
+                        <el-input v-model="addForm.thirdCode" style="width: 50%;" placeholder="<{$Think.lang.仓库编码}>"></el-input>
+                    </div>
+                </el-col>
+                <el-col>
+                    <div style="margin: 20px 0 10px;font-weight: 600;">
+                        <span style="margin-right: 100px;">
+                            <{$Think.lang.操作状态}>
+                        </span>
+                        <el-radio v-model="addForm.operate_type" label="0">发货物流匹配</el-radio>
+                        <el-radio v-model="addForm.operate_type" label="1">拉单物流匹配</el-radio>
+                    </div>
+                </el-col>
+            </el-row>
+            <span slot="footer" class="dialog-footer">
+                <el-button @click="cancelAdd()">
+                    <{$Think.lang.取 消}>
+                </el-button>
+                <el-button type="primary" @click="saveAdd()">
+                    <{$Think.lang.确 定}>
+                </el-button>
+            </span>
+        </el-dialog>
+    </div>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="../Public/js/vue.2.5.13.js?<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script>
+        var wh = new Vue({
+            el: '#warehouse',
+            data: {
+                dialogAdd: false,
+                searchSelect: [
+                    { label: '自有仓库', value: 'WAREHOUSE_CD' },
+                    { label: '电商平台', value: 'plat_cd' },
+                    { label: '平台店铺', value: 'STORE_ID' },
+                    { label: '第三方仓库编码', value: 'third_cd' },
+                ],
+                warehouseAttr: [
+                    { value: 1, label: '物流公司' },
+                    { value: 2, label: '平台店铺' },
+                    { value: 3, label: '物流公司&平台店铺' },
+                ],
+                warehouseType: [
+                    { value: 0, label: '无' },
+                    { value: 1, label: '发货仓' },
+                    { value: 2, label: '揽件仓' },
+                    { value: 3, label: '退货仓' },
+                ],
+                stroes: [],
+                warehouses: [],
+                searchKey: 'WAREHOUSE_CD',
+                searchValue: '',
+                tableData: [],
+                totalCount: 10,
+                pageSize: 10,
+                currentPage: 1,
+                addForm: {
+                    warehouse: '',
+                    attribution: 2,
+                    plat_cd: '',
+                    store: [],
+                    logistics: '',
+                    thirdType: '',
+                    thirdCode: '',
+                    operate_type:'0'
+                },
+                logisticsCompany: [],
+                logisticsType: [],
+                platform: [],
+            },
+            created: function () {
+                this.search();
+                this.baseData();
+            },
+            methods: {
+                baseData: function () {
+                    var query = {
+                        data: {
+                            query: {
+                                platform: "true",
+                                warehouses: "true",
+                            },
+                            type: "sorting"
+                        }
+                    };
+                    axios.post('/index.php?g=oms&m=CommonData&a=commonData', query).then(function (res) {
+                        var data = res.data.data;
+                        wh.platform = data.platform;
+                        wh.warehouses = data.warehouses;
+                    })
+                },
+                addEntry: function () {
+                    this.dialogAdd = true;
+                    axios.post('/index.php?m=store&a=logisticsCompany').then(function (res) {
+                        var baseData = res.data;
+                        if (baseData.code == 2000) {
+                            wh.logisticsCompany = baseData.data;
+                        } else {
+                            wh.$message({ message: '基础数据获取失败', type: 'error' });
+                        }
+                    })
+                },
+                checkPlat: function (val) {
+                    this.addForm.store = [];
+                    if (val) {
+                        axios.post('/index.php?g=Oms&m=Order&a=storesGet', { plat_form: val.split()}).then(function (res) {
+                            var baseData = res.data;
+                            if (baseData.status == 200000) {
+                                wh.stroes = baseData.data;
+                            } else {
+                                wh.stroes = [];
+                                wh.$message({ message: '未查询到店铺', type: 'error' });
+                            }
+                        })
+                    } else {
+                        wh.stroes = [];
+                    }
+
+                },
+                search: function () {
+                    var query = {
+                        data: {
+                            search_condition: this.searchKey,
+                            search_value: this.searchValue
+                        },
+                        page: {
+                            this_page: this.currentPage,
+                            page_count: this.pageSize
+                        }
+                    };
+                    axios.post('/index.php?m=Store&a=warehouseLists', query).then(function (res) {
+                        var resData = res.data;
+                        if (resData.code == 200) {
+                            wh.tableData = resData.data.data;
+                            wh.totalCount = +resData.data.page.count;
+                        } else {
+                            wh.$message.error("数据查询失败...");
+                        }
+                    })
+                },
+                handleCurrentChange: function handleCurrentChange(val) {
+                    this.currentPage = val;
+                    wh.search();
+                },
+                handleSizeChange: function handleSizeChange(val) {
+                    this.currentPage = 1;
+                    this.pageSize = val;
+                    wh.search();
+                },
+                saveAdd: function () {
+                    var param = {
+                        data: {
+                            warehouse_cd: this.addForm.warehouse,
+                            type: this.addForm.thirdType,
+                            third_cd: this.addForm.thirdCode,
+                            warehouse_belong: this.addForm.attribution,
+                            plat_cd: this.addForm.plat_cd,
+                            logistic_cd: this.addForm.logistics,
+                            store_id: this.addForm.store,
+                            operate_type: this.addForm.operate_type
+                        }
+                    };
+
+                    axios.post('/index.php?m=Store&a=warehouseConfigAdd', param).then(function (res) {
+                        if (res.data.code == 200) {
+                            wh.$message.success("新增成功");
+                            wh.dialogAdd = false;
+                            wh.search();
+                            wh.cancelAdd();
+                        } else if(res.data.code == 300){
+                            wh.$message.error("新增失败、请检查内容...");
+                        }else{
+                            wh.$message.error(res.data.info);
+                        }
+                    });
+                },
+                reset: function () {
+                    this.searchKey = 'WAREHOUSE_CD';
+                    this.searchValue = '';
+                    wh.search();
+                },
+                delEntry: function (item) {
+                    this.$confirm('你确认删除这些物流匹配关系吗？', '提示', { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' })
+                        .then(function () {
+                            var query = {
+                                data: [{ warehouse_info_id: item.ID }]
+                            }
+                            axios.post('/index.php?m=store&a=warehouseConfigDel', query).then(function (res) {
+                                if (res.data.code == 200) {
+                                    wh.$message.success("删除成功");
+                                    wh.search();
+                                } else {
+                                    wh.$message.error("删除失败");
+                                }
+                            });
+                        }).catch(() => {
+                            this.$message({
+                                type: 'info',
+                                message: '已取消删除'
+                            });
+                        });
+                },
+                cancelAdd: function () {
+                    this.dialogAdd = false;
+                    this.addForm = {
+                        warehouse: '',
+                        attribution: 2,
+                        plat_cd: '',
+                        store: [],
+                        logistics: '',
+                        thirdType: '',
+                        thirdCode: '',
+                    };
+                }
+            }
+
+        })
+    </script>
+</body>
+
+</html>

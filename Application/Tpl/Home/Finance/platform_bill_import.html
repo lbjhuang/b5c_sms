@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <title><{$Think.lang.导入账单}></title>
+</head>
+<style> 
+    [v-cloak]{
+        display: none;
+    }
+    .red{
+        background: #cccccc;
+        color: #ffffff;
+    }
+    h4{
+        margin: 0;
+        line-height: 40px;
+    }
+    .entry-info{
+        width: 100%;
+        text-align: center;
+        border-left: 1px solid #E0E0E0;
+        border-bottom: 1px solid #E0E0E0;
+        font-size: 15px;
+        margin-bottom:20px;
+    }
+    .entry-info caption{
+        height: 40px;
+        background-color: #546E7A;
+        color: white;
+        text-align: left;
+        font-size: 15px;
+        line-height: 40px;
+        padding-left: 20px;
+    }
+    .entry-info tr td{
+        border-right: 1px solid #E0E0E0;
+        border-top: 1px solid #E0E0E0;
+        padding: 5px 15px;
+    }
+    .entry-info tr td:nth-child(odd){
+        width: 20%;
+        background: #f5fafe;
+    }
+    .entry-info tr td .el-input__inner{
+        height: 35px;
+    }
+    .input-with-select .el-input-group__prepend {
+        background-color: #fff;
+    }
+    .currency{
+        width: 90px;
+    }
+   .el-select .el-input__inner{
+        width: 100%;
+    }
+    .width-100{
+        width: 100% !important;
+    }
+    .required::after{
+        content: "*";
+        color:red;
+        margin-left: 5px;
+    }
+    .el-upload__tip{
+        float:left;
+    }
+    .el-upload-list--text{
+        display: none;
+    }
+    .upload-demo{
+        display:inline-block;
+    }
+    .importDialog .el-dialog__header{
+        display: block;
+    }
+    .importDialog .el-dialog--center .el-dialog__body{
+        text-align: center;
+    }
+</style>
+<body>
+    <div id="receipt" v-cloak>
+        <el-container>
+            <el-header>
+                <el-row>
+                    <el-col :span="12"> 
+                        <h4>{{$lang('导入账单')}}</h4> 
+                    </el-col>
+            </el-row>
+            </el-header>
+            <el-main>
+                <table class="entry-info" border="0" cellpadding="0" cellspacing="0">
+                    <caption>{{$lang('基本信息')}}</caption>
+                    <tbody>
+                        <tr>
+                            <td><span class="required">{{$lang('平台')}}</span></td>
+                            <td>
+                                <el-select :filterable="true" v-model="form.site_code" clearable @change="siteChange">
+                                    <el-option :key="item.cd" :label="item.cdVal" :value="item.cd" v-for="item in baseData.site_cd"></el-option>
+                                </el-select>
+                            </td>
+                            <td><span class="required">{{$lang('站点')}}</span></td>
+                            <td>
+                                <el-select :filterable="true" v-model="form.platform_code" @change="platformChange" clearable :disabled="!form.site_code || form.site_code == ''">
+                                    <el-option :key="item.cd" :label="item.cdVal" :value="item.cd" v-for="item in sale_channel"></el-option>
+                                </el-select>
+                            </td>
+                            <td><span class="required">{{$lang('店铺')}}</span></td>
+                            <td>
+                                <el-select :filterable="true" v-model="form.store_id" clearable :disabled="!form.platform_code || form.platform_code == ''">
+                                    <el-option :key="item.ID" :label="item.STORE_NAME" :value="item.ID" v-for="item in stores"></el-option>
+                                </el-select>
+                            </td>
+                        </tr>
+                        <tr style="height:50px;">
+                            <td><span class="required">{{$lang('账单时间区间')}}</span></td>
+                            <td colspan="5" style="text-align:left">
+                                <el-date-picker v-model="form.bill_time" style="width: 25%;" type="daterange" :picker-options="pickerOptions" unlink-panels value-format="yyyy-MM-dd" :range-separator="$lang('至')" :disabled="!form.site_code || form.site_code == ''">
+                                </el-date-picker>
+                            </td>
+                        </tr>
+                        <tr style="height:50px;">
+                            <td><span class="required">{{$lang('导入原始附件')}}</span></td>
+                            <td colspan="5" style="text-align:left">
+                                <el-input v-model="original_bill_list" clearable style="width:25%" readonly @input="handremove" :placeholder="$lang('平台后台导出的原始附件，未经过修改')"></el-input>
+                                <el-upload class="upload-demo" action="/index.php?m=order_detail&a=file_upload" style="width: 25%;" :before-upload="handleBeforeUpload" :on-success="handleSuccess" :file-list="fileList">
+                                    <el-button size="small" type="primary">{{$lang('浏览')}}</el-button>    
+                                </el-upload>
+                            </td>
+                        </tr>
+                        <tr style="height:50px;">
+                            <td><span>{{$lang('标准核销模版下载')}}</span></td>
+                            <td colspan="5" style="text-align:left">
+                                <el-button size="small" type="primary" @click="downTmep"> {{ $lang("下载") }} </el-button>
+                            </td>
+                        </tr>
+                        <tr style="height:50px;">
+                            <td>{{$lang('标准核销表格导入说明')}}</td>
+                            <td colspan="5" style="text-align:left">
+                                {{ $lang(getValue("site_cd", form.site_code))}}
+                            </td>
+                        </tr>
+                        <tr style="height:50px;">
+                            <td><span class="required">{{$lang('导入标准核销表格')}}</span></td>
+                            <td colspan="5" style="text-align:left">
+                            <el-input v-model="arrange_bill_list" clearable style="width:25%" readonly @input="handremove2" :placeholder="$lang('请参考【标准核销表格导入说明】')"></el-input>
+                                <el-upload class="upload-demo" action="/index.php?m=order_detail&a=file_upload" style="width: 25%;" :before-upload="handleBeforeUpload2" :on-success="handleSuccess2" :file-list="fileList2">
+                                    <el-button size="small" type="primary">{{$lang('浏览')}}</el-button>    
+                                </el-upload>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="text-center">
+                    <el-button type="primary" @click="submit" :disabled="submitStatus">{{$lang('提交')}}</el-button>
+                </div>
+            </el-main>
+            <el-dialog
+                title="提示"
+                :visible.sync="importDialog"
+                width="30%"
+                class="importDialog"
+                center>
+                <span>{{$lang('导入数据有误，是否下载错误报告？')}}</span>
+                <span slot="footer" class="dialog-footer">
+                    <el-button @click="importDialog = false">{{$lang('取消')}}</el-button>
+                    <el-button type="primary" @click="downLoad">{{$lang('确定')}}</el-button>
+                </span>
+            </el-dialog>
+        </el-container>
+    </div>
+    
+<!--引入js-->
+<script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.13.0.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+<script>
+    if (getCookie('think_language') !== "zh-cn") {
+        ELEMENT.locale(ELEMENT.lang.en)
+    }
+
+    var  vm = new Vue({
+        el:'#receipt',
+        data:{
+            submitStatus:false,
+            importDialog: false,
+            form:{
+                site_code:'',//平台
+                platform_code:'',//站点
+                store_id:'',//店铺
+                bill_time: [], //账单区间时间
+
+                original_bill:'',//原始附件展示
+                arrange_bill: '',//标准核销展示
+            },
+            baseData:{},//通用接口数据
+            sale_channel: {},//站点接口数据
+            stores: {},//店铺接口数据
+            fileList: [],//原始附件上传
+            fileList2: [],//标准核销上传
+            original_bill_list: '', //原始附件展示
+            arrange_bill_list: '',//标准核销展示
+            timeArr:[],
+            pickerOptions: {
+                disabledDate(time) {
+                    return time.getTime() > Date.now();
+                },
+                cellClassName(time){
+                    var d = new Date(time);
+                    var datetime=d.getFullYear() + '-' + ((d.getMonth() + 1)<10?'0'+(d.getMonth() + 1):(d.getMonth() + 1)) + '-' + (d.getDate()<10?('0'+d.getDate()):d.getDate())
+                    if(vm.timeArr){
+                        for(var x = 0;x<vm.timeArr.length;x++){
+                            if(datetime>=vm.timeArr[x].s_bill_time && datetime<=vm.timeArr[x].e_bill_time){
+                                return 'red';
+                            }
+                        }
+                    }
+                }
+            },
+            getValue: function(dataName, key) {//过滤方法
+                var result = "";
+                for (var i in this.baseData[dataName]) {
+                    if (this.baseData[dataName][i].cd == key) {
+                        result = this.baseData[dataName][i].comment2;
+                        break;
+                    }
+                }
+                return result ? result : "";
+            },
+        },
+        created:function(){
+            this.getBaseData();
+        },
+        methods:{
+            //下载模版
+            downTmep:function(){
+                location.href = '/index.php?m=finance&a=downloadPackage&name=标准核销导入模板.xlsx';
+            },
+            
+            //切换平台
+            siteChange: function(val){
+                this.getValue("site_cd", this.form.site_code);
+                this.form.platform_code = '';
+                this.form.store_id = '';
+                this.form.bill_time = [];
+                if(this.form.site_code == ''){
+                    this.sale_channel = this.baseData.sale_channel;
+                    this.stores = this.baseData.stores;
+                }else{
+                    var _this = this;
+                    var temp = val.split(',');
+                    var param = {
+                        data: {
+                            site_code: temp
+                        }
+                    };
+                    axios.post("/index.php?m=finance&a=sub_basis", param)
+                        .then(function(res) {
+                            if (res.data.code == 2000) {
+                                _this.sale_channel = res.data.data;
+                            } else {
+                                _this.$message.warning(_this.$lang("数据查询失败"));
+                            }
+                        });
+                    axios.post("/index.php?m=finance&a=get_platform_bill", {"data": {
+                            "code": temp,
+                            "query_column": "site_code"
+                        }})
+                        .then(function(res) {
+                             _this.timeArr = res.data.data
+                        });
+                }
+                
+            },
+            //切换站点
+            platformChange: function(val){
+                this.form.store_id = '';
+                if(this.form.platform_code == ''){
+                    this.stores = this.baseData.stores;
+                }else{
+                    var _this = this;
+                    var temp = val.split(',');
+                    var param = {
+                        data: {
+                            plat_code: temp
+                        }
+                    };
+                    axios.post("/index.php?m=finance&a=get_store", param)
+                        .then(function(res) {
+                            if (res.data.code == 2000) {
+                                _this.stores = res.data.data;
+                            } else {
+                                _this.$message.warning(_this.$lang("数据查询失败"));
+                            }
+                        });
+                }
+            },
+            //获取通用数据
+            getBaseData: function () {
+                var _this = this;
+                axios.post('/index.php?g=oms&m=CommonData&a=commonData', {
+                    data: {
+                        query: {
+                            site_cd: "true",
+                            sale_channel: "true",//站点
+                            stores: "true",//店铺
+                        },
+                    }
+                }).then(function (res) {
+                    _this.baseData = res.data.data;
+                    _this.sale_channel = res.data.data.sale_channel;
+                    _this.stores = res.data.data.stores;
+                });
+            },
+            handremove:function(file, fileList) {
+                this.fileList = [];
+            },
+            handleBeforeUpload:function(file) {
+                var has = this.fileList.some(function (item) {
+                    return item.name == file.name;
+                })
+                if(has){
+                    this.$message.warning(this.$lang("文件已经上传"));
+                    return false;
+                }
+            },
+            handleSuccess:function(response, file, fileList) {
+                var _this = this;
+                if(response.status){
+                    this.fileList = fileList;
+
+                    this.fileList.forEach(function(item){
+                        _this.original_bill_list = item.response.info.savename;
+                    })
+                    
+                    this.$message.success(this.$lang("文件上传成功"));
+                }else{
+                    this.$message.error(this.$lang("文件上传失败"));
+                }
+            },
+            handremove2:function(file, fileList) {
+                this.fileList2 = [];
+            },
+            handleBeforeUpload2:function(file) {
+                var has = this.fileList2.some(function (item) {
+                    return item.name == file.name;
+                })
+                if(has){
+                    this.$message.warning(this.$lang("文件已经上传"));
+                    return false;
+                }
+            },
+            handleSuccess2:function(response, file, fileList) {
+                var _this = this;
+                if(response.status){
+                    this.fileList2 = fileList;
+                    this.fileList2.forEach(function(item){
+                        _this.arrange_bill_list = item.response.info.savename;
+                    })
+                    this.$message.success(this.$lang("文件上传成功"));
+                }else{
+                    this.$message.error(this.$lang("文件上传失败"));
+                }
+            },
+            submit:function(type){
+                var _this = this;
+                var temp = [];
+                this.fileList.forEach(function(item){
+                    temp.push({ 
+                        name: item.response.info.name, 
+                        savename: item.response.info.savename,
+                        savepath: item.response.info.savepath 
+                    })
+                })
+                this.form.original_bill = temp;
+
+                var temp2 = [];
+                this.fileList2.forEach(function(item){
+                    temp2.push({ 
+                        name: item.response.info.name, 
+                        savename: item.response.info.savename,
+                        savepath: item.response.info.savepath 
+                    })
+                })
+                this.form.arrange_bill = temp2;
+                for (var key in this.form) {
+                    switch (key) {
+                        case 'original_bill':
+                            if (!this.form[key].length) {
+                                this.$message.warning(this.$lang("原始附件必须上传"));
+                                return false;
+                            }
+                        case 'arrange_bill':
+                            if (!this.form[key].length) {
+                                this.$message.warning(this.$lang("标准核销表格必须上传"));
+                                return false;
+                            }
+                        case 'bill_time':
+                            if (!this.form[key].length) {
+                                this.$message.warning(this.$lang("账单区间时间必填"));
+                                return false;
+                            }
+                        default:
+                            if (!this.form[key]) {
+                                this.$message.warning(this.$lang("*号标注的都为必填，请填写"));
+                                return false;
+                            }
+                    }
+                }
+                this.submitStatus = true;
+
+                axios.post('/index.php?m=finance&a=platform_bill_add',this.form)
+                .then(function(res){
+                    _this.submitStatus = false;
+                    _this.importDialog = false;
+                    if(res.data.code == 2000){
+                        _this.$message.success(_this.$lang("提交成功"));
+                        setTimeout(() => {
+                            backTab('/index.php?m=finance&a=platform_bill_list','平台账单列表')
+                        }, 1000);
+                        
+                    }else if(res.data.code == 4000){
+                        _this.importDialog = true;
+                    }else{
+                        _this.$message.warning(_this.$lang(res.data.msg));
+                    }
+                })
+            },
+            downLoad: function downLoad() {
+                var _this = this;
+                _this.importDialog = false;
+                var temp = [];
+                this.fileList.forEach(function(item){
+                    temp.push({ 
+                        name: item.response.info.name, 
+                        savename: item.response.info.savename,
+                        savepath: item.response.info.savepath 
+                    })
+                })
+                this.form.original_bill = temp;
+
+                var temp2 = [];
+                this.fileList2.forEach(function(item){
+                    temp2.push({ 
+                        name: item.response.info.name, 
+                        savename: item.response.info.savename,
+                        savepath: item.response.info.savepath 
+                    })
+                })
+                this.form.arrange_bill = temp2;
+                var dom = document.createElement('a');
+                var _href = "/index.php?m=finance&a=platform_bill_error_export&savepath=" + _this.form.arrange_bill[0].savepath 
+                          + "&savename=" + _this.form.arrange_bill[0].savename + "&store_id=" + _this.form.store_id
+                          + "&platform_code=" + _this.form.platform_code;
+                dom.setAttribute("href", _href);
+                dom.click();
+            },
+        },
+    })
+</script>
+</body>
+</html>
+
+ 

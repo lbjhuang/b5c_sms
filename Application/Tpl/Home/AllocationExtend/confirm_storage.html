@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title><{$Think.lang.货位档案}></title>
+    <link href="../Public/css/H-ui-3.1.min.css" rel="stylesheet" type="text/css" >
+    <link rel="stylesheet" href="../Public/css/stock.css">
+    <link rel="stylesheet" type="text/css" href="../Public/css/style.css" />
+    <link rel="stylesheet" type="text/css" href="../Public/lib/Hui-iconfont/1.0.7/iconfont.css" />
+    <link rel="stylesheet" type="text/css" href="../Public/css/NewAllocate.css" />
+    <link rel="stylesheet" href="../Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="../Public/css/default.css?v=<{$Think.const.V}>">
+    <style>
+        .el-select .el-input {
+            width: 130px;
+        }
+        .input-with-select .el-input-group__prepend {
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+<div id="content">
+    <div class="ck-wrap">
+        <p class="ck-wrap-title"><{$Think.lang.调拨入库确认}></p>
+        <div class="row">
+            <table class="table  table-striped table-detail-bg">
+                <thead>
+                <th class="text-l table-detail-title" colspan="7"><{$Think.lang.单据信息}></th>
+                </thead>
+                <tbody class="text-c">
+                <tr>
+                    <td width="10%"><{$Think.lang.始发仓库}></td>
+                    <td width="40%"><span v-if="ret.allo_out_warehouse in warehouses">{{warehouses[ret.allo_out_warehouse].CD_VAL}}</span><span v-else>{{ret.allo_out_warehouse}}</span></td>
+                    <td width="10%"><{$Think.lang.始发仓库位置}></td>
+                    <td><span v-if="ret.allo_out_warehouse in warehouseAddress">{{warehouseAddress[ret.allo_out_warehouse].place}} - {{warehouseAddress[ret.allo_out_warehouse].address}}</span></td>
+                </tr>
+                <tr>
+                    <td><{$Think.lang.目的仓库}></td>
+                    <td><span v-if="ret.allo_in_warehouse in warehouses">{{warehouses[ret.allo_in_warehouse].CD_VAL}}</span><span v-else>{{ret.allo_in_warehouse}}</span></td>
+                    <td><{$Think.lang.目的仓库位置}></td>
+                    <td><span v-if="ret.allo_in_warehouse in warehouseAddress">{{warehouseAddress[ret.allo_in_warehouse].place}} - {{warehouseAddress[ret.allo_in_warehouse].address}}</span></td>
+                </tr>
+                <tr>
+                    <td><{$Think.lang.上传凭证文件}></td>
+                    <td>
+                        <form method="post" id="location_form" style="text-align: center; width: 100%;">
+                                <span class="btn-upload form-group">
+                                    <input type="hidden" name="id" v-model="ret.id"/>
+                                    <input class="input-text upload-url" type="text" id="uploadfile-1" readonly="" style="width: 260px;">
+                                    <button type="button" class="td-btn td-btn-check" @click="choseImg()"><{$Think.lang.选择文件}></button>
+                                    <input style="right: 85px;" type="file" multiple="" name="evidence" id="upload-file" class="input-file" onchange="document.getElementById('uploadfile-1').value = this.value" >
+                                </span>
+                        </form>
+                    </td>
+                    <td><{$Think.lang.入仓号}></td>
+                    <td><el-input v-model="ret.entry_number" placeholder="<{$Think.lang.请输入入仓号}>"></el-input></td>
+                </tr>
+                <tr>
+                    <td><{$Think.lang.承运单号}></td>
+                    <td><el-input v-model="ret.carry_number" placeholder="<{$Think.lang.请输入承运单号}>"></el-input></td>
+                    <td class="must"><{$Think.lang.入库物流费用}></td>
+                    <td>
+                        <el-input placeholder="<{$Think.lang.请输入入库物流费用}>" v-model="ret.amount_storage_log_cost" class="input-with-select">
+                            <el-select v-model="ret.storage_log_currency" slot="prepend" placeholder="<{$Think.lang.请选择币种}>">
+                                <el-option v-for="(item,key) in currency" :key="key" :label="item" :value="key"> </el-option>
+                            </el-select>
+                        </el-input>
+                    </td>
+                </tr>
+                <tr>
+                    <td><{$Think.lang.服务费用}></td>
+                    <td>
+                        <!--<el-input v-model="ret.log_service_cost" placeholder="<{$Think.lang.请输入服务费用}>"></el-input>-->
+                        <el-input placeholder="<{$Think.lang.请输入服务费用}>" v-model="ret.log_service_cost" class="input-with-select">
+                            <el-select v-model="ret.log_service_cose_currency" slot="prepend" placeholder="<{$Think.lang.请选择币种}>">
+                                <el-option v-for="(item,key) in currency" :key="key" :label="item" :value="key"> </el-option>
+                            </el-select>
+                        </el-input>
+                    </td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="row">
+            <table class="table table-detail table-striped">
+                <thead>
+                <th class="text-l table-detail-title" colspan="10"><{$Think.lang.商品信息}></th>
+                </thead>
+                <tbody class="text-c">
+                <tr class="text-c table-th">
+                    <td><{$Think.lang.编号}></td>
+                    <td><{$Think.lang.SKU编码}></td>
+                    <td><{$Think.lang.条形码}></td>
+                    <td><{$Think.lang.商品名称}></td>
+                    <td><{$Think.lang.到期日}></td>
+                    <td><{$Think.lang.需调拨数量}></td>
+                    <td><{$Think.lang.实际出库数量}></td>
+                    <td><{$Think.lang.需求与出库差异原因}></td>
+                    <td><{$Think.lang.实际入库数量}></td>
+                    <td><{$Think.lang.出库与入库差异原因}></td>
+                </tr>
+                <tr v-for="(k, i) in child">
+                    <td>{{i + 1}}</td>
+                    <td>{{k.sku_id}}</td>
+                    <td>{{k.GUDS_OPT_UPC_ID}}</td>
+                    <td>{{k.GUDS_NM}}</td>
+                    <td>{{k.deadline_date_for_use}}</td>
+                    <td>{{k.demand_allo_num}}</td>
+                    <td>{{k.actual_outgoing_num}}</td>
+                    <td>{{k.actual_demand_diff_reason}}</td>
+                    <td class="must"><input type="text" v-model="k.actual_storage_num" class="input-text text-c"  @keyup="onlyNum($event,k,i)"/></td>
+                    <td :class="k.display?'must':''"><input type="text" v-model="k.outgoing_storage_diff_reason" class="input-text text-c" v-if="k.display"/></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="bottom-row">
+            <div>
+                <a class="bottom-btn btn-back-bottom" onclick="backNewtab(this, '<{$Think.lang.库存调拨}>')" :_href="backUrl" target="_blank" ><{$Think.lang.返回列表}></a>
+                <button class="bottom-btn btn-check-bottom" @click="confirm_storage()"><{$Think.lang.确认入库}></button>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script src="../Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="../Public/js/vue.2.5.13.js?<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="../Public/lib/layer-v3.0.3/layer/layer.js"></script>
+<script type="text/javascript" src="../Public/js/jquery.form.min.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="../Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" >
+    var vm = new Vue({
+        el: '#content',
+        data:{
+            backUrl: '<{:U("AllocationExtend/index")}>',
+            child: <{$child}>,
+            ret: <{$alloRet}>,
+            saleTeams: <{$saleTeams}>,
+            warehouses: <{$warehouses}>,
+            alloType: <{$alloType}>,
+            alloState: <{$alloState}>,
+            warehouseAddress: <{$warehouseAddress}>,
+            currency:<{$currency}>,
+            picking_list_url: '<{:U("AllocationExtend/print_picking_list")}>' + '&id='
+        },
+        created: function(){
+            this.ret.entry_number = '';
+            this.ret.carry_number = '';
+            this.ret.amount_storage_log_cost = '';
+            this.ret.log_service_cost = '';
+            var child = this.child;
+            $.each(child, function (i, e) {
+                e.actual_storage_num = e.actual_outgoing_num;
+            });
+        },
+        methods: {
+            search: function () {
+                var params = vm.params;
+                var url = '<{:U("AllocationExtend/show_allo_data")}>';
+                this.sendRequest(url, params, true, 'post');
+            },
+            choseImg:function(){
+                $("#upload-file").trigger('click')
+            },
+            confirm_storage: function(e) {
+                var diffIndex = 0;
+                for(key in vm.child){
+                    if(vm.child[key].display){
+                        if(vm.child[key].outgoing_storage_diff_reason){}
+                        else{
+                            diffIndex++;
+                        }
+                    }
+                }
+
+                    if(!vm.ret.storage_log_currency){
+                        layer.msg('<{$Think.lang.入库物流币种不能为空！}>')
+                        return;
+                    }
+                    if(!vm.ret.amount_storage_log_cost || isNaN(vm.ret.amount_storage_log_cost)){
+                        layer.msg('<{$Think.lang.入库物流费用只能为数字！}>')
+                        return;
+                    }
+                    if(vm.ret.log_service_cost && !vm.ret.log_service_cose_currency){
+                        layer.msg('<{$Think.lang.服务费用币种不能为空！}>')
+                        return;
+                    }
+                    if(vm.ret.log_service_cost && vm.ret.log_service_cost < 0 || isNaN(vm.ret.log_service_cost)){
+                        layer.msg('<{$Think.lang.服务费用仅可填写正数！}>')
+                        return;
+                    }
+
+                if(diffIndex>0){
+                    layer.msg('<{$Think.lang.请完成需求与出库数量差异原因 ！}>')
+                }else{
+                    var url = '<{:U("AllocationExtend/confirm_storage")}>';
+                    var showIndex;
+                    var params = {
+                        ret: this.ret,
+                        child: this.child
+                    };
+                    var options = {
+                        url: url,
+                        data: params,
+                        beforeSubmit: vm.validate,
+                        beforeSend: function () {
+                            showIndex = layer.msg('<{$Think.lang.提交中}>', {icon: 16});
+                        },
+                        success: function(data, status, xhr) {
+                            layer.close(showIndex);
+                            layer.msg(data.info, {icon: 16, time: 1000});
+                            setTimeout(function(){
+                                backTab('/index.php?m=allocation_extend&a=index','新调拨')
+                            },500)
+                        },
+                        error: function(xhr, status, error) {
+                            var context = options.context || this;
+                            layer.msg(error);
+                        },
+                    };
+                    $('#location_form').ajaxSubmit(options);
+                }
+            },
+            sendRequest: function(url, requestParams, async, type) {
+                var showIndex = 0;
+                $.ajax({
+                    type: type,
+                    async: async,
+                    url: url,
+                    data: requestParams,
+                    beforeSend: function () {
+                        showIndex = layer.load(2, {
+                            shade: [0.5,'#fff']
+                        });
+                    },
+                    success:function(response){
+                        layer.close(showIndex);
+                        layer.msg(response.info);
+                        setTimeout(function(){
+                            var couponUrl='<{:U("index")}>';
+                            var route = document.createElement("a");
+                            route.setAttribute("style", "display: none");
+                            route.setAttribute("onclick", "backNewtab(this,'新调拨')");
+                            route.setAttribute("_href", couponUrl);
+                            route.click();
+                        },1000)
+                    },
+                    error:function(){
+                        layer.close(showIndex);
+                        layer.msg('<{$Think.lang.请求异常}>')
+                    }
+                });
+            },
+            validate: function() {
+                if ($('input[name="evidence"]').val() == '') {
+                    layer.msg('<{$Think.lang.请选择文件}>');
+                    return false;
+                } else
+                    return true;
+            },
+            onlyNum:function(event,data,index){
+                var amount = parseInt(vm.child[index].actual_storage_num);
+                var actual_outgoing_num = parseInt(data.actual_outgoing_num);
+                if (isNaN(event.key) && event.key !== 'Backspace') {
+                    vm.child[index].actual_storage_num = isNaN(amount) ? '' : amount;
+                }
+                if(amount == actual_outgoing_num){
+                    vm.child[index].display = false
+                    vm.child[index].outgoing_storage_diff_reason = ''
+                }else if(amount > actual_outgoing_num){
+                    vm.child[index].actual_storage_num =''
+                    vm.child[index].outgoing_storage_diff_reason = '';
+                    if(vm.child[index].display){
+                        vm.child[index].display = false;
+                    }
+                }else if(amount < actual_outgoing_num){
+                    vm.child[index].actual_storage_num =amount
+                    if(vm.child[index].display){}
+                    else{Vue.set(vm.child[index],'display',true)}
+                }
+            },
+        }
+    })
+</script>
+</html>

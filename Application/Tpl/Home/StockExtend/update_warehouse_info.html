@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <style>
+        .layui-layer{
+            width: 600px !important;
+        }
+        .layui-layer #tab_demo{
+            box-sizing: border-box;
+            background: #f6f9fa;
+            padding: 0px;
+            margin: 0px 20px;
+            border: 1px solid #dddddd;
+            border-image: initial;
+        }
+        .layui-layer .layui-layer-title{
+             margin-top: 20px;
+        }
+    </style>
+</head>
+<link rel="stylesheet" type="text/css" href="../Public/css/H-ui.min.css" />
+<body>
+<div id="tab_demo" class="tab_demo">
+    <!--已选-->
+    <div class="row">
+        <div class="tab_demo_lable">
+            <label><{$Think.lang.仓库名称}></label>
+        </div>
+        <div class="tab_demo_items">
+            <select v-model="warehouse_info.warehouse">
+                <option v-for="(i, v) in warehouses" value="{{v.CD_VAL}}">{{v.CD_VAL}}</option>
+            </select>
+        </div>
+    </div>
+    <div class="height_10"></div>
+    <div class="row">
+        <div class="tab_demo_lable">
+            <label><{$Think.lang.区域}></label>
+        </div>
+        <div class="col-sm-3Area">
+            <select v-model="selectedProv">
+                <option value=""><{$Think.lang.省}></option>
+                <option v-for="(i, v) in prov" value="{{v.ID}}">{{v.NAME}}</option>
+            </select>
+        </div>
+        <div class="col-sm-3Area col-sm-3AreaMiddle">
+            <select v-model="selectedCity">
+                <option value=""><{$Think.lang.市}></option>
+                <option v-for="(i, v) in city" value="{{v.ID}}">{{v.NAME}}</option>
+            </select>
+        </div>
+        <div class="col-sm-3Area">
+            <select v-model="selectedDis">
+                <option value=""><{$Think.lang.县}></option>
+                <option v-for="(i, v) in dis" value="{{v.ID}}">{{v.NAME}}</option>
+            </select>
+        </div>
+    </div>
+    <div class="row">
+        <div class="tab_demo_lable">
+            <label><{$Think.lang.具体地址}></label>
+        </div>
+        <div class="tab_demo_items">
+            <input type="text" v-model="warehouse_info.address">
+        </div>
+    </div>
+    <div class="row">
+        <div class="tab_demo_lable">
+            <label><{$Think.lang.发货系统}></label>
+        </div>
+        <div class="tab_demo_items">
+            <select v-model="warehouse_info.system_docking">
+                <option v-for="(k, v) in systemDocking" value="{{k}}">{{v}}</option>
+            </select>
+        </div>
+    </div>
+    <div class="row">
+        <div class="tab_demo_lable">
+            <label><{$Think.lang.寄件人}></label>
+        </div>
+        <div class="tab_demo_items">
+            <input type="text" name="contacts" v-model="warehouse_info.sender">
+        </div>
+    </div>
+    <div class="row">
+        <div class="tab_demo_lable">
+            <label><{$Think.lang.寄件电话}></label>
+        </div>
+        <div class="tab_demo_items">
+            <input type="text" name="contacts" v-model="warehouse_info.sender_phone_number">
+        </div>
+    </div>
+    <div class="row">
+        <div class="tab_demo_lable">
+            <label><{$Think.lang.邮编}></label>
+        </div>
+        <div class="tab_demo_items">
+            <input type="text" name="contacts" v-model="warehouse_info.sender_zip_code">
+        </div>
+    </div>
+    <div class="row">
+        <div class="tab_demo_lable">
+            <label><{$Think.lang.联系人}></label>
+        </div>
+        <div class="tab_demo_items">
+            <input type="text" name="contacts" v-model="warehouse_info.contacts">
+        </div>
+    </div>
+    <div class="row">
+        <div class="tab_demo_lable">
+            <label><{$Think.lang.电话}></label>
+        </div>
+        <div class="tab_demo_items">
+            <input type="text" v-model="warehouse_info.phone">
+        </div>
+    </div>
+    <div class="row row_textarea">
+        <div class="tab_demo_lable">
+            <label><{$Think.lang.备注}></label>
+        </div>
+        <div class="tab_demo_items">
+            <textarea v-model="warehouse_info.remarks"></textarea>
+        </div>
+    </div>
+    <div class="row row_textarea" style="height: 40px;">
+        <div class="tab_demo_lable">
+            <label><{$Think.lang.作业内容}></label>
+        </div>
+        <div class="tab_demo_items">
+            <span v-for="(k, v) in jobContent">
+                <input style="margin-left: 0px; display: inline; margin-right: 5px;" :checked="v.isChecked|filterJobContent k" name="postOptions" v-model='postOptions' :value='k' type="checkbox">
+                <label v-text='v'></label>&nbsp;&nbsp;&nbsp;
+            </span>
+        </div>
+    </div>
+    <div class="tab_demo_button">
+        <button class="btn btn-blue" @click="test"><{$Think.lang.保存}></button>
+    </div>
+</div>
+<script src="../Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<!--<script src="../Public/js/H-ui.admin.js"></script>-->
+<script src="../Public/js/vue.1.7.js"></script>
+<script src="../Public/lib/layer-v3.0.3/layer/layer.js"></script>
+<script>
+    var vm = new Vue({
+        el: '#tab_demo',
+        data: {
+            warehouses: <{$warehouses}>,
+            selected_warehouse: '',
+            warehouse_info: <{$warehouse_info}>,
+            prov: [],
+            city: [],
+            dis: [],
+            selectedProv: '',
+            selectedCity: '',
+            selectedDis: '',
+            manage: <{$manage}>,
+            systemDocking: <{$systemDocking}>,
+            existingArea: [],
+            jobContent: <{$jobContent}>,
+            postOptions: [],
+            contentOptions: <{$job_content}>,
+            isChecked: false
+        },
+        filters: {
+            filterJobContent: function(input, args) {
+                var $flag = false;
+                if (this.contentOptions) {
+                    for (var i = 0; i < this.contentOptions.length; i ++) {
+                        if (this.contentOptions [i] == args) {
+                            $flag = true;
+                            break;
+                        } else {
+                            $flag = false;
+                        }
+                    }
+                }
+
+                return $flag;
+            }
+        },
+        created: function(){
+            var url = '<{:U("StockExtend/getArea")}>';
+            var parent_id = 0;
+            var requestParams = {'parent_id': parent_id};
+            if (this.warehouse_info.city) {
+                this.existingArea = this.warehouse_info.city.split(',');
+                this.selectedProv = this.existingArea [0];
+            }
+            $.ajax({
+                type: "POST",
+                async: true,
+                url: url,
+                data: requestParams,
+                success:function(response){
+                    vm.prov = response.data;
+                },
+                error:function(){
+                    layer.msg('<{$Think.lang.请求异常}>')
+                }
+            });
+        },
+        watch:{
+            selectedProv: function(e) {
+                this.initCity();
+                this.initDis();
+                this.getCity(e);
+                if (this.existingArea [1]) this.selectedCity = this.existingArea [1];
+            },
+            selectedCity: function(e) {
+                this.initDis();
+                this.getArea(e);
+                if (this.existingArea [2]) this.selectedDis = this.existingArea [2];
+            }
+        },
+        methods: {
+            test: function() {
+                this.save();
+            },
+            save: function () {
+                if (this.selectedProv && this.prov) {
+                    this.warehouse_info.city = this.selectedProv;
+                    $.each(this.prov, function(i, e) {
+                        if (e.ID == vm.selectedProv) vm.warehouse_info.place = e.NAME;
+                    });
+                }
+                if (this.selectedCity && this.city) {
+                    this.warehouse_info.city += "," + this.selectedCity;
+                    $.each(this.city, function(i, e) {
+                        if (e.ID == vm.selectedCity) vm.warehouse_info.place += "-" + e.NAME;
+                    });
+                }
+                if (this.selectedDis && this.dis) {
+                    this.warehouse_info.city += "," + this.selectedDis;
+                    $.each(this.dis, function(i, e) {
+                        if (e.ID == vm.selectedDis) vm.warehouse_info.place += "-" + e.NAME;
+                    });
+                }
+                if (this.postOptions) {
+                    this.warehouse_info.job_content = this.postOptions;
+                }
+                var url = '<{:U("StockExtend/update_warehouse_info")}>';
+                var requestParams = {'data': this.warehouse_info};
+                var responseData = this.sendRequest(url, requestParams, false, 'POST');
+                if (responseData.status == 1) {
+                    layer.msg(responseData.info);
+                } else {
+                    layer.msg(responseData.info + responseData.data);
+                }
+            },
+            getCity:function(pid){
+                var url = '<{:U("StockExtend/getArea")}>';
+                var requestParams = {'parent_id': pid};
+                var responseData = this.sendRequest(url, requestParams, false, 'POST');
+                this.city = responseData.data;
+            },
+            getArea:function(pid){
+                var url = '<{:U("StockExtend/getArea")}>';
+                var requestParams = {'parent_id': pid};
+                var responseData = this.sendRequest(url, requestParams, false, 'POST');
+                this.dis = responseData.data;
+            },
+            sendRequest: function(url, requestParams, async, type) {
+                var responseData;
+                var showIndex = 0;
+                $.ajax({
+                    type: type,
+                    async: async,
+                    url: url,
+                    data: requestParams,
+                    success:function(response){
+                        responseData = response;
+                    },
+                    error:function(){
+                        layer.msg('<{$Think.lang.请求异常}>')
+                    }
+                });
+                return responseData;
+            },
+            initCity: function() {
+                this.selectedCity = "";
+                this.city = [];
+            },
+            initDis: function () {
+                this.selectedDis = '';
+                this.dis = [];
+            }
+        }
+    });
+</script>
+</body>
+</html>

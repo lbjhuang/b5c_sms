@@ -1,0 +1,482 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+    <title>招聘管理</title>
+    <link rel="stylesheet" href="../Public/utils/css/public.style.css?v=0927">
+    <link rel="stylesheet" href="../Public/css/element-ui.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="../Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="../Public/../Hr/hrstyle.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="../Public/../Hr/depList.css?v=123">
+    <link rel="stylesheet" href="../Public/icon/css/font-awesome.min.css">
+    <style type="text/css">
+        .conFormat {
+            margin-top: 1px;
+            margin-bottom: -18px;
+            line-height: 1.8;
+            font-size: 11px;
+    }
+    </style>
+</head>
+
+<body>
+    <input type="hidden" id="resid" value=<?php echo $id; ?> >
+    <input type="hidden" id="job" value=<?php echo $job; ?> >
+    <div id="recruit" v-cloak class="recruit">
+        <div v-if="!showRec" style="padding-bottom:200px;">
+            <el-form ref="form" :model="form" label-width="80px" :inline="true"> 
+                <el-row>
+                    <el-col :span="24">
+                        <el-form-item :label="$lang('简历状态')">
+                            <el-checkbox-group v-model="form.checkStatus">
+                                <el-checkbox v-for="item in choice.recruitStatus" :key="item.CD_VAL" :value="item.CD_VAL" :label="$lang(item.CD_VAL)"></el-checkbox>
+                            </el-checkbox-group>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="24" style="margin-top: -10px;">
+                        <el-form-item>
+                            <label class="el-form-item__label" style="width: 80px;">{{$lang('排序方式')}}</label>
+                            <el-radio-group v-model="form.checkSorting">
+                                <el-radio v-for="(item,key) in sorting" :key="key" :label="$lang(item)"></el-radio>
+                            </el-radio-group>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="24">
+                        <el-form-item>
+                            <el-select v-model="form.date" :placeholder="$lang('预约时间')">
+                                <el-option :label="$lang('预约时间')" value="JOB_DATE1"  ></el-option>
+                              <!--   <el-option :label="$lang('创建时间')" value="CREATE_TIME"></el-option> -->
+                                <el-option :label="$lang('面试时间')" value="JOB_DATE2"></el-option>
+                            </el-select>
+                        </el-form-item>
+                        <el-form-item :label="$lang('时间范围')">
+                            <el-date-picker type="date" :placeholder="$lang('起始时间')" v-model="form.startTime"></el-date-picker>
+                            -
+                            <el-date-picker type="date" :placeholder="$lang('结束时间')" v-model="form.endTime"></el-date-picker>
+                        </el-form-item>
+                        <el-form-item>
+                            <el-input :placeholder="$lang('请输入内容')" v-model="form.keyword">
+                                <el-select v-model="form.week" slot="prepend" :placeholder="$lang('请选择')" style="width: 120px">
+                                    <el-option :label="item" :value="item" :key="item" v-for="item in keyfield"></el-option>
+                                </el-select>
+                            </el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+            </el-form>
+            <div class="row">
+                <div class="col-100 use-btn">
+                    <button class="btn-pub btn-green" @click="search()">{{$lang('搜索')}}</button>
+                    <button class="btn-pub btn-default mg-l-10" @click="reset()">{{$lang('重置')}}</button>
+                </div>
+            </div>
+            <div class="baseline"></div>
+            <div class="use-row use-btn" style="margin-bottom: 15px">
+                <div class="col-15 result-num">
+                    {{$lang('搜索结果：')}}&nbsp;&nbsp;{{$lang('共')}} <b>{{ count }}</b> {{$lang('条')}}
+                </div>
+                <div class="use-row col-10">
+                    
+                    <el-button  slot="trigger"   style="padding-top: 7px;"  type="text" @click="exportExcel()">{{$lang('导出')}}</el-button>
+                    <?php if(ButtonAction::hidden()){ ?>
+                        <el-upload style="margin-left: 15px;" class="upload-demo" action="/index.php?m=Api&a=import_recruit" :show-file-list="false" :on-success="import_rec">
+                            <el-button slot="trigger" type="text"> {{$lang('导入')}}</el-button>
+                        </el-upload>
+                    <?php }?>
+                    
+                </div>    
+                <div class=" col-25 ">
+                    <?php if(ButtonAction::hidden()){ ?>
+                        <el-button style="margin-left: 10px;" type="text" @click="batchDel()">{{$lang('批量删除')}}</el-button>
+                        <el-button style="margin-left: 10px;" type="text"  @click="batchPull()">{{$lang('批量推送')}}</el-button>
+                        <el-button style="margin-left: 10px;" type="text" @click="batchEdit()">{{$lang('批量修改')}}</el-button>
+                    <?php }?>
+                </div>
+                <div class="col-50 text-right">
+                    <?php if(ButtonAction::hidden()){ ?>
+                        <button class="btn-pub btn-green" @click="chooseVisible=true">{{$lang('挑选')}}</button>&nbsp;&nbsp;
+                        <button class="btn-pub btn-blue" type="button"  @click="addRec()"><i class="fa fa-plus"></i>&nbsp;&nbsp;{{$lang('新建简历')}}</button>
+                    <?php }?>
+                    <el-button @click="downloadRec()"><i class="fa fa-download"></i>&nbsp;&nbsp;{{$lang('下载模板')}}</el-button>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-100">
+                    <table class="table-list">
+                        <thead>
+                            <tr>
+                                <th width="30">
+                                    <el-checkbox v-model="checkAll" @change=checkedAllFun()></el-checkbox>
+                                </th>
+                                <th>{{$lang('编号')}}</th>
+                                <th>{{$lang('姓名')}}</th>
+                                <th>{{$lang('周几')}}</th>
+                                <th>{{$lang('部门')}}</th>
+                                <th>{{$lang('应聘岗位')}}</th>
+                                <th>{{$lang('面试官')}}</th>
+                                <th>{{$lang('电话')}}</th>
+                                <th>{{$lang('简历来源')}}</th>
+                                <th>{{$lang('状态')}}</th>
+                                <th>{{$lang('时间')}}</th>
+                                <th>{{$lang('预约人')}}</th>
+                                <th>{{$lang('操作')}}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="item in dataList">
+                                <td>
+                                    <el-checkbox v-model="item.checked"></el-checkbox>
+                                </td>
+                                <td>{{item.ID}}</td>
+                                <td>{{item.NAME}}</td>
+                                <td>{{item.WEEKDAYS}}</td>
+                                <td>{{item.DEPT_NAME}}</td>
+                                <td>{{item.JOBS}}</td>
+                                <td>{{item.NAME2}}</td>
+                                <td>{{item.TEL}}</td>
+                                <td>{{item.SOURCE}}</td>
+                                <td>{{$lang(item.STATUS)}}</td>
+                                <td>
+                                    <div style= "text-align: left;display: inline-block;">
+                                    <span style="width: 200px;"><!-- <br> --> {{$lang('预约时间')}}:{{item.JOB_DATE1}} {{item.JOB_TIME1}}</span>
+                                    <span v-if="item.IS_NOT_ARRANGE==1"><br>{{$lang('面试时间')}}:</span>
+                                    <span v-else><br> {{$lang('面试时间')}}:{{item.JOB_DATE2}} {{item.JOB_TIME2}}</span> 
+                                    </div>
+                                </td>
+                                <td>{{item.NAME1}}</td>
+                                <td class="use-btn">
+                                    <button class="btn-pub btn-blue"  @click="review(item)">{{$lang('查看')}}</button>
+                                    <br>
+                                    <div v-if="item.STATUS=='录用'">
+                                        <el-button @click="addAccount(item)"  style='width: 75px;font-size: 12px;margin-top: 10px;'>{{$lang('新建账户')}}</el-button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="use-row" style="margin-top:10px;">
+                        <div class="col-100 text-right">
+                            <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="page.sePage" :page-sizes="[10,20, 50, 100,200]" :page-size="page.pageSize" layout="sizes, prev, pager, next" :total="count"></el-pagination>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="add-form" v-if="showRec">
+            <div class="row" style="margin-bottom: 20px;">
+                <div class="col-100 use-btn text-right">
+                    <div v-if="URLSOURCE">
+                        <el-button @click="showList1()">{{$lang('返回')}}</el-button>
+                    </div>
+                    <div v-else>
+                        <el-button @click="showList()">{{$lang('返回')}}</el-button>
+                    </div>
+                    
+                    
+                </div>
+            </div>
+            <el-form ref="form" :model="newForm" label-width="80px">
+                <table class="cus-table">
+                    <thead>
+                        <tr>
+                            <th width="45%"></th>
+                            <th width="6%"></th>
+                            <th width="45%"></th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <el-form-item :label="$lang('姓名')" class="is-required">
+                                    <el-input v-model="newForm.NAME"></el-input>
+                                </el-form-item>
+                            </td>
+                            <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                            <td>
+                                <el-form-item :label="$lang('预约人')" class="is-required">
+                                    <el-input v-model="newForm.NAME1"></el-input>
+                                </el-form-item>
+                            </td>
+                            <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td style="white-space: nowrap">
+                                <el-form-item :label="$lang('应聘岗位')" class="is-required use-btn" >
+                                    <el-select style="width: calc(100% - 96px);" v-model="newForm.JOBS" :placeholder="$lang('请选择岗位')" filterable clearable>
+                                        <el-option v-for="item in choice.adminJob" :label="item.CD_VAL" :value="item.CD_VAL" :key="item.CD"></el-option>
+                                    </el-select>
+                                    <?php if(ButtonAction::hidden()){ ?>
+                                        <button class="btn-pub btn-blue" type="button"  @click="adminJobs()">{{$lang('管理岗位')}}</button>
+                                    <?php }?>
+                                </el-form-item>
+                            </td>
+                            <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                            <td>
+                                <el-form-item :label="$lang('预约日期')">
+                                    <!--<el-date-picker style="width: 100%;" type="datetime" :placeholder="$lang('选择日期')" v-model="newForm.JOB_TIME1"></el-date-picker>-->
+                                    <el-date-picker v-model="newForm.JOB_DATE1"  type="date" :placeholder="$lang('选择日期')" :popper-append-to-body=false ></el-date-picker>
+                                    <el-time-select v-model="newForm.JOB_TIME1"  :popper-append-to-body="againPull"  :picker-options="{start: '08:30', step: '00:30', end: '21:00'}" :placeholder="$lang('选择时间')"></el-time-select>
+                                </el-form-item>
+                            </td>
+                            <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <el-form-item :label="$lang('电话')">
+                                    <el-input @blur="repeatNotice()" v-model="newForm.TEL"></el-input>
+                                </el-form-item>
+                            </td>
+                            <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                            <td>
+                                <el-form-item :label="$lang('星期几')">
+                                    <!-- <el-select v-model="newForm.WEEKDAYS" :placeholder="$lang('星期一')" filterable clearable>
+                                        <el-option v-for="item in week" :label="item" :value="item" :key="item"></el-option>
+                                    </el-select> -->
+                                    <el-input v-model="newForm.WEEKDAYS"></el-input>
+                                </el-form-item>
+                            </td>
+                            <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <el-form-item :label="$lang('邮箱')">
+                                    <el-input v-model="newForm.MAIL"></el-input>
+                                </el-form-item>
+                            </td>
+                            <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                            <td>
+                                <el-form-item id="input" :label="$lang('面试官')">
+                                    <el-select v-model="newForm.NAME2" multiple :placeholder="$lang('请选择面试官')" filterable  clearable @change="clear"  >
+                                        <el-option v-for="item in personlist" :label="item.EMP_SC_NM" :value="item.EMP_SC_NM" ></el-option>
+                                    </el-select>
+                                </el-form-item>
+                            </td>
+                            <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <el-form-item :label="$lang('简历来源')">
+                                   <!--  <el-input v-model="newForm.SOURCE"></el-input> -->
+                                    <el-select v-model="newForm.SOURCE"  :placeholder="$lang('请选择简历来源')" filterable clearable>
+                                        <el-option v-for="item in choice.recruitSource" :label="item.CD_VAL" :value="item.CD_VAL" :key="item.CD_VAL"></el-option>
+                                    </el-select>
+                                </el-form-item>
+                            </td>
+                            <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                            <td>
+                                <el-form-item :label="$lang('部门')">
+                                    <el-select v-model="newForm.DEPT_ID" :placeholder="$lang('请选择部门')" filterable clearable>
+                                        <el-option v-for="item in choice.deptTopData" :label="item.DEPT_NM" :value="item.ID" :key="item.ID"></el-option>
+                                    </el-select>
+                                </el-form-item>
+                            </td>
+                            <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td class="no-wrap use-btn">
+                                <el-form-item :label="$lang('链接')" style="width: calc(100% - 70px); display: inline-block;">
+                                    <el-input v-model="newForm.URL"></el-input>
+                                </el-form-item>
+                                <button class="btn-pub btn-blue" type="button"  size="small" @click="chaining(newForm.URL)">{{$lang('查看')}}</button>
+                            </td>
+                            <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                            <td class="no-wrap">
+                                <el-form-item :label="$lang('面试时间')">
+                                    <!--<el-date-picker type="datetime"  @change="checkDate(newForm.JOB_TIME2)" :disabled="newForm.IS_NOT_ARRANGE" style="width: calc(100% - 100px);margin-right: 22px; display: inline-block;" :placeholder="$lang('选择日期')" v-model="newForm.JOB_TIME2"></el-date-picker>-->
+                                    <el-date-picker style="width:33%" v-model="newForm.JOB_DATE2" :disabled="newForm.IS_NOT_ARRANGE" @change="checkDate(newForm.JOB_DATE2)"  type="date" :placeholder="$lang('选择日期')"></el-date-picker>
+                                    <el-time-select style="width:33%" v-model="newForm.JOB_TIME2" :disabled="newForm.IS_NOT_ARRANGE" :picker-options="{start: '08:30', step: '00:30', end: '21:00'}" :placeholder="$lang('选择时间')"></el-time-select>
+                                    <el-checkbox v-model="newForm.IS_NOT_ARRANGE"  @change = "controlStatus()">{{$lang('不安排')}}</el-checkbox>
+                                </el-form-item>
+                            </td>
+                            <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <el-form-item :label="$lang('状态')" >
+                                    <el-select v-model="newForm.STATUS" :placeholder="$lang('请选择状态')" filterable clearable>
+                                        <el-option :label="item.CD_VAL" :value="item.CD_VAL" :key="item.CD_VAL" v-for="item in choice.recruitStatus"></el-option>
+                                    </el-select>
+                                </el-form-item>
+                            </td>
+                            <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                            <td rowspan="2" style="vertical-align: top;">
+                                <el-form-item :label="$lang('备注')">
+                                    <el-input type="textarea" v-model="newForm.JOB_MSG" :autosize="{ minRows: 4, maxRows: 6}"></el-input>
+                                </el-form-item>
+                            </td>
+                            <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td class="use-btn">
+                                <label class="el-form-item__label" style="width: 80px;">{{$lang('简历附件')}}</label>
+                                <?php if(ButtonAction::hidden()){ ?>
+                                    <el-upload v-model="newForm.PIC_URL" style="display: inline-block;" class="upload-demo" action="/index.php?m=Api&a=hrUpload" name="resume" :on-success="uploadFileFun" ref="resume">
+                                        <el-button size="warning">{{$lang('上传')}}</el-button>
+                                        <span style="color: #13ce66; font-size: 12px;" v-if="newForm.PIC_URL">( {{$lang('已上传')}} )</span>
+                                        <span style="color: #fb4f4f; font-size: 12px;" v-else>({{$lang('请上传简历')}})</span>
+                                    </el-upload>
+                                <?php }?>
+                                <button @click="downloadresume(newForm.PIC_URL)" class="btn-pub btn-blue" type="button" size="small">{{$lang('下载')}}</button>
+                                <el-button @click="distVisible = true" size="small">{{$lang('识别信息')}}</el-button>
+                            </td>
+                            <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                            <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </el-form>
+            <div class="row" style="margin-top: 20px">
+                <div class="col-100 use-btn text-center ">
+                    <?php if(ButtonAction::hidden()){ ?>
+                        <button class="btn-pub btn-blue" type="button"  @click="save()">{{$lang(detailBtnText)}}</button>
+                    <?php }?>
+                    <el-button @click="resetNewRec()">{{$lang('重置')}}</el-button>
+                </div>
+            </div>
+            <div v-if="newForm.ID" style="margin-top: 50px;" class="row">
+                <div class="col-100">
+                    <table class="table-list" style="max-width: 100%">
+                        <thead>
+                            <tr>
+                                <th colspan="10" style="text-align: left;padding-left: 20px;">{{$lang('员工简历历史记录')}}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr height="50">
+                                <!-- <td>预约时间</td>
+                                <td>面试时间</td> -->
+                                <td>{{$lang('面试官')}}</td>
+                                <td>{{$lang('部门')}}</td>
+                                <td>{{$lang('应聘岗位')}}</td>
+                                <td>{{$lang('状态')}}</td>
+                                <td style="width: 40%;">{{$lang('备注')}}</td>
+                                <td>{{$lang('操作时间')}}</td>
+                            </tr>
+                            <tr v-if="item" style="background: white" v-for="item in resumeLog">
+                                <!-- <td>{{item.JOB_DATE1}} {{item.JOB_TIME1}}</td>
+                                <td v-if="item.IS_NOT_ARRANGE==1">不安排</td>
+                                <td> <span v-if="item.IS_NOT_ARRANGE==1">不安排</span> <span v-else>{{item.JOB_DATE2}} {{item.JOB_TIME2}}</span> </td> -->
+                                <td>{{item.NAME2}}</td>
+                                <td>{{item.DEPT}}</td>
+                                <td>{{item.JOBS}}</td>
+                                <td>{{item.STATUS}}</td>   
+                                <td style="white-space: normal;text-align: left;word-break: break-word;"> {{item.JOB_MSG}} </td>
+                                <td>{{item.UPDATE_TIME}}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <!-- 修改 -->
+        <el-dialog :title="'已选择 ' +  form.choose  + ' 人'" :visible.sync="editVisible" size="tiny">
+            <el-form :model="form">
+                <el-form-item :label="$lang('修改状态')" :label-width="formLabelWidth">
+                    <el-select v-model="form.changeStatus" :placeholder="$lang('请选择状态')">
+                        <el-option v-for="item in choice.recruitStatus" :label="item.CD_VAL" :value="item.CD_VAL" :key="item.CD"></el-option>
+                    </el-select>
+                </el-form-item>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+                <el-button @click="editVisible = false">{{$lang('取消')}}</el-button>
+                <el-button type="primary" @click="confirmChange()">{{$lang('确定')}}</el-button>
+            </div>
+        </el-dialog>
+        <!-- 推送 -->
+        <el-dialog :title="'已选择[' + form.choose + ']人'" :visible.sync="pullVisible" style="width: 1400px;">
+            <el-form :model="form">
+                <el-form-item :label="$lang('选择推送部门：')"  :label-width="formLabelWidth">
+                    <el-select multiple v-model="form.deptData" :placeholder="$lang('请选择部门')" filterable clearable @change="getLeader(form.deptData)" style="width: 500px;">
+                        <el-option v-for="item in choice.deptData" :label="item.DEPT_NM" :value="item.DEPT_NM" ></el-option>
+                    </el-select>
+                </el-form-item>
+                <br>
+                <el-form-item :label="$lang('选择推送人：')" :label-width="formLabelWidth">
+                      <!-- <el-input style="width: 217px;" v-model="form.leader"></el-input>   -->
+                      <el-select multiple  v-model="form.Leader" :placeholder="$lang('请选择领导')" filterable clearable style="padding-left: 13px;width: 500px;">
+                            <el-option v-for="item in form.leader" :label="item" :value="item"></el-option>
+                      </el-select> 
+                </el-form-item>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+                <el-button @click="pullVisible = false">{{$lang('取消')}}</el-button>
+                <el-button type="primary" @click="confirmPull()">{{$lang('推送')}}</el-button>
+            </div>
+        </el-dialog>
+        <el-dialog :visible.sync="againPull" size="tiny">
+            <div>
+                <div style="font-size: 18px;text-align: center;">{{$lang('该简历已推送领导')}}</div>
+                <div style="font-size: 18px;text-align: center;">{{$lang('是否再次推送？')}}</div>
+            </div>
+            <div slot="footer" class="dialog-footer">
+                <el-button @click="againPull = false">{{$lang('取消')}}</el-button>
+                <el-button type="primary" @click="againPullMail()">{{$lang('推送')}}</el-button>
+            </div>
+        </el-dialog>
+        <el-dialog :title="'' +jobtitle+ ''" :visible.sync="jobVisible">
+            <el-form :model="form">
+                <el-form-item class="is-required" style="display: inline-block;" :label="$lang('岗位中文名称：')" :label-width="formLabelWidth">
+                    <el-input style="width: 400px;" :placeholder="$lang('请输入中文名称')" v-model="formjob.CD_VAL"></el-input>
+                </el-form-item>
+                <el-form-item  style="display: inline-block;" :label="$lang('状态：')" :label-width="formLabelWidth">
+                    <el-select  style="width: 400px;" :placeholder="$lang('请选择状态')" v-model="formjob.USE_YN">
+                        <el-option  v-for="item in jobstatus" :label="item" :value="item"></el-option>
+                    </el-select>
+                    <!-- <el-select style="width: calc(100% - 96px);" v-model="newForm.JOBS" :placeholder="$lang('请选择岗位')" filterable clearable>
+                        <el-option v-for="item in choice.job" :label="item.CD_VAL" :value="item.CD_VAL" :key="item.CD"></el-option>
+                    </el-select> -->
+                </el-form-item>
+            </el-form>
+            <!-- 修改岗位 -->
+            <div v-if="newForm.JOBS" slot="footer" class="dialog-footer">
+                <el-button @click="jobVisible = false">{{$lang('取消')}}</el-button>
+                <el-button type="primary" @click="changeJob()">{{$lang('修改')}}</el-button>
+            </div>
+            <!-- 新增岗位 -->
+            <div v-else slot="footer" class="dialog-footer">
+                <el-button @click="jobVisible = false">{{$lang('取消')}}</el-button>
+                <el-button type="primary" @click="addJob()">{{$lang('添加')}}</el-button>
+            </div>
+        </el-dialog>
+        <el-dialog :visible.sync="distVisible" size="tiny">
+            <el-form :model="form">
+                <el-form-item>
+                    <el-input type="textarea" :placeholder="$lang('请粘贴复制的内容')" v-model="copyInfo" :autosize="{ minRows: 5, maxRows: 8}"></el-input>
+                </el-form-item>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+                <el-button @click="copyInfo = ''">{{$lang('重置')}}</el-button>
+                <el-button type="primary" @click="distInfoFn()">{{$lang('保存')}}</el-button>
+            </div>
+        </el-dialog>
+        <el-dialog :visible.sync="telVisible" size="tiny">
+            {{$lang('该号码已有简历信息')}}
+
+            <div slot="footer" class="dialog-footer">
+                <a style="color: black"  href="/index.php?m=Hr&a=recruit" ><el-button>{{$lang('返回列表')}}</el-button></a>
+                <el-button type="primary" @click="review(repeatTel,'repeat')">{{$lang('查看详情')}}</el-button>
+            </div>
+        </el-dialog>
+
+        <el-dialog :visible.sync="chooseVisible" size="tiny">
+            {{$lang('确定挑选该简历')}}?
+
+            <div slot="footer" class="dialog-footer">
+                <a style="color: black"   @click="chooseVisible = false" ><el-button>{{$lang('取消')}}</el-button></a>
+                <el-button type="primary" @click="confirmChoose()">{{$lang('确定')}}</el-button>
+            </div>
+        </el-dialog>
+    </div>
+    <!--引入js-->
+    <script type="text/javascript" src="../Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script src="../Public/js/H-ui.js"></script>
+    <script src="../Public/js/H-ui.admin.js?v=<{$Think.const.V}>"></script>
+    <script type="text/javascript" src="../Public/js/vue-2.4.2.js?v=<{$Think.const.V}>"></script>
+    <script type="text/javascript" src="../Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="../Public/js/element-ui.js?v=<{$Think.const.V}>"></script>
+    <script type="text/javascript" src="../Public/../Hr/recruit.js?v=<{$Think.const.V}>"></script>
+</body>
+
+</html>

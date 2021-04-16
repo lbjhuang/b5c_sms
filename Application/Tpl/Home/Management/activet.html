@@ -1,0 +1,2474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+        href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.config.VER_NUM}>">
+    <title>活动管理</title>
+    <style>
+        .content{
+            border:1px solid #dddddd;
+            padding: 25px;
+        }
+        .search-toggle{
+            border:1px solid #dddddd;
+         
+            box-shadow: 0 2px 2px 0 rgba(0,0,0,.1);
+        }
+        .demo-form-inline{
+            padding: 25px;
+        }
+        .el-table .warning-row {
+            background: oldlace;
+        }
+        .el-dialog__header{
+            display: block
+        }
+        .dialogDayMoney{
+            padding: 20px;
+        }
+        .dialogDayMoney .title{
+            text-align: center;
+            margin: 10px 0 20px 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .dialogDayMoney .dialogDayMoney_title{
+            display: flex;
+            justify-content: space-between;
+        }
+        .dialogDayMoney .dialogDayMoney_content,
+        .dialogDayMoney .dialogDayMoney_content_edit{
+            display: flex;
+            align-items: center;
+            margin-top: 20px;
+        }
+        .dialogDayMoney .dialogDayMoney_content>span,
+        .dialogDayMoney .dialogDayMoney_content_edit>span{
+            width: 120px;
+        }
+        .dialogDayMoney .dialogDayMoney_content>div{
+            display: flex;
+            flex: 1;
+            margin-left: 10px;
+        }
+        .dialogDayMoney .dialogDayMoney_content_edit>div{
+            width: 200px;
+            margin-left: 10px;
+        }
+        .dialogDayMoney .dialogDayMoney_table .el-table__body-wrapper{
+            overflow: initial;
+        }
+        .dialogDayMoney .dialogDayMoney_page{
+            display: flex;
+            flex-direction: row-reverse;
+        }
+        .dialogDayMoney .dialogDayMoney_page>div{
+            margin: 20px 0;
+        }
+        .operatingBtn{
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        .operatingBtn button{
+            margin-bottom: 10px;
+        }
+        .divider{
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 20px;
+        }
+        .activityDescriptionBorder_error{
+            color: #f56c6c;
+            font-size: 12px;
+            line-height: 1;
+            padding-top: 4px;
+            position: absolute;
+            top: 100%;
+            left: 0;
+        }
+        .RequiredMark label::before{
+            content: '*';
+            color: #f56c6c;
+            margin-right: 4px;
+        }
+        .input-with-select input{
+            padding-right: 90px;
+        }
+        .generateUrl{
+            cursor: pointer;
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 1px solid #ddd;
+            height: 20px;
+            width: 50px;
+            text-align: center;
+            line-height: 20px;
+        }
+        .dialogSelect{
+            padding: 0;
+            width: 100%;
+        }
+        .tagUrl{
+            position: relative;
+        }
+        .tagUrl>span{
+            overflow : hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+    </style>
+</head>
+<body class="orderList">
+    <div id="app" class="list-common" v-cloak>
+        <h2 style="text-align: center">{{$lang('活动管理')}}</h2>
+        <div class="content" >
+           <div class="search-toggle ">
+                <el-form :inline="true" :model="formInline" :rules="rules" ref="formInline" class="demo-form-inline">
+
+                    <el-form-item :label="$lang('活动编号')"
+                    prop="input1"
+                    >
+                            <el-input v-model="formInline.input1" placeholder="请输入"></el-input>
+                    </el-form-item>
+
+                    <el-form-item :label="$lang('活动名称')"
+                    prop="input2"
+                    >
+                            <el-input v-model="formInline.input2" placeholder="请输入"></el-input>
+                    </el-form-item>
+
+                    <el-form-item :label="$lang('活动标签')"
+                    prop="input3"
+                    >
+                            <el-input v-model="formInline.input3" placeholder="请输入"></el-input>
+                    </el-form-item>
+
+                    <el-form-item :label="$lang('所属渠道')">
+                            <template>
+                            <el-select v-model="formInline.value" placeholder="请选择" @change='getChange'>
+                                <el-option
+                                v-for="item in options"
+                                :key="'channel'+item.value"
+                                :label="item.label"
+                                :value="item.value"
+                                >
+                                </el-option>
+                            </el-select>
+                    </template>
+                    </el-form-item>
+
+                    <el-form-item :label="$lang('创建人')">
+                            <template>
+                                <el-select v-model="formInline.value2" placeholder="请选择" @change='getChange2' filterable>
+                                    <el-option
+                                    v-for="item in options1"
+                                    :key="'create'+ item.value"
+                                    :label="item.label"
+                                    :value="item.value">
+                                    </el-option>
+                                </el-select>
+                        </template>
+                        </el-form-item>
+
+                    <el-form-item>
+                        <el-button type="primary" @click="onSubmit('formInline')">{{$lang('查询')}}</el-button>
+                        
+                    </el-form-item>
+                    <el-form-item>
+                            <el-button @click="resetForm('formInline')">{{$lang('重置')}}</el-button>
+                    </el-form-item>
+                </el-form>
+           </div>
+
+           <div class="table-conten" style="overflow: hidden;margin-top:30px;">
+              <div style="overflow: hidden">
+                    <div style="float: right;"> 
+                            <el-button type="primary" @click="dataOutput()">{{$lang('数据导出')}}</el-button>
+                    </div>
+                    <div style="float: right;margin-right: 5px;"> 
+                            <el-button type="primary" @click="addChun()">{{$lang('新增活动')}}</el-button>
+                    </div>
+              </div>
+              <div style="margin-top:20px;">
+                            <el-table
+                              :data="tableData"
+                              border
+                              center
+                              style="width: 100%"
+                              :row-class-name="tableRowClassName">
+                              <el-table-column
+                                prop="sort_num"
+                                width="60"
+                                :label="$lang('活动编号')"
+                                >
+                              </el-table-column>
+                              <el-table-column
+                                prop="act_name"
+                                :label="$lang('活动名称')"
+                                >
+                              </el-table-column>
+                              <el-table-column
+                                prop="countryName"
+                                :label="$lang('国家')">
+                              </el-table-column>
+                              <el-table-column
+                              prop="act_describe"
+                              :label="$lang('活动描述')">
+                            </el-table-column>
+                              <el-table-column
+                              prop="channelName"
+                              :label="$lang('所属渠道')">
+                            </el-table-column>
+                              <el-table-column
+                                prop="channel_tag"
+                                :label="$lang('渠道标签')">
+                              </el-table-column>
+                              <el-table-column
+                              prop="act_tag"
+                              :label="$lang('活动标签')">
+                            </el-table-column>
+                              <!-- <el-table-column
+                                prop="act_url"
+                                :label="$lang('带标签推广链接')">
+                              </el-table-column> -->
+                              <el-table-column align="center" :label="$lang('带标签推广链接')">
+                                    <template slot-scope="scope">
+                                        <!-- <div class="tagUrl">
+                                            <span ref="copy" @click="openCopy(scope.row.act_url)">{{scope.row.act_url}}</span>
+                                        </div> -->
+                                        <el-tooltip placement="top-end">
+                                            <div slot="content"><div style="width: 350px;word-break: break-all;">{{scope.row.act_url}}</div><br/><span style="float: right;cursor: pointer;" @click="openCopy(scope.row.act_url)">复制</span></div>
+                                            <div class="tagUrl">
+                                                <span>{{scope.row.act_url}}</span>
+                                            </div>
+                                        </el-tooltip>
+                                    </template>
+                              </el-table-column>
+                              <el-table-column
+                              prop="start_date"
+                              :label="$lang('开始日期')">
+                            </el-table-column>
+                            <el-table-column
+                            prop="end_date"
+                            :label="$lang('结束日期')">
+                          </el-table-column>
+                              <el-table-column
+                                prop="status"
+                                :label="$lang('活动状态')">
+                              </el-table-column>
+                              <!-- <el-table-column
+                                prop="ddc_usd"
+                                :label="$lang('日均费用')">
+                              </el-table-column> -->
+                              
+                              <el-table-column :label="$lang('日均费用')">
+                                    <template scope="scope">
+                                        <div>
+                                            ￥{{scope.row.ddc_usd}}
+                                        </div>
+                                    </template>
+                                </el-table-column>
+
+                              <!-- <el-table-column
+                                prop="total_cost_usd"
+                                :label="$lang('活动总费用')">
+                              </el-table-column> -->
+
+                              <el-table-column :label="$lang('活动总费用')">
+                                <template scope="scope">
+                                    <div>
+                                        ￥{{scope.row.total_cost_usd}}
+                                    </div>
+                                </template>
+                            </el-table-column>
+
+                              <el-table-column
+                                prop="create_by"
+                                :label="$lang('创建人')">
+                              </el-table-column>
+                              <el-table-column
+                                prop="dateTime"
+                                :label="$lang('创建时间')">
+                              </el-table-column>
+                              <el-table-column
+                                width="250"
+                                :label="$lang('操作')">
+                                <template slot-scope="scope">
+                                        <!-- <span>
+                                                <a onclick="opennewtab(this,'新建调拨单')" _href="/index.php?m=management&a=activet" style="color:#000; padding: 8px 0px; display: inline-block; width: 100%;">新建调拨单 </a>
+                                          </span> -->
+                                    <span class="operatingBtn" v-if="scope.row.status == '未开始'">
+                                        <el-button
+                                            size="mini"
+                                            @click="dayMoney(scope.$index, scope.row)">
+                                            {{$lang('日均费用调整')}}</el-button>
+                                        <el-button
+                                            size="mini"
+                                            @click="moneyRecord(scope.row)">
+                                            {{$lang('费用调整记录')}}</el-button>
+                                            <el-button
+                                            size="mini"
+                                            type="warning"
+                                            @click="editDate(scope.$index, scope.row)">
+                                            {{$lang('编辑日期')}}</el-button>
+                                        <el-button
+                                            size="mini"
+                                            @click="handleDelete(scope.$index, scope.row)">
+                                            {{$lang('删除活动')}}</el-button>
+                                    </span>
+                                    <span  class="operatingBtn" v-if="scope.row.status == '进行中'">
+                                            <el-button
+                                            size="mini"
+                                            @click="dayMoney(scope.$index, scope.row)">
+                                            {{$lang('日均费用调整')}}</el-button>
+                                        <el-button
+                                            size="mini"
+                                            @click="moneyRecord(scope.row)">
+                                            {{$lang('费用调整记录')}}</el-button>
+                                            <el-button
+                                            size="mini"
+                                            type="warning"
+                                            @click="editDate(scope.$index, scope.row)">
+                                            {{$lang('编辑日期')}}</el-button>
+                                    </span>
+                                    <span  class="operatingBtn" v-if="scope.row.status == '已结束'">
+                                            <el-button
+                                            size="mini"
+                                            @click="dayMoney(scope.$index, scope.row)">
+                                            {{$lang('日均费用调整')}}</el-button>
+                                        <el-button
+                                            size="mini"
+                                            @click="moneyRecord(scope.row)">
+                                            {{$lang('费用调整记录')}}</el-button>
+                                        </span>
+                                      </template>
+                              </el-table-column>
+                            </el-table>
+                            <div style="overflow: hidden;">
+                                <div style="float: right;margin-top: 10px;">
+                                        <span style="padding-right: 20px;">
+                                            <span>{{totals}}{{$lang('页')}}</span>
+                                            <span>共{{total}}{{$lang('条记录')}}</span>
+                                        </span>
+                                </div>
+                            </div>
+                            <div style="text-align: center;height: 50px;">
+                                <span style="display: inline-block;">
+                                    <el-pagination
+                                        background
+                                        @current-change="currentChange"
+                                        @size-change="handleSizeChange"
+                                        :current-page.sync="page"
+                                        :page-size="pageSize"
+                                        :page-sizes="[10, 30, 50, 100]"
+                                        layout="prev, pager, next, jumper"
+                                        :total="total">
+                                    </el-pagination>
+                                </span>
+                            </div>
+                    </div>
+           </div>
+           <!-- 模态框 -->
+                <el-dialog
+                    :visible.sync="centerDialogVisible"
+                    :title="$lang('新增活动')"
+                    width="50%"
+                    @close='clear("formLabelAlign")'
+                    show-close
+                    center>
+               
+                <div style="padding-left: 30px;">
+                    <span style="padding:30px;text-align:left;display: inline-block; width:100%;">
+                        <span style="font-weight:650"> {{$lang('活动新增说明:')}}</span>
+                        <div  style="white-space: normal"> {{$lang('新增活动需填写下列信息，其中活动标签不可与已有标签重复')}}</div>
+                    </span>
+                </div>
+                <div style="text-align:left;width: 80%;margin: 0 auto;padding: 20px;">
+                        <span style="display: inline-block;width: 80%;">
+                                <el-form :rules="rulesCreateactivity" ref="formLabelAlign" label-width="80px" :model="formLabelAlign">
+                                    <el-form-item :label="$lang('活动名称')" prop="name1" label-width="80px">
+                                        <el-input v-model="formLabelAlign.name1"
+                                        type="text"></el-input>
+                                    </el-form-item>
+                                    <el-form-item :label="$lang('国家')" prop="region">
+                                    <!-- <el-autocomplete
+                                        v-model="formLabelAlign.region"
+                                        :fetch-suggestions="querySearchAsync"
+                                        placeholder="请选择活动平台"
+                                        @select="handleSelect"
+                                        ></el-autocomplete> --> 
+                                        <el-select class="dialogSelect" filterable v-model="formLabelAlign.region" @change="handleSelect" :placeholder="$lang('请选择活动平台')">
+                                            <el-option
+                                                v-for="item in restaurants"
+                                                :key="item.id"
+                                                :label="item.value"
+                                                :value="item.id">
+                                            </el-option>
+                                        </el-select>
+                                        
+                                    </el-form-item>
+                                    <el-form-item :label="$lang('活动描述')" prop="textarea2">
+                                        <el-input
+                                            class="activityDescriptionBorder"
+                                            type="textarea"
+                                            :autosize="{ minRows: 2, maxRows: 4}"
+                                            :placeholder="$lang('200字符以内')"
+                                            v-model="formLabelAlign.textarea2">
+                                        </el-input>
+                                        <div class="activityDescriptionBorder_error" v-show="activityDescriptionBorder_error">最大不超过100个字符</div>
+                                    </el-form-item>
+
+                                    <el-form-item :label="$lang('选择渠道')" prop="type">
+                                        <!-- <el-autocomplete
+                                        v-model="formLabelAlign.type"
+                                        :fetch-suggestions="querySearchAsync1"
+                                        placeholder="请输入内容"
+                                        @select="handleSelect1"
+                                        ></el-autocomplete> -->
+                                        <el-select class="dialogSelect" filterable v-model="formLabelAlign.type" @change="handleSelect1" placeholder="请输入内容">
+                                            <el-option
+                                                v-for="item in restaurants1"
+                                                :key="item.id"
+                                                :label="item.value"
+                                                :value="item.id">
+                                            </el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <div style="display: flex;justify-content: space-between;">
+                                        <span>
+                                            <span style="font-weight: 550">{{$lang('渠道名称:')}}</span>
+                                            <span>{{$lang(channel)}}</span>
+                                        </span>
+                                        <span>
+                                            <span style="font-weight: 550">{{$lang('渠道平台:')}}</span>
+                                            <span>{{$lang(channel1)}}</span>
+                                        </span>
+                                        <span>
+                                            <span style="font-weight: 550">{{$lang('渠道媒介:')}}</span>
+                                            <span>{{$lang(channel2)}}</span>
+                                        </span>
+                                        
+                                    </div>    
+                                     <div>
+                                        <span style="padding:30px 0;text-align:left;display: inline-block; width:100%;">
+                                            <span style="font-weight:650"> {{$lang('说明:')}}</span>
+                                            <span> {{$lang('活动标签是活动的内容标识，具有唯一性，不可与渠道下已有标签重复')}}</span>
+                                        </span>
+                                    </div>
+                                    <el-form-item class="RequiredMark" :label="$lang('活动标签')" prop="name2" label-width="180px">
+                                            <el-input class="activityTagBorder" v-model="formLabelAlign.name2" size="medium"></el-input>
+                                            <div class="activityDescriptionBorder_error" v-show="activityTag_error">{{activityTag_errorText}}</div>
+                                    </el-form-item>
+                            
+                                    <el-form-item :label="$lang('推广链接')" prop="textarea" label-width="180px">
+                                        <el-input
+                                            type="textarea"
+                                            :autosize="{ minRows: 2, maxRows: 4}"
+                                            :placeholder="$lang('500字符以内')"
+                                            v-model="formLabelAlign.textarea">
+                                        </el-input>
+                                    </el-form-item>
+                                    <el-form-item :label="$lang('带标签推广链接')" label-width="180px" style="position: relative;margin-bottom: 50px;">
+                                        <el-input placeholder="请输入内容" id="foos" v-model="channel_url" class="input-with-select"></el-input>
+                                        <div class="generateUrl" @click="copy">{{$lang('复制')}}</div>  
+                                        <div style="position: absolute;bottom:-40px;left:0;color: #E6A23C">{{$lang('请先测试推广链接能否正常打开')}}</div>
+                                    </el-form-item>
+                                    
+                          
+                                    <el-form-item style="text-align: center">
+                                        <el-button type="primary" @click="sure('formLabelAlign')">{{$lang('下一步')}}</el-button>
+                                        <el-button @click="calce('formLabelAlign')">{{$lang('取 消')}}</el-button>
+                                    </el-form-item>
+
+                                </el-form>
+                        </span>
+                                        
+                    </div>
+                
+
+                </el-dialog>
+                <el-dialog :title="$lang('活动时间与活动预算设置')" :visible.sync="dialogTableVisible5" center>
+                   <div style="text-align:left;border: 1px solid #dddddd;width: 80%;margin: 0 auto;padding: 20px; margin-bottom: 10px;"> 
+                        <div style="display: flex;justify-content: space-between; width: 80%;padding: 0 20px">
+                                <span>
+                                    <span style="font-weight: 550">{{$lang('活动名称')}}</span>
+                                    <span>{{activeName}}</span>
+                                </span>
+                                <span>
+                                    <span style="font-weight: 550">{{$lang('活动标签')}}</span>
+                                    <span>{{activeTag}}</span>
+                                </span>
+                        </div>
+                        <div style="display: flex;justify-content: space-between;width: 80%;padding: 20px">
+                            <span>
+                                <span style="font-weight: 550">{{$lang('已选渠道')}}</span>
+                                <span>{{activeChnnel}}</span>
+                            </span>
+                            <span>
+                                <span style="font-weight: 550">{{$lang('渠道标签')}}</span>
+                                <span>{{channel_tag}}</span>
+                            </span>
+                            </div>
+                        <div style="width: 80%;padding: 20px">
+                            {{$lang('带标签推广链接')}}
+                            <div style="width: 100%">{{changeUrl}}</div>
+                        </div>
+                   </div>
+                    <div style="text-align:left;border: 1px solid #dddddd;width: 80%;margin: 0 auto;padding: 20px;">
+                        <span style="display: inline-block;width: 80%;">
+                        <el-form :rules="rules" ref="form" :model="form" label-width="250px">
+                            <el-form-item :label="$lang('活动起止时间')" prop="date1" label-width="200px">
+                                    <el-date-picker
+                                    v-model="form.date1"
+                                    type="daterange"
+                                    range-separator="-"
+                                    value-format="yyyy-MM-dd"
+                                    :picker-options="pickerOptions2"
+                                    :start-placeholder="$lang('开始时间')"
+                                    :end-placeholder="$lang('结束日期')">
+                                  </el-date-picker>
+                         
+                            </el-form-item>
+                            <el-form-item :label="$lang('活动日均费用：每日￥')" prop="money" label-width="200px">
+                                    <el-input @keyup.native="watchEverydayNum" :placeholder="$lang('0~1000000以内的正数 ')" v-model="form.money"></el-input>
+                            </el-form-item>
+                            <el-form-item :label="$lang('总计')" label-width="200px">
+                                    <el-input v-model="allmoney"></el-input>
+                            </el-form-item>
+                        </el-form>
+                    </span>
+                    </div>
+                    <span slot="footer" class="dialog-footer">
+                        <el-button type="primary" @click="late()">{{$lang('上一步')}}</el-button>
+                        <el-button type="primary" @click="next('form')">{{$lang('发布')}}</el-button>
+                        <el-button @click="quxiao()">{{$lang('取消')}}</el-button>
+                    </span>
+                </el-dialog>
+
+        <!-- 删除活动 -->
+        <el-dialog :title="$lang('活动删除')" :visible.sync="dialogTableVisible"  width="50%" show-close center>
+            <div style="padding:30px 20px;border: 1px solid #dddddd;width: 80%;margin:10px auto;text-align: center;font-size: 20px;">
+                <div>
+                    <span>{{$lang('活动')}}&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                    <span style="font-weight: bold;">{{$lang(text)}}</span>
+                    <span>&nbsp;&nbsp;&nbsp;&nbsp;{{$lang('将被删除')}}</span>
+                </div>
+            </div>
+            <div slot="footer" class="dialog-footer">
+                    <el-button type="primary" @click="queding()">{{$lang('确定')}}</el-button>
+                    <el-button @click="dialogTableVisible = false">{{$lang('取 消')}}</el-button>
+                </div>
+        </el-dialog>
+
+        <!-- 日均费用调整 -->
+        <el-dialog :visible.sync="dialogDayMoney" :close-on-click-modal=false @close='dialogDayMoneyCancel()' show-close>
+            <div class="dialogDayMoney">
+                <div class="title">{{$lang('活动日均费用调整')}}</div>
+                <div class="dialogDayMoney_title">
+                    <span>{{$lang('活动编号')}}：{{dialogDayMoneyData.sort_num}}</span>
+                    <span>{{$lang('活动名称')}}：{{dialogDayMoneyData.act_name}}</span>
+                    <span>{{$lang('活动标签')}}：{{dialogDayMoneyData.act_tag}}</span>
+                </div>
+                <div class="dialogDayMoney_content">
+                    <span>{{$lang('带标签推广链接')}}</span>
+                    <!-- <el-input v-model="dialogDayMoneyData.act_url" :disabled="true"> </el-input> -->
+                    <el-input v-model="dialogDayMoneyData.act_url+'?'+dialogDayMoneyData.channel_tag+'&hmci='+dialogDayMoneyData.act_tag" :disabled="true"> </el-input>
+                </div>
+                <div class="dialogDayMoney_content">
+                    <span>{{$lang('活动起止日')}}</span>
+                    <el-input v-model="dialogDayMoneyData.date" :disabled="true"> </el-input>
+                </div>
+                <div class="dialogDayMoney_content divider">
+                    <span>{{$lang('当前日均费用')}}:</span>
+                    <el-input v-model="dialogDayMoneyData.ddc_usd" :disabled="true"> </el-input>
+                </div>
+
+                <div class="dialogDayMoney_content_edit">
+                    <span><span style="color: #f56c6c">*</span>{{$lang('日均费用')}}:</span>
+                    ￥<el-input :placeholder="$lang('0~1000000以内的数字')" @keyup.native="watchNum" v-model="dialogDayMoneyData.changeCost"> </el-input>
+                    <label style="color: #f56c6c;margin-left: 10px;" v-show="dialogDayMoney_changeCost">{{$lang('请输入0~1000000以内的正数')}}</label>
+                </div>
+                <div class="dialogDayMoney_content_edit">
+                    <span>{{$lang('总计')}}:</span>
+                    <el-input v-model="dialogDayMoneyData.total_cost_usd" :disabled="true"> </el-input>
+                </div>
+               
+                <div slot="footer" style="text-align: center;margin-top: 30px;">
+                    <el-button @click="dialogDayMoneySubmit()" type="primary">{{$lang('确定')}}</el-button>
+                    <el-button @click="dialogDayMoneyCancel()">{{$lang('取消')}}</el-button>
+                </div>
+            </div>
+        </el-dialog>
+
+        <!-- 费用调整记录 -->
+        <el-dialog :visible.sync="dialoMoneyRecord" :close-on-click-modal=false :before-close="handleClose" show-close>
+            <div class="dialogDayMoney">
+                <div class="title">{{$lang('活动费用明细')}}</div>
+                <div class="dialogDayMoney_title">
+                    <span>{{$lang('活动编号')}}：{{dialoMoneyRecordData.sort_num}}</span>
+                    <span>{{$lang('活动名称')}}：{{dialoMoneyRecordData.act_name}}</span>
+                    <span>{{$lang('活动标签')}}：{{dialoMoneyRecordData.act_tag}}</span>
+                </div>
+                <div class="dialogDayMoney_content divider">
+                    <span>{{$lang('带标签推广链接')}}</span>
+                    <!-- <el-input v-model="dialoMoneyRecordData.act_url" :disabled="true"> </el-input> -->
+                    <el-input v-model="dialoMoneyRecordData.act_url+'?'+dialoMoneyRecordData.channel_tag+'&hmci='+dialoMoneyRecordData.act_tag" :disabled="true"> </el-input>
+                </div>
+                <div class="dialogDayMoney_content">
+                    <label>{{$lang('当前日均费用')}}：￥{{dialoMoneyRecordData.ddc_usd}}</label>
+                </div>
+                <el-table class="dialogDayMoney_table" :data="dialoMoneyRecordTable" border style="width: 100%">
+                    <el-table-column  :label="$lang('调整时间')"> 
+                        <template slot-scope="scope">
+                            <span>{{scope.row.datetime}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column  :label="$lang('调整前')"> 
+                        <template slot-scope="scope">
+                            <span v-show="scope.row.before_ddc_usd">￥{{scope.row.before_ddc_usd}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column  :label="$lang('调整后')"> 
+                        <template slot-scope="scope">
+                            <span v-show="scope.row.after_ddc_usd">￥{{scope.row.after_ddc_usd}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column  :label="$lang('操作人')"> 
+                        <template slot-scope="scope">
+                            <span>{{scope.row.create_by}}</span>
+                        </template>
+                    </el-table-column>
+                </el-table>
+                <!-- 分页 -->
+                <div class="dialogDayMoney_page">
+                    <el-pagination
+                            background
+                            @current-change="dialogDayMoney_Change"
+                            @size-change="dialogDayMoney_SizeChange"
+                            :current-page.sync="dialoMoneyRecordData_page.this_page"
+                            :page-size="dialoMoneyRecordData_page.page_count"
+                            :page-sizes="[10, 30, 50, 100]"
+                            layout="total, sizes, prev, pager, next, jumper"
+                            :total="dialoMoneyRecordData_page.count">
+                    </el-pagination>
+                </div>
+             
+            </div>
+        </el-dialog>
+
+        <!-- 编辑日期 -->
+        <el-dialog :visible.sync="dialoEdit" :close-on-click-modal=false @close='dialoEditDataCancel()' show-close>
+            <div class="dialogDayMoney">
+                <div class="title">{{$lang('活动日期编辑')}}</div>
+                <div class="dialogDayMoney_title">
+                    <span>{{$lang('活动编号')}}：{{dialoEditData.sort_num}}</span>
+                    <span>{{$lang('活动状态')}}：{{dialoEditData.status}}</span>
+                    <span>{{$lang('活动名称')}}：{{dialoEditData.act_name}}</span>
+                    <span>{{$lang('活动标签')}}：{{dialoEditData.act_tag}}</span>
+                </div>
+                <div class="dialogDayMoney_content divider">
+                    <span>{{$lang('带标签推广链接')}}</span>
+                    <!-- <el-input v-model="dialoEditData.act_url" :disabled="true"> </el-input> -->
+                    <el-input v-model="dialoEditData.act_url+'?'+dialoEditData.channel_tag+'&hmci='+dialoEditData.act_tag" :disabled="true"> </el-input>
+                </div>
+                <div class="dialogDayMoney_content_edit">
+                    <span><span style="color: #f56c6c">*</span>{{$lang('活动开始日期')}}:</span>
+                    <el-date-picker
+                        v-model="dialoEditData.start_date"
+                        type="date"
+                        :placeholder="$lang('开始日期最早可选今天')"
+                        :picker-options="pickerOptions">
+                    </el-date-picker>
+                    <label style="color: #f56c6c;margin-left: 10px;" v-show="dialoEditData_start_date">{{$lang('开始日期最早可选明天')}}</label>
+                </div>
+                <div class="dialogDayMoney_content_edit">
+                    <span><span style="color: #f56c6c">*</span>{{$lang('活动结束日期')}}:</span>
+                    <el-date-picker
+                        v-model="dialoEditData.end_date"
+                        type="date"
+                        :placeholder="$lang('结束日期最早可选今天')"
+                        :picker-options="pickerOptions">
+                    </el-date-picker>
+                    <label style="color: #f56c6c;margin-left: 10px;" v-show="dialoEditData_end_date">{{$lang('结束日期最早可选明天')}}</label>
+                </div>
+                <div slot="footer" style="text-align: center;margin-top: 30px;">
+                    <el-button @click="dialoEditDataSubmit()" type="primary">{{$lang('确定')}}</el-button>
+                    <el-button @click="dialoEditDataCancel()">{{$lang('取消')}}</el-button>
+                </div>
+            </div>
+        </el-dialog>
+
+        
+        </div>
+    </div>
+
+
+    <script type="text/javascript"
+        src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js?v=<{$Think.config.VER_NUM}>">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js">
+    </script>
+    <script src="//unpkg.com/clipboard@2/dist/clipboard.min.js"></script>
+    <script>
+    	//实例化 ClipboardJS对象;
+        var copyBtn = new ClipboardJS('#foos');
+
+        copyBtn.on("success",function(e){
+            // 复制成功
+            alert(e.text);
+            e.clearSelection();
+        });
+        copyBtn.on("error",function(e){
+            //复制失败；
+            console.log( e.action )
+        });
+    </script>
+   
+    <!-- <script type="text/javascript" src="./Application/Tpl/Home/Public/js/echarts.min.js?v=<{$Think.config.VER_NUM}>"> -->
+    <script>
+        
+         if (getCookie('think_language') !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en)
+        };
+
+        function DateDiff(sDate1, sDate2) { //sDate1和sDate2是2017-9-25格式 
+                var aDate, oDate1, oDate2, iDays
+                aDate = sDate1.split("-")
+                oDate1 = new Date(aDate[1] + '-' + aDate[2] + '-' + aDate[0]) //转换为9-25-2017格式 
+                aDate = sDate2.split("-")
+                oDate2 = new Date(aDate[1] + '-' + aDate[2] + '-' + aDate[0])
+                iDays = parseInt(Math.abs(oDate1 - oDate2) / 1000 / 60 / 60 / 24) //把相差的毫秒数转换为天数 
+
+                return iDays
+        }
+        var rulesCreateactivityUrl = (rule, value, callback) => {
+            // var htp = /(https):\/\/[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&:/~\+#]*[\w\-\@?^=%&/~\+#])?/;
+            let htp = /(http|https):\/\/[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&:/~\+#]*[\w\-\@?^=%&/~\+#])?/;
+            if(value === ''){
+                callback(new Error('请输入以https://或http://开头的推广链接'))
+            }else if(!htp.test(value)){
+                callback(new Error('请输入以https://或http://开头的推广链接'))
+            }else{
+                callback()
+            }
+            callback()
+        };
+
+        var app = new Vue({
+            el:"#app",
+            
+            data:{
+               channel:'自动填充',
+               channel1:'自动填充',
+               channel2:'自动填充',
+                options:[
+                    {
+                        value:"all",
+                        label:'全部'
+                    }
+                ],
+               
+                options1:[
+                    {
+                        value:"all",
+                        label:"全部"
+                    }
+                ],
+
+                form:{
+                    date1:"",
+                    date2:"",
+                    money:'',
+                    allmoney:""
+                },
+                textarea2:"",
+                country_id:'', //国家ID
+                cuntry:"",
+                activeName:"", // 活动名称
+                activeTag:"", // 活动标签
+                activeChnnel:"", // 已选渠道
+                channel_tag:"", //渠道标签
+                changeUrl:"", //推广的url
+                type:"",
+                channelA:"",
+                channelA1:"",
+                channelA2:"",
+                url:"",
+                formInline:{
+                    value:"全部",
+                    valueLabel:'all',
+                    value2:"全部",
+                    valueLabel2:"all",
+                    input1:"",
+                    input2:"",
+                    input3:"",
+                },
+                optionsRegion:[
+
+                ],
+                text:"",
+                gridData:[],
+                country_id:'',
+                channel_id:"",
+                dialogTableVisible5:false,
+                totals:"",//页数
+                id:"",
+                centerDialogVisible: false, // 模态框
+                    tableData: [],
+                    page:1,
+                    pageSize:10,
+                    total:0,
+                    formLabelAlign: {
+                        name1: '', // 活动名称
+                        region: '',
+                        type: '',
+                        textarea2:"",
+                        textarea:"",
+                        name2:'',
+                       
+                    },
+                    regionValue:'',// 活动平台的所有值
+                    typeValue:"",// 活动媒介的所有值
+                    list:[],
+                    restaurants: [],
+                    restaurants1:[],
+                    channel_tag:"",
+                    timeout:  null,
+                    dialogTableVisible:false,
+                    dialogDayMoney:false,
+                    dialogDayMoneyData:{
+                        sort_num:'',
+                        act_name:'',
+                        act_tag:'',
+                        act_url:'',
+                        start_date:'',
+                        end_date:'',
+                        ddc_usd:'',
+                        id:'',
+                        changeCost:'',
+                        total_cost_usd:'',
+                        numDays:'',
+                        date:'',
+                        channel_tag:''
+                    },
+                    dialogDayMoney_changeCost:false,
+                    dialoMoneyRecord:false,
+                    dialoMoneyRecordTable:[],
+                    dialoMoneyRecordData:{
+                        sort_num:'',
+                        act_name:'',
+                        act_tag:'',
+                        act_url:'',
+                        ddc_usd:'',
+                        id:'',
+                        channel_tag:''
+                    },
+                    dialoMoneyRecordData_page:{
+                        count:0,
+                        this_page:1,
+                        page_count:10,
+                    },
+                    dialoMoneyRecordData_idd:'',
+                    dialoEdit:false,
+                    dialoEditData:{
+                        status:'',
+                        sort_num:'',
+                        act_name:'',
+                        act_tag:'',
+                        act_url:'',
+                        start_date:'',
+                        end_date:'',
+                        id:'',
+                        channel_tag:''
+                    },
+                    dialoEditData_start_date:false,
+                    dialoEditData_end_date:false,
+                    pickerOptions: {
+                        disabledDate(time) {
+                            return time.getTime() < Date.now()-8.64e7;
+                        }
+                    },
+                    pickerOptions2: {
+                        disabledDate(time) {
+                            return time.getTime() < Date.now()-8.64e7;
+                        }
+                    },
+                    // 跨域
+                    queryPost: function (url, param) {
+                        var headers = {
+                            headers: {
+                                'erp-req': true,
+                                'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+                            }
+                        }
+                        // var host = (window.location.origin == "http://erp.gshopper.com") ?
+                        //     "http://insight.gshopper.com/insight-backend/gpActivity" :
+                        //     ((window.location.origin == "http://erp.gshopper.prod.com") ?
+                        //         "http://insight.gshopper.prod.com/insight-backend/gpActivity" :
+                        //         "http://insight.gshopper.stage.com/insight-backend/gpActivity");
+
+                        var host = (window.location.origin == window.location.protocol + "//erp.gshopper.com") ?
+                            window.location.protocol + "//insight.gshopper.com/insight-backend/gpActivity" :
+                            ((window.location.origin == window.location.protocol + "//erp.gshopper.prod.com") ?
+                                window.location.protocol + "//insight.gshopper.prod.com/insight-backend/gpActivity" :
+                                window.location.protocol + "//insight.gshopper.stage.com/insight-backend/gpActivity");
+
+
+                        // 初始化时间展示
+                        return axios.post(host + url, Qs.stringify(param), headers);
+                    },
+                    // 跨域
+                    queryPost2: function (url, param) {
+                        var headers = {
+                            headers: {
+                                'erp-req': true,
+                                'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+                            }
+                        }
+                        // var host = (window.location.origin == "http://erp.gshopper.com") ?
+                        //     "http://insight.gshopper.com/insight-backend/gpChannel" :
+                        //     ((window.location.origin == "http://erp.gshopper.prod.com") ?
+                        //         "http://insight.gshopper.prod.com/insight-backend/gpChannel" :
+                        //         "http://insight.gshopper.stage.com/insight-backend/gpChannel");
+
+                        var host = (window.location.origin == window.location.protocol + "//erp.gshopper.com") ?
+                            window.location.protocol + "//insight.gshopper.com/insight-backend/gpChannel" :
+                            ((window.location.origin == window.location.protocol + "//erp.gshopper.prod.com") ?
+                                window.location.protocol + "//insight.gshopper.prod.com/insight-backend/gpChannel" :
+                                window.location.protocol + "//insight.gshopper.stage.com/insight-backend/gpChannel");
+
+
+                        // 初始化时间展示
+                        return axios.post(host + url, Qs.stringify(param), headers);
+                    },
+                    rulesCreateactivity: {
+                        name1:[
+                            { required: true, message: '请输入活动名称', trigger: 'blur' },
+                            { min: 0, max: 100, message: '最大不超过100个字符', trigger: 'blur' }
+                        ],
+                        region:[
+                            { required: true,message: '请输入国家', trigger: 'blur' }
+                        ],
+                        type:[
+                            { required: true, message: '请输入活动渠道', trigger: 'blur' },
+                        ],
+                        textarea:[
+                            { required: true, message: '请输入以https://或http://开头的推广链接',validator: rulesCreateactivityUrl, trigger: 'blur' },
+                            { min: 0, max: 500, message: '最大不超过500个字符', trigger: 'blur' }
+                        ]
+                    }, 
+                    activityDescriptionBorder_error:false,
+                    activityTag_error:false,
+                    activityTag_errorText:'',
+                    quedingchildId:''
+            },
+            computed: {
+                allmoney(){
+                    if(this.form.date1 !='' && this.form.money != ''){
+                        let num = DateDiff(this.form.date1[1],this.form.date1[0]) + 1
+                        nums = num * this.form.money
+                        return num * this.form.money
+                    }else{
+                        return ''
+                    }
+                    
+                },
+                channel_url(){
+                    return this.formLabelAlign.textarea + '?' + this.channel_tag + '&hmci=' + this.formLabelAlign.name2
+                },
+
+                rules(){
+                    var validateInput1 = (rule,value,callback) =>{
+                if (value === '') {
+                    callback(new Error('请输入活动编号'));
+                } else {
+                if (value !== '') {
+                    if(value.length>20){
+                        callback(new Error('输入活动编号长度补得大于20'));
+                    }else if(!Number.isInteger(value)){
+                        callback(new Error('请输入数字值'));
+                    }else{
+                        this.$refs.formInline.validateField('input1');
+                    }
+                    
+                }
+                callback();
+                }
+                };
+             var validateInput2 = (rule,value,callback) =>{
+                    if(value === ''){
+                        callback(new Error('请输入活动名称'))
+                    }else if(value.length > 20){
+                        callback(new Error('输入活动名称长度不得大于20'));
+                    }else{
+                        callback();
+                    }
+                };
+                var validateInput3 = (rule,value,callback) =>{
+                    if(value === ''){
+                        callback(new Error('请输入活动标签'))
+                    }else if(value.length > 20){
+                        callback(new Error('输入活动标签长度不得大于20'));
+                    }else{
+                        callback();
+                    }
+                };
+                var name2 =(rule,value,callback) =>{
+                    // console.log(value)
+                    var myreg = /^[0-9a-zA-Z]+$/;
+                    if(value === '' || value == undefined){
+                        callback(new Error('请输入活动标签'))
+                    }else if(!myreg.test(value)){
+                        callback(new Error('请输入由字母或数字组成的标签'))
+                    }else{
+                        var _this = this
+
+                        var param = {
+                            'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                            'erp-req': true,
+                            'act_tag':value
+                        }
+
+                        _this.useAPi('/checkActivityLabel',param).then((res) =>{
+                            console.log(res)
+                            if(res && res.success == true){
+                                _this.$message({
+                                    message: res.msg,
+                                    type: 'success'
+                                });
+                            }else{
+                                _this.$message({
+                                    message: '该标签已存在,请重新输入',
+                                    type: 'warning'
+                                });
+                            }
+                        })
+
+
+
+
+                        // const msgs = this.checkLabel(value)
+                        // msgs.then((result) =>{
+                        //     console.log(result)
+                        //     if(result.success === true){
+                        //         this.$message({
+                        //             message: result.msg,
+                        //             type: 'success'
+                        //             });
+                        //     }else{
+                        //         callback(new Error(result.msg))
+                        //     }
+                        // })
+                        // callback()
+
+
+                        // async checkLabel(value){
+                        //     let _that = this
+                        //     const param = {
+                        //         'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        //         'erp-req': true,
+                        //         'act_tag':value
+                        //     }
+                        //     const msg = await _that.useAPi('/checkActivityLabel',param)
+                        
+                        //     return msg
+                        // },
+
+
+                    }
+                   
+                };
+                var region = (rule,value,callback) =>{
+                    // console.log(value)
+                    if(value === ''){
+                        callback(new Error('请输入所选平台'))
+                    }else{
+                        const queryStatue = this.restaurants.some((item) =>{
+                                return item.value == value
+                            })
+                            if(!queryStatue){
+                                callback(new Error('未匹配到所选平台'))
+                            }else{
+                                
+                                callback()
+                            }
+                            callback()
+                    }
+                };
+                var textarea = (rule,value,callback)=>{
+                    let htp = /(http|ftp|https):\/\/[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&:/~\+#]*[\w\-\@?^=%&/~\+#])?/;
+                            if(value === ''){
+                                callback(new Error('请输入以https://或http://开头的推广链接'))
+                            }else if(!htp.test(value)){
+                                callback(new Error('请输入以https://或http://开头的推广链接'))
+                            }else{
+                                callback()
+                            }
+                            callback()
+                }
+                return {
+                   // input1:[
+                    //     { validator: validateInput1, trigger: 'blur' }
+                    // ],
+                    // input2:[
+                    //     { validator: validateInput2, trigger: 'blur' }
+                    // ],
+                    // input3:[
+                    //     { validator: validateInput3, trigger: 'blur' }
+                    // ],
+                    name1:[
+                        { required: true, message: '请输入活动名称', trigger: 'blur' },
+                        { min: 0, max: 100, message: '最大不超过100个字符', trigger: 'blur' }
+                    ],
+                    region:[
+                        { required: true,validator: region, trigger: 'blur' }
+                    ],
+                    type:[
+                        { required: true, message: '请输入活动渠道', trigger: 'blur' },
+                    ],
+                    name2:[
+                        { required: true,validator: name2, trigger: 'blur' }
+                    ],
+                    date1:[
+                        {
+                        required: true, message: '请输入开始日期', trigger: 'blur'
+                        }
+                    ],
+                    date2:[
+                        {
+                            required: true, message: '请输入截止日期', trigger: 'blur'
+                        }
+                    ],
+                    money:[
+                        {
+                            required: true, message: '请输入0~1000000以内的正数', trigger: 'blur'
+                        }
+                    ],
+                    textarea:[
+                        { required: true, message: '请输入以https://或http://开头的推广链接',validator: textarea, trigger: 'blur' },
+                        { min: 0, max: 500, message: '最大不超过100个字符', trigger: 'blur' }
+                
+                    ]
+                }
+                },
+                changeCost_val() {
+                    return this.dialogDayMoneyData.changeCost
+                },
+                activityDescription(){
+                    return this.formLabelAlign.textarea2
+                },
+                activityTag(){
+                    return this.formLabelAlign.name2
+                },
+                
+                
+            },
+            watch: {
+                // 'formLabelAlign.region':{
+                //     handler(newVal,oldVal){
+                //         console.log(newVal)
+                //         console.log(formLabelAlign.type)
+                        
+                //     },
+                //     deep:true
+                // },
+                // 'formLabelAlign.type':{
+                //     handler(newVal,oldVal){
+                //         if(newVal){
+                //             let _that = this
+                //         const param = {
+                //             'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                //             'erp-req': true,
+                //             'id':row.id,
+                //             'flag':1
+                //         }
+                //         const url = '/whetherUseChannel'
+                //         const statue = await _that.useAPi(url,param)
+                //         }
+                // },
+                //     deep:true
+                // }
+
+                changeCost_val: {
+                    handler(newValue, oldValue) {
+                        var _this = this
+                        // if(newValue == ''){
+                        //     _this.dialogDayMoney_changeCost = true
+                        // }else{
+                        //     _this.dialogDayMoney_changeCost = false
+                        // }
+                        var changeCost = Number(_this.dialogDayMoneyData.changeCost)
+                        var numDays = Number(_this.dialogDayMoneyData.numDays + 1)
+                        var total = changeCost * numDays
+                        console.log(_this.dialogDayMoneyData)
+                        if(total || total==0){
+                            _this.dialogDayMoneyData.total_cost_usd = total
+                        }
+                        // _this.dialogDayMoneyData.total_cost_usd = _this.dialogDayMoneyData.changeCost * _this.dialogDayMoneyData.numDays
+                    },
+                    deep: true
+                },
+                activityDescription:{
+                    handler(newValue, oldValue) {
+                        var _this = this
+                        if(newValue.length > 200){
+                            _this.activityDescriptionBorder_error = true
+                            document.querySelector('.activityDescriptionBorder textarea').style.borderColor = '#f56c6c'
+                        }else{
+                            _this.activityDescriptionBorder_error = false
+                            document.querySelector('.activityDescriptionBorder textarea').style.borderColor = '#dcdfe6'
+                        }
+                    },
+                    deep: true
+                },
+                activityTag:{
+                    handler(newValue, oldValue) {
+                        console.log(newValue)
+                        var _this = this
+                        // 
+                        // console.log(value)
+                        var myreg = /^[0-9a-zA-Z]+$/;
+                        if(newValue === '' || newValue == undefined){
+                            _this.activityTag_error = true
+                            _this.activityTag_errorText = '请输入由字母或数字组成的标签'
+                            document.querySelector('.activityTagBorder input').style.borderColor = '#f56c6c'
+                        }else if(!myreg.test(newValue)){
+                            _this.activityTag_error = true
+                            _this.activityTag_errorText = '请输入由字母或数字组成的标签'
+                            document.querySelector('.activityTagBorder input').style.borderColor = '#f56c6c'
+                        }else{
+                            var param = {
+                                'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                                'erp-req': true,
+                                'act_tag':newValue
+                            }
+                            _this.useAPi('/checkActivityLabel',param).then((res) =>{
+                                console.log(res)
+                                if(res && res.success == true){
+                                    _this.activityTag_error = false
+                                    _this.activityTag_errorText = ''
+                                    document.querySelector('.activityTagBorder input').style.borderColor = '#dcdfe6'
+                                }else{
+                                    _this.activityTag_error = true
+                                    _this.activityTag_errorText = '该标签已存在,请重新输入'
+                                    document.querySelector('.activityTagBorder input').style.borderColor = '#f56c6c'
+                                }
+                            })
+                        }
+                   
+
+
+                    },
+                    deep: true  
+                }
+            },
+            mounted() {
+                
+            },
+
+            created() {
+                this.getUserName()
+                this.getTable()
+                this.getMedia()
+            },
+            methods: {
+                formate(date){
+                    let newDate = Array()
+                    let stringDate = String()
+                        for(let i of date){
+                            if(i != '-'){
+                                newDate.push(i)
+                            }
+                        }
+                        
+                        stringDate = newDate.join("")
+                        return stringDate
+                },
+                copy(){
+                    var foos = document.getElementById('foos')
+                    foos.select();
+                     document.execCommand('copy');
+                },
+                tableRowClassName({row, rowIndex}) {
+                    // if (rowIndex === 1) {
+                    //     return 'warning-row';
+                    // } else if (rowIndex === 3) {
+                    //     return 'success-row';
+                    // }
+                    // return '';
+                },
+
+                // rulesCreateactivityTag (rule,value,callback){
+                //     console.log(value)
+                //     var myreg = /^[0-9a-zA-Z]+$/;
+                //     if(value === '' || value == undefined){
+                //         callback(new Error('请输入由字母或数字组成的标签'))
+                //     }else if(!myreg.test(value)){
+                //         callback(new Error('请输入由字母或数字组成的标签'))
+                //     }else{
+
+                //     }
+                // },
+               
+                clear(formName){
+                        this.formLabelAlign.name1 = ''
+                        this.formLabelAlign.region = ''
+                        this.formLabelAlign.name2 = ''
+                        this.$refs[formName].clearValidate();
+                        this.$refs[formName].resetFields();
+                        this.activityTag_error = false
+                        this.activityTag_errorText = ''
+                        document.querySelector('.activityTagBorder input').style.borderColor = '#dcdfe6'
+                        this.activityDescriptionBorder_error = false
+                        document.querySelector('.activityDescriptionBorder textarea').style.borderColor = '#dcdfe6'
+
+
+
+                },
+                watchNum:function(){
+                    var _this = this
+                    _this.dialogDayMoneyData.changeCost = _this.dialogDayMoneyData.changeCost.replace(/[^\.\d]/g,'');
+                    _this.dialogDayMoneyData.changeCost = _this.dialogDayMoneyData.changeCost.replace(".", "$#$").replace(/\./g, "").replace("$#$", ".").replace(/^(\-)*(\d+)\.(\d\d).*$/, '$1$2.$3')
+                },
+                watchEverydayNum:function(){
+                    var _this = this
+                    _this.form.money = _this.form.money.replace(/[^\.\d]/g,'');
+                    _this.form.money = _this.form.money.replace(".", "$#$").replace(/\./g, "").replace("$#$", ".").replace(/^(\-)*(\d+)\.(\d\d).*$/, '$1$2.$3')
+                },
+                handleDelete(index, row) {
+                    this.dialogTableVisible = true
+                    this.text = ''
+                    this.text = row.act_name
+                    this.gridData = []
+                    this.gridData.push({
+                        "sort_num":row.sort_num,
+                        "channel_name":row.channel_name,
+                        "channel_tag":row.channel_tag,
+                        "id":row.id
+                    })
+                    this.quedingchildId = row.id
+                },
+                handleEdit(index, row) {
+                    console.log(row);
+                   // /index.php?m=management&a=activet
+                    　window.location.href="http://erp.com/index.php?m=management&a=activet"; 
+                },
+               async queding(){
+                    let _that = this
+                    // const param = {
+                    //     'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                    //     'erp-req': true,
+                    //     // 'id':_that.gridData[0].id
+                    //     'id':_that.quedingchildId
+                    // }
+                    // const url = '/deleteChannel'
+                    // const delet = await _that.useAPi(url,param)
+
+                    // // 跨域
+                    // function queryPost2(url, param){
+                    //     var headers = {
+                    //         headers: {
+                    //             'erp-req': true,
+                    //             'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                    //             'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+                    //         }
+                    //     }
+                    //     var host = (window.location.origin == "http://erp.gshopper.com") ?
+                    //         "http://insight.gshopper.com/insight-backend/gpChannel" :
+                    //         ((window.location.origin == "http://erp.gshopper.prod.com") ?
+                    //             "http://insight.gshopper.prod.com/insight-backend/gpChannel" :
+                    //             "http://insight.gshopper.stage.com/insight-backend/gpChannel");
+                    //     // 初始化时间展示
+                    //     return axios.post(host + url, Qs.stringify(param), headers);
+                    // }
+                    // function useAPi2(url,param){
+                    //     const data = queryPost2(url,param).then((res) =>{
+                    //         if(res.data.success === true){
+                    //             return res.data
+                                
+                    //         }else{
+                    //             return res.msg
+                    //         }
+                            
+                    //     })
+                    //     .catch((error) =>{
+                    //         console.log(error)
+                    //     })
+                    //     return data
+                    // }
+
+                    // const url = '/deleteChannel'
+
+                    // _that.useAPi2('/deleteChannel',param).then((res) =>{
+                    //     console.log(res)
+                    // })
+
+                    // const statue = await _that.useAPi2(url,param)
+
+                    // console.log(statue)
+
+                    // const statue = _that.useAPi2(url,param)
+                    // if(statue.success == true){
+                    //     console.log(statue)
+                    //     _that.$message({
+                    //         message: statue.msg,
+                    //         type: 'success'
+                    //     });
+                    //     _that.getTable()
+                    //     _that.dialogTableVisible = false
+                    // }else{
+                    //     console.log(statue)
+                    //     _that.$message({
+                    //         message: statue.msg,
+                    //         type: 'warning'
+                    //     });
+                    // }
+
+                    var param = new FormData()
+                    param.append('erp-cookie', 'PHPSESSID=' + getCookie('PHPSESSID') + ';')
+                    param.append('erp-req', true)
+                    param.append('id', _that.quedingchildId)
+
+
+                    var headers = {
+                        headers: {
+                            'erp-req': true,
+                            'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+                        }
+                    }
+                    // var host = (window.location.origin == "http://erp.gshopper.com") ?
+                    //     "http://insight.gshopper.com/insight-backend/gpActivity" :
+                    //     ((window.location.origin == "http://erp.gshopper.prod.com") ?
+                    //         "http://insight.gshopper.prod.com/insight-backend/gpActivity" :
+                    //         "http://insight.gshopper.stage.com/insight-backend/gpActivity");
+
+                    var host = (window.location.origin == window.location.protocol + "//erp.gshopper.com") ?
+                        window.location.protocol + "//insight.gshopper.com/insight-backend/gpActivity" :
+                        ((window.location.origin == window.location.protocol + "//erp.gshopper.prod.com") ?
+                            window.location.protocol + "//insight.gshopper.prod.com/insight-backend/gpActivity" :
+                            window.location.protocol + "//insight.gshopper.stage.com/insight-backend/gpActivity");
+                            
+                    axios.post(host + '/deleteActivity', param, headers).then(res => {
+                        console.log(res)
+                        if(res.data.success == true){
+                            _that.$message({
+                                message: res.data.msg,
+                                type: 'success'
+                            });
+                            _that.getTable()
+                            _that.dialogTableVisible = false
+                        }else{
+                            _that.$message({
+                            message: res.data.msg,
+                            type: 'warning'
+                            });
+                        }
+                    })
+
+
+
+
+
+                },
+              async handleEdit1(index,row){
+                    let _that = this
+                    const param = {
+                        'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp-req': true,
+                        'id':row.id,
+                        'flag':1
+                    }
+                    const url = '/whetherUseChannel'
+                    const statue = await _that.useAPi(url,param)
+                    if(statue.success == true){
+                        _that.$message({
+                        message: statue.msg,
+                        type: 'success'
+                        });
+                        _that.getTable()
+                        //_that.dialogTableVisible = false
+                    }else{
+                        _that.$message({
+                        message: statue.msg,
+                        type: 'warning'
+                        });
+                    }
+                },
+              async handleStop(index,row){
+                    let _that = this
+                    const param = {
+                        'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp-req': true,
+                        'id':row.id,
+                        'flag':0
+                    }
+                    const url = '/whetherUseChannel'
+                    const statue = await _that.useAPi(url,param)
+                    if(statue.success == true){
+                        _that.$message({
+                        message: statue.msg,
+                        type: 'success'
+                        });
+                        _that.getTable()
+                        //_that.dialogTableVisible = false
+                    }else{
+                        _that.$message({
+                        message: statue.msg,
+                        type: 'warning'
+                        });
+                    }
+                },
+                //搜索按钮
+                onSubmit(formName){
+                    // this.$refs[formName].validate((valid) => {
+                    //     if (valid) {
+                    //         this.getTable()
+                    //     } else {
+                    //         console.log('error submit!!');
+                    //         return false;
+                    //     }
+                    //     })
+                    this.getTable()
+                    },
+                    //重置按钮
+                    resetForm(formName) {
+                    //    this.$refs[formName].resetFields();
+                        this.formInline.value = '全部'
+                        this.formInline.valueLabel = 'all'
+                        this.formInline.value2 = '全部'
+                        this.formInline.valueLabel2 = 'all'
+                        this.formInline.input1 = ''
+                        this.formInline.input2 = ''
+                        this.formInline.input3 = ''
+                        this.page = 1
+                        this.getTable()
+                },
+                    // 新增活动
+                   
+                    addChun(){
+                        let _that = this
+                       _that.centerDialogVisible = true
+                      // _that.dialogTableVisible5 = true
+                       _that.getChannerlPlantform()
+                       _that.getqueryMedium()
+                    },
+                   next(formName){
+                        let _that = this
+                        _that.$refs[formName].validate((valid) =>{
+                            console.log(valid)
+                            if(valid){
+                                const param = {
+                                    'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                                    'erp-req': true,
+                                    'act_name':_that.activeName, //活动名称
+                                    'country_id':_that.country_id,
+                                    'act_describe':_that.textarea2, // 活动描述
+                                    'channel_id': _that.channel_id, // 所属渠道Id
+                                    'act_tag': _that.activeTag,// 活动标签
+                                    'act_url': _that.changeUrl,//活动推广url
+                                    'start_date': _that.formate(_that.form.date1[0]),//开始日期
+                                    'end_date':_that.formate(_that.form.date1[1]),//结束日期
+                                    'ddc_usd' :_that.form.money,//日均费用
+                                    'total_cost_usd':_that.allmoney//活动总费用
+                                }
+                                var dateDifference = DateDiff(_that.form.date1[1],_that.form.date1[0]) + 1
+                                if(dateDifference > 360){
+                                    _that.$message({
+                                        message:'开始日期到结束日期不能超过360天',
+                                        type: 'warning'
+                                    });
+                                } else if(_that.form.money > 1000000){
+                                    _that.$message({
+                                        message:'活动日均费用请输入0~1000000以内的正数',
+                                        type: 'warning'
+                                    });
+                                } else if(!_that.allmoney && _that.allmoney != 0){
+                                        _that.$message({
+                                            message:'请更换Chrome浏览器',
+                                            type: 'warning'
+                                        });
+                                }else{
+                                    const url = '/addActivity'
+                                    const statue =  _that.useAPi(url,param)
+                                    statue.then((res) =>{
+                                        if(res.success == true){
+
+                                        _that.$message({
+                                            message: res.msg,
+                                            type: 'success'
+                                        });
+                                        _that.dialogTableVisible5 = false
+                                        //         _that.getUserName()
+                                        _that.getTable()
+                                        //         _that.getMedia()
+                                        _that.activityTag_error = false
+                                        _that.activityTag_errorText = ''
+                                        document.querySelector('.activityTagBorder input').style.borderColor = '#dcdfe6'
+
+                                        _that.activityDescriptionBorder_error = false
+                                        document.querySelector('.activityDescriptionBorder textarea').style.borderColor = '#dcdfe6'
+
+                                        _that.form.date1 = ''
+                                        _that.form.date2 = ''
+                                        _that.form.money = ''
+                                        _that.form.allmoney = ''
+
+                                        _that.formLabelAlign.name1 = ''
+                                        _that.formLabelAlign.region = ''
+                                        _that.formLabelAlign.type = ''
+                                        _that.formLabelAlign.textarea2 = ''
+                                        _that.formLabelAlign.textarea = ''
+                                        _that.formLabelAlign.name2 = ''
+
+                                        _that.channel_tag = ''
+                    
+                                        
+                                        }else{
+                                            this.$message({
+                                            message:res.msg,
+                                            type: 'warning'
+                                            });
+                                        }
+                                    })
+                                }
+
+                            }
+                        })
+                    },
+                    late(){
+                        this.formLabelAlign.name1 =  this.activeName//活动名称
+                        this.formLabelAlign.region = this.country// 国家
+                        this.formLabelAlign.textarea2 = this.textarea2 // 活动描述
+                        this.formLabelAlign.type = this.type// 选择渠道
+                        this.channel = this.channelA// 渠道名称
+                        this.channel1 = this.channelA1// 渠道平台
+                        this.channel2 = this.channelA2// 渠道媒介
+                        this.formLabelAlign.name2 = this.activeTag// 活动标签
+                        this.formLabelAlign.textarea = this.url// 推广url
+                        // this.allmoney = this.changeUrl// 带标签的url
+                        this.centerDialogVisible = true
+                        this.dialogTableVisible5 = false
+                    },
+                    sure(formName){
+                        // console.log(formName)
+                        let _this = this
+                        _this.$refs[formName].validate((valid) =>{
+                            if(valid){
+
+                                if(_this.activityDescriptionBorder_error == false && _this.activityTag_error == false){
+                                    _this.centerDialogVisible = false
+                                    _this.dialogTableVisible5 = true
+                                }
+
+                                
+
+                                // console.log(_this.formLabelAlign.region)
+
+
+
+
+                                _this.activeName = _this.formLabelAlign.name1,
+                                _this.activeTag = _this.formLabelAlign.name2,
+                                // _this.activeChnnel = _this.formLabelAlign.type,
+                                _this.activeChnnel = _this.channel,
+                                _this.country = _this.formLabelAlign.region
+                                _this.textarea2 = _this.formLabelAlign.textarea2
+                                _this.type = _this.formLabelAlign.type // 渠道
+                                _this.channelA = _this.channel // 名称
+                                _this.channelA1 = _this.channel1 //
+                                _this.channelA2 = _this.channel2 //
+                                _this.url = _this.formLabelAlign.textarea
+                                _this.changeUrl = _this.formLabelAlign.textarea + '?' + _this.channel_tag + '&hmci=' + _this.formLabelAlign.name2
+                                console.log(_this.changeUrl)
+                                
+
+
+
+                            //     const addResult = _that.addNewChanner()
+                            //   addResult.then((result) =>{
+                            //       if(result.success == true){
+                            //         _that.getTable()
+                            //         _that.$message({
+                            //         message: result.msg,
+                            //         type: 'success'
+                            //         });
+                            //         _that.centerDialogVisible = false
+                            //         _that.dialogTableVisible = true
+                            //         _that.getTable()
+                            //       }else{
+                            //         _that.$message({
+                            //         message: result.msg,
+                            //         type: 'warning'
+                            //         });
+                            //         _that.getTable()
+                            //       }
+                            //   })
+                            }else{
+                                if(_this.formLabelAlign.textarea2.length>200){
+                                    _this.activityDescriptionBorder_error = true
+                                    document.querySelector('.activityDescriptionBorder textarea').style.borderColor = '#f56c6c'
+                                }
+                                if(_this.formLabelAlign.name2 == ''){
+                                    _this.activityTag_error = true
+                                    _this.activityTag_errorText = '请输入由字母或数字组成的标签'
+                                    document.querySelector('.activityTagBorder input').style.borderColor = '#f56c6c'
+                                }
+                                console.log(valid)
+                                return false
+                            }
+                      
+                            })
+                            
+                        // _that.$refs[formName].clearValidate();
+                        //  _that.$refs[formName].resetFields();
+                    },
+                    calce(formName){
+                        let _that = this
+                        _that.$refs[formName].clearValidate();
+                        _that.$refs[formName].resetFields();
+                        _that.centerDialogVisible = false
+                        _that.activityTag_error = false
+                        _that.activityTag_errorText = ''
+                        document.querySelector('.activityTagBorder input').style.borderColor = '#dcdfe6'
+                        _that.activityDescriptionBorder_error = false
+                        document.querySelector('.activityDescriptionBorder textarea').style.borderColor = '#dcdfe6'
+                        // _that.channel_url = ''
+                        _that.formLabelAlign.textarea = ''
+                        _that.channel_tag = ''
+                        _that.formLabelAlign.name2 = ''
+                        _that.channel = '自动填充'
+                        _that.channel1 = '自动填充'
+                        _that.channel2 = '自动填充'
+                    },
+                    quxiao(){
+                        console.log('111')
+                        let _that = this
+                        _that.$refs["formLabelAlign"].clearValidate();
+                        _that.$refs["formLabelAlign"].resetFields();
+                        _that.$refs["form"].clearValidate();
+                        _that.$refs["form"].resetFields();
+                        _that.dialogTableVisible5 = false
+                        _that.activityTag_error = false
+                        _that.activityTag_errorText = ''
+                        document.querySelector('.activityTagBorder input').style.borderColor = '#dcdfe6'
+                        _that.activityDescriptionBorder_error = false
+                        document.querySelector('.activityDescriptionBorder textarea').style.borderColor = '#dcdfe6'
+                        // _that.channel_url = ''
+                        _that.formLabelAlign.textarea = ''
+                        _that.channel_tag = ''
+                        _that.formLabelAlign.name2 = ''
+                        _that.form.date1 = ''
+                        _that.form.money = ''
+                        _that.channel = '自动填充'
+                        _that.channel1 = '自动填充'
+                        _that.channel2 = '自动填充'
+                    },
+
+        // 新增活动
+        async addNewChanner(){
+            let _that = this
+            const param = {
+                    'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                    'erp-req': true,
+                    'channel_name':_that.formLabelAlign.name1, //活动名称
+                    'medium_name':  _that.typeValue.value, //活动媒介
+                    'platform_name': _that.regionValue.value, //活动平台
+                    'platform_tag':  _that.regionValue.tag, // 活动平台标签
+                    'medium_tag': _that.typeValue.tag, //媒介标签
+                    'channel_tag': _that.formLabelAlign.name2,    // 活动标签
+                   // 'create_by': 'manyi' //创建人
+                }
+
+                const url = '/addChannel'
+                const addNewChannerdata = await _that.useAPi(url,param)
+                return addNewChannerdata
+        },         
+    
+      //活动国家查询
+    async getChannerlPlantform(){
+        let _that = this
+        const param = {
+                    'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                    'erp-req': true
+                }
+                const url = '/queryCountryName'
+                const channerlData = await _that.useAPi(url,param)
+            
+                _that.restaurants = channerlData.datas.map((i,k) =>{
+                    return ({
+                        "value":i.countyName,
+                        "tag":i.countyName,
+                        'id':i.id
+                    })
+                })
+      },
+      //  选择渠道
+      async getqueryMedium(){
+        let _that = this
+        const param = {
+                    'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                    'erp-req': true
+                }
+                const url = '/queryChannel'
+                const channerlData = await _that.useAPi(url,param)
+                console.log(channerlData)
+                _that.restaurants1 = channerlData.datas.map((i,k) =>{
+                    return ({
+                        "value":i.channelName,
+                        "tag":i.countyName,
+                        'id':i.channelId
+                   
+                    })
+                })
+      },
+        querySearchAsync(queryString, cb) {
+            var restaurants = this.restaurants;
+            var results = queryString ? restaurants.filter(this.createStateFilter(queryString)) : restaurants;
+
+            clearTimeout(this.timeout);
+            this.timeout = setTimeout(() => {
+            cb(results);
+            }, 3000);
+        },
+            createStateFilter(queryString) {
+           
+                const queryStatue = this.restaurants.some((item) =>{
+                    return item.value == queryString
+                })
+             
+                if(queryStatue){
+                    return (state) => {
+                    return (state.value.toLowerCase().indexOf(queryString.toLowerCase()) === 0);
+                    console.log(state.value.toLowerCase().indexOf(queryString.toLowerCase()) === 0)
+                    };
+                }else{
+                    return false
+                }
+               
+            },
+            querySearchAsync1(queryString, cb) {
+            var restaurants = this.restaurants1;
+            var results = queryString ? restaurants.filter(this.createStateFilter1(queryString)) : restaurants;
+
+            clearTimeout(this.timeout);
+            this.timeout = setTimeout(() => {
+            cb(results);
+            }, 3000 * Math.random());
+            },
+            createStateFilter1(queryString) {
+                return (state) => {
+                            return (state.value.toLowerCase().indexOf(queryString.toLowerCase()) === 0);
+                };
+            },
+            // 活动平台
+            handleSelect(item) {
+                console.log(this.formLabelAlign.region)
+                // this.regionValue = item
+                //  this.formLabelAlign.region = item.value
+                 this.country_id = item
+                // this.formLabelAlign.name2 = 'hmsr=' +item.tag+ '&hmmd=' + this.typeValue.tag
+                // this.$refs.formLabelAlign.clearValidate();
+                // this.$nextTick(() => this.$refs.formLabelAlign.clearValidate())
+                
+            },
+            // 活动媒介
+            handleSelect1(item){
+                console.log(item)
+                // this.typeValue = item
+                this.channel_id = item
+                // this.formLabelAlign.type = item.value
+                //this.formLabelAlign.name2 = 'hmsr=' +this.regionValue.tag+ '&hmmd=' + item.tag
+
+                    const param = {
+                        'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp-req': true,
+                        'id':item,
+                    }
+                    const url = '/queryMediumPlatformInfo'
+                    const statue = this.useAPi(url,param)
+                    console.log(statue)
+                    statue.then((res) =>{
+                        console.log(res)
+                        if(res.success === true){
+                            this.channel = res.datas[0].channelName
+                            this.channel1 = res.datas[0].platform_name
+                            this.channel2 = res.datas[0].medium_name
+                            this.channel_tag =res.datas[0].channel_tag
+                        }else{
+
+                        }
+                    })
+                    
+                 this.$refs.formLabelAlign.clearValidate();
+                this.$nextTick(() => this.$refs.formLabelAlign.clearValidate())
+              
+            },
+            shengcheng(){
+                let _that = this
+                _that.$refs[formName].validate((valid) =>{
+                    if(valid){
+
+                    }
+                })
+            },
+         
+            // 状态查寻
+            getChange(value){
+                this.formInline.valueLabel = value
+            },
+            getChange2(value){
+                // console.log(value)
+                this.formInline.valueLabel2 = value
+            },
+            /*
+            * api请求
+             */
+            // 封装公共的api
+            useAPi(url,param){
+
+                const data = this.queryPost(url,param).then((res) =>{
+                   
+                    if(res.data.success === true){
+                         return res.data
+                        
+                    }else{
+                         return res.msg
+                    }
+                    
+                })
+                .catch((error) =>{
+                    console.log(error)
+                })
+                return data
+            },
+            useAPi2(url,param){
+
+            const data = this.queryPost2(url,param).then((res) =>{
+            
+                if(res.data.success === true){
+                        return res.data
+                        
+                    }else{
+                        return res.msg
+                    }
+                    
+                })
+                .catch((error) =>{
+                    console.log(error)
+                })
+                return data
+            },
+             // 创建人查询接口
+            async getUserName(){
+             let _that = this
+                const param = {
+                    'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                    'erp-req': true
+                }
+                const url = '/queryUsername'
+                const userName = await _that.useAPi(url,param)
+                if(userName != undefined){
+                    userName.datas.forEach((i,k) =>{
+                        _that.options1.push({
+                            value:i.create_by,
+                            label:i.create_by
+                        })
+                    })
+                }
+             },
+             // 所属渠道查询接口
+             async getMedia(){
+             let _that = this
+                const param = {
+                    'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                    'erp-req': true
+                }
+                const url = '/queryChannel'
+                const userName = await _that.useAPi(url,param)
+                if(userName != undefined){
+                    userName.datas.forEach((i,k) =>{
+                        _that.options.push({
+                            value:i.channelId,
+                            label:i.channelName
+                        })
+                    })
+                }
+             },
+             async getTable(){
+                 let _that = this
+                const param = {
+                    'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                    'erp-req': true,
+                    'page' :_that.page,
+                    'pageSize':10,
+                    'sort_num': _that.formInline.input1, //活动编号
+                    'act_name': _that.formInline.input2, //活动名称
+                    'act_tag':_that.formInline.input3, // 活动标签
+                    'channel_id':_that.formInline.valueLabel, // 所属渠道Id
+                    'create_by': _that.formInline.valueLabel2 //创建人
+                }
+                const table = await _that.useAPi('/queryActivityInfo',param)
+           
+                const datas = table.datas
+    
+                if(table!=undefined){
+                    _that.tableData = table.datas
+                _that.total = table.totalCount
+                    function isInteger(n){
+                                    return parseInt(n) == parseFloat(n)
+                                }
+                            let num = table.totalCount / _that.pageSize
+                            // console.log( res.data.totalCount)
+                            // console.log(isInteger(num))
+                           
+                            if(isInteger(num)){
+                                _that.total = table.totalCount
+
+                               
+                                if(Math.round(num) == 0){
+                                    _that.totals = 1
+                                }else{
+                                    if(Math.round(num) < num){
+                                        _that.totals = Math.round(num) + 1
+                                    }else{
+                                        _that.totals = Math.round(num)
+                                    }
+                                }
+                            }else{
+                                if(Math.round(num) == 0){
+                                    _that.totals = 1
+                                }else{
+                                    if(Math.round(num) < num){
+                                        _that.totals = Math.round(num) + 1
+                                    }else{
+                                        _that.totals = Math.round(num)
+                                    }
+                                    
+                                }
+                                _that.total = table.totalCount
+                            }
+                }else{
+                    _that.tableData = []
+                }
+               
+             },
+             // 页面翻页功能
+             currentChange:function currentChange(value){
+                   var _that = this
+                    this.page = value
+                    _that.getTable()
+                },
+                handleSizeChange:function(val){
+                    var _this = this
+                    _this.pageSize = val;
+                    _this.getTable()
+                },
+                // 活动标签的校验
+              async checkLabel(value){
+                    let _that = this
+                    const param = {
+                        'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp-req': true,
+                        'act_tag':value
+                    }
+                    const msg = await _that.useAPi('/checkActivityLabel',param)
+                   
+                    return msg
+                },
+
+                // 日均费用调整
+                dayMoney:function(index,val){
+                    var _this = this
+                    var start_date = val.start_date
+                    var end_date = val.end_date
+                    var dateDifference = DateDiff(start_date,end_date)
+                    console.log(val)
+                    _this.dialogDayMoney = true
+                    _this.dialogDayMoneyData.sort_num = val.sort_num
+                    _this.dialogDayMoneyData.act_name = val.act_name
+                    _this.dialogDayMoneyData.act_tag = val.act_tag
+                    _this.dialogDayMoneyData.act_url = val.act_url
+                    _this.dialogDayMoneyData.ddc_usd = val.ddc_usd
+                    _this.dialogDayMoneyData.channel_tag = val.channel_tag
+                    _this.dialogDayMoneyData.id = val.id
+                    _this.dialogDayMoneyData.start_date = val.start_date
+                    _this.dialogDayMoneyData.end_date = val.end_date
+                    _this.dialogDayMoneyData.numDays = dateDifference
+                    _this.dialogDayMoneyData.date = val.start_date+'至'+val.end_date
+                    _this.dialogDayMoneyData.total_cost_usd = ''
+                },
+                // 日均费用调整提交
+                dialogDayMoneySubmit:function(){
+                    var _this = this
+                    console.log(_this.dialogDayMoneyData.total_cost_usd)
+                    if(_this.dialogDayMoneyData.changeCost == '' || _this.dialogDayMoneyData.changeCost > 1000000){
+                        _this.dialogDayMoney_changeCost = true
+                    }else{
+                        if(_this.dialogDayMoneyData.total_cost_usd || _this.dialogDayMoneyData.total_cost_usd == 0){
+                            const param = {
+                                'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                                'erp-req': true,
+                                'changeCost':_this.dialogDayMoneyData.changeCost, 
+                                'id':_this.dialogDayMoneyData.id, 
+                                'total_cost_usd':_this.dialogDayMoneyData.total_cost_usd, 
+                            }
+                            _this.useAPi('/costAdjustment',param).then((res) =>{
+                                console.log(res)
+                                if(res.success == true){
+                                    _this.$message({
+                                        message: res.msg,
+                                        type: 'success'
+                                    });
+                                    _this.dialogDayMoney_changeCost = false
+                                    _this.dialogDayMoney = false
+                                    _this.dialogDayMoneyData.sort_num = ''
+                                    _this.dialogDayMoneyData.act_name = ''
+                                    _this.dialogDayMoneyData.act_tag = ''
+                                    _this.dialogDayMoneyData.act_url = ''
+                                    _this.dialogDayMoneyData.start_date = ''
+                                    _this.dialogDayMoneyData.end_date = ''
+                                    _this.dialogDayMoneyData.ddc_usd = ''
+                                    _this.dialogDayMoneyData.id = ''
+                                    _this.dialogDayMoneyData.changeCost = ''
+                                    _this.dialogDayMoneyData.total_cost_usd = ''
+                                    _this.dialogDayMoneyData.numDays = ''
+                                    _this.dialogDayMoneyData.date = ''
+                                    _this.getTable()
+                                }else{
+                                    _this.$message({
+                                        message: res.msg,
+                                        type: 'warning'
+                                    });
+                                }
+                            })
+                        }else{
+                            _this.$message({
+                                message: '请更换Chrome浏览器',
+                                type: 'warning'
+                            });
+                        }
+
+                
+
+                    }
+                },
+                // 日均费用调整取消
+                dialogDayMoneyCancel:function(){
+                    var _this = this
+                    _this.dialogDayMoney_changeCost = false
+                    _this.dialogDayMoney = false
+                    _this.dialogDayMoneyData.sort_num = ''
+                    _this.dialogDayMoneyData.act_name = ''
+                    _this.dialogDayMoneyData.act_tag = ''
+                    _this.dialogDayMoneyData.act_url = ''
+                    _this.dialogDayMoneyData.start_date = ''
+                    _this.dialogDayMoneyData.end_date = ''
+                    _this.dialogDayMoneyData.ddc_usd = ''
+                    _this.dialogDayMoneyData.id = ''
+                    _this.dialogDayMoneyData.changeCost = ''
+                    _this.dialogDayMoneyData.total_cost_usd = ''
+                    _this.dialogDayMoneyData.numDays = ''
+                    _this.dialogDayMoneyData.date = ''
+                },
+                // 费用调整记录
+                moneyRecord:function(val){
+                    console.log(val)
+                    var _this = this
+                    _this.dialoMoneyRecord = true
+                    _this.dialoMoneyRecordData.sort_num = val.sort_num
+                    _this.dialoMoneyRecordData.act_name = val.act_name
+                    _this.dialoMoneyRecordData.act_tag = val.act_tag
+                    _this.dialoMoneyRecordData.act_url = val.act_url
+                    _this.dialoMoneyRecordData.ddc_usd = val.ddc_usd
+                    _this.dialoMoneyRecordData.id = val.id
+                    _this.dialoMoneyRecordData_idd = val.id
+                    _this.dialoMoneyRecordData.channel_tag = val.channel_tag
+                    const param = {
+                        'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp-req': true,
+                        'id':val.id,
+                        'page': _this.dialoMoneyRecordData_page.this_page,
+                        'pageSize': _this.dialoMoneyRecordData_page.page_count
+                    }
+                    _this.useAPi('/queryCostRecord',param).then((res) =>{
+                        console.log(res)
+                        if(res.success == true){
+                            _this.dialoMoneyRecordTable = res.datas
+                            _this.dialoMoneyRecordData_page.count = res.totalCount
+                        }else{
+                            _this.$message({
+                                message: res.msg,
+                                type: 'warning'
+                            });
+                        }
+                    })
+                },
+                //切换每页展示的数目
+                dialogDayMoney_SizeChange:function (val) {
+                    console.log(val)
+                    var _this = this
+                    _this.dialoMoneyRecordData_page.this_page = 1;
+                    _this.dialoMoneyRecordData_page.page_count = val;
+                    const param = {
+                        'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp-req': true,
+                        'id':_this.dialoMoneyRecordData_idd,
+                        'page': _this.dialoMoneyRecordData_page.this_page,
+                        'pageSize': Number(_this.dialoMoneyRecordData_page.page_count)
+                    }
+                    _this.useAPi('/queryCostRecord',param).then((res) =>{
+                        console.log(res)
+                        if(res.success == true){
+                            _this.dialoMoneyRecordTable = res.datas
+                            _this.dialoMoneyRecordData_page.count = res.totalCount
+                        }else{
+                            _this.$message({
+                                message: res.msg,
+                                type: 'warning'
+                            });
+                        }
+                    })
+                },
+                //翻页切换不同页面
+                dialogDayMoney_Change:function(val) {
+                    var _this = this
+                    _this.dialoMoneyRecordData_page.this_page = val;
+                    const param = {
+                        'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp-req': true,
+                        'id':_this.dialoMoneyRecordData_idd,
+                        'page': _this.dialoMoneyRecordData_page.this_page,
+                        'pageSize': Number(_this.dialoMoneyRecordData_page.page_count)
+                    }
+                    _this.useAPi('/queryCostRecord',param).then((res) =>{
+                        console.log(res)
+                        if(res.success == true){
+                            _this.dialoMoneyRecordTable = res.datas
+                            _this.dialoMoneyRecordData_page.count = res.totalCount
+                        }else{
+                            _this.$message({
+                                message: res.msg,
+                                type: 'warning'
+                            });
+                        }
+                    })
+                },
+                handleClose:function(done){
+                    this.dialoMoneyRecordData_idd = ''
+                    this.dialoMoneyRecordData_page.page_count = 10
+                    done()
+                },
+                // 编辑日期
+                editDate:function(index,val){
+                    console.log(val)
+                    var _this = this  
+                    _this.dialoEdit = true
+                    _this.dialoEditData.sort_num = val.sort_num
+                    _this.dialoEditData.act_name = val.act_name
+                    _this.dialoEditData.act_tag = val.act_tag
+                    _this.dialoEditData.act_url = val.act_url
+                    _this.dialoEditData.id = val.id
+                    _this.dialoEditData.status = val.status
+                    _this.dialoEditData.channel_tag = val.channel_tag
+                },
+                dateFormatCn:function(val){
+
+                    console.log(val)
+                    if(val == '' || val == null ){
+                        return('')
+                    }else{
+                        var myMonth = val.getMonth() + 1
+                        var myDate = val.getDate()
+                        if(myMonth<10){
+                            myMonth = "0" + myMonth
+                        }
+                        if(myDate<10){
+                            myDate = "0" + myDate
+                        }
+                        return(val.getFullYear()+''+myMonth+'' +myDate)
+                    }
+                },
+                // 编辑日期提交
+                dialoEditDataSubmit:function(){
+                    var _this = this
+                    if(_this.dialoEditData.start_date == ''){
+                        _this.dialoEditData_start_date = true
+                    }else if(_this.dialoEditData.end_date == ''){
+                        _this.dialoEditData_end_date = true
+                    }else if(_this.dialoEditData.start_date > _this.dialoEditData.end_date){
+                        _this.$message({
+                            message: '开始日期不能大于结束日期',
+                            type: 'warning'
+                        });
+                    }else{
+                        var start_date = _this.dateFormatCn(_this.dialoEditData.start_date)
+                        var end_date = _this.dateFormatCn(_this.dialoEditData.end_date)
+                        const param = {
+                            'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                            'erp-req': true,
+                            'id':_this.dialoEditData.id, 
+                            'start_date':start_date, 
+                            'end_date':end_date, 
+                        }
+                        _this.useAPi('/activityEditDate',param).then((res) =>{
+                            console.log(res)
+                            if(res.success == true){
+                                _this.$message({
+                                    message: res.msg,
+                                    type: 'success'
+                                });
+                                _this.dialoEdit = false
+                                _this.dialoEditData.start_date = ''
+                                _this.dialoEditData.end_date = ''
+                 
+                                _this.getTable()
+                            }else{
+                                _this.$message({
+                                    message: res.msg,
+                                    type: 'warning'
+                                });
+                            }
+                        })
+                    }
+                },
+                // 编辑日期取消
+                dialoEditDataCancel:function(){
+                    this.dialoEdit = false
+                    this.dialoEditData.start_date = ''
+                    this.dialoEditData.end_date = '' 
+                },
+                // 数据导出
+                dataOutput:function(){
+                    var _this = this
+                    var sort_num = _this.formInline.input1
+                    var act_name = _this.formInline.input2
+                    var act_tag = _this.formInline.input3
+                    var channel_id = _this.formInline.valueLabel
+                    var create_by = _this.formInline.valueLabel2
+                    // var param = {
+                    //     'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                    //     'erp-req': true,
+                    //     'sort_num':sort_num, 
+                    //     'act_name':act_name, 
+                    //     'act_tag':act_tag, 
+                    //     'channel_id':channel_id, 
+                    //     'create_by':create_by
+                    // }
+                    var param = new FormData()
+                    param.append('erp-cookie', 'PHPSESSID=' + getCookie('PHPSESSID') + ';')
+                    param.append('erp-req', true)
+                    param.append('sort_num', sort_num)
+                    param.append('act_name', act_name)
+                    param.append('act_tag', act_tag)
+                    param.append('channel_id', channel_id)
+                    param.append('create_by', create_by)
+
+
+                    var headers = {
+                        headers: {
+                            'erp-req': true,
+                            'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+                        }
+                    }
+                    // var host = (window.location.origin == "http://erp.gshopper.com") ?
+                    //     "http://insight.gshopper.com/insight-backend/gpActivity" :
+                    //     ((window.location.origin == "http://erp.gshopper.prod.com") ?
+                    //         "http://insight.gshopper.prod.com/insight-backend/gpActivity" :
+                    //         "http://insight.gshopper.stage.com/insight-backend/gpActivity");
+
+                    var host = (window.location.origin == window.location.protocol + "//erp.gshopper.com") ?
+                        window.location.protocol + "//insight.gshopper.com/insight-backend/gpActivity" :
+                        ((window.location.origin == window.location.protocol + "//erp.gshopper.prod.com") ?
+                            window.location.protocol + "//insight.gshopper.prod.com/insight-backend/gpActivity" :
+                            window.location.protocol + "//insight.gshopper.stage.com/insight-backend/gpActivity");
+
+                            
+                    axios.post(host + '/exportExcel', param, {
+                        responseType: 'blob',
+                        headers:headers.headers
+                    }).then(res => {
+                        let blob = res.data
+                        let reader = new FileReader()
+                        reader.readAsDataURL(blob)
+                        reader.onload = (e) => {
+                            let a = document.createElement('a')
+                            a.download = '活动管理.xlsx'
+                            a.href = e.target.result
+                            document.body.appendChild(a)
+                            a.click()
+                            document.body.removeChild(a)
+                        }
+                    })
+
+
+                    // var url = (window.location.origin !== "http://erp.gshopper.com") ?
+                    //     "http://insight.gshopper.stage.com/insight-backend/b2bAndB2cRevenueSplit/" :
+                    //     "http://insight.gshopper.com/insight-backend/b2bAndB2cRevenueSplit/";
+                    // var dowUrl = this.switchActive ? 'b2cExportExcel?page=1&pageSize=10&' :
+                    //     'b2bExportExcel?page=1&pageSize=10&';
+                    // var date = 'startDate=' + this.form.dateRange[0] + '&endDate=' + this.form.dateRange[
+                    //         1] +
+                    //     '&saleTeamId=' + this.form.saleTeamId +
+                    //     '&busyId=' + this.form.busyId +
+                    //     '&orderId=' + this.form.orderNum;
+                    // var aEle = document.createElement("a");
+                    // aEle.setAttribute("style", "display: none");
+                    // aEle.setAttribute("href",
+                    // host + '/exportExcel' + param
+                    // );
+                    // aEle.click();
+
+
+
+
+                },
+                openCopy:function(val){
+                    let url = val;
+                    let oInput = document.createElement('input');
+                    oInput.value = url;
+                    document.body.appendChild(oInput);
+                    oInput.select();
+                    document.execCommand("Copy");
+                    this.$message({
+                    message: '已成功复制到剪切板',
+                    type: 'success'
+                    });
+                    oInput.remove()
+                }
+            },
+        })
+    
+    
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,714 @@
+<!DOCYPTE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.const.V}>">
+    <link href="/Application/Tpl/Home/Public/lib/My97DatePicker/skin/WdatePicker.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="../Public/css/logistice_company_info.css">
+    <title>{{$lang('物流公司信息配置')}}</title>
+    <script type="text/javascript">
+        var url = window.location.href;
+    </script>
+    <style>
+		.el-table th{
+			background: #546E7A !important;
+			color: #FFF;
+			text-align: center;
+		}
+		.warehouse-tips{
+	        position: absolute;
+	        padding: 10px 20px;
+	        /*height: auto;*/
+	        background: #fff;
+	        box-shadow: 0 0 5px #536d7a;
+	        width: 300px;
+	        color: #333;
+	        left: -40px;
+	        top: 80px;
+	        z-index: 100;
+	        display: flex;
+	        justify-content: center;
+	        flex-wrap: wrap;
+	    }
+	    .fade{
+	    	height: 30px;
+	    }
+	    .fade span{
+	    	display: inline-block;
+	    	/*float: left;*/
+	    }
+	   	.fade span:last-child small{
+	   		display: none;
+	   	}
+	    .el-table__body-wrapper{
+	    	overflow: visible;
+	    }
+	    .warehouse-tips li:last-child span{
+			display: none;
+	    }
+	</style>
+</head>
+<body>
+<div id="logistice-company" v-cloak>
+	<div class="header">
+		<div class="row">
+			<div class="fl">
+				<el-select v-model="form.createType" class="fl" style="margin-right: 15px;width: 100px;padding: 0;width: 150px;">
+					<el-option v-for="item in arr" :value="item.id" :label="$lang(item.val)" :key="item.id"></el-option>
+				</el-select>
+				<el-date-picker v-model="form.startTime" value-format="yyyy-MM-dd" type="date" :placeholder="$lang('开始时间')"></el-date-picker>
+				<span style="width: 10px">-</span>
+      			<el-date-picker v-model="form.endTime" value-format="yyyy-MM-dd" type="date" :placeholder="$lang('结束时间')"></el-date-picker>
+			</div>	
+			<div class="fl">
+				<el-select v-model="form.buttJoitItem" multiple collapse-tags style="width: 200px;margin-left: 20px;">
+					<el-option v-for="(item, index) in buttItemData" :value="item.cd" :label="$lang(item.cdVal)" :key="item.cd"></el-option>
+				</el-select>
+			</div>
+			<div class="fl ">
+
+				<el-select v-model="form.companyType" class="fl" style="width: 200px;">
+					<el-option v-for="item in companyTypeData" :value="item.id" :label="$lang(item.val)" :key="item.id"></el-option>
+				</el-select>
+	            <el-input type="text" style="width: 300px;" :placeholder="$lang('请输入')" v-model="form.agentCompany"></el-input>
+	        </div>
+		</div>
+
+		<div class="row">
+			<div class="fl search-btn-group">			
+				<button class="seacher-btn" @click="doSeach">{{$lang('搜索')}}</button>
+				<button class="reset-btn"  @click="reset">{{$lang('重置')}}</button>
+			</div>
+		</div>
+	</div>
+	
+	<div class="table">
+		<div class="flex seacher-result">
+			<p class="record">{{$lang('搜索结果')}}: {{$lang('共')}}<span> {{totalCount}} </span>{{$lang('条记录')}}</p>
+			<span class="export" @click="exportOrder">{{$lang('导出')}}</span>
+		</div>
+		<el-table border show-header  ref="multipleTable" tooltip-effect="dark" style="width: 100%" :data="logisticsData"  v-loading="tableLoading"  @selection-change="handleSelectionChange">
+			<el-table-column width="80" :label="$lang('编号')"> 
+				<template scope="scope">
+					{{scope.row.id}}
+                </template>
+			</el-table-column>
+			<el-table-column prop="name" :label="$lang('物流公司')" width="180">
+				<template scope="scope">
+					{{$lang(scope.row.logistios_company_cd_val)}}
+                </template>
+			</el-table-column>
+			<el-table-column prop="address" :label="$lang('自有仓库')">
+				<template scope="scope">
+						<div @mouseenter="showTips(scope.row)" @mouseleave="showTips(scope.row)">
+							<div  class="account-msg fade"  style="width: 200px;overflow: hidden;text-overflow: ellipsis;white-space: nowrap;">
+								<span>{{$lang((scope.row.self_warehouse_cd_arr_val || []).join())}}<small>,</small></span>
+							</div>
+							<ul  class="warehouse-tips"  v-if="scope.row.isShow && scope.row.self_warehouse_cd_arr && scope.row.self_warehouse_cd_arr.length > 2">
+								<li style="float: left;">{{$lang((scope.row.self_warehouse_cd_arr_val || []).join())}}</li>
+							</ul>
+						</div>
+                </template>
+			</el-table-column>
+			<el-table-column prop="address" :label="$lang('对接项')" width="300">
+				<template scope="scope">
+					<div class="butt-item">
+						<span v-for="val in (scope.row.butt_item_cd_arr_val || [])">{{$lang(val)}} <small>,</small></span>
+					</div>
+                </template>
+			</el-table-column>
+			<el-table-column prop="address" :label="$lang('账号信息')">
+				<template scope="scope">
+					<div  @click="accountAddEdit(scope.row)"  @mouseenter="showAcountTips(scope.row)" @mouseleave="showAcountTips(scope.row)"  style="cursor: hand;color: #487ec4;width: 100%;display: flex;justify-content: center;" >
+						<div  class="account-msg fade"  style="width: 200px;overflow: hidden;text-overflow: ellipsis;white-space: nowrap;">
+							<span v-for="(val, index) in (scope.row.logistics_account_account_name_arr || [])">{{val}}<small v-show="val !== null">,</small></span>
+						</div>
+						<ul  class="warehouse-tips"  v-if="scope.row.isTips && scope.row.logistics_account_account_name_arr && scope.row.logistics_account_account_name_arr.length > 1">
+							<li v-for="(val, index) in (scope.row.logistics_account_account_name_arr || [])" style="float: left;">{{val}} <span>,</span></li>
+						</ul>
+					</div>
+                </template>
+			</el-table-column>
+			<el-table-column prop="address" :label="$lang('修改时间')">
+				<template scope="scope">
+						{{scope.row.updated_at}}					
+                </template>
+			</el-table-column>
+			<el-table-column prop="address" :label="$lang('修改人')">
+				<template scope="scope">
+					{{scope.row.updated_user}}
+				</template>
+			</el-table-column>
+			<el-table-column width="80" prop="address" :label="$lang('操作')">
+				<template scope="scope">
+					<button class="edit" @click="editShow(scope.row)">{{$lang('编辑')}}</button>
+				</template>
+			</el-table-column>
+		</el-table>
+                  <el-pagination background @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="form.currentPage"
+                :page-sizes="[10, 30, 50, 100]" :page-size="form.pageSize" layout="sizes,prev, pager, next, jumper" :total="totalCount"></el-pagination>
+	</div>
+	<!-- 物流公司弹窗 -->
+	<!-- <div class="pop"> -->
+		<el-dialog  :title="$lang('物流公司')" :visible.sync="dialogVisible" width="25%">
+			<div class="logistice-item">
+				<div class="flex sort-item">
+					<p>{{$lang('物流公司')}}<span>*</span></p>
+					<!-- <input type="text" placeholder="物流公司"> -->
+					<el-select :popper-append-to-body=false v-model="logisticsItem.logistios_company_cd" filterable>
+						<el-option v-for="(item, index) in warehouseCompany" :value="item.cd" :label="$lang(item.cdVal)" :key="item.cd"></el-option>
+					</el-select>
+				</div>
+				<div class="flex sort-item">
+					<p>{{$lang('货代公司')}}<span></span></p>
+					<el-select :popper-append-to-body=false v-model="logisticsItem.forwarding_company_cd" filterable >
+						<el-option v-for="(item, index) in loanCompany" :value="item.cd" :label="item.cdVal" :key="item.cd"></el-option>
+					</el-select>
+				</div>
+				<div class="flex sort-item">
+					<p>{{$lang('自有仓库')}}<span></span></p>
+					<el-select :popper-append-to-body=false v-model="logisticsItem.self_warehouse_cd_arr"  multiple  collapse-tags filterable >
+						<el-option v-for="(item, index) in warehouses" :value="item.CD" :label="$lang(item.CD_VAL)" :key="item.CD"></el-option>
+					</el-select>
+				</div>
+				<div class="flex sort-item">
+					<p >{{$lang('对接项')}}<span>*</span></p>
+					<el-select :popper-append-to-body=false v-model="logisticsItem.butt_item_cd_arr" multiple collapse-tags>
+						<el-option v-for="(item, index) in buttItemData" :value="item.cd" :label="$lang(item.cdVal)" :key="item.cd"></el-option>
+					</el-select>
+				</div>
+			</div>
+			<span slot="footer" class="dialog-footer">
+				<el-button @click="dialogVisible = false">{{$lang('取消')}}</el-button>
+				<el-button type="primary" @click="logisticsEnter">{{$lang('确定')}}</el-button>
+			</span>
+		</el-dialog>
+	<!-- </div> -->
+	<!-- 账号密码弹窗 -->
+	<div class="account-pop">
+		<el-dialog :title="$lang('账号信息')" :visible.sync="accountListIsShow" width="90%">
+			<div class="account-num">
+				<div class="operate-btn-add">
+					<button class="add" @click="accountAdd">{{$lang('新增')}}</button>
+				</div>
+				<div class="account-table">
+					<table class="account-list">
+
+						<thead>
+							<tr>
+								<th width="15%">{{$lang('账号名称')}}</th>
+								<th width="10%">{{$lang('账号密码')}}</th>
+								<th width="10%">Seller ID</th>
+								<th width="10%">Seller secret</th>
+								<th width="15%">token</th>
+								<th width="20%">{{$lang('我方签约公司')}}</th>
+								<th width="35%">{{$lang('签约有效期')}}</th>
+								<th width="15%">{{$lang('是否启用')}}</th>
+								<th width="15%">{{$lang('操作')}}</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr v-for="(item, index) in accountData">
+								<td>
+									<span v-if="item.isEdit">{{item.account_name}}</span>
+									<el-input v-model="item.account_name" type="text" v-if="item.isEdit == false" style="width: 100px;" :placeholder="$lang('请输入账号')"></el-input>
+								</td>
+								<td>
+									<span v-if="item.isEdit">****</span>
+									<el-input type="passworld"  v-model="item.passworld" v-if="item.isEdit == false" style="width: 150px;"  :placeholder="$lang('请输入密码')"></el-input>
+								</td>
+								<td>
+									<span v-if="item.isEdit">{{item.login_username}}</span>
+									<el-input type="text" v-model="item.login_username" v-if="item.isEdit == false" style="width: 150px;"  :placeholder="$lang('请输入Seller ID')"></el-input>
+								</td>
+								<td>
+									<span v-if="item.isEdit">{{item.login_password}}</span>
+									<el-input type="text" v-model="item.login_password" v-if="item.isEdit == false" style="width: 150px;"  :placeholder="$lang('请输入Seller secret')"></el-input>
+								</td>
+								<td>
+									<span v-if="item.isEdit">{{item.token}}</span>
+									<el-input type="text" v-model="item.token" v-if="item.isEdit == false" style="width: 150px;"  :placeholder="$lang('请输入token')"></el-input>
+								</td>
+								<td>
+									<span v-if="item.isEdit">{{item.our_sigin_company_cd_val}}</span>
+									<el-select :placeholder="$lang('请输入')" :popper-append-to-body=false class="our-sign-company" filterable collapse-tags v-model="item.our_sigin_company_cd" v-if="item.isEdit == false">
+										<el-option style="width: 150px;" v-for="item in forwarderCompany" :value="item.cd" :key="item.cd" :label="item.cdVal"></el-option>
+									</el-select>
+								</td>
+								<td>
+									<span v-if="item.isEdit" style="display: block;width:100%;">{{item.contract_validity_act_at}}-{{item.contract_validity_end_at}}</span>
+									<div class="time-filter"  v-if="item.isEdit == false" >
+										<span style="white-space: nowrap;">
+							                <el-date-picker style="width: 150px;" v-model="item.contract_validity_act_at" value-format="yyyy.MM.dd" type="date" :placeholder="$lang('开始时间')"></el-date-picker>
+							                <span style="width: 10px">-</span>
+							                <el-date-picker  style="width: 150px;" v-model="item.contract_validity_end_at" value-format="yyyy.MM.dd" type="date" :placeholder="$lang('结束时间')"></el-date-picker>
+						        		</span>
+									</div>	
+								</td>
+								<td>
+									<span v-if="item.isEdit && item.is_enable == 1">{{$lang('已启用')}}</span>
+									<span v-if="item.isEdit && item.is_enable == 0">{{$lang('不启用')}}</span>
+									<el-switch inactive-color="#eceff1" @change="isStartUse(item.isStart,item)" v-model="item.isStart" active-color="#13ce66" inactive-color="#ff4949"  v-if="!item.isEdit" style="width: 80px;"></el-switch>
+								</td>
+								<td>
+									<div class="operate-btn" v-if="item.isEdit">
+										<button class="edit" @click="editMsg('edit', item)" >{{$lang('编辑')}}</button>
+										<button class="edit" style="background: #eceff1;color: #1E7EB4;" @click="editMsg('dele', item)">{{$lang('删除')}}</button>
+									</div>
+									<div class="operate-btn" v-if="item.isEdit == false">
+										<button class="edit" style="background: #eceff1;color: #1E7EB4;" @click="editMsg('cancel', item)">{{$lang('取消')}}</button>
+										<button class="edit" @click="editMsg('save', item)">{{$lang('保存')}}</button>
+									</div>
+								</td>
+							</tr>
+							<tr></tr>
+							<tr></tr>
+							<tr></tr>
+							<tr></tr>
+							<tr></tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+			<span slot="footer" class="dialog-footer">
+		</span>
+		</el-dialog>
+	</div>
+</div>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script src="../Public/lib/My97DatePicker/WdatePicker.js"></script>
+<script type="text/javascript">
+	if(getCookie('think_language') !== "zh-cn" ){
+        ELEMENT.locale(ELEMENT.lang.en)
+    }
+    var vm = new Vue({
+    	el: "#logistice-company",
+        data: {
+        	input: '',
+        	value: '',
+        	isStart: false,
+       		arr: [{
+   				id: 'created_dt',
+   				val: '创建时间'
+   			},{
+   				id:'updated_dt',
+   				val: '修改时间'
+   			}],
+   			companyTypeData: [{
+   				id: 'logistios_company_cd',
+   				val: '物流公司'
+   			},{
+   				id:'forwarding_company_cd',
+   				val: '代理公司'
+   			}],
+   			form: {
+   				createType: 'created_dt',
+   				startTime: '',
+   				endTime: '',
+   				buttJoitItem: [],
+   				companyType: 'logistios_company_cd',
+   				agentCompany: '',
+   				currentPage: 1,
+   				pageSize: 10
+   			},
+   			totalCount: 10,
+   			tableLoading: false,
+   			dialogVisible: false,
+   			accountListIsShow: false,
+   			isEdit: true,
+   			logisticsData: [],
+   			accountArr: [],
+   			accountData: [],
+   			logisticsCompany: '',
+   			feightCompany: '',
+   			selfWarehouse: '',
+   			buttItem: '',
+   			warehouseCompany: [],
+   			popItem: {},
+   			warehouses: {},
+   			forwarderCompany: [],
+   			buttItemData: [],
+   			logisticsItem: {},
+   			isAdd: 0,
+   			selectId: 0,
+   			loanCompany: []
+       },
+       created: function created () {
+       		this.getLogisticeData();
+       		this.getWarehouseCompanyData();
+       },
+       methods: {
+       		getLogisticeData: function getLogisticeData (num) {
+       			this.tableLoading = true;
+
+       			var _this = this;
+       			var params = {
+       				"data":{ 
+   						"time_type": this.form.createType,
+				        "time_act": this.form.startTime,
+				        "time_end": this.form.endTime,
+				        "butt_item_cd_arr": this.form.buttJoitItem,
+				        "company_type": this.form.companyType,
+				        "company_value": this.form.agentCompany.replace(/(^\s*)|(\s*$)/g, "")
+   					},
+       				"page": {
+       					"this_page": num || 1,
+        				"page_count": this.form.pageSize
+       				}
+       			}
+       			axios.post('/index.php?g=logistics&m=configs&a=getAllLogisticsCompany', params)
+       			.then(function (res) {
+       				if (res.data.code == 2000) {
+       					_this.tableLoading = false;
+       					_this.logisticsData = res.data.data.data;
+       					_this.totalCount = +res.data.data.page.count;
+       				}
+       			})
+       		},
+       		getWarehouseCompanyData: function getWarehouseCompanyData () {
+       			var _this = this;
+       			axios.post("/index.php?g=oms&m=CommonData&a=commonData",{
+       				"data": {
+       					"query": {
+       						"company": "true",
+       						"logisticsCompany": "true",
+       						"warehouses": "true",
+       						"butt_item_cd": "true",
+       						"forwarding_company_cd": "true"
+       					}
+       				}
+       			}).then(function (res) {
+       				if (res.data.code == 2000) {
+       					_this.warehouseCompany = res.data.data.logisticsCompany;
+       					_this.warehouses = res.data.data.warehouses;
+       					_this.forwarderCompany = res.data.data.company;
+       					_this.loanCompany = res.data.data.forwarding_company_cd;
+       					_this.buttItemData = res.data.data.butt_item_cd;
+       				}
+       			})
+       		},
+       		getAccountMsgData: function getAccountMsgData () {
+       			var _this = this;
+       			axios.post("/index.php?g=logistics&m=configs&a=getLogisticsAccountInfo",{'logistics_company_id': this.popItem.id})
+       			.then(function (res) {
+       				if(res.data.code == 200) {
+       					res.data.data.forEach(function (item) {
+       						Vue.set(item, "isEdit", !this.isEdit);
+       						Vue.set(item, "isStart", !this.isStart);
+       						if (item.is_enable == 0) {
+       							item.isStart = false;
+       						} else {
+       							item.isStart = true;
+       						}
+       						Vue.set(item, "passworld", "");
+       						Vue.set(item, "selectId", false);
+       					})
+       					_this.accountData = res.data.data;
+       				}
+       			})
+       		},
+       		handleSizeChange: function handleSizeChange (val) {
+       			this.form.currentPage = 1;
+                this.form.pageSize = val;
+                this.getLogisticeData()
+       		},
+       		handleCurrentChange: function handleCurrentChange (val) {
+       			this.form.currentPage = val;
+       			this.getLogisticeData(val)
+       		},
+       		handleSelectionChange: function handleSelectionChange (val) {
+
+       		},	
+       		exportOrder: function exportOrder () {
+       			var param = {
+       				"data":{ 
+   						"time_type": this.form.createType,
+				        "time_act": this.form.startTime,
+				        "time_end": this.form.endTime,
+				        "butt_item_cd_arr": this.form.buttJoitItem,
+				        "company_type": this.form.companyType,
+				        "company_value": this.form.agentCompany
+   					},
+       				"page": {
+       					"this_page": this.form.currentPage
+       				},
+   				  	ids: [],
+                    type: 'logistics'
+       			}
+   			  	for (var i = 0; i < this.logisticsData.length; i++) {
+                    param.ids.push(this.logisticsData[i].id);
+                }
+       			var tmep = document.createElement('form');
+                tmep.action = '/index.php?g=logistics&m=configs&a=exportExcel';
+                tmep.method = "post";
+                tmep.style.display = "none";
+                var opt = document.createElement("input");
+                opt.name = 'post_data';
+                opt.value = JSON.stringify(param);
+                tmep.appendChild(opt);
+                document.body.appendChild(tmep);
+                tmep.submit();
+                tmep.remove();
+       		},
+       		isStartUse: function isStartUse(value,item) {
+       			if (value == true) {
+       				item.is_enable = 1
+       			} else {
+       				item.is_enable = 0;
+       			}
+       		},
+       		editMsg: function edit (type, item) {
+       			var _this = this;
+       			switch (type) {
+       				case 'edit':
+       					this.selectId = 1;
+       					this.isAdd = 2;
+	   					item.isEdit = false;
+	   					item.passworld = '';
+	   					break;
+	   				case 'save':
+	   					this.selectId = 2;
+	   					if (item.isStart == false) {
+	   						item.is_enable = 0;
+	   					} else {
+	   						item.is_enable = 1;
+	   					}
+	   					if (item.account_name == '') {
+	   						_this.$message({
+								message: this.$lang('请输入账号名称'),
+					          	type: 'error'
+					        })
+					        return;
+	   					}
+	   					if (item.our_sigin_company_cd == '') {
+	   						_this.$message({
+								message: this.$lang('请输入我方签约公司'),
+					          	type: 'error'
+					        })
+					        return;
+	   					}
+	   					if (item.contract_validity_act_at == '') {
+	   						_this.$message({
+								message: this.$lang('请输入签约开始时间'),
+					          	type: 'error'
+					        })
+					        return;
+	   					}
+	   					if (item.contract_validity_end_at == '') {
+	   						_this.$message({
+								message: this.$lang('请输入签约结束时间'),
+					          	type: 'error'
+					        })
+					        return;
+	   					}
+	   					if (new Date(item.contract_validity_act_at).getTime() > new Date(item.contract_validity_end_at).getTime()) {
+	   						_this.$message({
+								message: this.$lang('结束时间不得大于开始时间'),
+					          	type: 'error'
+					        })
+					        return;
+	   					}
+	   					var params= {};
+	   					// var logisticsId = '';
+	   					if (this.isAdd == 2) {
+	   						params = {
+							    "data":{       
+							        "id": item.id,
+							        "logistics_company_id": item.logistics_company_id,
+							        "account_name": item.account_name,
+							        "account_password":item.passworld,
+							        "token": item.token,
+							        "our_sigin_company_cd": item.our_sigin_company_cd,
+							        "contract_validity_act_at": item.contract_validity_act_at,
+							        "contract_validity_end_at": item.contract_validity_end_at,
+							        "is_enable": item.is_enable,
+							        "login_username": item.login_username,
+							        "login_password": item.login_password
+							    }
+							}
+	   					} else {
+	   						params = {
+							    "data":{       
+							        // "id": item.id,
+							        "logistics_company_id": this.popItem.id,
+							        "account_name": item.account_name,
+							        "account_password":item.passworld,
+							        "token": item.token,
+							        "our_sigin_company_cd": item.our_sigin_company_cd,
+							        "contract_validity_act_at": item.contract_validity_act_at,
+							        "contract_validity_end_at": item.contract_validity_end_at,
+							        "is_enable": item.is_enable,
+							        "login_username": item.login_username,
+							        "login_password": item.login_password
+							    }
+							}
+	   					}
+	   					item.isEdit = true;
+	   					// item.selectId = true;
+	   					axios.post("/index.php?g=logistics&m=configs&a=updateLogisticsAccountInfo", params)
+	   					.then(function (res) {
+	   						if (res.data.code == 200) {
+	   							_this.$message({
+									message: _this.$lang('保存成功'),
+						          	type: 'success'
+						        })
+						        _this.getAccountMsgData();
+						        _this.getLogisticeData();
+	   						} else {
+	   							_this.$message({
+									message: _this.$lang('保存失败，请填写完整'),
+						          	type: 'error'
+						        })
+						        _this.getAccountMsgData();
+	   						}
+	   					})
+	   					break;
+   					case 'cancel':
+   						this.getAccountMsgData();
+   						item.isEdit = true;
+   						this.selectId = 2;
+   					break
+	   				case 'dele':
+	   					axios.post("/index.php?g=logistics&m=configs&a=deleteLogisticsAccountInfo", {id: item.id})
+	   					.then(function (res) {
+	   						if (res.data.code == 200) {
+	   							_this.$message({
+									message: _this.$lang('删除成功'),
+						          	type: 'success'
+						        })
+						        _this.getAccountMsgData();
+						        _this.getLogisticeData();
+	   						} else {
+	   							_this.$message({
+									message: _this.$lang(res.data.msg),
+						          	type: 'success'
+						        })
+	   						}
+	   						_this.getAccountMsgData();
+	   						_this.getLogisticeData();
+	   					})
+	   					break;
+	   				default:
+	   					item.isEdit = true;
+	   					break;
+       			}
+       		},
+       		isUse: function isUse (value) {
+       		},
+       		editShow: function editShow (scope) {
+       			var _this = this;
+       			if (scope.self_warehouse_cd_arr == null) {
+       				scope.self_warehouse_cd_arr = [];
+       			}
+       			this.logisticsItem = scope;
+       			this.dialogVisible = true;
+       		},
+       		accountAddEdit: function accountAddEdit (item) {
+       			this.popItem = item;
+       			this.getAccountMsgData();
+       			this.accountListIsShow = true;
+       		},
+       		logisticsEnter: function logisticsEnter () {
+       			this.dialogVisible = false;
+       			var _this = this;
+       			axios.post("/index.php?g=logistics&m=configs&a=updateLogisticsCompany", {
+       				data: {
+       					"logistios_company_cd": _this.logisticsItem.logistios_company_cd,
+				        "forwarding_company_cd": _this.logisticsItem.forwarding_company_cd,
+				        "self_warehouse_cd_arr": _this.logisticsItem.self_warehouse_cd_arr,
+				        "butt_item_cd_arr": _this.logisticsItem.butt_item_cd_arr,
+				        "id": _this.logisticsItem.id
+       				}
+       			}).then(function (res) {
+       				if (res.data.code == 200) {
+       					_this.$message({
+       						type: 'success',
+       						message: _this.$lang('保存成功')
+       					})
+       					_this.getLogisticeData();
+       				}else {
+       					_this.$message({
+       						type: 'error',
+       						message: _this.$lang(res.data.msg)
+       					})
+       					_this.logisticsItem.logistios_company_cd = '';
+       					_this.logisticsItem.forwarding_company_cd = '';
+       					_this.logisticsItem.self_warehouse_cd_arr = [];
+       					_this.logisticsItem.butt_item_cd = '';
+       				}
+       				_this.getLogisticeData();
+       			})
+       		},
+       		accountAdd: function () {
+       			if (this.selectId == 1) {
+       				this.$message({
+   						type: 'error',
+   						message: this.$lang('请先编辑完成再保存')
+   					})
+   					return false;
+       			}
+       			this.isAdd = 1;
+       			var logisticsId = '';
+       			this.accountData.forEach(function (item) {
+       				logisticsId = item.logistics_company_id;
+       			})
+       			Vue.set(this.popItem, 'logistics_company_id', logisticsId);
+       			this.accountData.push({
+       				account_name: '',
+       				contract_validity_act_at: '',
+       				contract_validity_end_at: '',
+       				created_at: '',
+       				id: this.popItem.id,
+       				isEdit: '',
+       				isStart: true,
+       				is_enable: 1,
+       				logistics_company_id: this.popItem.logistics_company_id,
+       				our_sigin_company_cd: '',
+       				passworld: '',
+       				token: '',
+       				updated_at: '',
+       				updated_user: ''
+       			})
+       		},
+       		doSeach: function doSeach () {
+       			this.getLogisticeData();
+       		},
+       		reset: function reset () {
+       			this.form = {
+		   			createType: 'created_dt',
+	   				startTime: '',
+	   				endTime: '',
+	   				buttJoitItem: [],
+	   				companyType: 'logistios_company_cd',
+	   				agentCompany: '',
+	   				currentPage: 1,
+	   				pageSize: 10
+	   			}
+	   			this.getLogisticeData();
+       		},
+       		showTips: function showTips (item) {
+       			Vue.set(item, "isShow", !item.isShow)
+       		},
+       		showAcountTips: function (item) {
+       			Vue.set(item, "isTips", !item.isTips)
+       		}
+       }
+    })
+</script>
+</body>
+
+</html>

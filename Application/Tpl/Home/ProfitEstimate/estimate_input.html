@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+        <{Think.lang.盈亏数据录入}>
+    </title>
+
+    <link href="../Public/css/H-ui-3.1.min.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="../Public/css/stock.css?v=<{$Think.const.V}>" />
+    <link rel="stylesheet" type="text/css" href="../Public/css/style.css?v=<{$Think.const.V}>" />
+    <link rel="stylesheet" type="text/css" href="../Public/css/default.css?v=<{$Think.const.V}>" />
+    <link rel="stylesheet" type="text/css" href="../Public/lib/Hui-iconfont/1.0.7/iconfont.css?v=<{$Think.const.V}>" />
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.13.0.css?v=<{$Think.const.V}>">
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="estimateInput" v-cloak>
+        <div class="e-header">
+            <el-form :model="search">
+                <el-row>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('时间范围')">
+                            <el-date-picker v-model="search.date" type="daterange" value-format="yyyy-MM-dd" @change="getData"
+                                :range-separator="$lang('至')" :start-placeholder="$lang('开始日期')"
+                                :end-placeholder="$lang('结束日期')">
+                            </el-date-picker>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="6">
+                        <el-form-item :label="$lang('负责人')">
+                            <el-select v-model="search.principal" filterable multiple @change="getData">
+                                <el-option v-for="user in users" :key="user.id" :label="user.name" :value="user.name">
+                                </el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <div class="use-row operate">
+                    <div class="col-100" style="text-align: right;margin-right: 20px;">
+                        <el-button @click="handleAddOrEditData">{{$lang('新增数据')}}</el-button>
+                        <el-button @click="handleExport">{{$lang('导出')}}</el-button>
+                        <el-button @click="handleShowLog">{{$lang('查看操作日志')}}</el-button>
+                    </div>
+                </div>
+            </el-form>
+        </div>
+        <div class="e-content">
+            <el-table :data="data" class="table-list" v-loading="loading">
+                <el-table-column :label="$lang('ID')" prop="pid"></el-table-column>
+                <el-table-column :label="$lang('时间范围')" prop="date_range"></el-table-column>
+                <el-table-column :label="$lang('负责人')" prop="principal"></el-table-column>
+                <el-table-column :label="$lang('销售额（$）')">
+                    <template slot-scope="scope">
+                        <div>{{digitFormat(scope.row.sales)}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('运营成本（$）')">
+                    <template slot-scope="scope">
+                        <div>{{digitFormat(scope.row.operating_cost)}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('公司成本（$）')">
+                    <template slot-scope="scope">
+                        <div>{{digitFormat(scope.row.company_cost)}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('运营利润（$）')">
+                    <template slot-scope="scope">
+                        <div>{{digitFormat(scope.row.operating_profit)}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('净利（$）')" prop="net_profit">
+                    <template slot-scope="scope">
+                        <div>{{digitFormat(scope.row.net_profit)}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('操作')">
+                    <template slot-scope="scope">
+                        <el-button @click="handleAddOrEditData(scope.row, 'edit')">{{$lang('编辑')}}</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <div class="use-row pagination">
+                <div class="col-100 text-right">
+                    <el-pagination background @size-change="handleEsPageSize" @current-change="handleEsPage"
+                        layout="sizes, prev, pager, next" :page-sizes="[10, 50, 100]" :total="total">
+                    </el-pagination>
+                </div>
+            </div>
+        </div>
+        <!-- 添加编辑数据dialog -->
+        <el-dialog :visible.sync="addOrEditDialog" :title="type === 'add' ? $lang('新增数据') : $lang('编辑数据')"
+            @close="handleCloseModal">
+            <el-form :model="form" ref="form" :rules="rule" label-width="120px">
+                <el-form-item :label="$lang('时间范围')" prop="estimate_cycle_id">
+                    <el-select v-model="form.estimate_cycle_id" style="width: 250px;" :disabled="type === 'edit'">
+                        <el-option v-for="cycle in cycles" :key="cycle.id" :label="cycle.date_range" :value="cycle.id">
+                        </el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item :label="$lang('负责人')" prop="principal">
+                    <el-select v-model="form.principal" filterable style="width: 250px;">
+                        <el-option v-for="user in users" :key="user.id" :label="user.name" :value="user.name">
+                        </el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item :label="$lang('销售额（$）')" prop="sales">
+                    <el-input v-model="form.sales" style="width: 250px;"></el-input>
+                </el-form-item>
+                <el-form-item :label="$lang('运营成本（$）')" prop="operating_cost">
+                    <el-input v-model="form.operating_cost" style="width: 250px;"></el-input>
+                </el-form-item>
+                <el-form-item :label="$lang('公司成本（$）')" prop="company_cost">
+                    <el-input v-model="form.company_cost" style="width: 250px;"></el-input>
+                </el-form-item>
+                <el-form-item>
+                    <el-button v-if="type === 'add'" :loading="bLoading" @click="handleAddProfit">{{$lang('确定')}}
+                    </el-button>
+                    <el-button v-else :loading="bLoading" @click="handleSave">{{$lang('确定')}}</el-button>
+                    <el-button @click="handleAddOrEditData">{{$lang('取消')}}</el-button>
+                </el-form-item>
+            </el-form>
+        </el-dialog>
+
+        <!-- 操作日志dialog -->
+        <el-dialog :title="$lang('操作日志')" :visible.sync="showLog" class-name="log-table-title">
+            <el-table :data="logs" border align="center" :header-cell-style="getRowClass">
+                <el-table-column :label="$lang('操作日志')">
+                    <el-table-column prop="operating_time" :label="$lang('操作时间')"></el-table-column>
+                    <el-table-column prop="operator" :label="$lang('操作人')"></el-table-column>
+                    <el-table-column prop="message" :label="$lang('详细信息')"></el-table-column>
+                </el-table-column>
+            </el-table>
+            <div slot="footer" class="dialog-footer">
+                <div class="col-100 text-right">
+                    <el-pagination background @size-change="handleLogSize" @current-change="handleLogCurrent" layout="sizes, prev, pager, next" :page-sizes="[10, 50, 100]"
+                        :total="logTotal">
+                    </el-pagination>
+                </div>
+            </div>
+        </el-dialog>
+    </div>
+</body>
+<script src="../Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script type="text/javascript" src="../Public/js/request.js?v=<{$Think.const.V}>"></script>
+<script>
+    if (getCookie("think_language") !== "zh-cn") {
+        ELEMENT.locale(ELEMENT.lang.en);
+    }
+    var app = new Vue({
+        name: "estimate_input",
+        el: "#estimateInput",
+        data() {
+            const numberValidator = (rule, value, cb) => {
+                if (value) {
+                    if (!/^(-?\d+)(\.\d+)?$/.test(value)) {
+                        cb(new Error(this.$lang('请输入数字！')))
+                    } else {
+                        cb();
+                    }
+                } else {
+                    cb();
+                }
+            }
+            return {
+                search: {
+                    principal: [],
+                    date: [],
+                },
+                page: {
+                    page: 1,
+                    pageSize: 10,
+                },
+                users: [],
+                data: [],
+                total: 0,
+                loading: false,
+                bLoading: false,
+                addOrEditDialog: false,
+                type: 'add',
+                originData: {},
+                cycles: [],
+                ranges: [],
+                form: {
+                    estimate_cycle_id: '',
+                    principal: '',
+                    sales: '',
+                    operating_cost: '',
+                    company_cost: ''
+                },
+                rule: {
+                    principal: [
+                        { required: true, message: this.$lang('请选择负责人'), trigger: 'blur' }
+                    ],
+                    sales: [
+                        { validator: numberValidator, trigger: 'blur' }
+                    ],
+                    operating_cost: [
+                        { validator: numberValidator, trigger: 'blur' }
+                    ],
+                    company_cost: [
+                        { validator: numberValidator, trigger: 'blur' }
+                    ]
+
+                },
+                logs: [],
+                logTotal: 1,
+                logParams: {
+                    page: 1,
+                    pageSize: 10,
+                    log_type: 'import',
+                },
+                showLog: false,
+                user: {},
+            }
+        },
+        created() {
+            this.getData();
+            this.getUsers();
+        },
+        methods: {
+            getData() {
+                const [start, end] = this.search.date || [];
+                const { page, pageSize } = this.page;
+                const params = {
+                    principal: this.search.principal.join(','),
+                    start_time: start,
+                    end_time: end,
+                    page,
+                    pageSize,
+                }
+                this.loading = true;
+                request('profitAndLossDataImport/queryProfitAndLossData', params, 'insight').then(res => {
+                    this.loading = false;
+                    if (res.success) {
+                        this.data = res.datas;
+                        this.total = res.totalCount;
+                    }
+                })
+            },
+            getUsers() {
+                // 负责人
+                request('index.php?m=admin&a=admin_options', {}).then(res => {
+                    this.users = res.data;
+                    this.user = this.users.find(user => user.id === getCookie('userId'));
+                })
+            },
+            getCycles() {
+                request('profitAndLossDataImport/getOptionalCycle', {}, 'insight').then(res => {
+                    if (res.success) {
+                        this.cycles = res.datas;
+                    }
+                })
+            },
+            handleExport() {
+                let lang = getCookie('think_language');
+                const language = lang.indexOf('zh-cn') === -1 ? 'us': 'cn';
+                request('profitAndLossDataImport/profitAndLossDataExport', { language }, 'insight', { responseType: 'blob' }).then(res => {
+                    let downloadUrl = URL.createObjectURL(res);
+                    let a = document.createElement('a')
+                    let fileName = this.$lang('盈亏数据录入') + '.xlsx';
+                    a.download = fileName
+                    a.href = downloadUrl;
+                    document.body.appendChild(a)
+                    a.click()
+                    document.body.removeChild(a)
+                })
+            },
+            digitFormat(num) {
+                num = parseFloat(num).toFixed(2);
+                if (isNaN(num)) return '';
+                var num1 = num.split('.')[0] + '';//数字转字符串  
+                var str = "";//字符串累加  
+                for (var i = num1.length - 1, j = 1; i >= 0; i--, j++) {
+                    if (j % 3 == 0 && i != 0 && num1[i - 1] != '-') {//每隔三位加逗号，过滤正好在第一个数字的情况 过滤负数情况 
+                        str += num1[i] + ",";//加千分位逗号  
+                        continue;
+                    }
+                    str += num1[i];//倒着累加数字
+                }
+                return str.split('').reverse().join("") + '.' + num.split('.')[1];
+            },
+            handleAddOrEditData(row, type = 'add') {
+                this.addOrEditDialog = !this.addOrEditDialog;
+                if (type === 'add') {
+                    this.form.principal = this.user.name;
+                    this.getCycles();
+                }
+                if (type === 'edit') {
+                    this.type = 'edit';
+                    const { id, estimate_cycle_id, principal, sales, operating_cost, company_cost, date_range } = row;
+                    this.form = {
+                        id,
+                        estimate_cycle_id,
+                        principal,
+                        sales,
+                        operating_cost,
+                        company_cost
+                    }
+                    this.cycles.push({id: estimate_cycle_id, date_range: date_range})
+                }
+            },
+            handleAddProfit() {
+                this.$refs.form.validate(valid => {
+                    if (!valid) return;
+
+                    const params = this.form;
+                    this.bLoading = true;
+                    request('profitAndLossDataImport/addProfitAndLossData', params, 'insight').then(res => {
+                        this.bLoading = false;
+                        if (res.success) {
+                            this.addOrEditDialog = false;
+                            this.$message.success(this.$lang(res.msg));
+                            setTimeout(() => {
+                                this.getData();
+                            }, 1000)
+                        }
+                    })
+                })
+            },
+            handleSave() {
+                this.$refs.form.validate(valid => {
+                    if (!valid) return;
+                    const params = this.form;
+                    this.bLoading = true;
+                    request('profitAndLossDataImport/editProfitAndLossData', params, 'insight').then(res => {
+                        this.bLoading = false;
+                        if (res.success) {
+                            this.addOrEditDialog = false;
+                            this.$message.success(this.$lang(res.msg));
+                            setTimeout(() => {
+                                this.getData();
+                            }, 1000)
+                        }
+                    })
+                })
+            },
+            handleCloseModal() {
+                this.form = {
+                    estimate_cycle_id: '',
+                    principal: '',
+                    sales: '',
+                    operating_cost: '',
+                    company_cost: ''
+                };
+                this.type = 'add';
+                this.$refs.form.resetFields();
+            },
+            handleShowLog() {
+                this.showLog = !this.showLog;
+                if (this.showLog) {
+                    this.getLogs();
+                }
+            },
+            getLogs() {
+                const params = Object.assign({}, this.logParams);
+                request('profitAndLossEstimateLog/queryLog', params, 'insight').then(res => {
+                    if (res.success) {
+                        this.logs = res.datas;
+                        this.logTotal = res.totalCount
+                    }
+                })
+            },
+            handleLogCurrent(current) {
+                this.logParams.page = current;
+                this.getLogs();
+            },
+            handleLogSize(size) {
+                this.logParams.pageSize = size;
+                this.getLogs();
+            },
+            getRowClass({ row, column, rowIndex, columnIndex }) {
+                if (rowIndex === 0) {
+                    return 'background: #546e7a;color: #fff;'
+                }
+            },
+            handleEsPageSize(size) {
+                this.page.pageSize = size;
+                this.getData();
+            },
+            handleEsPage(current) {
+                this.page.page = current;
+                this.getData();
+            },
+        }
+    });
+</script>
+
+</html>

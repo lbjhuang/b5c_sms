@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+        href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.config.VER_NUM}>">
+    <title>成本费用录入</title>
+</head>
+<style>
+    [v-cloak] {
+        display: none;
+    }
+
+    .el-tabs>.el-tabs__header {
+        width: 45%;
+        border: 1px solid #e4e7ed;
+    }
+
+    .el-tabs>.el-tabs__header .el-tabs__item {
+        width: 35%;
+    }
+
+    .el-tabs__item:last-child {
+        padding-right: 0;
+    }
+
+    .el-tabs--border-card>.el-tabs__content {
+        padding: 20px 0 0 0;
+    }
+
+    .el-message-box__message,
+    .el-message-box__btns {
+        text-align: center;
+    }
+
+    .confirm-button-class {
+        margin-left: -66px !important;
+    }
+
+    .el-message-box__btns {
+        position: relative !important;
+    }
+
+    .cancel-button-class {
+        position: absolute !important;
+        left: 220px !important;
+    }
+
+    .el-upload-dragger {
+        border: none;
+        width: 72px;
+        height: 40px;
+        margin-left: 20px;
+    }
+
+    .upload-demo .el-upload-list {
+        position: absolute;
+        left: 210px;
+        top: 0px;
+    }
+
+    .el-table-column--selection {
+        border-right: none !important;
+    }
+
+    .el-table_1_column_1>.cell {
+        text-align: left !important;
+    }
+
+    .el-table .hovered-row {
+        background: #f5f7fa;
+    }
+
+    .myCell .el-checkbox__input {
+        display: none;
+    }
+</style>
+
+<body class="orderList">
+    <div id="app" class="list-common" v-cloak style="margin-bottom:220px">
+
+        <!-- 数据录入 start-->
+        <div class="orderList-Main list-common-main" style="position:relative">
+            <header>
+                <el-row>
+                    <el-col>
+                        <el-tabs v-model="activeName" type="border-card" @tab-click="handleClick">
+                            <el-tab-pane name="first">
+                                <span slot="label">{{$lang('数据录入')}}</span>
+                                <el-row>
+                                    <el-col style="padding-left: 50px">
+                                        <el-date-picker v-model="dataTime" type="month" value-format="yyyy-MM"
+                                            placeholder="选择月">
+                                        </el-date-picker>
+                                        <el-button type="primary" style="margin-left: 20px" @click="searchData()">
+                                            {{$lang('搜索')}}</el-button>
+                                    </el-col>
+                                    <el-col style="margin: 20px 0 20px 0;text-align:right;padding-right: 50px">
+                                        <el-button type="primary" @click="exportData()">{{$lang('导出')}}</el-button>
+                                        <el-button type="primary" @click="importData()">{{$lang('导入')}}</el-button>
+                                    </el-col>
+                                </el-row>
+                                <div style="overflow-x: scroll">
+                                    <el-table border :data="baseData.costDataInfo" tooltip-effect="dark"
+                                        style="width: 100%" class="order-list-table table-common"
+                                        v-loading="tableLoading" :span-method="objectSpanMethod"
+                                        :cell-class-name="tableRowClassName" @cell-mouse-leave="cellMouseLeave"
+                                        @cell-mouse-enter="cellMouseEnter">
+                                        <el-table-column :label="$lang('成本费用及营业外收支列表')" style="text-align: left">
+                                            <el-table-column prop="业务部门" :label="$lang('业务部门')">
+                                            </el-table-column>
+                                            <el-table-column prop="小组" :label="$lang('小组')">
+                                            </el-table-column>
+                                            <el-table-column prop="业务细分" :label="$lang('业务细分')">
+                                            </el-table-column>
+                                            <el-table-column prop="负责人" :label="$lang('负责人')">
+                                            </el-table-column>
+                                            
+                                            <el-table-column :label="$lang('销售费用')">
+                                                <template>
+                                                    <el-table-column v-for="(v,i) in baseData.cellCost"
+                                                        :prop="v.colum_name" :label="$lang(v.subject_name)" :key='i'>
+                                                        <template slot-scope="scope">
+                                                            <!-- <input size="mini" v-if="scope.row.isSet"
+                                                                :value="baseData.sel[v.colum_name]"
+                                                                @input="checkNum($event.target,baseData.sel,v.colum_name)">
+                                                            </input> -->
+                                                            <el-input size="mini" v-if="scope.row.isSet" v-model="baseData.sel[v.colum_name]">
+                                                            </el-input>
+                                                            <span v-if="!scope.row.isSet">{{scope.row[v.colum_name]}}</span>
+                                                        </template>
+                                                    </el-table-column>
+                                                </template>
+                                            </el-table-column> 
+                                            <el-table-column :label="$lang('管理费用')">
+                                                <template>
+                                                    <el-table-column v-for="(v,i) in baseData.managerCost"
+                                                        :prop="v.colum_name" :label="$lang(v.subject_name)" :key='i'>
+                                                        <template slot-scope="scope">
+                                                            <el-input size="mini" v-if="scope.row.isSet"
+                                                                v-model="baseData.sel[v.colum_name]">
+                                                            </el-input>
+                                                            <span
+                                                                v-if="!scope.row.isSet">{{scope.row[v.colum_name]}}</span>
+                                                        </template>
+                                                    </el-table-column>
+                                                </template>
+                                            </el-table-column>
+                                            <el-table-column :label="$lang('财务费用')">
+                                                <template>
+                                                    <el-table-column v-for="(v,i) in baseData.accountCost"
+                                                        :prop="v.colum_name" :label="$lang(v.subject_name)" :key='i'>
+                                                        <template slot-scope="scope">
+                                                            <el-input size="mini" v-if="scope.row.isSet"
+                                                                v-model="baseData.sel[v.colum_name]">
+                                                            </el-input>
+                                                            <span
+                                                                v-if="!scope.row.isSet">{{scope.row[v.colum_name]}}</span>
+                                                        </template>
+                                                    </el-table-column>
+                                                </template>
+                                            </el-table-column>
+                                            <el-table-column :label="$lang('营业外收入')">
+                                                <template>
+                                                    <el-table-column v-for="(v,i) in baseData.receipt"
+                                                        :prop="v.colum_name" :label="$lang(v.subject_name)" :key='i'>
+                                                        <template slot-scope="scope">
+                                                            <el-input size="mini" v-if="scope.row.isSet"
+                                                                v-model="baseData.sel[v.colum_name]">
+                                                            </el-input>
+                                                            <span
+                                                                v-if="!scope.row.isSet">{{scope.row[v.colum_name]}}</span>
+                                                        </template>
+                                                    </el-table-column>
+                                                </template>
+                                            </el-table-column>
+                                            <el-table-column :label="$lang('营业外支出')">
+                                                <template>
+                                                    <el-table-column v-for="(v,i) in baseData.sealExpend"
+                                                        :prop="v.colum_name" :label="$lang(v.subject_name)" :key='i'>
+                                                        <template slot-scope="scope">
+                                                            <el-input size="mini" v-if="scope.row.isSet"
+                                                                v-model="baseData.sel[v.colum_name]">
+                                                            </el-input>
+                                                            <span
+                                                                v-if="!scope.row.isSet">{{scope.row[v.colum_name]}}</span>
+                                                        </template>
+                                                    </el-table-column>
+                                                </template>
+                                            </el-table-column>
+                                            <el-table-column :label="$lang('操作')" width="120">
+                                                <template slot-scope="scope" v-if="scope.row.负责人 !=='/'">
+                                                    <span class="el-tag el-tag--info el-tag--mini"
+                                                        style="cursor: pointer;"
+                                                        @click="pwdChange(scope.row,scope.$index,true)">
+                                                        {{scope.row.isSet? $lang('保存'):$lang('编辑')}}
+                                                    </span>
+                                                    <span v-if="scope.row.isSet" class="el-tag  el-tag--mini"
+                                                        style="cursor: pointer;color: red"
+                                                        @click="pwdChange(scope.row,scope.$index,false)">
+                                                        {{$lang('重置')}}
+                                                    </span>
+                                                </template>
+                                            </el-table-column>
+                                    </el-table>
+                                </div>
+                            </el-tab-pane>
+                            <el-tab-pane name="second">
+                                <span slot="label">{{$lang('编辑成本费用字段')}}</span>
+                                <el-row>
+                                    <el-col style="text-align: right;">
+                                        <el-button type="primary" v-if="!isEdit" @click="edit()">{{$lang('编辑')}}
+                                        </el-button>
+                                        <el-button type="primary" v-if="isEdit" @click="save()">{{$lang('保存')}}
+                                        </el-button>
+                                        <el-button type="primary" v-if="isEdit" @click="goBack()">{{$lang('返回')}}
+                                        </el-button>
+                                    </el-col>
+                                </el-row>
+                                <div style="height: 800px" v-if="!isEdit">
+                                    <el-row>
+                                        <el-col style="font-weight: 600;font-size: 18px;margin-left: 200px">
+                                            {{$lang('销售费用')}}
+                                        </el-col>
+                                    </el-row>
+                                    <el-row>
+                                        <el-col :span="18" style="margin-left: 200px">
+                                            <el-table :data="cellCost" border style="width: 100%">
+                                                <el-table-column type="index" label="#">
+                                                </el-table-column>
+                                                <el-table-column prop="subject_name" :label="$lang('科目名称')">
+                                                </el-table-column>
+                                            </el-table>
+                                        </el-col>
+                                    </el-row>
+                                    <el-row>
+                                        <el-col style="font-weight: 600;font-size: 18px;margin-left: 200px">
+                                            {{$lang('管理费用')}}
+                                        </el-col>
+                                    </el-row>
+                                    <el-row>
+                                        <el-col :span="18" style="margin-left: 200px">
+                                            <el-table :data="managerCost" border style="width: 100%">
+                                                <el-table-column type="index" label="#">
+                                                </el-table-column>
+                                                <el-table-column prop="subject_name" :label="$lang('科目名称')">
+                                                </el-table-column>
+                                            </el-table>
+                                        </el-col>
+                                    </el-row>
+                                    <el-row>
+                                        <el-col style="font-weight: 600;font-size: 18px;margin-left: 200px">
+                                            {{$lang('财务费用')}}
+                                        </el-col>
+                                    </el-row>
+                                    <el-row>
+                                        <el-col :span="18" style="margin-left: 200px">
+                                            <el-table :data="accountCost" border style="width: 100%">
+                                                <el-table-column type="index" label="#">
+                                                </el-table-column>
+                                                <el-table-column prop="subject_name" :label="$lang('科目名称')">
+                                                </el-table-column>
+                                            </el-table>
+                                        </el-col>
+                                    </el-row>
+                                    <el-row>
+                                        <el-col style="font-weight: 600;font-size: 18px;margin-left: 200px">
+                                            {{$lang('营业外收入')}}
+                                        </el-col>
+                                    </el-row>
+                                    <el-row>
+                                        <el-col :span="18" style="margin-left: 200px">
+                                            <el-table :data="receipt" border style="width: 100%">
+                                                <el-table-column type="index" label="#">
+                                                </el-table-column>
+                                                <el-table-column prop="subject_name" :label="$lang('科目名称')">
+                                                </el-table-column>
+                                            </el-table>
+                                        </el-col>
+                                    </el-row>
+                                    <el-row>
+                                        <el-col style="font-weight: 600;font-size: 18px;margin-left: 200px">
+                                            {{$lang('营业外支出')}}
+                                        </el-col>
+                                    </el-row>
+                                    <el-row>
+                                        <el-col :span="18" style="margin-left: 200px">
+                                            <el-table :data="sealExpend" border style="width: 100%">
+                                                <el-table-column type="index" label="#">
+                                                </el-table-column>
+                                                <el-table-column prop="subject_name" :label="$lang('科目名称')">
+                                                </el-table-column>
+                                            </el-table>
+                                        </el-col>
+                                    </el-row>
+                                </div>
+                                <div style="height: 800px;width: 100%;" v-show="isEdit">
+                                    <el-row>
+                                        <el-col style="font-weight: 600;font-size: 18px;margin-left: 150px">
+                                            {{$lang('销售费用')}}
+                                        </el-col>
+                                    </el-row>
+                                    <el-row>
+                                        <el-col :span="18" style="margin-left: 150px">
+                                            <el-table ref="cellTable" border :data="cellCost" tooltip-effect="dark"
+                                                style="width: 100%" @selection-change="handleSelectionChange"
+                                                :cell-class-name="cellcb">
+                                                <el-table-column :label="$lang('级次')" width="120">
+                                                    <template slot-scope="scope">{{ scope.row.level }}</template>
+                                                </el-table-column>
+                                                <el-table-column prop="subject_code" :label="$lang('科目编码')" width="120">
+                                                </el-table-column>
+                                                <el-table-column prop="subject_name" :label="$lang('科目名称')"
+                                                    show-overflow-tooltip>
+                                                </el-table-column>
+                                                <el-table-column width="100" type="selection" :selectable="selectable">
+                                                </el-table-column>
+                                                <el-table-column width="40">
+                                                    <template slot-scope="scope">
+                                                        <el-tooltip class="item" effect="dark"
+                                                            :content="$lang('该科目存在历史数据，无法清除')" placement="right-start"  v-if="scope.row.is_disable == 0">
+                                                            <i class="el-icon-warning" style="color: red"
+                                                            ></i>
+                                                        </el-tooltip>
+                                                    </template>
+                                                </el-table-column>
+                                            </el-table>
+                                        </el-col>
+                                    </el-row>
+                                    <el-row>
+                                        <el-col style="font-weight: 600;font-size: 18px;margin-left: 150px">
+                                            {{$lang('管理费用')}}
+                                        </el-col>
+                                    </el-row>
+                                    <el-row>
+                                        <el-col :span="18" style="margin-left: 150px">
+                                            <el-table ref="managerTable" border :data="managerCost"
+                                                tooltip-effect="dark" style="width: 100%"
+                                                @selection-change="handleSelectionChange1" :cell-class-name="cellcb">
+                                                <el-table-column :label="$lang('级次')" width="120">
+                                                    <template slot-scope="scope">{{ scope.row.level }}</template>
+                                                </el-table-column>
+                                                <el-table-column prop="subject_code" :label="$lang('科目编码')" width="120">
+                                                </el-table-column>
+                                                <el-table-column prop="subject_name" :label="$lang('科目名称')"
+                                                    show-overflow-tooltip>
+                                                </el-table-column>
+                                                <el-table-column type="selection" width="100" :selectable="selectable">
+                                                </el-table-column>
+                                                <el-table-column width="40">
+                                                    <template slot-scope="scope">
+                                                        <el-tooltip class="item" effect="dark"
+                                                            :content="$lang('该科目存在历史数据，无法清除')" placement="right-start"  v-if="scope.row.is_disable == 0">
+                                                            <i class="el-icon-warning" style="color: red"
+                                                               ></i>
+                                                        </el-tooltip>
+                                                    </template>
+                                                </el-table-column>
+                                            </el-table>
+                                        </el-col>
+                                    </el-row>
+                                    <el-row>
+                                        <el-col style="font-weight: 600;font-size: 18px;margin-left: 150px">
+                                            {{$lang('财务费用')}}
+                                        </el-col>
+                                    </el-row>
+                                    <el-row>
+                                        <el-col :span="18" style="margin-left: 150px">
+                                            <el-table ref="accountTable" border :data="accountCost"
+                                                tooltip-effect="dark" style="width: 100%"
+                                                @selection-change="handleSelectionChange2" :cell-class-name="cellcb">
+                                                <el-table-column :label="$lang('级次')" width="120">
+                                                    <template slot-scope="scope">{{ scope.row.level }}</template>
+                                                </el-table-column>
+                                                <el-table-column prop="subject_code" :label="$lang('科目编码')" width="120">
+                                                </el-table-column>
+                                                <el-table-column prop="subject_name" :label="$lang('科目名称')"
+                                                    show-overflow-tooltip>
+                                                </el-table-column>
+                                                <el-table-column type="selection" width="100" :selectable="selectable">
+                                                </el-table-column>
+                                                <el-table-column width="40">
+                                                    <template slot-scope="scope">
+                                                        <el-tooltip class="item" effect="dark"
+                                                            :content="$lang('该科目存在历史数据，无法清除')" placement="right-start"   v-if="scope.row.is_disable == 0">
+                                                            <i class="el-icon-warning" style="color: red"
+                                                              ></i>
+                                                        </el-tooltip>
+                                                    </template>
+                                                </el-table-column>
+                                            </el-table>
+                                        </el-col>
+                                    </el-row>
+                                    <el-row>
+                                        <el-col style="font-weight: 600;font-size: 18px;margin-left: 150px">
+                                            {{$lang('营业外收入')}}
+                                        </el-col>
+                                    </el-row>
+                                    <el-row>
+                                        <el-col :span="18" style="margin-left: 150px">
+                                            <el-table ref="receiptTable" border :data="receipt" tooltip-effect="dark"
+                                                style="width: 100%" @selection-change="handleSelectionChange3"
+                                                :cell-class-name="cellcb">
+                                                <el-table-column :label="$lang('级次')" width="120">
+                                                    <template slot-scope="scope">{{ scope.row.level }}</template>
+                                                </el-table-column>
+                                                <el-table-column prop="subject_code" :label="$lang('科目编码')" width="120">
+                                                </el-table-column>
+                                                <el-table-column prop="subject_name" :label="$lang('科目名称')"
+                                                    show-overflow-tooltip>
+                                                </el-table-column>
+                                                <el-table-column type="selection" width="100" :selectable="selectable">
+                                                </el-table-column>
+                                                <el-table-column width="40">
+                                                    <template slot-scope="scope">
+                                                        <el-tooltip class="item" effect="dark"
+                                                            :content="$lang('该科目存在历史数据，无法清除')" placement="right-start" v-if="scope.row.is_disable == 0">
+                                                            <i class="el-icon-warning" style="color: red"
+                                                                ></i>
+                                                        </el-tooltip>
+                                                    </template>
+                                                </el-table-column>
+                                            </el-table>
+                                        </el-col>
+                                    </el-row>
+                                    <el-row>
+                                        <el-col style="font-weight: 600;font-size: 18px;margin-left: 150px">
+                                            {{$lang('营业外支出')}}
+                                        </el-col>
+                                    </el-row>
+                                    <el-row>
+                                        <el-col :span="18" style="margin-left: 150px">
+                                            <el-table ref="sealExpendTable" border :data="sealExpend"
+                                                tooltip-effect="dark" style="width: 100%"
+                                                @selection-change="handleSelectionChange4" :cell-class-name="cellcb">
+                                                <el-table-column :label="$lang('级次')" width="120">
+                                                    <template slot-scope="scope">{{ scope.row.level }}</template>
+                                                </el-table-column>
+                                                <el-table-column prop="subject_code" :label="$lang('科目编码')" width="120">
+                                                </el-table-column>
+                                                <el-table-column prop="subject_name" :label="$lang('科目名称')"
+                                                    show-overflow-tooltip>
+                                                </el-table-column>
+                                                <el-table-column type="selection" width="100" :selectable="selectable">
+                                                </el-table-column>
+                                                <el-table-column width="40">
+                                                    <template slot-scope="scope">
+                                                        <el-tooltip class="item" effect="dark"
+                                                            :content="$lang('该科目存在历史数据，无法清除')" placement="right-start"  v-if="scope.row.is_disable == 0">
+                                                            <i class="el-icon-warning" style="color: red"
+                                                              ></i>
+                                                        </el-tooltip>
+                                                    </template>
+                                                </el-table-column>
+                                            </el-table>
+                                        </el-col>
+                                    </el-row>
+                                </div>
+                            </el-tab-pane>
+                            <el-tab-pane name="third">
+                                <span slot="label">{{$lang('操作日志')}}</span>
+                                <el-table border :data="logData" tooltip-effect="dark" style="width: 100%"
+                                    class="order-list-table table-common" v-loading="tableLoading">
+                                    <el-table-column prop="datetime" :label="$lang('时间')"></el-table-column>
+                                    <el-table-column prop="username" :label="$lang('操作人')">
+                                    </el-table-column>
+                                    <el-table-column prop="optionmodel" :label="$lang('模块')">
+                                    </el-table-column>
+                                    <el-table-column prop="content" :label="$lang('操作内容')">
+                                    </el-table-column>
+                                </el-table>
+                                <el-pagination background v-if="activeName=='third'"
+                                    @current-change="handleLogCurrentChange" :page-size="handleLogForm.size"
+                                    layout="prev, pager, next" :total="logTotalCount">
+                                </el-pagination>
+                            </el-tab-pane>
+                        </el-tabs>
+                    </el-col>
+                </el-row>
+            </header>
+        </div>
+        <!-- 数据录入 end-->
+
+        <!-- 导入弹框 -->
+        <el-dialog title="提示" :visible.sync="isImport" width="50%" @close="closeModel">
+            <div style="padding: 20px 20px">
+                <div style="font-size: 16px;margin-bottom: 50px">
+                    {{$lang('导入数据')}}
+                    <i class="el-icon-close" style="position: absolute; right: 25px; cursor: pointer;"
+                        @click="exit()"></i>
+                </div>
+                <el-form ref="form" :model="form" label-width="180px" :label-position="labelPosition">
+                    <el-row style="padding-left: 40px;">
+                        <el-col>
+                            {{$lang('请选择需要导入的文件：')}}
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="10" style="height: 40px;line-height:40px;margin-left: 175px;position: relative;">
+                            <el-input></el-input>
+                        </el-col>
+                        <el-col :span="6">
+                            <el-upload ref="upload" class="upload-demo" :limit="1" :on-remove="removeExcel" :on-progress="paogress"
+                                :before-upload="beforeUpload" :action="API_ROOT" :headers="API_HEADERS" :data="myData"
+                                :on-success="uploadExcelSuccess" accept=".xlsx">
+                                <el-button type="primary" class="el-upload__text"
+                                    style="color: white;margin-left: 20px">{{$lang('选择')}}</el-button>
+                                </el-button>
+                                <div class="el-upload__tip" slot="tip" style="margin-left: -220px;">
+                                    <!-- {{$lang('只能上传xls、xlsx文件')}} -->
+                                </div>
+                            </el-upload>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="12" style="margin-left: 280px;">
+                            <el-button type="primary" @click="submit()">{{$lang('上传')}}</el-button>
+                            <el-button @click="exit()">{{$lang('取消')}}</el-button>
+                        </el-col>
+                    </el-row>
+                </el-form>
+            </div>
+        </el-dialog>
+    </div>
+    <script type="text/javascript"
+        src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js?v=<{$Think.config.VER_NUM}>">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js">
+    </script>
+    <script>
+        if (getCookie('think_language') !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en)
+        }
+        var app = new Vue({
+            el: '#app',
+            data: {
+                tableLoading: true,
+                labelPosition: 'right',
+                activeName: 'first',
+                isShowEdit: [],
+                API_ROOT: (window.location.origin == "http://erp.gshopper.com" || window.location.origin == 'https://erp.gshopper.com') ?
+                    location.protocol+"//insight.gshopper.com/insight-backend/financeCost/importExcel" : ((window.location.origin == "http://erp.gshopper.prod.com") ?
+                        location.protocol+"//insight.gshopper.prod.com/insight-backend/financeCost/importExcel" :
+                        location.protocol+"//insight.gshopper.stage.com/insight-backend/financeCost/importExcel"),
+                API_HEADERS: {
+                    'erp-req': true,
+                    'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                },
+                dataTime: '',
+                baseData: {
+                    sel: null, //选中行
+                    accountCost: [],
+                    cellCost: [],
+                    costDataInfo: [],
+                    managerCost: [],
+                    receipt: [],
+                    sealExpend: []
+                },
+                form: {
+                    name: ''
+                },
+                isShowSuccess: false,
+                param: '',
+                params: {},
+                isImport: false, // 导入
+                isEdit: false,
+                accountCost: [], // 财务费用
+                cellCost: [], // 销售费用
+                managerCost: [], // 管理费用
+                sealExpend: [], // 营业外支出
+                receipt: [], // 营业外收入
+                logData: [],
+                logTotalCount: 10,
+                checked: true,
+                multipleSelection: [],
+                multipleSelection1: [],
+                multipleSelection2: [],
+                multipleSelection3: [],
+                multipleSelection4: [],
+                rowIndex: '-1',
+                OrderIndexArr: [],
+                OrderIndexArr1: [],
+                OrderIndexArr2: [],
+                hoverOrderArr: [],
+                excelList: [],
+                file_name:'',
+                msg:'',
+                uploadForm: {
+                    name: ''
+                },
+                // 操作日志
+                handleLogForm: {
+                    page: 1,
+                    size: 10
+                },
+                queryPost: function (url, param) {
+                    var headers = {
+                        headers: {
+                            'erp-req': true,
+                            'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+                        }
+                    }
+                    var host = (window.location.origin == "http://erp.gshopper.com" || window.location.origin == 'https://erp.gshopper.com') ?
+                        location.protocol+"//insight.gshopper.com/insight-backend/financeCost" :
+                        ((window.location.origin == "http://erp.gshopper.prod.com") ?
+                            location.protocol+"//insight.gshopper.prod.com/insight-backend/financeCost" :
+                            location.protocol+"//insight.gshopper.stage.com/insight-backend/financeCost");
+                    // 初始化时间展示
+                    return axios.post(host + url, Qs.stringify(param), headers);
+                }
+            },
+            created: function () {
+                var date = new Date();
+                var year = date.getFullYear() + '';
+                var month = date.getMonth() < 9 ? ('0' + (date.getMonth() + 1)) : (date.getMonth() + 1);
+                this.dataTime = year + '-' + month;
+            },
+            computed: {
+                myData() {
+                    return {
+                        username: $('#scName', top.document).text(),
+                        dateTime: this.dataTime.replace(/[-]/g, ''),
+                        optionModel: '数据录入',
+                        'erp-req': true,
+                        'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+
+                    }
+                },
+            },
+            mounted() {
+                this.getListData();
+            },
+            methods: {
+
+                // tab栏切换
+                handleClick() {
+                    if (this.activeName == 'first') {
+                        this.getListData();
+                    } else if (this.activeName == 'second') {
+                        this.isEdit = false;
+                        this.getCostListData(1)
+                    } else {
+                        this.handleLogForm.page = 1;
+                        this.getBaseData();
+                    }
+                },
+                // 数据录入接口
+                getListData: function () {
+                    this.tableLoading = true;
+                    let param = {
+                        dateTime: this.dataTime.replace(/[-]/g, ''),
+                        'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp_req': true
+                    }
+                    this.queryPost("/queryCostDataInfo",
+                            param)
+                        .then((res) => {
+                            var _data = res.data;
+                            if (_data.success) {
+                                this.tableLoading = false;
+                                _data.datas.costDataInfo.map(i => {
+                                    i.isSet = false; //给后台返回数据添加`isSet`标识
+                                    return i;
+                                });
+                                var arr = [],
+                                    newArr = [];
+                                for (var i = 0; i < _data.datas.costDataInfo.length; i++) {
+                                    if (_data.datas.costDataInfo[i].业务部门 == 'Total') {
+                                        newArr.push(_data.datas.costDataInfo[i])
+                                        _data.datas.costDataInfo.splice(i, 1)
+                                    }
+                                };
+                                for (var i = 0; i < _data.datas.costDataInfo.length; i++) {
+                                    if (_data.datas.costDataInfo[i].小组 == 'Total') {
+                                        arr = _data.datas.costDataInfo.slice(i)
+                                        _data.datas.costDataInfo.splice(i)
+                                        break;
+                                    }
+                                };
+                                for (var j = 0; j < arr.length; j++) {
+                                    var temp = '';
+                                    for (var i = 0; i < _data.datas.costDataInfo.length; i++) {
+                                        if (_data.datas.costDataInfo[i].业务部门 == arr[j].业务部门) {
+                                            temp = i;
+                                        }
+                                    }
+                                    _data.datas.costDataInfo.splice(temp + 1, 0, arr[j])
+                                };
+                                _data.datas.costDataInfo.push(newArr[0])
+                                console.log(_data.datas.costDataInfo)
+                                this.baseData = _data.datas;
+                                console.log(_data.datas)
+                                this.getOrderNumber(_data.datas.costDataInfo);
+                                this.getOrderNumber1(_data.datas.costDataInfo);
+                                this.getOrderNumber2(_data.datas.costDataInfo);
+                            } else {
+                                this.$message.error(this.$lang(_data.msg));
+                            }
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                //数据录入编辑按钮
+                pwdChange: function (row, index, cg) {
+                    if (!cg) {
+                        for (var i in row) {
+                            if (/^(c6)/.test(i)) {
+                                row[i] = ''
+                            }
+                        }
+                    } else {
+                        //提交数据
+                        if (row.isSet) {
+                            let data = this.baseData.sel;
+                            for (let k in data) row[k] = data[k];
+                            row.dateTime = this.dataTime.replace(/[-]/g, '');
+                            row.erp_cookie = 'PHPSESSID=' + getCookie('PHPSESSID') + ';';
+                            row.erp_req = true;
+                            row.username = $('#scName', top.document).text();
+                            row.optionModel = '数据录入';
+                            let param = row;
+                            this.queryPost("/editCostData",
+                                    param)
+                                .then((res) => {
+                                    var _data = res.data;
+                                    if (_data.success) {
+                                        app.$message({
+                                            type: 'success',
+                                            message: _data.msg
+                                        });
+                                        this.getListData()
+                                        row.isSet = false;
+                                    } else {
+                                        this.$message.error(this.$lang(_data.msg));
+                                    }
+                                }).catch(function (err) {
+                                    console.log(err);
+                                });
+
+                            // //然后这边重新读取表格数据
+                        } else {
+                            app.baseData.sel = row;
+                            this.baseData.costDataInfo.map(i => {
+                                i.isSet = false; //给后台返回数据添加`isSet`标识
+                                return i;
+                            });
+                            row.isSet = true;
+                        }
+                    }
+                },
+                // 编辑成本费用字段
+                getCostListData: function (item) {
+                    this.tableLoading = true;
+                    let param = {
+                        isShow: utils.isEmpty(item) ? '' : 1,
+                        'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp_req': true
+                    }
+                    this.queryPost("/queryCostInfo",
+                            param)
+                        .then((res) => {
+                            var _data = res.data;
+                            if (_data.success) {
+                                this.tableLoading = false;
+                                this.accountCost = _data.datas.accountCost;
+                                this.cellCost = _data.datas.cellCost;
+                                this.managerCost = _data.datas.managerCost;
+                                this.receipt = _data.datas.receipt;
+                                this.sealExpend = _data.datas.sealExpend;
+                                this.cellCost.forEach(item => {
+                                    if (item.is_show == 1) {
+                                        setTimeout(() => {
+                                            app.$refs.cellTable && app.$refs
+                                                .cellTable.toggleRowSelection(item,
+                                                    true)
+                                        }, 100);
+                                    } else {
+                                        app.$refs.cellTable.clearSelection();
+                                    }
+                                });
+                                this.managerCost.forEach(item => {
+                                    if (item.is_show == 1) {
+                                        setTimeout(() => {
+                                            app.$refs.managerTable && app.$refs
+                                                .managerTable.toggleRowSelection(item,
+                                                    true)
+                                        }, 100);
+                                    }
+                                });
+                                this.receipt.forEach(item => {
+                                    if (item.is_show == 1) {
+                                        setTimeout(() => {
+                                            app.$refs.receiptTable && app.$refs
+                                                .receiptTable.toggleRowSelection(item,
+                                                    true)
+                                        }, 100);
+                                    }
+                                });
+                                this.sealExpend.forEach(item => {
+                                    if (item.is_show == 1) {
+                                        setTimeout(() => {
+                                            app.$refs.sealExpendTable && app
+                                                .$refs
+                                                .sealExpendTable.toggleRowSelection(
+                                                    item,
+                                                    true)
+                                        }, 100);
+                                    }
+                                });
+                                this.accountCost.forEach(item => {
+                                    if (item.is_show == 1) {
+                                        setTimeout(() => {
+                                            app.$refs.accountTable && app.$refs
+                                                .accountTable.toggleRowSelection(item,
+                                                    true)
+                                        }, 100);
+                                    }
+                                });
+                            } else {
+                                this.$message.error(this.$lang(_data.msg));
+                            }
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                // 让部分复选框没办法取消勾状态
+                selectable(row, index) {
+                    if (!row.is_disable) {
+                        return false
+                    } else {
+                        return true
+                    }
+                },
+                aaa: function (arr) {
+                    for (var i = 0; i < arr.length; i++) {
+
+                    }
+
+                    function bbb(item, item1) {
+
+                    }
+                },
+                // 操作日志接口
+                getBaseData: function () {
+                    this.tableLoading = true;
+                    let param = {
+                        page: this.handleLogForm.page,
+                        pageSize: this.handleLogForm.size,
+                        'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp_req': true
+                    }
+                    this.queryPost("/queryLogInfo",
+                            param)
+                        .then((res) => {
+                            var _data = res.data;
+                            if (_data.success) {
+                                this.tableLoading = false;
+                                this.logData = _data.datas;
+                                this.logTotalCount = _data.totalCount;
+                            } else {
+                                this.$message.error(this.$lang(_data.msg));
+                            }
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                // checkNum: function (event, data, type) {
+                //     var _this = this;
+                //     var r = /^[1-9][0-9]*$/
+                //     var num = event.value
+                //     if (!r.test(event.value)) {
+                //         var n = Math.abs(parseInt(event.value))
+                //         if (isNaN(n)) {
+                //             num = '0'
+                //         } else {
+                //             num = n
+                //         }
+                //     }
+                //     if (event.value === '') {
+                //         num = ''
+                //     }
+                //     event.value = String(num)
+                //     data[type] = String(num)
+                //     /*for(var x = 0;x<this.orderInfo.goods.length;x++){ if(this.orderInfo.goods[x]===data){
+                //         this.orderInfo.goods[x]. } }*/
+                // },
+                // 搜索按钮数据录入接口
+                searchData: function () {
+                    // console.log(this.OrderIndexArr)
+                    // console.log(this.OrderIndexArr1)
+                    // console.log(this.OrderIndexArr2)
+                    this.OrderIndexArr = []
+                    this.OrderIndexArr1 = []
+                    this.OrderIndexArr2 = []
+                    this.getListData()
+                },
+                cellcb(row) {
+                    if (row.row.has_children == 1) {
+                        return "myCell"
+                    }
+                },
+                save: function () {
+                    var arr = [],
+                        newArr = [];
+                    arr =
+                        this.multipleSelection.concat(this.multipleSelection1, this
+                            .multipleSelection2, this.multipleSelection3, this
+                            .multipleSelection4);
+                    for (var i = 0; i < arr.length; i++) {
+                        // if (arr[i].p_level !== 2 && arr[i].is_disable !== 0) {
+                            newArr.push({
+                                id: arr[i].id + '',
+                                flag: arr[i].is_show + ''
+                            })
+                        // }
+                    };
+                    var str = '';
+                    for (var i = 0; i < newArr.length; i++) {
+                        str += JSON.stringify(newArr[i]) + ','
+                    };
+                    this.saveFuc(str);
+                },
+                saveFuc: function (item) {
+                    let param = {
+                        editInfo: item.substring(0, item.length - 1),
+                        username: $('#scName', top.document).text(),
+                        optionModel: "编辑成本费用字段",
+                        'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp_req': true
+                    }
+                    this.queryPost("/editCostName",
+                            param)
+                        .then((res) => {
+                            var _data = res.data;
+                            if (_data.success) {
+                                this.$message({
+                                    type: 'success',
+                                    message: this.$lang(_data.msg)
+                                })
+                                this.getCostListData('')
+                            } else {
+                                this.$message.error(this.$lang(_data.msg));
+                            }
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                handleSelectionChange(val) {
+                    var arr = [];
+                    arr = JSON.parse(JSON.stringify(this.cellCost));
+                    for (var i = 0; i < arr.length; i++) {
+                        arr[i].is_show = 0;
+                    };
+                    if (val.length) {
+                        for (var i = 0; i < arr.length; i++) {
+                            for (var j = 0; j < val.length; j++) {
+                                if (arr[i].id == val[j].id) {
+                                    arr[i].is_show = 1;
+                                }
+                            }
+                        };
+                    } else {
+                        for (var i = 0; i < arr.length; i++) {
+                            if (arr[i].is_disable == 0) {
+                                arr[i].is_show = 1;
+                            } else {
+                                arr[i].is_show = 0;
+                            }
+                        };
+                    }
+                    this.multipleSelection = arr;
+                },
+                handleSelectionChange1(val) {
+                    var arr = [];
+                    arr = JSON.parse(JSON.stringify(this.managerCost));
+                    for (var i = 0; i < arr.length; i++) {
+                        arr[i].is_show = 0;
+                    };
+                    if (val.length) {
+                        for (var i = 0; i <
+                            arr.length; i++) {
+                            for (var j = 0; j < val.length; j++) {
+                                if (arr[i].id == val[j].id) {
+                                    arr[i].is_show = 1;
+                                }
+                            }
+                        };
+                    } else {
+                        for (var i = 0; i < arr.length; i++) {
+                            if (arr[i].is_disable == 0) {
+                                arr[i].is_show = 1;
+                            } else {
+                                arr[i].is_show = 0;
+                            }
+                        };
+                    }
+                    this.multipleSelection1 = arr;
+                },
+                handleSelectionChange2(val) {
+                    var arr = [];
+                    arr = JSON.parse(JSON.stringify(this.accountCost));
+                    for (var i = 0; i < arr.length; i++) {
+                        arr[i].is_show = 0;
+                    };
+                    if (val.length) {
+                        for (var i = 0; i <
+                            arr.length; i++) {
+                            for (var j = 0; j < val.length; j++) {
+                                if (arr[i].id == val[j].id) {
+                                    arr[i].is_show = 1;
+                                }
+                            }
+                        };
+                    } else {
+                        for (var i = 0; i < arr.length; i++) {
+                            if (arr[i].is_disable == 0) {
+                                arr[i].is_show = 1;
+                            } else {
+                                arr[i].is_show = 0;
+                            }
+                        };
+                    }
+                    this.multipleSelection2 = arr;
+                },
+                handleSelectionChange3(val) {
+                    var arr = [];
+                    arr = JSON.parse(JSON.stringify(this.receipt));
+                    for (var i = 0; i < arr.length; i++) {
+                        arr[i].is_show = 0;
+                    };
+                    if (val.length) {
+                        for (var i = 0; i <
+                            arr.length; i++) {
+                            for (var j = 0; j < val.length; j++) {
+                                if (arr[i].id == val[j].id) {
+                                    arr[i].is_show = 1;
+                                }
+                            }
+                        };
+                    } else {
+                        for (var i = 0; i < arr.length; i++) {
+                            if (arr[i].is_disable == 0) {
+                                arr[i].is_show = 1;
+                            } else {
+                                arr[i].is_show = 0;
+                            }
+                        };
+                    }
+                    this.multipleSelection3 = arr;
+                },
+                handleSelectionChange4(val) {
+                    var arr = [];
+                    arr = JSON.parse(JSON.stringify(this.sealExpend));
+                    for (var i = 0; i < arr.length; i++) {
+                        arr[i].is_show = 0;
+                    };
+                    if (val.length) {
+                        for (var i = 0; i <
+                            arr.length; i++) {
+                            for (var j = 0; j < val.length; j++) {
+                                if (arr[i].id == val[j].id) {
+                                    arr[i].is_show = 1;
+                                }
+                            }
+                        };
+                    } else {
+                        for (var i = 0; i < arr.length; i++) {
+                            if (arr[i].is_disable == 0) {
+                                arr[i].is_show = 1;
+                            } else {
+                                arr[i].is_show = 0;
+                            }
+                        };
+                    }
+                    this.multipleSelection4 = arr;
+                },
+                // 取消
+                exit: function () {
+                    this.isImport = false;
+                },
+                // 编辑
+                edit: function () {
+                    this.isEdit = true;
+                    this.handleCheckData()
+                },
+                handleCheckData() {
+                    this.getCostListData('');
+                },
+                goBack: function () {
+                    this.isEdit = false;
+                    this.getCostListData(1);
+                },
+                /**
+                    合并单元格
+                */
+                // 获取相同编号的数组
+                getOrderNumber(item) {
+                    let OrderObj = {}
+                    item.forEach((element, index) => {
+                        element.rowIndex = index
+                        if (OrderObj[element.业务部门]) {
+                            OrderObj[element.业务部门].push(index)
+                        } else {
+                            OrderObj[element.业务部门] = []
+                            OrderObj[element.业务部门].push(index)
+                        }
+                    })
+                    // 将数组长度大于1的值 存储到this.OrderIndexArr（也就是需要合并的项）
+                    for (let k in OrderObj) {
+                        if (OrderObj[k].length > 1) {
+                            this.OrderIndexArr.push(OrderObj[k])
+                        }
+                    }
+                },
+                getOrderNumber1(item) {
+                    let OrderObj = {}
+                    item.forEach((element, index) => {
+                        if (element.小组 !== 'Total') {
+                            element.rowIndex = index
+                            if (OrderObj[element.小组]) {
+                                OrderObj[element.小组].push(index)
+                            } else {
+                                OrderObj[element.小组] = []
+                                OrderObj[element.小组].push(index)
+                            }
+                        }
+                    })
+                    // 将数组长度大于1的值 存储到this.OrderIndexArr（也就是需要合并的项）
+                    for (let k in OrderObj) {
+                        if (OrderObj[k].length > 1) {
+                            this.OrderIndexArr1.push(OrderObj[k])
+                        }
+                    }
+                },
+                getOrderNumber2(item) {
+                    let OrderObj = {}
+                    item.forEach((element, index) => {
+                        if (element.负责人 !== '/') {
+                            element.rowIndex = index
+                            if (OrderObj[element.负责人]) {
+                                OrderObj[element.负责人].push(index)
+                            } else {
+                                OrderObj[element.负责人] = []
+                                OrderObj[element.负责人].push(index)
+                            }
+                        }
+                    })
+                    // 将数组长度大于1的值 存储到this.OrderIndexArr（也就是需要合并的项）
+                    for (let k in OrderObj) {
+                        if (OrderObj[k].length > 1) {
+                            this.OrderIndexArr2.push(OrderObj[k])
+                        }
+                    }
+                },
+                objectSpanMethod({
+                    row,
+                    column,
+                    rowIndex,
+                    columnIndex
+                }) {
+                    if (columnIndex === 0) {
+                        for (let i = 0; i < this.OrderIndexArr.length; i++) {
+                            let element = this.OrderIndexArr[i]
+                            for (let j = 0; j < element.length; j++) {
+                                let item = element[j]
+                                // console.log("item",item);
+                                if (rowIndex == item) {
+                                    if (j == 0) {
+                                        return {
+                                            rowspan: element.length,
+                                            colspan: 1
+                                        }
+                                    } else if (j != 0) {
+                                        return {
+                                            rowspan: 0,
+                                            colspan: 0
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else if (columnIndex === 1) {
+                        for (let i = 0; i < this.OrderIndexArr1.length; i++) {
+                            let element = this.OrderIndexArr1[i]
+                            for (let j = 0; j < element.length; j++) {
+                                let item = element[j]
+                                if (rowIndex == item) {
+                                    if (j == 0) {
+                                        return {
+                                            rowspan: element.length,
+                                            colspan: 1
+                                        }
+                                    } else if (j != 0) {
+                                        return {
+                                            rowspan: 0,
+                                            colspan: 0
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else if (columnIndex === 3) {
+                        for (let i = 0; i < this.OrderIndexArr2.length; i++) {
+                            let element = this.OrderIndexArr2[i]
+                            for (let j = 0; j < element.length; j++) {
+                                let item = element[j]
+                                if (rowIndex == item) {
+                                    if (j == 0) {
+                                        return {
+                                            rowspan: element.length,
+                                            colspan: 1
+                                        }
+                                    } else if (j != 0) {
+                                        return {
+                                            rowspan: 0,
+                                            colspan: 0
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                tableRowClassName({
+                    row,
+                    rowIndex
+                }) {
+                    let arr = this.hoverOrderArr
+                    for (let i = 0; i < arr.length; i++) {
+                        if (rowIndex == arr[i]) {
+                            return 'hovered-row'
+                        }
+                    }
+                },
+                cellMouseEnter(row, column, cell, event) {
+                    this.rowIndex = row.rowIndex;
+                    this.hoverOrderArr = [];
+                    this.OrderIndexArr.forEach(element => {
+                        if (element.indexOf(this.rowIndex) >= 0) {
+                            this.hoverOrderArr = element
+                        }
+                    })
+                },
+
+                cellMouseLeave(row, column, cell, event) {
+                    this.rowIndex = '-1'
+                    this.hoverOrderArr = [];
+                },
+                /***
+                    upload       上传按钮函数
+                    beforeUpload 上传之前判断类型
+
+                */
+                /**
+                 * 导入上传前相关逻辑处理
+                 */
+                upload(file) {
+                    console.log(file)
+                    let fileObj = file.name;
+                    console.log(fileObj)
+                    // 接收上传文件的后台地址
+                    let FileController = this.API_ROOT;
+                    // FormData 对象
+                    let form = new FormData();
+                    // 文件对象
+                    form.append("file", fileObj);
+                    form.append("username", $('#scName', top.document).text());
+                    form.append("dateTime", this.dataTime.replace(/[-]/g, ''));
+                    form.append("optionModel", '数据录入');
+                    form.append("erp-req", true);
+                    form.append("erp-cookie", 'PHPSESSID=' + getCookie('PHPSESSID') + ';');
+                    let config = {
+                        headers: {
+                            'erp-req': true,
+                            'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        }
+                    };
+                    var _this = this;
+                    axios.post(FileController, form, config)
+                        .then(function (res) {
+                            if (res.data.success == true) {
+                                _this.$message.success(_this.$lang(res.data.msg));
+                            } else {
+                                _this.$message.error(_this.$lang(res.data.msg));
+                            }
+                        })
+
+                },
+                // 上传
+                submit: function () {
+                    // if (this.isShowSuccess) {
+                      console.log(this.excelList)
+                    if (this.excelList.length !== 0) {
+                        this.isImport = false;
+                      
+                        console.log(this.excelList[0].response.success)
+                        this.$refs.upload.clearFiles();
+                        this.getListData();
+                        if(this.excelList[0].response.success){
+                            this.$message.success(this.msg);
+                        }else{
+                            this.$message.error(this.msg)
+                        }
+                    } else {
+                        this.$message.error(this.$lang('请上传文件'));
+                    }
+                    // }
+                },
+                beforeUpload: function (file) {
+                    this.file_name = file.name;
+                    let excelfileExtend = ".xlsx" //设置文件格式
+                    let fileExtend = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+                   
+                    if (excelfileExtend.indexOf(fileExtend) <= -1) {
+                        this.$message.error(this.$lang('导入文件格式需要为.xlsx'))
+                        return false
+                    }
+                },
+                paogress:function(file){
+                  //  console.log(file)
+                },
+                uploadExcelSuccess: function (response, file, fileList) {
+                    if (response.success) {
+                        this.excelList = fileList;
+                        // this.isShowSuccess = true;
+                        this.msg = response.msg;
+                    } else {
+                        // this.isShowSuccess = false;
+                       // this.msg = response.msg;
+                       this.excelList = fileList;
+                       this.msg = response.msg;
+                       // this.$message.error(response.msg);
+                        // setTimeout(() => {
+                        //     this.$refs.upload.clearFiles();
+                        // }, 500);
+                    }
+                },
+                closeModel: function () {
+                    this.$refs.upload.clearFiles();
+                },
+                removeExcel: function (file) {
+                    this.file_name = '';
+                    this.$refs.upload.clearFiles();
+                },
+                // 导出
+                exportData: function () {
+                    var params = {
+                            dateTime: this.dataTime.replace(/[-]/g, ''),
+                            username: $('#scName', top.document).text(),
+                            optionModel: "成本录入",
+                            filename: this.dataTime.replace(/[-]/g, '') + '.xlsx',
+                            'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                            'erp_req': true
+                        },
+                        url = (window.location.origin == "http://erp.gshopper.com") ?
+                            location.protocol+"//insight.gshopper.com/insight-backend/financeCost/exportToExcel" :
+                        ((window.location.origin == "http://erp.gshopper.prod.com") ?
+                            location.protocol+"//insight.gshopper.prod.com/insight-backend/financeCost/exportToExcel" :
+                            location.protocol+"//insight.gshopper.stage.com/insight-backend/financeCost/exportToExcel");
+                    this.postExcelFile(params, url)
+                },
+                postExcelFile: function (params, url) { //params是post请求需要的参数，url是请求url地址
+                    var form = document.createElement("form");
+                    form.style.display = 'none';
+                    form.action = url;
+                    form.method = "post";
+                    document.body.appendChild(form);
+
+                    for (var key in params) {
+                        var input = document.createElement("input");
+                        input.type = "hidden";
+                        input.name = key;
+                        input.value = params[key];
+                        form.appendChild(input);
+                    }
+
+                    form.submit();
+                    form.remove();
+                },
+                // 导入
+                importData: function () {
+                    this.isImport = true;
+                },
+
+                handleLogCurrentChange: function (val) {
+                    this.handleLogForm.page = val;
+                },
+            },
+            //监听数据
+            watch: {
+                handleLogForm: {
+                    handler(newValue, oldValue) {
+                        this.getBaseData(newValue)
+                    },
+                    deep: true
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

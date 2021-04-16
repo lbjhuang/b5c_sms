@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<title>$lang('收支明细')</title>
+	<meta name="viewport"
+		content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="IE=Edge">
+	<link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+	<link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.8.2.css?v=<{$Think.const.V}>">
+	<link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+	<link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+	<link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.const.V}>">
+	<link rel="stylesheet" href="./Application/Tpl/Oms/Balance/balanceDetail.css?v=<{$Think.const.V}>">
+</head>
+
+<style>
+	.el-loading-spinner {
+		top: 300px;
+		margin-top: -21px;
+		position: fixed;
+	}
+</style>
+<body>
+	<div id="balance-detail" v-cloak v-loading="tableLoading">
+		<div>
+			<!-- 平台 start-->
+			<el-row type="flex">
+				<el-col :span="1">
+					<div class="title-info">{{$lang('平台')}}</div>
+				</el-col>
+				<el-col :span="23" class="search-item-i">
+					<span :class="{ active: !platSelected.CD_VAL }" @click="selectPlat('')">{{$lang('全部')}}</span>
+					<span :class="{ active: platSelected.CD_VAL === item.CD_VAL }" v-for="item in platData" :key="item.CD"
+						@click="selectPlat(item)">{{$lang(item.CD_VAL)}}</span>
+				</el-col>
+			</el-row>
+			<!-- 平台 end-->
+
+			<!-- 站点 start-->
+			<el-row type="flex" v-show="platSelected.CD_VAL && siteSelected.CD_VAL">
+				<el-col :span="1">
+					<div class="title-info">{{$lang('站点')}}</div>
+				</el-col>
+				<el-col :span="23" class="search-item-i">
+					<span :class="{ active: siteSelected.CD_VAL === item.CD_VAL }" v-for="item in siteData" :key="item.CD"
+						@click="selectSite(item)">{{$lang(item.CD_VAL)}}</span>
+				</el-col>
+			</el-row>
+			<!-- 站点 end-->
+
+			<!-- 店铺 start-->
+			<el-row type="flex" v-show="platSelected.CD_VAL && siteSelected.CD_VAL && storeSelected.CD_VAL">
+				<el-col :span="1">
+					<div class="title-info">{{$lang('店铺')}}</div>
+				</el-col>
+				<el-col :span="23" class="search-item-i">
+					<span :class="{ active: storeSelected.CD_VAL === item.CD_VAL }" v-for="item in storeData" :key="item.CD"
+						@click="selectStore(item)">{{$lang(item.CD_VAL)}}</span>
+				</el-col>
+			</el-row>
+			<!-- 店铺 end-->
+
+			<!-- 所需指标 start-->
+			<el-row type="flex" v-show="!platSelected.CD_VAL && !siteSelected.CD_VAL && !storeSelected.CD_VAL">
+				<el-col :span="1">
+					<div class="title-info">{{$lang('所需指标')}}</div>
+				</el-col>
+				<el-col :span="23">
+					<el-select v-model="indicatorSelected" multiple value-key="label" @change="selectIndicator">
+						<el-option-group label="基本信息">
+							<el-option v-for="item in indicator.order" :key="item.label" :value="item.label"
+								:disabled="item.disabled"></el-option>
+						</el-option-group>
+						<el-option-group label="销货信息">
+							<el-option v-for="item in indicator.sell" :key="item.label" :value="item.label" :disabled="item.disabled">
+							</el-option>
+						</el-option-group>
+						<el-option-group label="配送信息">
+							<el-option v-for="item in indicator.ship" :key="item.label" :value="item.label" :disabled="item.disabled">
+							</el-option>
+						</el-option-group>
+						<el-option-group label="退货信息">
+							<el-option v-for="item in indicator.return" :key="item.label" :value="item.label"
+								:disabled="item.disabled"></el-option>
+						</el-option-group>
+						<el-option-group label="其他信息">
+							<el-option v-for="item in indicator.other" :key="item.label" :value="item.label"
+								:disabled="item.disabled"></el-option>
+						</el-option-group>
+					</el-select>
+				</el-col>
+			</el-row>
+			<!-- 所需指标 end-->
+
+			<!-- 未选择平台时的结算月 start-->
+			<div v-show="!platSelected.CD_VAL && !siteSelected.CD_VAL && !storeSelected.CD_VAL">
+				<el-row type="flex">
+					<el-col :span="1">
+						<div class="title-info">{{$lang('结算月')}}</div>
+					</el-col>
+					<el-col :span="6">
+						<el-date-picker v-model="rangeMonth" type="monthrange" value-format="yyyy-MM" unlink-panels
+							:range-separator="$lang('至')" :start-placeholder="$lang('开始月份')" :end-placeholder="$lang('结束月份')">
+						</el-date-picker>
+					</el-col>
+					<el-col :span="4" :offset="13">
+						<div class="btns">
+							<button class="btn-search" @click="getTableData('')">{{$lang('确定')}}</button>
+							<button class="btn-reset" @click="resetTable">{{$lang('重置')}}</button>
+						</div>
+					</el-col>
+				</el-row>
+			</div>
+			<!-- 未选择平台时的结算月 end-->
+
+			<!-- 选择平台后表格的筛选条件 start -->
+			<div v-show="platSelected.CD_VAL && siteSelected.CD_VAL && storeSelected.CD_VAL">
+				<el-row type="flex">
+					<el-col :span="1">
+						<div class="title-info">{{$lang('结算月')}}</div>
+					</el-col>
+					<el-col :span="6">
+						<el-date-picker v-model="rangeMonth" type="monthrange" value-format="yyyy-MM" unlink-panels
+							:range-separator="$lang('至')" :start-placeholder="$lang('开始月份')" :end-placeholder="$lang('结束月份')">
+						</el-date-picker>
+					</el-col>
+					<el-col :span="9">
+						<span class="title-info">净入账款小计</span>
+						<el-input v-model="total_amount_min" placeholder="请输入"></el-input>
+						<span>至</span>
+						<el-input v-model="total_amount_max" placeholder="请输入"></el-input>
+					</el-col>
+					<el-col :span="2">
+						<div class="title-info">{{$lang('佣金及销货服务费小计')}}</div>
+					</el-col>
+					<el-col :span="6">
+						<el-input v-model="total_cost_min" placeholder="请输入"></el-input>
+						<span>至</span>
+						<el-input v-model="total_cost_max" placeholder="请输入"></el-input>
+					</el-col>
+				</el-row>
+
+				<el-row type="flex">
+					<el-col :span="1">
+						<div class="title-info">{{$lang('说明')}}</div>
+					</el-col>
+					<el-col :span="6">
+						<el-input v-model="introduction" placeholder="关键字"></el-input>
+					</el-col>
+					<el-col :span="1">
+						<div class="title-info">{{$lang('修改人')}}</div>
+					</el-col>
+					<el-col :span="4">
+						<el-select v-model="updated_by" clearable filterable remote :remote-method="queryUser" :loading="userLoading"
+							placeholder="请输入关键词">
+							<el-option v-for="item in userData" :key="item.id" :label="item.name" :value="item.name">
+							</el-option>
+						</el-select>
+					</el-col>
+					<el-col :span="4" :offset="8">
+						<div class="btns">
+							<button class="btn-search" @click="getTableData('')">{{$lang('搜索')}}</button>
+							<button class="btn-reset" @click="resetTable">{{$lang('重置')}}</button>
+						</div>
+					</el-col>
+				</el-row>
+			</div>
+			<!-- 选择平台后表格的筛选条件 end -->
+
+		</div>
+
+		<div class="list-common-main">
+			<!-- 未选择平台时的标准表 start -->
+			<el-table border show-header :data="tableData.list"
+				class="order-list-table table-common" v-if="!platSelected.CD_VAL &&
+				!siteSelected.CD_VAL && !storeSelected.CD_VAL">
+				<el-table-column type="selection">
+				</el-table-column>
+				<el-table-column prop="settlement.store_id">
+					<template slot="header" slot-scope="scope">
+						{{$lang('店铺')}}<br>
+						{{$lang('编号')}}
+					</template>
+				</el-table-column>
+				<el-table-column prop="settlement.store_name">
+					<template slot="header" slot-scope="scope">
+						{{$lang('店铺')}}<br>
+						{{$lang('名称')}}
+					</template>
+				</el-table-column>
+				<el-table-column prop="settlement.site">
+					<template slot="header" slot-scope="scope">
+						{{$lang('站点')}}<br>
+						{{$lang('名称')}}
+					</template>
+				</el-table-column>
+				<el-table-column prop="settlement.plat">
+					<template slot="header" slot-scope="scope">
+						{{$lang('平台')}}<br>
+						{{$lang('名称')}}
+					</template>
+				</el-table-column>
+				<el-table-column :label="$lang('我方、平台、买家间的3方收支')">
+					<el-table-column :label="$lang('基本信息')">
+						<el-table-column prop="order.order_no">
+							<template slot="header" slot-scope="scope">
+								{{$lang('买家购物')}}<br>
+								{{$lang('订单号')}}
+							</template>
+						</el-table-column>
+						<el-table-column v-if="indicator.order.order_created_date.show"
+							prop="order.order_created_date">
+							<template slot="header" slot-scope="scope">
+								{{$lang('订单')}}<br>
+								{{$lang('创建日')}}
+							</template>
+						</el-table-column>
+						<el-table-column v-if="indicator.order.paid_on_date.show" prop="order.paid_on_date">
+							<template slot="header" slot-scope="scope">
+								{{$lang('订单')}}<br>
+								{{$lang('支付日')}}
+							</template>
+						</el-table-column>
+						<el-table-column :label="$lang('结算月')" prop="order.end_date">
+							
+						</el-table-column>
+						<el-table-column :label="$lang('入账月')" v-if="indicator.order.deposit_date.show" prop="order.deposit_date">
+							
+						</el-table-column>
+						<el-table-column :label="$lang('净入账款')" prop="order.amount">
+							
+						</el-table-column>
+						<el-table-column :label="$lang('币种')" prop="order.currency">
+							
+						</el-table-column>
+						<el-table-column :label="$lang('支付渠道')" v-if="indicator.order.payment_method.show"
+							prop="order.payment_method">
+							
+						</el-table-column>
+						<el-table-column :label="$lang('商品名')" v-if="indicator.order.goods_name.show" prop="goods.goods_name">
+							<template slot-scope="scope">
+                <div v-for="item in scope.row.goods">
+                  {{item.goods_name}}
+                </div>
+              </template>
+						</el-table-column>
+						<el-table-column :label="$lang('SKU')" v-if="indicator.order.sku_id.show" prop="goods.sku_id">
+							<template slot-scope="scope">
+                <div v-for="item in scope.row.goods">
+                  {{item.sku_id}}
+                </div>
+              </template>
+						</el-table-column>
+						<el-table-column v-if="indicator.order.plat_goods_id.show"
+							prop="goods.plat_goods_id">
+							<template slot="header" slot-scope="scope">
+								{{$lang('平台')}}<br>
+								{{$lang('商品号')}}
+							</template>
+							<template slot-scope="scope">
+                <div v-for="item in scope.row.goods">
+                  {{item.plat_goods_id}}
+                </div>
+              </template>
+						</el-table-column>
+						<el-table-column v-if="indicator.order.our_goods_id.show" prop="goods.our_goods_id">
+							<template slot="header" slot-scope="scope">
+								{{$lang('我方')}}<br>
+								{{$lang('商品号')}}
+							</template>
+							<template slot-scope="scope">
+                <div v-for="item in scope.row.goods">
+                  {{item.our_goods_id}}
+                </div>
+              </template>
+						</el-table-column>
+					</el-table-column>
+					<el-table-column :label="$lang('销货信息')">
+						<el-table-column :label="$lang('购货量')" v-if="indicator.sell.goods_number.show" prop="sell.goods_number">
+
+						</el-table-column>
+						<el-table-column v-if="indicator.sell.sale_amount.show" prop="sell.sale_amount">
+							<template slot="header" slot-scope="scope">
+								{{$lang('原含税')}}<br>
+								{{$lang('货价')}}
+							</template>
+						</el-table-column>
+						<el-table-column v-if="indicator.sell.our_discount_amount.show"
+							prop="sell.our_discount_amount" :width="wordWidth.six">
+							<template slot="header" slot-scope="scope">
+								{{$lang('原含税货价中：')}}<br>
+								{{$lang('我方以折扣')}}<br>
+								{{$lang('让利的部分')}}
+							</template>
+						</el-table-column>
+						<el-table-column v-if="indicator.sell.our_coupon_amount.show"
+							prop="sell.our_coupon_amount" :width="wordWidth.six">
+							<template slot="header" slot-scope="scope">
+								{{$lang('原含税货价中：')}}<br>
+								{{$lang('我方以优惠券')}}<br>
+								{{$lang('让利的部分')}}
+							</template>
+						</el-table-column>
+						<el-table-column v-if="indicator.sell.our_integral_amount.show"
+							prop="sell.our_integral_amount" :width="wordWidth.six">
+							<template slot="header" slot-scope="scope">
+								{{$lang('原含税货价中：')}}<br>
+								{{$lang('我方以积分')}}<br>
+								{{$lang('让利的部分')}}
+							</template>
+						</el-table-column>
+						<el-table-column v-if="indicator.sell.our_bind_sale_amount.show"
+							prop="sell.our_bind_sale_amount" :width="wordWidth.six">
+							<template slot="header" slot-scope="scope">
+								{{$lang('原含税货价中：')}}<br>
+								{{$lang('我方以捆绑销售')}}<br>
+								{{$lang('让利的部分')}}
+							</template>
+						</el-table-column>
+						<el-table-column v-if="indicator.sell.shared_amount.show"
+							prop="sell.shared_amount" :width="wordWidth.fifteen">
+							<template slot="header" slot-scope="scope">
+								{{$lang('原含税货价中：')}}<br>
+								{{$lang('平台、信用卡商、买家共同承担的部分')}}
+							</template>
+						</el-table-column>
+						<el-table-column
+							v-if="indicator.sell.plat_discount_amount.show" prop="sell.plat_discount_amount" :width="wordWidth.fifteen">
+							<template slot="header" slot-scope="scope">
+								{{$lang('原含税货价中的')}}<br>
+								{{$lang('平台、信用卡商、买家共同承担的部分中：')}}<br>
+								{{$lang('平台以折扣承担的部分')}}
+							</template>
+						</el-table-column>
+						<el-table-column
+							v-if="indicator.sell.plat_coupon_amount.show" prop="sell.plat_coupon_amount" :width="wordWidth.fifteen">
+							<template slot="header" slot-scope="scope">
+								{{$lang('原含税货价中的')}}<br>
+								{{$lang('平台、信用卡商、买家共同承担的部分中：')}}<br>
+								{{$lang('平台以优惠券承担的部分')}}
+							</template>
+						</el-table-column>
+						<el-table-column
+							v-if="indicator.sell.plat_integral_amount.show" prop="sell.plat_integral_amount" :width="wordWidth.fifteen">
+							<template slot="header" slot-scope="scope">
+								{{$lang('原含税货价中的')}}<br>
+								{{$lang('平台、信用卡商、买家共同承担的部分中：')}}<br>
+								{{$lang('平台以积分承担的部分')}}
+							</template>
+						</el-table-column>
+						<el-table-column
+							v-if="indicator.sell.plat_bind_sale_amount.show" prop="sell.plat_bind_sale_amount" :width="wordWidth.fifteen">
+							<template slot="header" slot-scope="scope">
+								{{$lang('原含税货价中的')}}<br>
+								{{$lang('平台、信用卡商、买家共同承担的部分中：')}}<br>
+								{{$lang('平台以捆绑销售承担的部分')}}
+							</template>
+						</el-table-column>
+						<el-table-column
+							v-if="indicator.sell.credit_card_dealer_amount.show" prop="sell.credit_card_dealer_amount" :width="wordWidth.fifteen">
+							<template slot="header" slot-scope="scope">
+								{{$lang('原含税货价中的')}}<br>
+								{{$lang('平台、信用卡商、买家共同承担的部分中：')}}<br>
+								{{$lang('信用卡商承担的部分')}}
+							</template>
+						</el-table-column>
+						<el-table-column v-if="indicator.sell.buyer_amount.show"
+							prop="sell.buyer_amount" :width="wordWidth.fifteen">
+							<template slot="header" slot-scope="scope">
+								{{$lang('原含税货价中的')}}<br>
+								{{$lang('平台、信用卡商、买家共同承担的部分中：')}}<br>
+								{{$lang('买家承担的部分')}}
+							</template>
+						</el-table-column>
+						<el-table-column
+							v-if="indicator.sell.buyer_amount_tax.show" prop="sell.buyer_amount_tax" :width="wordWidth.fifteen">
+							<template slot="header" slot-scope="scope">
+								{{$lang('原含税货价中的')}}<br>
+								{{$lang('平台、信用卡商、买家共同承担的部分中的')}}<br>
+								{{$lang('买家承担的部分中：')}}<br>
+								{{$lang('买家承担的原交易税')}}
+							</template>
+						</el-table-column>
+						<el-table-column
+							v-if="indicator.sell.our_cost_of_buyer_amount_tax.show" prop="sell.our_cost_of_buyer_amount_tax" :width="wordWidth.fifteen">
+							<template slot="header" slot-scope="scope">
+								{{$lang('原含税货价中的')}}<br>
+								{{$lang('平台、信用卡商、买家共同承担的部分中的')}}<br>
+								{{$lang('买家承担的部分中的')}}<br>
+								{{$lang('买家承担的原交易税中：')}}<br>
+								{{$lang('我方主动承担的部分')}}
+							</template>
+						</el-table-column>
+						<el-table-column
+							v-if="indicator.sell.palat_collection_buyer_amount_tax.show"
+							prop="sell.palat_collection_buyer_amount_tax" :width="wordWidth.fifteen">
+							<template slot="header" slot-scope="scope">
+								{{$lang('原含税货价中的')}}<br>
+								{{$lang('平台、信用卡商、买家共同承担的部分中的')}}<br>
+								{{$lang('买家承担的部分中的')}}<br>
+								{{$lang('买家承担的原交易税中：')}}<br>
+								{{$lang('买家承担的剩余部分')}}<br>
+								{{$lang('我方代收')}}
+							</template>
+						</el-table-column>
+						<el-table-column
+							v-if="indicator.sell.palat_payment_buyer_amount_tax.show" prop="sell.palat_payment_buyer_amount_tax" :width="wordWidth.fifteen">
+							<template slot="header" slot-scope="scope">
+								{{$lang('原含税货价中的')}}<br>
+								{{$lang('平台、信用卡商、买家共同承担的部分中的')}}<br>
+								{{$lang('买家承担的部分中的')}}<br>
+								{{$lang('买家承担的原交易税中：')}}<br>
+								{{$lang('买家承担的剩余部分')}}<br>
+								{{$lang('我方代收后代付')}}
+							</template>
+						</el-table-column>
+						<el-table-column
+							v-if="indicator.sell.plat_collection_drawback.show" prop="sell.plat_collection_drawback" :width="wordWidth.fifteen">
+							<template slot="header" slot-scope="scope">
+								{{$lang('原含税货价中的')}}<br>
+								{{$lang('平台、信用卡商、买家共同承担的部分中的')}}<br>
+								{{$lang('买家承担的部分中的')}}<br>
+								{{$lang('买家承担的原交易税中：')}}<br>
+								{{$lang('买家承担的剩余部分')}}<br>
+								{{$lang('我方代收代付后退税')}}
+							</template>
+						</el-table-column>
+						<el-table-column
+							v-if="indicator.sell.plat_collection_net_tax.show" prop="sell.plat_collection_net_tax" :width="wordWidth.fifteen">
+							<template slot="header" slot-scope="scope">
+								{{$lang('原含税货价中的')}}<br>
+								{{$lang('平台、信用卡商、买家共同承担的部分中的')}}<br>
+								{{$lang('买家承担的部分中的')}}<br>
+								{{$lang('买家承担的原交易税中：')}}<br>
+								{{$lang('买家承担的剩余部分')}}<br>
+								{{$lang('我方代收代付后的退税后的净税额')}}
+							</template>
+						</el-table-column>
+						<el-table-column
+							v-if="indicator.sell.sale_amount_excluding_tax.show" prop="sell.sale_amount_excluding_tax" :width="wordWidth.fifteen">
+							<template slot="header" slot-scope="scope">
+								{{$lang('原含税货价中的')}}<br>
+								{{$lang('平台、信用卡商、买家共同承担的部分中的')}}<br>
+								{{$lang('买家承担的部分中：')}}<br>
+								{{$lang('买家承担的不含税货价')}}
+							</template>
+						</el-table-column>
+						<el-table-column :label="$lang('佣金及销货服务费')" prop="sell.commission" :width="wordWidth.eight">
+
+						</el-table-column>
+						<el-table-column v-if="indicator.sell.our_collection_of_cost.show"
+							prop="sell.our_collection_of_cost" :width="wordWidth.twelve">
+							<template slot="header" slot-scope="scope">
+								{{$lang('买家承担精美包装款/保险费')}}<br>
+								{{$lang('我方代收')}}
+							</template>
+						</el-table-column>
+						<el-table-column v-if="indicator.sell.our_payment_of_cost.show"
+							prop="sell.our_payment_of_cost" :width="wordWidth.twelve">
+							<template slot="header" slot-scope="scope">
+								{{$lang('买家承担精美包装款/保险费')}}<br>
+								{{$lang('我方代收后代付')}}
+							</template>
+						</el-table-column>
+					</el-table-column>
+					<el-table-column :label="$lang('配送信息')">
+						<el-table-column :label="$lang('发货日')" v-if="indicator.ship.shipped_date.show" prop="ship.shipped_date">
+
+						</el-table-column>
+						<el-table-column :label="$lang('收货日')" v-if="indicator.ship.confirmed_date.show" prop="ship.confirmed_date">
+
+						</el-table-column>
+						<el-table-column v-if="indicator.ship.buyer_freight.show"
+							prop="ship.buyer_freight" :width="wordWidth.eight">
+							<template slot="header" slot-scope="scope">
+								{{$lang('不含税销货运费中：')}}<br>
+								{{$lang('买家承担的部分')}}
+							</template>
+						</el-table-column>
+						<el-table-column v-if="indicator.ship.our_payment_plat_freight.show"
+							prop="ship.our_payment_plat_freight" :width="wordWidth.eight">
+							<template slot="header" slot-scope="scope">
+								{{$lang('不含税销货运费中：')}}<br>
+								{{$lang('平台承担的部分')}}<br>
+								{{$lang('我方垫付')}}
+							</template>
+						</el-table-column>
+						<el-table-column
+							v-if="indicator.ship.our_collection_plat_freight.show" prop="ship.our_collection_plat_freight" :width="wordWidth.eight">
+							<template slot="header" slot-scope="scope">
+								{{$lang('不含税销货运费中：')}}<br>
+								{{$lang('平台承担的部分')}}<br>
+								{{$lang('我方垫付后收回')}}
+							</template>
+						</el-table-column>
+						<el-table-column
+							v-if="indicator.ship.our_collection_buyer_freight_tax.show" prop="ship.our_collection_buyer_freight_tax" :width="wordWidth.eight">
+							<template slot="header" slot-scope="scope">
+								{{$lang('销货运费的税中：')}}<br>
+								{{$lang('买家承担的部分')}}<br>
+								{{$lang('我方代收')}}
+							</template>
+						</el-table-column>
+						<el-table-column
+							v-if="indicator.ship.our_payment_buyer_freight_tax.show" prop="ship.our_payment_buyer_freight_tax" :width="wordWidth.eight">
+							<template slot="header" slot-scope="scope">
+								{{$lang('销货运费的税中：')}}<br>
+								{{$lang('买家承担的部分')}}<br>
+								{{$lang('我方代收后代付')}}
+							</template>
+						</el-table-column>
+						<el-table-column
+							v-if="indicator.ship.our_collection_buyer_cost_charge.show" prop="ship.our_collection_buyer_cost_charge" :width="wordWidth.eleven">
+							<template slot="header" slot-scope="scope">
+								{{$lang('不含税货到付款服务费中：')}}<br>
+								{{$lang('买家承担的部分')}}<br>
+								{{$lang('我方代收')}}
+							</template>
+						</el-table-column>
+						<el-table-column
+							v-if="indicator.ship.our_collection_buyer_service_cost_tax.show"
+							prop="ship.our_collection_buyer_service_cost_tax" :width="wordWidth.ten">
+							<template slot="header" slot-scope="scope">
+								{{$lang('货到付款服务费的税中：')}}<br>
+								{{$lang('买家承担的部分')}}<br>
+								{{$lang('我方代收')}}
+							</template>
+						</el-table-column>
+						<el-table-column
+							v-if="indicator.ship.our_payment_buyer_service_cost_and_tax.show"
+							prop="ship.our_payment_buyer_service_cost_and_tax" :width="wordWidth.twelve">
+							<template slot="header" slot-scope="scope">
+								{{$lang('货到付款服务费价税合计中：')}}<br>
+								{{$lang('买家承担的部分')}}<br>
+								{{$lang('我方代收后代付')}}
+							</template>
+						</el-table-column>
+						<el-table-column :label="$lang('平台配送服务费')" v-if="indicator.ship.plat_service_cost.show"
+							prop="ship.plat_service_cost" :width="wordWidth.seven">
+
+						</el-table-column>
+						<el-table-column :label="$lang('平台打包费')" v-if="indicator.ship.plat_pack_cost.show"
+							prop="ship.plat_pack_cost">
+
+						</el-table-column>
+						<el-table-column :label="$lang('平台称重费')" v-if="indicator.ship.plat_weight_cost.show"
+							prop="ship.plat_weight_cost">
+
+						</el-table-column>
+						<el-table-column :label="$lang('平台入仓费')" v-if="indicator.ship.plat_warheouse_cost.show"
+							prop="ship.plat_warheouse_cost">
+
+						</el-table-column>
+						<el-table-column :label="$lang('平台存货转移费')" v-if="indicator.ship.plat_stock_transfer_cost.show"
+							prop="ship.plat_stock_transfer_cost" :width="wordWidth.seven">
+
+						</el-table-column>
+						<el-table-column :label="$lang('平台存货销毁费')" v-if="indicator.ship.plat_inventory_destruction_cost.show"
+							prop="ship.plat_inventory_destruction_cost" :width="wordWidth.seven">
+
+						</el-table-column>
+						<el-table-column :label="$lang('第三方配送服务费')" v-if="indicator.ship.distribution_cost.show"
+							prop="ship.distribution_cost" :width="wordWidth.eight">
+
+						</el-table-column>
+					</el-table-column>
+					<el-table-column :label="$lang('退货信息')">
+						<el-table-column :label="$lang('退货日')" v-if="indicator.return.return_date.show" prop="return.return_date">
+
+						</el-table-column>
+						<el-table-column :label="$lang('退货退款日')" v-if="indicator.return.refund_date.show" prop="return.refund_date">
+
+						</el-table-column>
+						<el-table-column v-if="indicator.return.return_number.show"
+							prop="return.return_number">
+							<template slot="header" slot-scope="scope">
+								{{$lang('退货')}}<br>
+								{{$lang('量')}}
+							</template>
+						</el-table-column>
+						<el-table-column v-if="indicator.return.return_rate.show" prop="return.return_rate">
+								<template slot="header" slot-scope="scope">
+								{{$lang('退货')}}<br>
+								{{$lang('率')}}
+							</template>
+						</el-table-column>
+						<el-table-column v-if="indicator.return.refund.show" prop="return.refund">
+							<template slot="header" slot-scope="scope">
+								{{$lang('原含税')}}<br>
+								{{$lang('货价')}}<br>
+								{{$lang('退货退款')}}
+							</template>
+						</el-table-column>
+						<el-table-column
+							v-if="indicator.return.our_discount_amount_return.show" prop="return.our_discount_amount_return" :width="wordWidth.ten">
+							<template slot="header" slot-scope="scope">
+								{{$lang('原含税货价中：')}}<br>
+								{{$lang('我方以折扣让利的部分')}}<br>
+								{{$lang('退货收回')}}
+							</template>
+						</el-table-column>
+						<el-table-column
+							v-if="indicator.return.our_coupon_amount_return.show" prop="return.our_coupon_amount_return" :width="wordWidth.eleven">
+							<template slot="header" slot-scope="scope">
+								{{$lang('原含税货价中：')}}<br>
+								{{$lang('我方以优惠券让利的部分')}}<br>
+								{{$lang('退货收回')}}
+							</template>
+						</el-table-column>
+						<el-table-column
+							v-if="indicator.return.our_integral_amount_return.show" prop="return.our_integral_amount_return" :width="wordWidth.ten">
+							<template slot="header" slot-scope="scope">
+								{{$lang('原含税货价中：')}}<br>
+								{{$lang('我方以积分让利的部分')}}<br>
+								{{$lang('退货收回')}}
+							</template>
+						</el-table-column>
+						<el-table-column
+							v-if="indicator.return.our_bind_sale_amount_return.show" prop="return.our_bind_sale_amount_return" :width="wordWidth.eleven">
+							<template slot="header" slot-scope="scope">
+								{{$lang('原含税货价中：')}}<br>
+								{{$lang('我方以捆绑销售让利的部分')}}<br>
+								{{$lang('退货收回')}}
+							</template>
+						</el-table-column>
+						<el-table-column
+							v-if="indicator.return.plat_discount_amount_return.show" prop="return.plat_discount_amount_return" :width="wordWidth.sixteen">
+							<template slot="header" slot-scope="scope">
+								{{$lang('原含税货价中的')}}<br>
+								{{$lang('平台、信用卡商、买家共同承担的部分中：')}}<br>
+								{{$lang('平台以折扣承担的部分')}}<br>
+								{{$lang('退货退款')}}
+							</template>
+						</el-table-column>
+						<el-table-column
+							v-if="indicator.return.our_cost_of_buyer_amount_tax_return.show"
+							prop="return.our_cost_of_buyer_amount_tax_return" :width="wordWidth.sixteen">
+							<template slot="header" slot-scope="scope">
+								{{$lang('原含税货价中的')}}<br>
+								{{$lang('平台、信用卡商、买家共同承担的部分中的')}}<br>
+								{{$lang('买家承担的部分中的')}}<br>
+								{{$lang('买家承担的原交易税中：')}}<br>
+								{{$lang('我方主动承担的部分')}}<br>
+								{{$lang('退货收回')}}
+							</template>
+						</el-table-column>
+						<el-table-column
+							v-if="indicator.return.buyer_amount_return.show" prop="return.buyer_amount_return" :width="wordWidth.sixteen">
+							<template slot="header" slot-scope="scope">
+								{{$lang('原含税货价中的')}}<br>
+								{{$lang('平台、信用卡商、买家共同承担的部分中：')}}<br>
+								{{$lang('买家承担的部分')}}<br>
+								{{$lang('退货退款')}}
+							</template>
+						</el-table-column>
+						<el-table-column v-if="indicator.return.commission_return.show"
+							prop="return.commission_return">
+							<template slot="header" slot-scope="scope">
+								{{$lang('佣金')}}<br>
+								{{$lang('退货收回')}}
+							</template>
+						</el-table-column>
+						<el-table-column v-if="indicator.return.service_cost_return.show"
+							prop="return.service_cost_return">
+							<template slot="header" slot-scope="scope">
+								{{$lang('销货服务费')}}<br>
+								{{$lang('退货收回')}}
+							</template>
+						</el-table-column>
+						<el-table-column :label="$lang('退货手续费')" v-if="indicator.return.retrun_service_cost.show"
+							prop="return.retrun_service_cost">
+
+						</el-table-column>
+						<el-table-column :label="$lang('退货服务价')" v-if="indicator.return.return_service_amount.show"
+							prop="return.return_service_amount">
+
+						</el-table-column>
+						<el-table-column v-if="indicator.return.buyer_freight_return.show"
+							prop="return.buyer_freight_return" :width="wordWidth.seven">
+							<template slot="header" slot-scope="scope">
+								{{$lang('不含税运费中：')}}<br>
+								{{$lang('买家承担的部分')}}<br>
+								{{$lang('退货退款')}}
+							</template>
+						</el-table-column>
+						<el-table-column v-if="indicator.return.amount_return.show"
+							prop="return.amount_return">
+							<template slot="header" slot-scope="scope">
+								{{$lang('入账金额')}}<br>
+								{{$lang('退货退款')}}
+							</template>
+						</el-table-column>
+						<el-table-column v-if="indicator.return.our_payment_plat_freight.show"
+							prop="return.our_payment_plat_freight" :width="wordWidth.seven">
+							<template slot="header" slot-scope="scope">
+								{{$lang('退货运费中：')}}<br>
+								{{$lang('平台承担的部分')}}<br>
+								{{$lang('我方垫付')}}
+							</template>
+						</el-table-column>
+						<el-table-column
+							v-if="indicator.return.our_collection_plat_freight.show" prop="return.our_collection_plat_freight" :width="wordWidth.seven">
+							<template slot="header" slot-scope="scope">
+								{{$lang('退货运费中：')}}<br>
+								{{$lang('平台承担的部分')}}<br>
+								{{$lang('我方垫付后收回')}}
+							</template>
+						</el-table-column>
+						<el-table-column
+							v-if="indicator.return.our_collection_buyer_service_cost_and_tax.show"
+							prop="return.our_collection_buyer_service_cost_and_tax" :width="wordWidth.twelve">
+							<template slot="header" slot-scope="scope">
+								{{$lang('货到付款服务费价税合计中：')}}<br>
+								{{$lang('买家承担的部分')}}<br>
+								{{$lang('退货我方代收')}}
+							</template>
+						</el-table-column>
+						<el-table-column
+							v-if="indicator.return.our_payment_buyer_cost_charge.show" prop="return.our_payment_buyer_cost_charge" :width="wordWidth.twelve">
+							<template slot="header" slot-scope="scope">
+								{{$lang('不含税货到付款服务费中：')}}<br>
+								{{$lang('买家承担的部分')}}<br>
+								{{$lang('退货我方代收后代付')}}
+							</template>
+						</el-table-column>
+						<el-table-column
+							v-if="indicator.return.our_payment_buyer_service_cost_tax.show"
+							prop="return.our_payment_buyer_service_cost_tax" :width="wordWidth.twelve">
+							<template slot="header" slot-scope="scope">
+								{{$lang('货到付款服务费的税中：')}}<br>
+								{{$lang('买家承担的部分')}}<br>
+								{{$lang('退货我方代收后代付')}}
+							</template>
+						</el-table-column>
+						<el-table-column v-if="indicator.return.our_collection_of_cost.show"
+							prop="return.our_collection_of_cost" :width="wordWidth.nine">
+							<template slot="header" slot-scope="scope">
+								{{$lang('买家承担精美包装款')}}<br>
+								{{$lang('退货我方代收')}}
+							</template>
+						</el-table-column>
+					</el-table-column>
+					<el-table-column :label="$lang('其他信息')">
+						<el-table-column v-if="indicator.other.plat_indemnity.show"
+							prop="other.plat_indemnity">
+							<template slot="header" slot-scope="scope">
+								{{$lang('收')}}<br>
+								{{$lang('平台赔款')}}
+							</template>
+						</el-table-column>
+						<el-table-column v-if="indicator.other.buyer_indemnity.show"
+							prop="other.buyer_indemnity">
+							<template slot="header" slot-scope="scope">
+								{{$lang('收')}}<br>
+								{{$lang('买家赔款')}}
+							</template>
+						</el-table-column>
+						<el-table-column v-if="indicator.other.promotion_cost.show"
+							prop="other.promotion_cost">
+							<template slot="header" slot-scope="scope">
+								{{$lang('付')}}<br>
+								{{$lang('推广费')}}
+							</template>
+						</el-table-column>
+					</el-table-column>
+				</el-table-column>
+			</el-table>
+			<!-- 未选择平台时的标准表 end -->
+
+			<!-- 选择平台时的表格 start -->
+			<div v-if="platSelected.CD_VAL && siteSelected.CD_VAL && storeSelected.CD_VAL">
+				<el-row type="flex" justify="end"> 
+					<el-col :span="1">
+						<el-button @click="addBalance">{{$lang('新增')}}</el-button>
+					</el-col>
+					<el-col :span="1">
+						<el-button @click="deleteBalance" :disabled="listSelected.length === 0">{{$lang('删除')}}</el-button>
+					</el-col>
+					<el-col :span="3">
+						<el-select v-model="exportOption" placeholder="请选择导出方式" @change="exportBalance"
+							:disabled="listSelected.length === 0">
+							<el-option v-for="item in exportOptions" :key="item.value" :label="item.label" :value="item.value"
+								:disabled="item.disabled">
+							</el-option>
+						</el-select>
+					</el-col>
+				</el-row>
+				<el-table border show-header :data="tableData.list" tooltip-effect="dark"
+					@selection-change="handleSelectionChange" style="width: 100%" class="order-list-table table-common"
+					v-loading="tableLoading" @sort-change="getTableData">
+					<el-table-column type="selection">
+					</el-table-column>
+					<el-table-column :label="$lang('结算月')" prop="start_date" sortable="custom">
+						<template slot-scope="scope">
+							<div @click="toEdit(scope.row.id)">
+								<div v-if="scope.row.start_date !== scope.row.end_date">{{scope.row.start_date}}</div>
+								<div>{{scope.row.end_date}}</div>
+							</div>
+						</template>
+					</el-table-column>
+					<el-table-column :label="$lang('净入账款小计')" prop="total_amount" sortable="custom">
+						<template slot-scope="scope">
+							<div>{{scope.row.total_amount}} {{scope.row.currency}}</div>
+						</template>
+					</el-table-column>
+					<el-table-column :label="$lang('佣金及销货服务费小计')" prop="total_cost" sortable="custom">
+						<template slot-scope="scope">
+							<div>{{scope.row.total_cost}} {{scope.row.currency}}</div>
+						</template>
+					</el-table-column>
+					<el-table-column :label="$lang('说明')" prop="introduction">
+					</el-table-column>
+					<el-table-column :label="$lang('修改人')" prop="updated_by">
+					</el-table-column>
+					<el-table-column :label="$lang('最近修改日')" prop="updated_at" sortable="custom">
+					</el-table-column>
+				</el-table>
+			</div>
+			<!-- 选择平台时的表格 end -->
+
+			<el-pagination background @size-change="pageSizeChange" @current-change="currentPageChange"
+				:page-sizes="[10, 30, 50, 100]" :page-size="pageSize" layout="sizes, prev, pager, next, jumper"
+				:total="tableData.total_rows">
+			</el-pagination>
+		</div>
+	</div>
+
+	<!--引入js-->
+	<script
+		src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+	<script src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+	<script src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+	<script src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+	<script src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+	<script src="./Application/Tpl/Home/Public/js/element-ui-2.8.2.js?v=<{$Think.const.V}>">
+	</script>
+	<script src="./Application/Tpl/Home/Public/js/element-en.js">
+	</script>
+	<script src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>">
+	</script>
+	<script src="./Application/Tpl/Oms/Balance/balanceDetail.js?v=<{$Think.const.V}>"></script>
+</body>
+
+</html>

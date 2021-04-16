@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html lang="en">
+
+<head>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.8.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/lib/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <title>
+        <{$Think.lang.发布推广需求}>
+    </title>
+    <style>
+        [v-cloak]{
+            display: none;
+        }
+        #createPromotionDemand{
+            box-sizing: border-box;
+            padding: 20px;
+            margin: 0;
+        }
+       
+        .el-table__header thead th{
+            background: #F6F9FA;
+            color: #566F7B;
+            border-bottom: 1px solid #cadee7;
+            border-right: 1px solid #cadee7;
+            text-align: center;
+        }
+        
+        .table_wrap>.title{
+            font-size: 16px;
+            line-height: 40px;
+            height: 40px;
+            margin-top: 20px;
+            padding-left: 20px;
+            text-align: left;
+            color: #fff;
+            background: #546e7a;
+        }
+        .table_wrap .basic_information{
+            width: 100%;
+        }
+        .table_wrap .basic_information tr{
+            display: flex;
+            border-left: 1px solid #cadee7;
+        }
+        .table_wrap .basic_information td{
+            display: flex;
+            flex:1;
+            align-items: center;
+            padding: 15px 10px;
+            font-size: 13px;
+            border-bottom: 1px solid #cadee7;
+            border-right: 1px solid #cadee7;
+            justify-content: center;
+        }
+        .table_wrap .basic_information td:nth-child(odd){
+            color: #546e7a;
+            background: #f7f9fb;
+        }
+        .content_information .el-select,
+        .content_information .el-input{
+            width: 130px;
+        }
+        .el-table__body td{
+            text-align: center;
+        }
+        .el-table__body td img{
+            width: 100%;
+        }
+        .submit_btn{
+            display: block;
+            margin: 30px auto;
+            width: 150px;
+        }
+        .operating_data{
+            cursor: pointer;
+            display: flex;
+            justify-content: space-around;
+        }
+        .operating_data i{
+            font-size: 30px;
+            /* border-radius: 5px;
+            font-weight: bold;
+            padding: 8px;
+            border: 1px solid #546e7a; */
+        }
+    </style>
+</head>
+
+<body>
+    <div v-cloak id="createPromotionDemand">
+        <b style="font-size: 24px;">{{$lang('发布推广需求')}}</b>
+        <!-- 基础信息 -->
+        <div class="table_wrap">
+            <div class="title">{{$lang('基础信息')}}</div>
+            <table class="basic_information">
+                <tr>
+                    <td>
+                        <span>{{$lang('推广内容类型')}}</span>
+                        <span style="color: red;">*</span>
+                    </td>
+                    <td>
+                        <el-select v-model="basic.promotion_type_cd" @change="selectDemandType" filterable :placeholder="$lang('请选择')">
+                            <el-option
+                                v-for="(val,key) in promotion_demand_type"
+                                :key="val.CD"
+                                :label="$lang(val.CD_VAL)"
+                                :value="val.CD">
+                            </el-option>
+                        </el-select>
+                    </td>
+                    <!--<td>
+                        <span>{{$lang('推广国家')}}</span>
+                        <span style="color: red;">*</span>
+                    </td>
+                    <td>
+                        <el-select v-model="basic.area_name" @change="selectCountry" value-key="id" filterable :placeholder="$lang('请选择')">
+                            <el-option
+                                v-for="item in countryName"
+                                :key="item.id"
+                                :label="item.countyName"
+                                :value="item">
+                            </el-option>
+                        </el-select>
+                    </td>-->
+                    <td>
+                        <span>{{$lang('备注')}}</span>
+                    </td>
+                    <td>
+                        <el-input v-model="basic.remark"></el-input>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <!-- 内容信息 -->
+        <div class="table_wrap content_information">
+            <div class="title">{{$lang('内容信息')}}</div>
+            <el-table :data="tableData" border style="width: 100%;">
+                <el-table-column>
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('推广国家')}}</span>
+                        <span style="color: red;">*</span>
+                    </template>
+                    <template slot-scope="scope">
+                        <el-select  v-model="scope.row.area_id" @change="countryChange(scope.$index,scope.row)"  filterable :placeholder="$lang('请选择')">
+                            <el-option
+                                    v-for="item in countryName"
+                                    :key="item.id"
+                                    :label="$lang(item.countyName)"
+                                    :value="item.id">
+                            </el-option>
+                        </el-select>
+                    </template>
+                </el-table-column>
+                <!-- 11273需求修改--简化字段展示 -->
+                <!-- <el-table-column width="165"> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('平台')}}</span>
+                        <span style="color: red;">*</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <el-select :disabled="promoteType == 'gp'" v-model="scope.row.platform_cd" @change="selectPlatform(scope.row.platform_cd,scope.$index)" filterable :placeholder="$lang('请选择')">
+                            <el-option
+                                v-for="(val,key) in new_plat"
+                                :key="val.CD"
+                                :label="val.CD_VAL"
+                                :value="val.CD">
+                            </el-option>
+                        </el-select>
+                    </template>
+                </el-table-column>
+                <el-table-column width="165"> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('站点')}}</span>
+                        <span style="color: red;">*</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <el-select v-model="scope.row.site_cd" @change="selectSite(scope.row.site_cd,scope.$index)" filterable :placeholder="$lang('请选择')">
+                            <el-option
+                                v-for="(val,key) in scope.row.plat"
+                                :key="val.CD"
+                                :label="val.CD_VAL"
+                                :value="val.CD">
+                            </el-option>
+                        </el-select>
+                    </template>
+                </el-table-column> -->
+                <el-table-column> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('SKU（ERP的SKU编码）')}}</span>
+                        <span v-show="promoteType == 'sku'" style="color: red;">*</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <el-input :disabled="promoteType != 'sku'" @blur="skuBlur(scope.row.sku_id,scope.$index)" v-model="scope.row.sku_id"></el-input>
+                    </template>
+                </el-table-column>
+                <el-table-column> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('商品图片')}}</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <img :src="scope.row.thumbnail" >
+                    </template>
+                </el-table-column>
+                <el-table-column> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('商品名称')}}</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <span>{{scope.row.product_name}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('商品属性')}}</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <span>{{scope.row.product_attribute}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column> 
+                    <template slot="header" slot-scope="scope">
+                        <span v-if="promoteType == 'activity'">{{$lang('活动页链接')}}</span>
+                        <span v-else-if="promoteType == 'sku'">{{$lang('商品链接')}}</span>
+                        <span v-else-if="promoteType == 'gp'">{{$lang('站点链接')}}</span>
+                        <span style="color: red;">*</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <el-input v-model="scope.row.link"></el-input>
+                    </template>
+                </el-table-column>
+                <el-table-column width="300"> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('推广价格')}}</span>
+                        <span style="color: red;">*</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <div> 
+                            <el-select  v-model="scope.row.currency_cd" filterable :placeholder="$lang('请选择')" :disabled="basic.promotion_type_cd == 'N003610001' || basic.promotion_type_cd == 'N003610002'">
+                                <el-option
+                                    v-for="(val,key) in currency"
+                                    :key="val.CD"
+                                    :label="val.CD_VAL"
+                                    :value="val.CD">
+                                </el-option>
+                            </el-select>
+                            <el-input :disabled="basic.promotion_type_cd == 'N003610001' || basic.promotion_type_cd == 'N003610002'" v-model="scope.row.promotion_pirce"></el-input>
+                        </div>
+                    </template>
+                </el-table-column>
+                <!-- 11273需求修改--简化字段展示 -->
+                <!-- <el-table-column width="300"> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('优惠前商品价格（页面币种）')}}</span>
+                        <span v-show="promoteType == 'sku'" style="color: red;">*</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <div>
+                            <el-select :disabled="promoteType != 'sku' || scope.row.platformType == 'gp'&& scope.row.site_cd !=='N000837453'" v-model="scope.row.currency_cd" filterable :placeholder="$lang('请选择')">
+                                <el-option
+                                    v-for="(val,key) in currency"
+                                    :key="val.CD"
+                                    :label="val.CD_VAL"
+                                    :value="val.CD">
+                                </el-option>
+                            </el-select>
+                            <el-input :disabled="promoteType != 'sku'" v-model="scope.row.dis_product_pirce"></el-input>
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column width="450"> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('优惠后商品价格范围（页面币种）')}}</span>
+                        <span v-show="promoteType == 'sku'" style="color: red;">*</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <div>
+                            <el-select :disabled="promoteType != 'sku' || scope.row.platformType == 'gp'&& scope.row.site_cd !=='N000837453'" v-model="scope.row.currency_cd" filterable :placeholder="$lang('请选择')">
+                                <el-option
+                                    v-for="(val,key) in currency"
+                                    :key="val.CD"
+                                    :label="val.CD_VAL"
+                                    :value="val.CD">
+                                </el-option>
+                            </el-select>
+                            <el-input :disabled="promoteType != 'sku'" v-model="scope.row.dis_product_pirce_front"></el-input>
+                            {{$lang('至')}}
+                            <el-input :disabled="promoteType != 'sku'" v-model="scope.row.dis_product_pirce_back"></el-input>
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column width="350"> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('利润率范围')}}</span>
+                        <span v-show="promoteType == 'sku'" style="color: red;">*</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <div>
+                            <el-input :disabled="promoteType != 'sku'" v-model="scope.row.profit_front"></el-input>
+                            {{$lang('至')}}
+                            <el-input :disabled="promoteType != 'sku'" v-model="scope.row.profit_back"></el-input>
+                            %
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column width="350">
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('推广标签')}}</span>
+                    </template>
+                    <template slot-scope="scope">
+                        <div style="display: flex">
+                            <el-select style="margin: auto;" v-model="scope.row.type_cd"  @change="selectCds(scope.row.type_cd,scope.row)" clearable filterable :placeholder="$lang('请选择')">
+                                <el-option
+                                        v-for="(val,key) in cds"
+                                        :key="val.CD"
+                                        :label="val.CD_VAL"
+                                        :value="val.CD">
+                                </el-option>
+                            </el-select>
+                            <el-select :disabled="!scope.row.type_cd"  style="margin: auto;" v-model="scope.row.tag_id" clearable· filterable :placeholder="$lang('请选择')">
+                                <el-option
+                                        v-for="(val,key) in cds_name"
+                                        :key="val.id"
+                                        :label="val.tag_name"
+                                        :value="val.id">
+                                </el-option>
+                            </el-select>
+                        </div>
+                    </template>
+                </el-table-column> -->
+                <el-table-column width="165"> 
+                    <template slot="header" slot-scope="scope">
+                        <span>{{$lang('操作')}}</span>
+                      </template>
+                    <template slot-scope="scope">
+                        <div class="operating_data">
+                            <i @click="addData" class="el-icon-circle-plus-outline"></i>
+                            <el-button size="mini" @click="copy(scope.row)">{{$lang('复制')}}</el-button>
+                            <i @click="deleteData(scope.$index)" class="el-icon-remove-outline"></i>
+                        </div>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </div>
+
+        <el-button class="submit_btn" type="primary" @click="submit">{{$lang('提交')}}</el-button>
+
+    </div>
+</body>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.8.2.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script>
+    if (getCookie('think_language') !== "zh-cn") {
+        ELEMENT.locale(ELEMENT.lang.en)
+    };
+    var Vm = new Vue({
+        el: '#createPromotionDemand',
+        data: {
+          cds:[],
+          cds_name:[],
+          countries:[],
+            tableData:[{
+                platform_cd:'',
+                site_cd:'',
+                sku_id:'',
+                product_name:'',
+                product_attribute:'',
+                link:'',
+                currency_cd:'',
+                dis_product_pirce:'',
+                dis_product_pirce_front:'',
+                dis_product_pirce_back:'',
+                profit_front:'',
+                profit_back:'',
+                plat:[],
+                platformType:'',
+                promotion_pirce: '', // 推广价格
+            }],
+            basic:{
+                promotion_type_cd:'N003610003',
+                area_id:'',
+                area_name:'',
+                remark:''
+            },
+            promotion_demand_type:[],
+            new_plat:[],
+            gp_plat:[],
+            countryName:[],
+            currency:[],
+            promoteType:'sku',
+            siteCurrency:[]
+        },
+        created() {
+            this.getCommonData();
+            this.getTableData();
+            
+        },
+        methods: {
+          countryChange:function(index,data){
+              console.log(index,data)
+            for(var x = 0;x<this.countryName.length;x++){
+              if(this.countryName[x].id === data.area_id){
+                data.area_name = this.countryName[x].countyName
+              }
+            }
+            console.log(data.area_name)
+            switch (data.area_name) {
+                case '澳大利亚':
+                    this.tableData[index].currency_cd = 'N000590800' // AUD
+                    break;
+                case '比利时':
+                    this.tableData[index].currency_cd = 'N000590500' // EUR
+                    break;
+                case '中国':
+                    this.tableData[index].currency_cd = 'N000590300' // CNY
+                    break;
+                case '捷克':
+                    this.tableData[index].currency_cd = 'N000590500' // EUR
+                    break;
+                case '法国':
+                    this.tableData[index].currency_cd = 'N000590500' // EUR
+                    break;
+                case '德国':
+                    this.tableData[index].currency_cd = 'N000590500' // EUR
+                    break;
+                case '香港特别行政区':
+                    this.tableData[index].currency_cd = 'N000590600' // HKD
+                    break;
+                case '意大利':
+                    this.tableData[index].currency_cd = 'N000590500' // EUR
+                    break;
+                case '日本':
+                    this.tableData[index].currency_cd = 'N000590400' // JPY
+                    break;
+                case '荷兰':
+                    this.tableData[index].currency_cd = 'N000590500' // EUR
+                    break;
+                case '新西兰':
+                    this.tableData[index].currency_cd = 'N000591902' // NZD
+                    break;
+                case '菲律宾':
+                    this.tableData[index].currency_cd = 'N000591500' // PHP
+                    break;
+                case '波兰':
+                    this.tableData[index].currency_cd = 'N000591903' // PLN
+                    break;
+                case '葡萄牙':
+                    this.tableData[index].currency_cd = 'N000590500' // EUR
+                    break;
+                case '俄罗斯':
+                    this.tableData[index].currency_cd = 'N000591900' // RUB
+                    break;
+                case '新加坡':
+                    this.tableData[index].currency_cd = 'N000590700' // SGD
+                    break;
+                case '韩国':
+                    this.tableData[index].currency_cd = 'N000590200' // KRW
+                    break;
+                case '西班牙':
+                    this.tableData[index].currency_cd = 'N000590500' // EUR
+                    break;
+                case '沙特阿拉伯':
+                    this.tableData[index].currency_cd = 'N000590100' // USD
+                    break;
+                case '英国':
+                    this.tableData[index].currency_cd = 'N000590900' // GBP
+                    break;
+                case '美国':
+                    this.tableData[index].currency_cd = 'N000590100' // USD
+                    break;
+                case '瑞典':
+                    this.tableData[index].currency_cd = 'N000590500' // EUR
+                    break;
+                default:
+                    this.tableData[index].currency_cd = 'N000590100' // USD
+                    break;
+            }
+          },
+            copy:function(data){
+              var d = JSON.parse(JSON.stringify(data))
+              this.tableData.push(d)
+            },
+            getCommonData:function(){
+                var _this = this;
+
+                var demandArr = _this.getQueryVariable('idd')
+                if(demandArr){
+                    var post_data = []
+                    demandArr = demandArr.split(",")
+                    
+
+                    for (var item in demandArr) {
+                        var obj = {}
+                        obj.promotion_demand_no = demandArr[item]
+                        post_data.push(obj)
+                    }
+
+
+                    axios.post('/index.php?g=Marketing&m=PromotionDemand&a=cloneDemand', {
+                        post_data: post_data
+                    }).then(function (res) {
+                        if (res.data.code === 2000) {
+                            _this.tableData = []
+                            console.log(res.data.data);
+                            _this.basic.promotion_type_cd = res.data.data[0].promotion_type_cd
+                            _this.basic.area_id = res.data.data[0].area_id
+                            _this.basic.area_name = res.data.data[0].area_name
+                            _this.basic.remark = res.data.data[0].remark
+                            
+                            if(res.data.data[0].promotion_type_cd == 'N003610003'){
+                                _this.promoteType = 'sku'
+                            }else if(res.data.data[0].promotion_type_cd == 'N003610002'){
+                                _this.promoteType = 'activity'
+                            }else if(res.data.data[0].promotion_type_cd == 'N003610001'){
+                                _this.promoteType = 'gp'
+                            }
+
+
+                            let tableDataArr = res.data.data
+                            for (let item in tableDataArr) {
+                                let obj = {}
+                                // 11273需求修改--简化字段展示
+                                // obj.platform_cd = tableDataArr[item].platform_cd 
+                                // obj.site_cd = tableDataArr[item].site_cd
+                                // obj.dis_product_pirce = tableDataArr[item].dis_product_pirce
+                                // obj.dis_product_pirce_front = tableDataArr[item].dis_product_pirce_front
+                                // obj.dis_product_pirce_back = tableDataArr[item].dis_product_pirce_back
+                                // obj.profit_front = tableDataArr[item].profit_front
+                                // obj.profit_back = tableDataArr[item].profit_back
+                                obj.sku_id = tableDataArr[item].sku_id
+                                obj.product_name = tableDataArr[item].product_name
+                                obj.product_attribute = tableDataArr[item].product_attribute
+                                obj.link = tableDataArr[item].link
+                                obj.currency_cd = tableDataArr[item].currency_cd
+                                obj.thumbnail = tableDataArr[item].product_image
+                                obj.area_id = Number(tableDataArr[item].area_id);
+                                obj.promotion_pirce = tableDataArr[item].promotion_pirce
+                                obj.area_name = tableDataArr[item].area_name
+                                
+                                obj.plat = []
+                                _this.skuBlur(obj.sku_id,item);
+                                _this.tableData.push(obj)
+                                _this.selectPlatform(obj.platform_cd,item,'jump');
+
+                            }
+                        }
+                    })
+
+                    
+                }
+
+              axios.post('/index.php?g=universal&m=dictionary&a=getCodeList', {
+                search:{code_id: "",
+                  code_value: "",
+                  comment_content: "",
+                  comment_type: "",
+                  need_count: 1,
+                  prefix: "N00374"},
+                pages:{current_page: 1,
+                  per_page: 100}
+              }).then(function (res) {
+                if(res.data.code === 200){
+                  _this.cds = res.data.data.data
+                }
+              })
+                axios.get('/index.php?g=Marketing&m=PromotionDemand&a=getSiteCurrency').then(function (res) {
+                    if (res.data.code === 2000) {
+                        _this.siteCurrency = res.data.data
+                    }
+                })
+                
+
+
+
+
+                axios.post('/index.php?g=common&m=index&a=get_cd', {
+                    cd_type: {
+                        promotion_demand_type: "false",
+                        new_plat: "false",
+                        currency: "false",
+                    }
+                }).then(function (res) {
+                    if (res.data.code === 2000) {
+                        // console.log('res',res);
+                        _this.promotion_demand_type = res.data.data.promotion_demand_type
+                        _this.new_plat = res.data.data.new_plat
+                        _this.currency = res.data.data.currency
+                    }
+                })
+
+                // 推广国家
+                var param = {
+                    'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                    'erp-req': true
+                }
+
+                var headers = {
+                    headers: {
+                        'erp-req': true,
+                        'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+                    }
+                }
+
+
+                var host = (window.location.origin == window.location.protocol + "//erp.gshopper.com") ?
+                    window.location.protocol + "//insight.gshopper.com/insight-backend/gpActivity" :
+                    ((window.location.origin == window.location.protocol + "//erp.gshopper.prod.com") ?
+                        window.location.protocol + "//insight.gshopper.prod.com/insight-backend/gpActivity" :
+                        window.location.protocol + "//insight.gshopper.stage.com/insight-backend/gpActivity");
+
+                        
+                axios.post(host + '/queryCountryName', param, {
+                    headers:headers.headers
+                }).then(function(res) {
+                    if(res.data.success === true){
+                         _this.countryName = res.data.datas
+                    }else{
+                         _this.$message.warning(res.msg);
+                    }
+                })
+
+
+                _this.selectPlatform('N002620800');
+
+
+                
+                
+
+
+                 axios.post('/index.php?g=oms&m=CommonData&a=commonData', {
+                     "data": {
+                         "query": {
+                           countries: true,
+                         },
+                         "type":"sorting"
+                     }
+                 }).then(function (res) {
+                     if (res.data.code === 2000) {
+                         _this.countries = res.data.data.countries
+                     }
+                 })
+          
+            },
+            getQueryVariable:function(variable){
+                var query = window.location.search.substring(1);
+                var vars = query.split("&");
+                for (var i=0;i<vars.length;i++) {
+                        var pair = vars[i].split("=");
+                        if(pair[0] == variable){return pair[1];}
+                }
+                return(false);
+            },
+            getTableData:function(){
+                var _this = this;
+                // console.log(_this.form.search);
+                // var params = {
+                //     "search":{
+                //         "status_cd" : _this.form.search.status_cd.join(","),
+                //         "promotion_demand_no" : _this.form.search.promotion_demand_no,
+                //         "create_by" : _this.form.search.create_by.join(","),
+                //         "create_at_start" : _this.form.search.create_at ? _this.form.search.create_at[0] : '',
+                //         "create_at_end" : _this.form.search.create_at ? _this.form.search.create_at[1] : '',
+                //         "promotion_type_cd" : _this.form.search.promotion_type_cd.join(","),
+                //         "platform_cd" : _this.form.search.platform_cd.join(","),
+                //         "site_cd" : _this.form.search.site_cd.join(","),
+                //         "sku_id" : _this.form.search.sku_id,
+                //         "product_name" : _this.form.search.product_name,
+                //     },
+                //     "pages":{
+                //         "per_page": _this.page.page_count,
+                //         "current_page": _this.page.this_page
+                //     }
+                // };
+                // axios.post("/index.php?g=Marketing&m=PromotionDemand&a=getList", params).then(function(res){
+                //     console.log(res);
+                //     if (res.data.code == 2000) {
+                //         _this.tableData = res.data.data.datas
+                //         _this.page.count = Number(res.data.data.page[0].total_rows)
+                //     }else {
+                //         _this.$message.warning(res.data.msg);
+                //     }
+                // })
+            },
+            submit:function(){
+                var _this = this
+                var params = []
+                var tableDataArr = _this.tableData
+                for (var item in tableDataArr) {
+                    var obj = {
+                        promotion_type_cd:_this.basic.promotion_type_cd,
+                        area_id:tableDataArr[item].area_id,
+                        area_name:tableDataArr[item].area_name,
+                        remark:_this.basic.remark,
+                        platform_cd:tableDataArr[item].platform_cd,
+                        site_cd:tableDataArr[item].site_cd,
+                        sku_id:tableDataArr[item].sku_id,
+                        product_name:tableDataArr[item].product_name,
+                        product_image:tableDataArr[item].thumbnail || '',
+                        product_attribute:tableDataArr[item].product_attribute,
+                        link:tableDataArr[item].link,
+                        currency_cd:tableDataArr[item].currency_cd,
+                        dis_product_pirce:tableDataArr[item].dis_product_pirce,
+                        dis_product_pirce_front:tableDataArr[item].dis_product_pirce_front,
+                        dis_product_pirce_back:tableDataArr[item].dis_product_pirce_back,
+                        profit_front:tableDataArr[item].profit_front,
+                        profit_back:tableDataArr[item].profit_back,
+                      tag_id:tableDataArr[item].tag_id,
+                      promotion_pirce:tableDataArr[item].promotion_pirce
+                    }
+                    params.push(obj)
+                }
+                console.log('params',params);
+                axios.post("/index.php?g=Marketing&m=PromotionDemand&a=create", {
+                    post_data:params
+                }).then(function(res){
+                    console.log('res',res);
+                    if (res.data.code == 2000) {
+                        _this.$message.success(_this.$lang('需求创建成功'));
+                        setTimeout(function(){
+                            backTab('/index.php?m=management&a=promotion_demand_list',_this.$lang('推广需求列表'))
+                        },500)
+                    }else {
+                        _this.$message.warning(res.data.msg);
+                    }
+                })
+
+            },
+            selectSite:function(val,index){
+                var _this = this
+                console.log('val',val);
+                // console.log(index);
+                if(_this.promoteType == 'sku' && _this.tableData[index].platform_cd == 'N002620800'){
+                    console.log('siteCurrency',_this.siteCurrency);
+                    var index2 = _this.siteCurrency.findIndex(item => {
+                        return item.site === val
+                    })
+                    if(index2 != -1){
+                        _this.$set(_this.tableData[index], 'currency_cd', _this.siteCurrency[index2].currency);
+                    }else{
+                        _this.$set(_this.tableData[index], 'currency_cd', 'N000590100');
+                    }
+                    
+                }
+            },
+          selectCds:function(cd,row){
+            var _this =this
+            if(!cd){
+              row.tag_id = ''
+            }
+            axios.post('/index.php?g=Marketing&m=PromotionTag&a=getData', {
+              type_cd:cd
+            }).then(function (res) {
+              if(res.data.code === 2000){
+                _this.cds_name = res.data.data
+              }
+            })
+          },
+            selectPlatform:function(val,index,type){
+                console.log('val',val);
+                console.log('index',index);
+                console.log('type',type);
+                
+                var _this = this;
+                if(index != undefined && val == 'N002620800'){
+                    // _this.tableData[index].platformType = 
+                    _this.$set(_this.tableData[index], 'platformType', 'gp');
+                }else if(index != undefined && val != 'N002620800'){
+                    _this.$set(_this.tableData[index], 'platformType', '');
+                }
+                if(index != undefined && !type){
+                    _this.tableData[index].site_cd = ''
+                }
+                val = val.split(",")
+
+                axios.post('/index.php?g=oms&m=order&a=getSite', {
+                    plat_cd: val
+                }).then(function (res) {
+                    if (res.data && res.data.code == 2000) {
+                        if(index != undefined){
+                            _this.tableData[index].plat = res.data.data ? res.data.data : [];
+                            // _this.$forceUpdate()    
+                            // _this.$set(_this.tableData[index], 'plat', res.data.data);
+
+                        }else{
+                            _this.gp_plat = res.data.data
+                        }
+                    } else {
+                        _this.$message.error(res.data.msg || _this.$lang('获取站点异常'));
+                    }
+                })
+            },
+            selectCountry:function(val){
+                console.log(val);
+                this.basic.area_id = val.id
+                this.basic.area_name = val.countyName
+            },
+            selectDemandType: async function(val){
+            // selectDemandType:function(val){
+                var _this = this
+                // console.log(val);
+                if(val == 'N003610003'){
+                    _this.promoteType = 'sku'
+                    _this.tableData.map((item,index) => {
+                        item.link = ''
+                    });
+                }else if(val == 'N003610002'){
+                    _this.promoteType = 'activity'
+                    _this.tableData.map((item,index) => {
+                        item.link = ''
+                        item.currency_cd = ''
+                        item.dis_product_pirce = ''
+                        item.dis_product_pirce_front = ''
+                        item.dis_product_pirce_back = ''
+                        item.profit_front = ''
+                        item.profit_back = ''
+                        item.sku_id = ''
+                        item.thumbnail = ''
+                        item.product_name = ''
+                        item.product_attribute = ''
+                    });
+                }else if(val == 'N003610001'){
+                    _this.promoteType = 'gp'
+                    _this.tableData.map((item,index) => {
+                        item.link = 'www.gshopper.com'
+                        item.plat = _this.gp_plat
+                        item.currency_cd = ''
+                        item.dis_product_pirce = ''
+                        item.dis_product_pirce_front = ''
+                        item.dis_product_pirce_back = ''
+                        item.profit_front = ''
+                        item.profit_back = ''
+                        item.sku_id = ''
+                        item.thumbnail = ''
+                        item.product_name = ''
+                        item.product_attribute = ''
+                        if(item.platform_cd != 'N002620800'){
+                            item.site_cd = ''
+                        }
+                        item.platform_cd = 'N002620800'
+                    });
+                }
+            },
+            addData:function(){
+                var obj = {
+                    platform_cd:'',
+                    site_cd:'',
+                    sku_id:'',
+                    product_name:'',
+                    product_attribute:'',
+                    link:'',
+                    currency_cd:'',
+                    dis_product_pirce:'',
+                    dis_product_pirce_front:'',
+                    dis_product_pirce_back:'',
+                    profit_front:'',
+                    profit_back:'',
+                    plat:[],
+                    platformType:''
+                }
+                if(this.promoteType == 'gp'){
+                    obj.link = 'www.gshopper.com'
+                    obj.platform_cd = 'N002620800'
+                    obj.plat = this.gp_plat
+                }
+                this.tableData.push(obj)
+            },
+            deleteData:function(index){
+                if(this.tableData.length > 1){
+                    this.tableData.splice(index,1);
+                }
+            },
+            skuBlur:function(val,index){
+                var _this = this
+                // console.log(val);
+                // console.log(index);
+                axios.post('/index.php?g=Marketing&m=PromotionDemand&a=searchSku', {
+                    sku_id: val
+                }).then(function (res) {
+                    if (res.data.code === 2000) {
+                        // console.log('res',res.data.data.name_detail);
+                        // console.log('res',res.data.data.sku_id);
+                        // console.log('res',res.data.data.spu_name);
+                        // console.log('res',res.data.data.thumbnail);
+                        // console.log('res',res.data.data.value_detail);
+                        _this.tableData[index].thumbnail = res.data.data.thumbnail
+                        _this.tableData[index].product_name = res.data.data.spu_name
+                        _this.tableData[index].product_attribute = res.data.data.name_detail + ':' + res.data.data.value_detail
+                    }
+                })
+            },
+
+        },
+    })
+</script>
+
+</html>

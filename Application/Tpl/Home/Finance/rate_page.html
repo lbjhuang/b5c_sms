@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>税率表</title>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Hr/hrstyle.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css">
+</head>
+<style>
+    [v-cloak] {
+        display: none;
+    }
+    .warp{
+        word-break: break-all;
+        word-wrap: break-word;
+        white-space: normal;
+    }
+    .show-list .el-form-item__label{
+        padding: 0;
+    }
+</style>
+
+<body>
+    <div id="lang" class="show-list" v-cloak style="padding-bottom:160px">
+        <el-form ref="form" :model="form" :label-position="labelPosition" label-width="85px" @submit.native.prevent>
+            <div class="use-row">
+                <div class="col-100">
+                    <table class="search-table">
+                        <tbody>
+                            <tr>
+                                <td width="25%">
+                                    <el-form-item :label="$lang('国家')">
+                                        <el-input v-model="form.country"></el-input>
+                                    </el-form-item>
+                                </td>
+                                <td class="use-row">
+                                    <div class="col-100 use-btn" style="line-height: 35px;">
+                                        <button type="button" class="btn-pub btn-green" @click="search()">{{$lang('查询')}}</button>
+                                        <button type="button" class="btn-pub btn-default mg-l-20" @click="reset()">{{$lang('重置')}}</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </el-form>
+        <div class="baseline"></div>
+        <div class="use-row">
+            <div class="col-30 result-num">
+                {{$lang('搜索结果：')}}&nbsp;&nbsp;{{$lang('共')}}
+                <b>{{total}}</b> {{$lang('条')}}
+            </div>
+            <div class="col-70 text-right">
+                <el-button type="success" @click="save()" v-if="editType">{{$lang('保存')}}</el-button>
+                <el-button type="primary" @click="edit()" v-if="!editType">{{$lang('编辑')}}</el-button>
+            </div>
+        </div>
+        <div class="use-row">
+            <div class="col-100">
+                <table class="table-list" width="100%" v-loading="loading">
+                    <thead>
+                        <tr>
+                            <th width="80px">
+                                <el-checkbox v-model="checkAll" @change="checkAllFn()"></el-checkbox>
+                            </th>
+                            <th width="80px">{{$lang('序号')}}</th>
+                            <th>{{$lang('国家')}}</th>
+                            <th>{{$lang('当前增值税率')}}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(item,index) in dataList">
+                            <td>
+                                <el-checkbox v-model="item.checked"></el-checkbox>
+                            </td>
+                            <td>{{1 + index + (form.page - 1) * form.page_size}}</td>
+                            <td>{{$lang(item.zh_name)}}</td>
+                            <td>
+                                <div v-if="editType && item.checked" style="text-align: center; width: 300px; display: inline-block;">
+                                    <el-input  @blur="checkNum(item)"  type="number" placeholder="请输入税点" v-model.number="item.rate" clearable> </el-input> %
+                                </div>
+                                <span class="warp" v-else>{{item.rate}} <span v-if="item.rate">%</span> </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="use-row">
+            <div class="col-100 text-right">
+                <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="form.page" :page-sizes="[20, 50, 100, 200]" :page-size="form.page_size" layout="sizes, prev, pager, next,jumper" :total="total"></el-pagination>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery.table2excel.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script>
+        var lang = new Vue({
+            el: '#lang',
+            data: {
+                labelPosition: 'left',
+                total: 0,
+                form: {
+                    country: '',
+                    page: 1,
+                    page_size: 20,
+                },
+                checkAll: false,
+                editType: false,
+                dataList: [],
+                loading:false,
+                judgCheck: function(data) {
+                    var checked = false;
+                    for (var i = data.length; i--;) {
+                        if (data[i].checked) {
+                            checked = true;
+                        }
+                    }
+                    return checked;
+                }
+            },
+            created: function() {
+                this.search();
+            },
+            methods: {
+                search: function (page) {
+                    var _this = this;
+                    this.checkAll = false;
+                    this.form.page = page || 1;
+                    this.editType = false;
+                    this.loading = true;
+                    axios.get('/index.php?m=finance&a=rate_list&' + Qs.stringify(this.form), { headers: { Accept: '*/*' } })
+                        .then(function (res) {
+                            var data = res.data.data;
+                            _this.loading = false;
+                            _this.dataList = data.list ? data.list : [];
+                            _this.dataList.forEach(function (item, index) {
+                                Vue.set(lang.dataList[index], 'checked', false)
+                            })
+                            _this.total = +data.total;
+                        });
+                },
+                checkAllFn: function() {
+                    if(!this.checkAll){
+                        this.editType = false;
+                    }
+                    var data = this.dataList;
+                    for (var i = data.length; i--;) {
+                        Vue.set(this.dataList[i], 'checked', this.checkAll);
+                    }
+                },
+                //保存编辑
+                save: function () {
+                    var _this = this, arr = [], data = this.dataList;
+                    for (var i = 0, len = data.length; i < len; i++) {
+                        if (data[i].checked) arr.push(data[i])
+                    }
+                    axios.post('/index.php?m=finance&a=rate_edit', arr)
+                        .then(function (res) {
+                            if (res.data.code == 2000) {
+                                _this.$message.success("保存成功");
+                                _this.editType = false;
+                                _this.search();
+                            }else{
+                                _this.$message.error(res.data.msg);
+                            }
+                        })
+                },
+                //编辑条目
+                edit: function () {
+                    // 判定是否选中的条目
+                    var checked = this.judgCheck(this.dataList)
+                    if (!checked) {
+                        this.$message.warning(this.$lang('请先勾选要编辑的条目'));
+                        return false;
+                    }
+                    this.editType = true;
+                },
+                checkNum:function(item){
+                    if(item.rate < 0){
+                        this.$message.warning('不能填写负数');
+                        this.$set(item,'rate',0);
+                        return false;
+                    }
+                    var num = '', data= item.rate.toString().split('.');
+                    num = data[0] + '.' + (data[1] ? data[1].slice(0,2):'00');
+                    this.$set(item,'rate',+num);
+                },
+                handleSizeChange: function(size) {
+                    this.form.page_size = size;
+                    this.form.page = 1;
+                    this.search();
+                },
+                handleCurrentChange: function(page) {
+                    this.form.country = '';
+                    this.search(page);
+                },
+                reset: function () {
+                    this.form = {
+                        country: '',
+                        page: 1,
+                        page_size: 20,
+                    };
+                    this.search();
+                }
+            }
+        })
+    </script>
+</body>
+
+</html>

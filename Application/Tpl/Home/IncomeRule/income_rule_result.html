@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.config.VER_NUM}>">
+    <title>收入分成规则</title>
+</head>
+<style>
+    [v-cloak] {
+        display: none;
+    }
+
+    .head_title {
+        font-size: 24px;
+        font-weight: 600;
+    }
+</style>
+
+<body class="orderList">
+    <div id="store" class="list-common" v-cloak style="margin-bottom:220px">
+        <div class="head_title">
+            {{ $lang("收入分成规则结果") }}
+        </div>
+        <!-- 搜索查询 start-->
+        <div class="orderList-search search-common">
+            <div class="search-toggle">
+                <el-form ref="form" label-width="120px" :label-position="labelPosition">
+                    <el-row>
+                        <el-col :span="5">
+                            <el-form-item :label="$lang('分成规则ID')">
+                                <el-input placeholder="请输入内容" v-model="form.ruleId" clearable>
+                                </el-input>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="5">
+                            <el-form-item :label="$lang('规则名称')">
+                                <el-input placeholder="请输入内容" v-model="form.ruleTitle" clearable>
+                                </el-input>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="5">
+                            <el-form-item :label="$lang('业务类型')">
+                                <el-select :popper-append-to-body="false" v-model="form.busyId" clearable filterable
+                                    :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                    <el-option v-for="item in baseData.busyList" :label="item.busy_type_name"
+                                        :value="item.id" :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="5">
+                            <el-form-item :label="$lang('销售团队')">
+                                <el-select :popper-append-to-body="false" v-model="form.saleTeamId" clearable filterable
+                                    :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                    <el-option v-for="item in baseData.groupList" :label="item.cn_name" :value="item.id"
+                                        :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="5">
+                            <el-form-item :label="$lang('采购团队')">
+                                <el-select :popper-append-to-body="false" v-model="form.purchaseTeamId" clearable filterable
+                                    :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                    <el-option v-for="item in baseData.groupList" :label="item.cn_name" :value="item.id"
+                                        :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="5">
+                            <el-form-item :label="$lang('介绍团队')">
+                                <el-select :popper-append-to-body="false" v-model="form.introTeamId" clearable filterable
+                                    :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                    <el-option v-for="item in baseData.groupList" :label="item.cn_name" :value="item.id"
+                                        :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="5">
+                            <el-form-item :label="$lang('品牌')">
+                                <el-select :popper-append-to-body="false" v-model="form.brandId" filterable remote
+                                    clearable reserve-keyword :placeholder="$lang('All')" :remote-method="remoteMethod"
+                                    style="width:100%;padding:0;">
+                                    <el-option v-for="item in search_brandList" :label="item.cn_name" :value="item.id"
+                                        :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="5">
+                            <el-form-item :label="$lang('国家')">
+                                <el-select :popper-append-to-body="false" v-model="form.countryId" clearable filterable
+                                    :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                    <el-option v-for="item in baseData.countryList" :label="item.country_cn_name"
+                                        :value="item.id" :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="5">
+                            <el-form-item :label="$lang('结果ID')">
+                                <el-input placeholder="请输入内容" v-model="form.resultId" clearable>
+                                </el-input>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="5">
+                            <el-form-item :label="$lang('结果名称')">
+                                <el-input placeholder="请输入内容" v-model="form.title" clearable>
+                                </el-input>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="5">
+                            <el-form-item :label="$lang('团队')">
+                                <el-select :popper-append-to-body="false" v-model="form.warehouse" clearable filterable
+                                    :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                    <el-option v-for="item in baseData.groupList" :label="item.cn_name" :value="item.id"
+                                        :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="5">
+                            <el-form-item :label="$lang('仓库')">
+                                <el-select :popper-append-to-body="false" v-model="form.warehouseId" clearable filterable
+                                    :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                    <el-option v-for="item in baseData.warehouseList" :label="item.cn_name"
+                                        :value="item.id" :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="5">
+                            <el-form-item :label="$lang('团队类型')">
+                                <el-select :popper-append-to-body="false" v-model="form.groupType" clearable
+                                    :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                    <el-option v-for="item in baseData.groupTypeList" :label="item.cn_name"
+                                        :value="item.id" :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="5">
+                            <el-form-item :label="$lang('来源类型')">
+                                <el-select :popper-append-to-body="false" v-model="form.sourceType" clearable
+                                    :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                    <el-option v-for="item in baseData.sourceTypeList" :label="item.name"
+                                        :value="item.name" :key="item.name"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="5">
+                            <el-form-item :label="$lang('创建人')">
+                                <el-input placeholder="请输入内容" v-model="form.createBy" clearable>
+                                </el-input>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="10">
+                            <el-form-item :label="$lang('创建日期')">
+                                <el-date-picker style="width:100%;height: 40px;float: right;" value-format="yyyyMMdd"
+                                    size="small" :clearable=false v-model="form.dateRange" type="daterange"
+                                    align="right" unlink-panels :range-separator="$lang('至')"
+                                    :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')"
+                                    :picker-options="pickerOptions">
+                                </el-date-picker>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row style="padding-left:55px">
+                        <el-col :span="2">
+                            <el-button type="primary" @click="searchResult()">{{$lang('查询')}}</el-button>
+                        </el-col>
+                        <el-col :span="2">
+                            <el-button @click="reset()">{{$lang('重置')}}</el-button>
+                        </el-col>
+                    </el-row>
+                </el-form>
+            </div>
+            <!-- 搜索查询 end-->
+        </div>
+        <!-- 分割线 start-->
+        <div class="orderList-line line-split" style="height: 2px;margin-bottom: 20px"></div>
+        <!-- 分割线 end-->
+
+        <!-- 表格主体 start-->
+        <div style="margin-top: 24px;font-size: 14px">
+            <el-row>
+                <el-col :span="21" style="line-height:40px">
+                    {{$lang('搜索结果:')}}
+                    {{$lang('共')}}
+                    <b>{{totalCount}}</b>
+                    {{ $lang("条记录") }}
+                </el-col>
+                <el-col :span="3" style="text-align:right">
+                    <el-button type="primary" @click="createResult()">{{$lang('创建')}}</el-button>
+                </el-col>
+            </el-row>
+        </div>
+        <div class="orderList-Main list-common-main" style="margin-top: 20px">
+            <el-table border :data="ruleTableData" tooltip-effect="dark" style="width: 100%"
+                class="order-list-table table-common" v-loading="tableLoading">
+                <el-table-column prop="id" :label="$lang('ID')"></el-table-column>
+                <el-table-column prop="title" :label="$lang('名称')"></el-table-column>
+                <el-table-column prop="split_rule_id" :label="$lang('分成规则ID')"></el-table-column>
+                <el-table-column prop="split_rule_title" :label="$lang('分成规则名称')"></el-table-column>
+                <el-table-column prop="busy_type_name" :label="$lang('业务类型')"></el-table-column>
+                <el-table-column prop="sale_team_name" :label="$lang('销售团队')"></el-table-column>
+                <el-table-column prop="purchase_team_name" :label="$lang('采购团队')"></el-table-column>
+                <el-table-column prop="intro_team_name" :label="$lang('介绍团队')"></el-table-column>
+                <el-table-column prop="brand_name" :label="$lang('品牌')"></el-table-column>
+                <el-table-column prop="country_name" :label="$lang('国家')"></el-table-column>
+                <el-table-column prop="warehouse_name" :label="$lang('仓库')"></el-table-column>
+                <el-table-column prop="busy_group_name" :label="$lang('团队')"></el-table-column>
+                <el-table-column prop="business_type_name" :label="$lang('团队类型')"></el-table-column>
+                <el-table-column prop="split_per" :label="$lang('分成比例')"></el-table-column>
+                <el-table-column prop="source_type" :label="$lang('分成来源类型')"></el-table-column>
+                <el-table-column prop="split_type_name" :label="$lang('分成规则类型')"></el-table-column>
+                <el-table-column prop="update_time" :label="$lang('修改时间')"></el-table-column>
+                <el-table-column prop="update_by" :label="$lang('修改人')"></el-table-column>
+                <el-table-column prop="create_time" :label="$lang('创建时间')"></el-table-column>
+                <el-table-column prop="create_by" :label="$lang('创建人')"></el-table-column>
+                <el-table-column prop="remarks" :label="$lang('备注')"></el-table-column>
+                <el-table-column :label="$lang('操作')">
+                    <template slot-scope="scope">
+                        <el-button size="mini" type="primary" @click="editResult(scope.row)">{{$lang('编辑')}}</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+
+            <el-pagination background @size-change="handleSizeChange" @current-change="handleCurrentChange"
+                :current-page.sync="form.page" :page-sizes="[10, 30, 50, 100]" :page-size="form.pageSize"
+                layout="sizes,prev, pager, next, jumper" :total="totalCount">
+            </el-pagination>
+
+        </div>
+        <!-- 表格主体 end-->
+        <!-- 创建规则彈出框 -->
+        <el-dialog title="提示" :visible.sync="isShowRule" width="45%">
+            <div style="padding: 20px 20px">
+                <div style="font-size: 16px;margin-bottom: 50px" v-if="isShowExit">
+                    {{$lang('修改结果')}}
+                    <i class="el-icon-close" style="position: absolute; right: 25px; cursor: pointer;"
+                        @click="isShowRule = false"></i>
+                </div>
+                <div style="font-size: 16px;margin-bottom: 50px" v-if="!isShowExit">
+                    {{$lang('创建结果')}}
+                    <i class="el-icon-close" style="position: absolute; right: 25px; cursor: pointer;"
+                        @click="isShowRule = false"></i>
+                </div>
+                <el-form ref="form" :model="form" label-width="100px">
+                    <el-row class="rule_content" v-if="isShowExit">
+                        <el-col :span="15">
+                            <el-form-item :label="$lang('ID')">
+                                <el-input v-model="createResultForm.id" disabled></el-input>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="15">
+                            <el-form-item :label="$lang('名称')">
+                                <el-input v-model="createResultForm.title"></el-input>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="15">
+                            <el-form-item :label="$lang('分成规则ID')">
+                                <el-select :popper-append-to-body="false" v-model="createResultForm.splitRuleId"
+                                    clearable :placeholder="$lang('All')" style="width:100%;padding:0;" :disabled='isShowExit'>
+                                    <el-option v-for="item in updateData.ruleList" :label="item.title" :value="item.id"
+                                        :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="15">
+                            <el-form-item :label="$lang('团队')">
+                                <el-select :popper-append-to-body="false" v-model="createResultForm.busyGroupId"
+                                    clearable filterable :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                    <el-option v-for="item in updateData.groupList" :label="item.cn_name"
+                                        :value="item.id" :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="15">
+                            <el-form-item :label="$lang('团队类型')">
+                                <el-select :popper-append-to-body="false" v-model="createResultForm.businessTypeId"
+                                    clearable :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                    <el-option v-for="item in updateData.groupTypeList" :label="item.cn_name"
+                                        :value="item.id" :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="15">
+                            <el-form-item :label="$lang('分成比例')">
+                                <el-input v-model="createResultForm.splitPer"></el-input>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="15">
+                            <el-form-item :label="$lang('分成规则类型')">
+                                <el-select :popper-append-to-body="false" v-model="createResultForm.splitTypeId"
+                                    clearable :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                    <el-option v-for="item in updateData.SplitTypeList" :label="item.split_name"
+                                        :value="item.id" :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="15">
+                            <el-form-item :label="$lang('来源类型')">
+                                <el-select :popper-append-to-body="false" v-model="createResultForm.sourceType"
+                                    clearable :placeholder="$lang('All')" style="width:100%;padding:0;" disabled>
+                                    <el-option v-for="item in updateData.sourceTypeList" :label="item.name"
+                                        :value="item.name" :key="item.name"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="15">
+                            <el-form-item :label="$lang('备注')">
+                                <el-input type="textarea" v-model="createResultForm.remarks"></el-input>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="15" style="text-align:center">
+                            <el-form-item>
+                                <el-button type="primary" @click="addResult()">提交</el-button>
+                                <el-button @click="resetResult()">取消</el-button>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                </el-form>
+            </div>
+        </el-dialog>
+    </div>
+    </div>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script>
+        if (getCookie('think_language') !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en)
+        }
+
+        var store = new Vue({
+            el: '#store',
+            data: {
+                tableLoading: true,
+                labelPosition: 'center',
+                loading: false,
+                isShowRule: false,
+                isShowExit: false,
+                ruleTableData: [], // 表格数据
+                totalCount: 10,
+                baseData: {},
+                search_brandList: [],
+                updateData: {},
+                form: {
+                    ruleId: '', // 规则Id
+                    ruleTitle: '', // 规则名称
+                    busyId: '', // 业务类型
+                    saleTeamId: '', // 销售团队
+                    purchaseTeamId: '', // 采购团队
+                    introTeamId: '', // 介绍团队
+                    brandId: '', // 品牌
+                    countryId: '', // 国家
+                    // update_start_time: "", // 创建开始时间
+                    // update_end_time: "", // 创建结束时间
+                    dateRange: [], // 时间初始值,
+                    createBy: '', // 创建人
+                    warehouseId: '', // 仓库
+                    resultId: '', // 結果id
+                    title: '', // 結果名稱
+                    groupType: '', // 团队类型
+                    sourceType: '', // 来源类型
+                    page: 1,
+                    pageSize: 10
+                },
+                createResultForm: {
+                    id: '', // id
+                    title: '', // 名称
+                    splitRuleId: '', // 分成规则
+                    busyGroupId: '', // 团队
+                    businessTypeId: '', // 团队类型
+                    splitPer: '', // 分成比例
+                    sourceType: '', // 来源类型
+                    remarks: '', // 备注
+                    splitTypeId: '', // 分成规则类型
+                    createBy: '' // 创建人
+                },
+                pickerOptions: {},
+                queryPost: function (url, param) {
+                    var headers = {
+                        headers: {
+                            'erp_req': true,
+                            'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+                        }
+                    }
+                    var host = (window.location.origin == "http://erp.gshopper.com" || window.location.origin == "https://erp.gshopper.com") ?
+                        location.protocol+"//insight.gshopper.com/insight-backend/RevenueSplitConfig" :
+                        ((window.location.origin == "http://erp.gshopper.prod.com") ?
+                            location.protocol+"//insight.gshopper.prod.com/insight-backend/RevenueSplitConfig" :
+                            location.protocol+"//insight.gshopper.stage.com/insight-backend/RevenueSplitConfig");
+                    // 初始化时间展示
+                    return axios.post(host + url, Qs.stringify(param), headers);
+                }
+            },
+            created: function () {
+                this.pickerOptions = {
+                        shortcuts: [{
+                            text: this.$lang("最近一周"),
+                            onClick: function (picker) {
+                                const end = new Date();
+                                const start = new Date();
+                                start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+                                picker.$emit('pick', [start, end]);
+                            }
+                        }, {
+                            text: this.$lang("最近一个月"),
+                            onClick: function (picker) {
+                                const end = new Date();
+                                const start = new Date();
+                                start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+                                picker.$emit('pick', [start, end]);
+                            }
+                        }, {
+                            text: this.$lang("最近三个月"),
+                            onClick: function (picker) {
+                                const end = new Date();
+                                const start = new Date();
+                                start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+                                picker.$emit('pick', [start, end]);
+                            }
+                        }],
+                        disabledDate(time) {
+                            return time.getTime() > Date.now();
+                        }
+                    },
+                    this.search();
+                this.getData();
+            },
+            methods: {
+                // 筛选条件
+                search: function () {
+                    var param = {
+                        'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp_req': true
+                    }
+                    this.queryPost("/queryParam", param)
+                        .then((res) => {
+                            var _data = res.data;
+                            if (_data.success) {
+                                // this.$set(this.baseData, 'brandList', _data.datas.busyList)
+                                this.baseData = _data.datas;
+                                this.updateData = _data.datas;
+                                for(let item of this.updateData.SplitTypeList){
+                                    if(item.split_name == 'KPI'){
+                                        item.split_name = '收入'
+                                    }else if(item.split_name == 'Revenue'){
+                                        item.split_name = '利润'
+                                    }
+                                }
+                            } else {
+                                this.$message.error(this.$lang(_data.msg));
+                            }
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                 search1: function (item) {
+                    var param = {
+                        split_rule_id:item.split_rule_id,
+                        intro_team_id:item.busy_group_id,
+                        'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp_req': true
+                    }
+                    console.log(param)
+                    this.queryPost("/queryParam", param)
+                        .then((res) => {
+                            var _data = res.data;
+                            if (_data.success) {
+                                this.createResultForm.busyGroupId = _data.datas.busyId[0] ? _data.datas.busyId[0].id : '';
+                                this.baseData = _data.datas;
+                                this.updateData = _data.datas;
+                                for(let item of this.updateData.SplitTypeList){
+                                    if(item.split_name == 'KPI'){
+                                        item.split_name = '收入'
+                                    }else if(item.split_name == 'Revenue'){
+                                        item.split_name = '利润'
+                                    }
+                                }
+                            } else {
+                                this.$message.error(this.$lang(_data.msg));
+                            }
+                        }).catch(function (err) {
+                            console.log(21222)
+                            console.log(err);
+                        });
+                },
+                remoteMethod(query) {
+                    if (query !== '') {
+                        this.loading = true;
+                        setTimeout(() => {
+                            this.loading = false;
+                            var param = {
+                                'brandName': query,
+                                'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                                'erp_req': true
+                            }
+                            this.queryPost("/queryBrand", param)
+                                .then((res) => {
+                                    this.search_brandList = res.data;
+                                }).catch(function (err) {
+                                    console.log(err);
+                                });
+                        }, 200);
+                    } else {
+                        this.search_brandList = [];
+                    }
+                },
+                // 列表数据
+                getData: function () {
+                    this.tableLoading = true;
+                    let param = {
+                        startDate: this.form.dateRange && this.form.dateRange[0],
+                        endDate: this.form.dateRange && this.form.dateRange[1],
+                        ruleId: this.form.ruleId,
+                        ruleTitle: this.form.ruleTitle,
+                        busyId: this.form.busyId,
+                        saleTeamId: this.form.saleTeamId,
+                        purchaseTeamId: this.form.purchaseTeamId,
+                        introTeamId: this.form.introTeamId,
+                        brandId: this.form.brandId,
+                        countryId: this.form.countryId,
+                        createBy: this.form.createBy,
+                        warehouseId: this.form.warehouseId,
+                        resultId: this.form.resultId,
+                        title: this.form.title,
+                        groupType: this.form.groupType,
+                        sourceType: this.form.sourceType,
+                        page: this.form.page,
+                        pageSize: this.form.pageSize,
+                        'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp_req': true
+                    }
+                    this.queryPost("/queryRevenueSplitResultPage",
+                            param)
+                        .then((res) => {
+                            var _data = res.data;
+                            if (_data.success) {
+                                this.tableLoading = false;
+                                this.ruleTableData = _data.datas;
+                                this.totalCount = _data.totalCount;
+                            } else {
+                                this.$message.error(this.$lang(_data.msg));
+                            }
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                searchResult: function () {
+                    this.getData()
+                },
+                // 重置列表
+                reset: function () {
+                    this.form = {
+                        page: 1,
+                        pageSize: 10
+                    };
+                },
+                // 创建结果
+                createResult: function () {
+                    this.isShowRule = true;
+                    this.isShowExit = false;
+                    this.createResultForm = {};
+                    this.createResultForm.sourceType = 'sales';
+                    this.search();
+                },
+                // 编辑结果
+                editResult: function (item) {
+                    this.isShowRule = true;
+                    this.isShowExit = true;
+                    this.search1(item);
+                    this.createResultForm.id = item.id;
+                    this.createResultForm.title = item.title;
+                    this.createResultForm.busyGroupId = item.busy_group_id == '-1' ? '' : +item.busy_group_id;
+                    this.createResultForm.businessTypeId = item.business_type_id == '-1' ? '' : +item.business_type_id;
+                    this.createResultForm.splitPer = item.split_per;
+                    this.createResultForm.sourceType = item.source_type;
+                    this.createResultForm.splitRuleId = item.split_rule_id == '-1' ? '' : +item.split_rule_id;
+                    this.createResultForm.splitTypeId = item.split_type_id == '-1' ? '' : +item.split_type_id;
+                    this.createResultForm.remarks = item.remarks;
+                },
+                // 提交结果
+                addResult: function () {
+                    let param = {
+                        id: this.createResultForm.id,
+                        title: this.createResultForm.title,
+                        splitRuleId: isEmpty(this.createResultForm.splitRuleId) ? '-1' : this.createResultForm.splitRuleId,
+                        busyGroupId: isEmpty(this.createResultForm.busyGroupId) ? '-1' : this.createResultForm.busyGroupId,
+                        businessTypeId: isEmpty(this.createResultForm.businessTypeId) ? '-1' : this.createResultForm.businessTypeId,
+                        splitPer: this.createResultForm.splitPer,
+                        sourceType: isEmpty(this.createResultForm.sourceType) ? 'sales' : this.createResultForm.sourceType,
+                        splitTypeId: isEmpty(this.createResultForm.splitTypeId) ? '-1' : this.createResultForm.splitTypeId,
+                        remarks: this.createResultForm.remarks,
+                        createBy: $('#scName', top.document).text(),
+                        updateBy: $('#scName', top.document).text(),
+                        'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp_req': true
+                    }
+                    this.queryPost("/saveAndUpdateResult",
+                            param)
+                        .then((res) => {
+                            var _data = res.data;
+                            if (_data.success) {
+                                this.isShowRule = false;
+                                this.$message.success(this.$lang(_data.msg));
+                                this.getData()
+                            } else {
+                                this.$message.error(this.$lang(_data.msg));
+                            }
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                // 取消结果
+                resetResult: function () {
+                    this.createResultForm = {};
+                    this.isShowRule = false;
+                },
+                handleSizeChange: function (val) {
+                    this.form.pageSize = val;
+                },
+                handleCurrentChange: function (val) {
+                    this.form.page = val;
+                }
+            },
+            //监听数据
+            watch: {
+                form: {
+                    handler(newValue, oldValue) {
+                        this.getData(newValue)
+                    },
+                    deep: true
+                }
+            }
+        });
+
+        function isEmpty(obj) {
+            return obj == null || obj === "" || obj === 'undefined' || obj === undefined || obj.length === 0;
+        }
+    </script>
+</body>
+
+</html>

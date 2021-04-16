@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>赔偿、返利金列表</title>
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+          href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+          href="./Application/Tpl/Home/Public/../Hr/hrstyle.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+          href="./Application/Tpl/Home/Public/css/btn-new.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+          href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+</head>
+
+<style>
+    [v-cloak] {
+        display: none;
+    }
+    .td-item-25 {
+        width: 25%;
+    }
+    .search-table,.td-item-25 .el-select{
+        width: 100%;
+    }
+    .show-list .el-form-item__label{
+        padding: 0px 10px 0px 0px;
+    }
+    .search_results{
+        display: flex;
+        justify-content: space-between;
+        font-size: 16px;
+        margin-bottom: 20px;
+    }
+    .table_pages{
+        margin-top: 20px;
+        text-align: right;
+    }
+    .isGreen {
+        color: #50d850;
+    }
+
+    .isRed {
+        color: red;
+    }
+
+</style>
+
+<body>
+<div id="compensationRebates" class="show-list" v-cloak>
+    <el-form :model="searchForm" label-position="right" label-width="100px">
+        <div class="use-row">
+            <div class="col-100">
+                <table class="search-table">
+                    <tbody>
+                    <tr>
+                        <td class="td-item-25">
+                            <el-form-item :label="$lang('采购单号')">
+                                <el-input v-model="searchForm.search.purchaseOrderNo"></el-input>
+                            </el-form-item>
+                        </td>
+                        <td class="td-item-25">
+                            <el-form-item :label="$lang('供应商名称')">
+                                <el-select filterable multiple :placeholder="$lang('全部')"
+                                           v-model="searchForm.search.supplier_cd">
+                                        <el-option :key="item.supplier_id" :label="item.supplier_name"
+                                        :value="item.supplier_id"
+                                        v-for="item in baseData.supplier"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </td>
+                        <td class="td-item-25">
+                            <el-form-item :label="$lang('我方公司')">
+                                <el-select filterable multiple :placeholder="$lang('全部')"
+                                           v-model="searchForm.search.our_company_cd">
+                                    <el-option :key="item.CD" :label="item.CD_VAL" :value="item.CD"
+                                               v-for="item in baseData.our_company"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </td>
+                        <td class="td-item-25">
+                            <el-form-item :label="$lang('币种')">
+                                <el-select filterable multiple :placeholder="$lang('全部')"
+                                           v-model="searchForm.search.currency_cd">
+                                    <el-option :key="item.CD" :label="item.CD_VAL" :value="item.CD"
+                                               v-for="item in baseData.currency"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="btns">
+                                <button type="button" class="btn-search" @click="search">{{$lang('查询')}}</button>
+                                <button type="button" class="btn-reset" @click="reset">{{$lang('重置')}}</button>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </el-form>
+    <div class="baseline"></div>
+    <div class="search_results">
+        <div>
+            {{$lang('搜索结果')}}：&nbsp;&nbsp;{{$lang('共')}}
+            <b>{{searchForm.pages.totalCount}}</b> {{$lang('条')}}
+        </div>
+        <div>
+          <el-button class="btn-right-item" type="primary" size="small" @click="compensationRebatesExport('4')">{{$lang('明细导出')}}</el-button>
+          <el-button style="margin-right: 10px;" class="btn-right-item" type="primary" size="small" @click="compensationRebatesExport('3')">{{$lang('余额导出')}}</el-button>
+        </div>
+    </div>
+    <el-table class="table-list" :data="compensationRebatesTable" border>
+        <el-table-column align="center" :label="$lang('采购单号')">
+            <template slot-scope="scope">
+                <span>{{scope.row.order_no}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('供应商ID')">
+            <template slot-scope="scope">
+                <span>{{scope.row.supplier_id}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('供应商名称')">
+            <template slot-scope="scope">
+                <span>{{scope.row.supplier_name_cn}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('供应商名称（EN）')">
+            <template slot-scope="scope">
+                <span>{{scope.row.supplier_name_en}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('我方公司')">
+            <template slot-scope="scope">
+                <span>{{$lang(scope.row.our_company_cd_val)}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('币种')">
+            <template slot-scope="scope">
+                <span>{{scope.row.deduction_currency_cd_val}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('余额')">
+            <template slot-scope="scope">
+                <span>{{scope.row.deduction_currency_cd_val}} {{scope.row.over_deduction_amount}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('操作')">
+            <template slot-scope="scope">
+                <el-button type="primary" @click="viewDetail(scope.row)">{{$lang('查看')}}</el-button>
+            </template>
+        </el-table-column>
+    </el-table>
+
+    <el-pagination class="table_pages" @size-change="handleSizeChange" @current-change="handleCurrentChange" 
+        :current-page.sync="searchForm.pages.current_page"
+        :page-sizes="[20, 50, 100, 200,300]" :page-size="searchForm.pages.per_page"
+        layout="sizes, prev, pager, next,jumper"
+        :total="searchForm.pages.totalCount">
+    </el-pagination>
+
+    <el-dialog class="compensationRebatesDialog" :title="accountDetails.purchaseOrderNo+$lang('返利、赔偿金额账户明细')" @close="compensationRebatesClose" :visible.sync="dialogCompensationRebates">
+        <div style="margin-bottom: 20px;">
+            {{$lang('总计新增：')}} {{accountDetails.currency}} {{accountDetails.totalAdded}}&nbsp;&nbsp;
+            {{$lang('总计扣减：')}} {{accountDetails.currency}} {{accountDetails.totalDeduction}}
+        </div>
+        <el-table class="table-list" :data="compensationRebatesDetail" border>
+            <el-table-column align="center" :label="$lang('序号')">
+                <template slot-scope="scope">
+                    <span>{{scope.$index+1}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('类型')">
+                <template slot-scope="scope">
+                    <span>{{$lang(scope.row.deduction_type_cd_val)}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('金额')">
+                <template slot-scope="scope">
+                    <span :class="{isGreen: +scope.row.turnover_type ==2,isRed: +scope.row.turnover_type ==1}">
+                        {{accountDetails.currency}} {{+scope.row.turnover_type ==2 ? '+' : '-'}}{{scope.row.deduction_amount}}
+                    </span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('备注')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.remark}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('抵扣凭证')">
+                <template slot-scope="scope">
+                    <!-- <span>{{scope.row.deduction_voucher_name_str}}</span> -->
+                    <span v-if="scope.row.deduction_voucher">
+                        <a class="file_type" style="display: block"
+                        v-for="i in JSON.parse(scope.row.deduction_voucher)"
+                        target="_blank" :href="'/index.php?m=order_detail&a=download&file='+i.savename">{{i.name}}</a>
+                    </span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('确认人')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.created_by}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('确认时间')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.created_at}}</span>
+                </template>
+            </el-table-column>           
+        </el-table>
+    </el-dialog>
+
+</div>
+
+<script type="text/javascript"
+        src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript"
+        src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.form.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+<script src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript"
+        src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script>
+  if (getCookie('think_language') !== "zh-cn") {
+    ELEMENT.locale(ELEMENT.lang.en)
+  }
+  var way = new Vue({
+    el: '#compensationRebates',
+    data: {
+        searchForm:{
+            search:{
+                purchaseOrderNo:'',
+                supplier_cd:[],
+                our_company_cd:[],
+                currency_cd:[],
+            },
+            pages:{
+                totalCount:0,
+                per_page:20,
+                current_page:1
+            }
+        },
+        baseData:{},
+        compensationRebatesTable:[],
+        dialogCompensationRebates:false,
+        compensationRebatesDetail:[],
+        accountDetails:{
+            purchaseOrderNo:'',
+            totalDeduction:'',
+            totalAdded:'',
+            currency:'',
+        }
+    },
+    created: function () {
+      this.getBaseData();
+      this.search()
+    },
+    methods: {
+        getBaseData: async function(){
+            var _this = this;
+
+            if(_this.getQueryVariable('procurement_number')){
+                _this.searchForm.search.purchaseOrderNo = _this.getQueryVariable('procurement_number')
+            }
+
+            var param = {
+                "cd_type": {
+                    our_company: false,
+                    currency: true
+                }
+            };
+            await axios.post('/index.php?g=common&m=index&a=get_cd', param).then(function (res) {
+                if (res.data.code == 2000) {
+                    _this.baseData = res.data.data;
+                } else {
+                    _this.$message({
+                        message: _this.$lang('获取数据失败'),
+                        type: 'warning'
+                    });
+                }
+            })
+
+
+            var param2 = {
+                "search": {
+                    "supplier_name": ''
+                }
+            };
+            await axios.post('/index.php?m=order_detail&a=searchSuppliers', param2).then(function (res) {
+                if (res.data.code == 200) {
+                    _this.$set(_this.baseData, 'supplier', res.data.data);
+                } else {
+                    _this.$message({
+                      message: _this.$lang('获取数据失败'),
+                      type: 'warning'
+                    });
+                }
+            })
+        },
+        getQueryVariable:function(variable){
+            var query = window.location.search.substring(1);
+            var vars = query.split("&");
+            for (var i=0;i<vars.length;i++) {
+                    var pair = vars[i].split("=");
+                    if(pair[0] == variable){return pair[1];}
+            }
+            return(false);
+        },
+        search:function(){
+            var _this = this;
+            var param = {
+                "search":{
+                        "supplier_id":_this.searchForm.search.supplier_cd,
+                        "our_company_cd":_this.searchForm.search.our_company_cd,
+                        "deduction_currency_cd":_this.searchForm.search.currency_cd,
+                        "order_no" : _this.searchForm.search.purchaseOrderNo
+                },
+                "pages": {
+                        "per_page": _this.searchForm.pages.per_page,
+                        "current_page":_this.searchForm.pages.current_page
+                }
+            };
+            axios.post('/index.php?g=purchase&m=deduction&a=deductionList', param).then(function (res) {
+                console.log(res);
+                if(res.data.code == 200){
+                    _this.compensationRebatesTable = res.data.data.data
+                    _this.searchForm.pages.totalCount = Number(res.data.data.pages.total)
+                }
+            })
+        },
+        reset:function(){
+            this.searchForm.search = {
+                purchaseOrderNo:'',
+                supplier_cd:[],
+                our_company_cd:[],
+                currency_cd:[]
+            }
+            this.search()
+        },
+        compensationRebatesExport:function(type){
+            console.log(type);
+            var _this = this;
+            var param = {
+                deduction_currency_cd: _this.searchForm.search.currency_cd,
+                our_company_cd: _this.searchForm.search.our_company_cd,
+                supplier_id: _this.searchForm.search.supplier_cd,
+                order_no:_this.searchForm.search.purchaseOrderNo,
+                type: type
+            }
+            var tmep = document.createElement('form');
+            tmep.action = '/index.php?m=order_detail&a=deduction_sup_export';
+            tmep.method = "post";
+            tmep.style.display = "none";
+            var opt = document.createElement("input");
+            opt.name = 'export_params';
+            opt.value = JSON.stringify(param);
+            tmep.appendChild(opt);
+            document.body.appendChild(tmep);
+            tmep.submit();
+            $(tmep).remove();
+            tmep = null
+         
+        },
+        viewDetail:function(val){
+            console.log(val);
+            var _this = this
+            _this.accountDetails.purchaseOrderNo = val.order_no
+            axios.post('/index.php?g=purchase&m=deduction&a=deductionDetail', {
+                "search":{
+                    "deduction_id":val.id 
+                }
+            }).then(function (res) {
+                console.log(res.data.data);
+                if(res.data.code == 200){
+                    _this.accountDetails.totalDeduction = res.data.data.data.deduction_count.used_deduction_amount
+                    _this.accountDetails.totalAdded = res.data.data.data.deduction_count.unused_deduction_amount
+                    _this.accountDetails.currency = res.data.data.data.deduction_count.deduction_currency_cd_val
+                    _this.compensationRebatesDetail = res.data.data.data.list
+                }
+            })
+            _this.dialogCompensationRebates = true
+
+
+        },
+        handleSizeChange: function (size) {
+            this.searchForm.pages.per_page = size;
+            this.search();
+        },
+        handleCurrentChange: function (currentPage) {
+            this.searchForm.pages.current_page = currentPage;
+            this.search();
+        },
+        compensationRebatesClose:function(){
+            this.accountDetails = {
+                purchaseOrderNo:'',
+                totalDeduction:'',
+                totalAdded:'',
+                currency:'',
+            }
+            this.compensationRebatesDetail = []
+        }
+  
+    },
+    filters: {
+      separatNum: function (num) { //千分位方法
+        var num = Number(num).toFixed(2);
+        num = num + "";
+        var _arr = num.split(".");
+        return _arr[1] === "00" ? (num - 0).toLocaleString() + ".00" : (num - 0).toLocaleString();
+      },
+      percentage: function (num) {
+        return num ? ((num * 100).toFixed(2) + "%") : '';
+      },
+    },
+    watch: {
+        searchForm: {
+        handler: function handler(newValue, oldValue) {
+        //   this.search();
+        },
+        deep: true
+      }
+    },
+    mounted() {
+
+    }
+  })
+</script>
+</body>
+
+</html>

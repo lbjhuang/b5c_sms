@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>
+        <{$Think.lang.新建调拨单}>
+    </title>
+    <link href="../Public/css/H-ui-3.1.min.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="../Public/css/stock.css">
+    <link rel="stylesheet" type="text/css" href="../Public/css/style.css" />
+    <link rel="stylesheet" type="text/css" href="../Public/lib/Hui-iconfont/1.0.7/iconfont.css" />
+    <link rel="stylesheet" type="text/css" href="../Public/css/NewAllocate.css" />
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+</head>
+<style>
+    .col-sm-4 {
+        padding: 0;
+    }
+
+    .title-left {
+        width: 25%;
+        float: left;
+    }
+    /* span {line-height: 31px;} */
+
+    table {
+        margin-top: 10px;
+    }
+
+    table thead th {
+        text-align: center;
+    }
+
+    .select-box {
+        border: solid 1px #ddd;
+    }
+
+    .table-bg thead th {
+        background-color: #537a8c;
+        color: white;
+    }
+
+    .thumbnail-wrap {
+        position: relative;
+        z-index: 999;
+    }
+
+    .thumbnail-wrap .img-wrap {
+        position: absolute;
+        top: -60px;
+        left: 120px;
+        width: 300px;
+        height: 300px;
+        border: 1px solid #eef5f9;
+    }
+
+    .thumbnail-wrap img {
+        box-shadow: 4px 4px 20px #242525;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    .el-input__icon {
+        line-height: 0 !important;
+    }
+
+    .down .el-select-dropdown {
+        top: 197px !important;
+    }
+    #content .row-form .col-sm-3 > div {
+        margin-top: 0 !important;
+        float: left;
+        height: 32px;
+        line-height: 32px;
+    }
+    .sellSmallTeam .el-select__input{
+        border: none !important;
+    }
+</style>
+
+<body>
+<div id="content">
+    <p class="content-title"> {{$lang('新建库存归属变更单-第2步')}}</p>
+    <div class="ck-wrap" v-loading="loading">
+        <!--search-->
+        <div>
+            <div class="row-top-title">
+                <div>
+                    <span>{{$lang("变更类型")}}：</span>
+                    <div>{{$lang(process_info.change_type_cd_val)}}</div>
+                </div>
+                <div>
+                    <span>{{$lang("归属销售团队")}}：</span>
+                    <div>{{process_info.attribution_team_cd_val}}</div>
+                </div>
+                <div>
+                    <span>{{$lang(text.t)}}：</span>
+                    <div class="fontNormal">
+                        <div>{{ process_info.old_val}}</div>
+                    </div>
+                </div>
+                <div>
+                    <span>{{$lang(text.t2)}}：</span>
+                    <div class="fontNormal">
+                        <div>{{process_info.new_val}}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="row-line"></div>
+        </div>
+        <h2 style="font-size: 17px;
+    font-weight: bold;
+    line-height: 50px;">{{$lang("库存商品选择")}}:</h2>
+        <div class="row row-form">
+            <div class="col-sm-3 col-lg-3 col-md-3">
+                <div class="title-left align-left">
+                    <span>{{$lang("SKU/条形码")}}</span>
+                </div>
+                <div class="title-right">
+                    <input type="text" class="input-text" v-model="params.sku" />
+                </div>
+            </div>
+            <div class="col-sm-3 col-lg-3 col-md-3">
+                <div class="title-left">
+                    <span>{{$lang("仓库")}}</span>
+                </div>
+                <div class="title-right">
+                    <el-select :placeholder="$lang('请选择仓库')" v-model="params.warehouse_code"  style="width:100%" clearable filterable>
+                        <el-option v-for="item in warehouses" :key="item.CD" :label="$lang(item.CD_VAL)" :value="item.CD"></el-option>
+                    </el-select>
+                </div>
+            </div>
+            <div class="col-sm-3 col-lg-3 col-md-3">
+                <div class="title-left">
+                    <span>{{$lang("采购团队")}}</span>
+                </div>
+                <div class="title-right">
+                    <el-select  v-model="params.purchasing_team_cd"  style="width:100%" clearable filterable :disabled="process_info.change_type_cd ==='N002990003'">
+                        <el-option v-for="(value, key) in purchase_team" :key="value.CD" :label="value.CD_VAL" :value="value.CD"></el-option>
+                    </el-select>
+                </div>
+            </div>
+            <!-- <div class="col-sm-3 col-lg-3 col-md-3">
+                <div class="title-left">
+                    <span>{{$lang("归属店铺")}}</span>
+                </div>
+                <div class="title-right">
+                    <el-select  v-model="params.shop_id" style="width:100%" clearable filterable  :disabled="(process_info.change_type_cd ==='N002990001')">
+                        <el-option v-for="item in stores" :key="item.ID" :label="item.STORE_NAME" :value="item.ID"></el-option>
+                    </el-select>
+                </div>
+            </div> -->
+            <div class="col-sm-3 col-lg-3 col-md-3">
+                <div class="title-left">
+                    <span>{{$lang("销售小团队")}}</span>
+                </div>
+                <div class="title-right sellSmallTeam">
+                    <el-select v-model="params.sell_small_team_cd" style="width:100%" :disabled="process_info.change_type_cd ==='N002990005'" collapse-tags multiple filterable>
+                        <el-option v-for="(item,index) in sell_small_team" :key="index" :label="$lang(item)" :value="index">
+                    </el-select>
+                </div>
+            </div>
+        </div>
+        <div class="row row-form">
+            <div class="col-sm-3 col-lg-3 col-md-3">
+                <div class="title-left align-left">
+                    <span>{{$lang("选择状态")}}</span>
+                </div>
+                <div class="title-right">
+                    <select class="select select-box" v-model="params.selected_state">
+                        <option value="">{{$lang("请选择状态")}}</option>
+                        <option v-for="(r, k) in selectedState" :value="k">{{$lang(r)}}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-sm-3 col-lg-3 col-md-3">
+                <div class="title-left">
+                    <span>{{$lang("商品类型")}}</span>
+                </div>
+                <div class="title-right">
+                    <el-select :placeholder="$lang('请选择商品类型')" v-model="params.vir_type_cd"  style="width:100%" clearable filterable>
+                        <el-option v-for="goodType in goods_type" :key="goodType.cd" :label="$lang(goodType.cdVal)" :value="goodType.cd"></el-option>
+                    </el-select>
+                </div>
+            </div>
+        </div>
+        <div class="row row-form">
+            <div class="col-sm-6 col-lg-6 col-md-6">
+                <button class="btn btn-search" @click="search">{{$lang("查询")}}</button>
+                <button class="btn btn-reset" @click="reset">{{$lang("重置")}}</button>
+            </div>
+        </div>
+        <div style="height: 10px;"></div>
+        <div class="row-line"></div>
+        <div style="height: 10px;"></div>
+        <div class="row_result" style="display: flex">
+            <span>{{$lang("总计")}}{{count}}{{$lang("条数据")}}</span>
+            <button class="btn" type="button" @click="downloadExl1()">{{$lang("下载模板")}}</button>
+            <form action="" class="btn excel-delivery" @click="putOrder" style="z-index:1; width: 50px; margin-left: 20px;">
+                <label class="btn" style="margin-bottom: 2px; margin-left: 0px; padding-right: 28px;">{{$lang("导入(SKU较多时建议使用导入)")}}</label>
+                <input type="file" id="update-file-content" @change="importExcel" style="display: none">
+            </form>
+            <button style="margin-left: auto;" class="btn btn-search"  @click="launchAllAllocation()">{{$lang("全选")}}</button>
+        </div>
+        <!--content-->
+        <div>
+            <table class="table table-bg">
+                <thead>
+                <th>
+                    {{$lang("序号")}}
+                </th>
+                <th>
+                    {{$lang("SKU编码")}}
+                </th>
+                <th>
+                    {{$lang("条形码")}}
+                </th>
+                <th>
+                    {{$lang("商品名称")}}
+                </th>
+                <th>
+                    {{$lang("商品图片")}}
+                </th>
+                <th>
+                    {{$lang('商品类型')}}
+                </th>
+                <th>
+                    {{$lang("批次号")}}
+                </th>
+                <th>
+                    {{$lang("仓库")}}
+                </th>
+                <th>
+                    {{$lang("采购团队")}}
+                </th>
+                <!-- <th>
+                    {{$lang("归属店铺")}}
+                </th> -->
+                <th>
+                    {{$lang("销售小团队")}}
+                </th>
+                <th>
+                    {{$lang("可变更库存")}}
+                </th>
+                <!--<th>
+                    <{$Think.lang.调入团队可售库存}>
+                </th>-->
+                <th>
+                    {{$lang("需变更数量")}}
+                </th>
+                <th>
+                    {{$lang("选择状态")}}
+                </th>
+                <th>
+                    {{$lang("操作")}}
+                </th>
+                </thead>
+                <tbody>
+                <template v-for="(r, k) in ret">
+                    <tr class="text-c">
+                        <td>{{Number(k+1)+(((params.p?params.p:1) -1)*params.page_i)}}</td>
+                        <td>{{r.SKU_ID}}</td>
+                        <td style="white-space: pre-line">{{r.GUDS_OPT_UPC_ID}}</td>
+                        <td>{{r.GUDS_NM}}</td>
+                        <td>
+                            <img v-if="r.img" :src="r.img" width="60" height="60" @mouseover="showImgFn(r,true)" @mouseout="showImgFn(r,false)">
+                            <div v-if="r.isShowImg && r.img" class="thumbnail-wrap">
+                                <div class="img-wrap" >
+                                    <img :src="r.img" width="300" height="300"/>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{r.vir_type_cd_val}}</td>
+                        <td>
+                            {{r.batch_code }}
+                        </td>
+                        <td>
+                            <span v-if="r.warehouse_id in warehouses">{{$lang(warehouses[r.warehouse_id].CD_VAL)}}</span>
+                            <span v-else>{{r.warehouse_id}}</span>
+                        </td>
+                        <td>{{r.purchasing_team_cd_val }}</td>
+                        <td>{{r.small_sale_team_code_val }}</td>
+                        <!-- <td>{{r.shop_id_val }}</td> -->
+                        <td>{{r.available_for_sale_num_total}}</td>
+                        <!-- <td></td>-->
+                        <td>
+                            <span v-if="r.inputHide">{{r.need_num}}</span>
+                            <input type="text" class="input-text" v-model="r.need_num" @keyup="addition(k, r)" @blur="save(k, r)" v-else/>
+                        </td>
+                        <td>
+                            <span v-if="r.need_num > 0"><i class="Hui-iconfont Hui-iconfont-xuanze"></i></span>
+                            <span v-else></span>
+                        </td>
+                        <td class="content-td-operation">
+                            <span class="td-btn td-btn-cancel" @click="inputEdit(k, r);" v-if="r.inputHide">{{$lang("修改")}}</span>
+                        </td>
+                    </tr>
+                </template>
+                </tbody>
+            </table>
+        </div>
+        <!--            <div class="col-100 text-right">
+                        <ul class="pagination" v-html="page"></ul>
+                    </div>-->
+        <div class="row" style="display: flex;flex-direction: row-reverse;">
+            <el-pagination
+                    @size-change="pageChange"
+                    @current-change="numChange"
+                    :current-page="params.p"
+                    :page-sizes="[10,20,50]"
+                    :page-size="params.page_i"
+                    layout="total, sizes, prev, pager, next, jumper"
+                    :total="Number(count)">
+            </el-pagination>
+        </div>
+        <div class="row bottom-row">
+            <div>
+                <button class="bottom-btn btn-back-bottom" @click="lastStep()">{{$lang("上一步")}}</button>
+                <button class="bottom-btn btn-check-bottom" @click="launchAllocation(1)">{{$lang("下一步")}}</button>
+                <!--<button class="bottom-btn btn-back-bottom" @click="launchAllocation(2)"><{$Think.lang.发起非审核调拨}></button>-->
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+</body>
+<script src="../Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="../Public/lib/layer-v3.0.3/layer/layer.js"></script>
+<script type="text/javascript" src="../Public/js/jquery.form.min.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js?<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/AllocationExtendNew/js/xlsx.full.min.js"></script>
+
+
+<script type="text/javascript">
+    if(getCookie('think_language') !== "zh-cn" ){
+        ELEMENT.locale(ELEMENT.lang.en)
+    }
+    var token = <{$token}>;
+    $.ajaxSetup({
+        beforeSend:function(){
+        }
+    });
+    $(window).on('load',function(){
+        $('.el-popper').eq(0).css('margin-top',39)
+        $('.el-popper').eq(1).css('margin-top',39)
+        $('.el-popper').eq(2).css('margin-top',39)
+    })
+    var vm = new Vue({
+        el: '#content',
+        data: {
+            loading:false,
+            stores:[],
+            sell_small_team:[],
+            goods_type:[],
+            process_info:<{$process_info}>,
+        ret:[],
+        warehouses: {},
+    page: '',
+    count: '',
+        purchase_team:'',
+    selectedState: {"1":"未选择","2":"已选择","3":"全部"},
+    saleTeams: {},
+    token: "",
+    into_warehouse_code:"N000680400",
+    into_team_code:"N001281500",
+    params: {
+        "page_i":20,
+        "vir_type_cd":"",
+        "warehouse_code":"",
+        "sku":"",
+        "guds_nm":"",
+        "selected_state":"",
+        "sale_team_code":"",
+        "token": token,
+        "into_warehouse":"",
+        "into_team":"",
+        purchasing_team_cd:'',
+        shop_id:'',
+        "sell_small_team_cd":[],
+    },
+    canSubmit: '',
+    menuWarehouses: false,
+        menuTeam: false,
+    },
+    mounted: function() {
+        setTimeout(function() {
+            for (key in vm.ret) {
+                if (vm.ret[key].need_num > 0) {
+                    if (vm.ret[key].inputHide) {} else {
+                        Vue.set(vm.ret[key], 'inputHide', true)
+                    }
+                }
+            }
+        }, 50)
+    },
+    created: function() {
+        this.selectedState[3] = '全部'
+        var _this = this;
+        this.search();
+        axios.post('index.php?g=oms&m=CommonData&a=commonData', {
+            data: {
+                query: {
+                    "goods_type": true,
+                    warehouses:true,
+                    stores:true
+                }
+            }
+        }).then(function (response) {
+            if (response.data.code == 2000) {
+                // response.data.data.goods_type.push({cd:'',cdVal:'全部'})
+                _this.goods_type = response.data.data.goods_type
+                _this.warehouses = response.data.data.warehouses
+                _this.stores = response.data.data.stores
+            }
+        })
+
+        $.ajax({
+            type: "POST",
+            async: true,
+            url: '/index.php?g=common&m=index&a=get_cd',
+            data: {
+                "cd_type": {
+                    "purchase_team": true
+                }
+            },
+            success: function (response) {
+                _this.purchase_team = response.data.purchase_team
+            },
+            error: function () {
+                $.Huimodalalert('<{$Think.lang.网络繁忙，请重试}>!');
+            }
+        });
+        this.getsellSmallTeam()
+    },
+    computed:{
+        text:function(){
+            var t = ''
+            var t2 = ''
+            switch (this.process_info.change_type_cd) {
+                case "N002990002": //"变更销售团队"
+                    t = '旧的销售团队'
+                    t2 = '新的销售团队'
+                    break;
+                case "N002990001": //""变更归属店铺""
+                    t = '变更前归属店铺'
+                    t2 = '变更后归属店铺'
+                    break
+                case "N002990003": //"""变更采购团队"""
+                    t = '当前采购团队'
+                    t2 = '新的采购团队'
+                    break
+                case "N002990005": //"""变更销售小团队"""
+                    t = '当前归属小团队'
+                    t2 = '新的归属小团队'
+                    
+            }
+            return {t:t,t2:t2}
+        }
+    },
+    methods: {
+        pageChange:function(num){
+            this.params.page_i = num
+            flip(1)
+        },
+        numChange:function(num){
+            flip(num)
+        },
+        downloadExl1:function(){
+            var json = [{
+                'SKU编码':'',
+                '批次号':'',
+                '发起调拨数量':''
+            }]
+            downloadExl(json,'','库存归属变更导入模板')
+        },
+        putOrder: function() {
+            /*                if (this.params.sale_team_code == '' || this.params.warehouse_code == '') {
+                                layer.msg('<{$Think.lang.请选选择调出团队、调出仓库}>');
+                                return;
+                            }*/
+            $('.excel-delivery').find('#update-file-content').click();
+        },
+        importExcel: function() {
+            var data = new FormData();
+            var _this = this;
+            //为FormData对象添加数据
+            data.append('file', $(event.currentTarget)[0]['files'][0]);
+            for(var x in this.params){
+                data.append(x,this.params[x])
+            }
+            $.ajax({
+                url: '/index.php?m=AllocationExtendAttribution&a=StockOwnerChangeImportExcel',
+                type: 'POST',
+                dataType: 'JSON',
+                contentType: false,
+                processData: false,
+                data: data,
+                cache: false
+            }).success(function(data) {
+                if (data.code == 200) {
+                    layer.msg(data.msg);
+                    _this.canSubmit = true;
+                    $('#update-file-content').val('');
+                    _this.reset();
+                } else {
+                    var title = data.msg;
+                    var tbody = '<tbody>';
+                    if (data.data) {
+                        $.each(data.data, function(i, v) {
+                            tbody += '<tr>';
+                            tbody += '<td>';
+                            tbody += i;
+                            tbody += '</td>';
+                            tbody += '<td>';
+                            tbody += v;
+                            tbody += '</td>';
+                            tbody += '</tr>';
+                        })
+                    }
+                    tbody += '</tbody>';
+                    var table = '<table class="layui-table">';
+                    table += '<thead>';
+                    table += '<tr>';
+                    table += '<td>';
+                    table += '<{$Think.lang.坐标}>';
+                    table += '</td>';
+                    table += '<td>';
+                    table += '<{$Think.lang.异常信息}>';
+                    table += '</td>';
+                    table += '</tr>';
+                    table += '</thead>';
+                    table += tbody;
+                    table += '</table>';
+                    var index = layer.open({
+                        type: 1,
+                        content: table,
+                        area: ['620px', '395px'],
+                        maxmin: false
+                    });
+
+                    $('#update-file-content').val('')
+                }
+            }).error(function() {
+                console.log('error');
+            }).complete(function() {
+                $('#update-file-content').val('')
+            });
+        },
+        search: function() {
+            if(this.process_info.change_type_cd == 'N002990005'){
+                // this.params.sell_small_team_cd.push(this.process_info.old);
+                if(this.process_info.old){
+                    this.params.sell_small_team_cd = [this.process_info.old];
+                }else{
+                    this.params.sell_small_team_cd = ["0"];
+                }
+            }
+            var params = this.params;
+            var url = '<{:U("AllocationExtendAttribution/show_allo_data")}>';
+            this.sendRequest(url, params, true, 'post');
+        },
+        reset: function() {
+            var _this = this;
+            vm.params = {"page_i":20,
+                "vir_type_cd":"",
+                "warehouse_code":"",
+                "sku":"",
+                "guds_nm":"",
+                "selected_state":"",
+                "sale_team_code":"",
+                "token": token,
+                "into_warehouse":"",
+                "into_team":"",
+                purchasing_team_cd:'',
+                shop_id:'',
+                sell_small_team_cd:[]
+            };
+            _this.search();
+        },
+        flip: function(index) {
+            var params = vm.params;
+            params.p = index;
+            var url = '<{:U("AllocationExtendAttribution/show_allo_data")}>';
+            this.sendRequest(url, params, true, 'post');
+        },
+        getsellSmallTeam:function(){
+            var _this = this
+            var data = {
+                "field" : "",
+                "CD" : "",
+                "need_open" : "",
+                "need_default" : "Y"
+            };
+
+            axios.post('/index.php?g=universal&m=dictionary&a=getListByField', data).then(function(res) {
+                console.log('res',res);
+                if(res.data.code == 200){
+                    _this.sell_small_team = res.data.data
+                }
+            }).catch(function(err) {
+                console.log(err);
+            });
+        },
+        addition: function(index, r) {
+            var launch_num = parseInt(r.need_num);
+            var max = parseInt(r.available_for_sale_num_total);
+            if (launch_num > max) {
+                layer.msg('调拨超出最大可售范围');
+                r.need_num = max;
+            } else {
+                if (launch_num >= 0) {
+                    r.need_num = launch_num;
+                } else {
+                    r.need_num = 0;
+                }
+            }
+            this.ret.splice(index, 0);
+            return;
+        },
+        edit: function(index, e) {
+            e.edit = true;
+            if (e.need_num == null)
+                e.need_num = 0;
+            e.need_num_bak = e.need_num;
+            this.ret.splice(index, 0);
+        },
+        inputEdit: function(index, e) {
+            vm.ret[index].inputHide = false;
+        },
+        save: function(index, e) {
+            var _this = this;
+            if (e.need_num > 0) {
+                if (vm.ret[index].inputHide) {} else {
+                    Vue.set(vm.ret[index], 'inputHide', true)
+                }
+            }
+            if (!$.isNumeric(e.need_num)) {
+                layer.msg('<{$Think.lang.请输入数字字符}>');
+                return;
+            }
+            var need_num = parseInt(e.need_num);
+            var need_num_bak = parseInt(e.need_num_bak);
+            var available_for_sale_num_total = parseInt(e.available_for_sale_num_total);
+            if (need_num > available_for_sale_num_total) {
+                layer.msg('<{$Think.lang.需调拨数量不能大于调出团队可售库存}>');
+                return;
+            }
+            if (need_num == need_num_bak) {
+                e.edit = false;
+                this.ret.splice(index, 0);
+                return;
+            }
+            var params = {
+                'token': token,
+                'out_team': e.sale_team_code,
+                'out_warehouse': e.warehouse_id,
+                'num': need_num,
+                'sku_id': e.SKU_ID,
+                'positive_defective_type_cd':e.vir_type_cd,
+                batch_id:e.batch_id,
+                out_small_team: e.small_sale_team_code
+            };
+            var url = '<{:U("AllocationExtendAttribution/update_or_add_allo")}>';
+            var showIndex;
+            $.ajax({
+                type: "post",
+                async: true,
+                url: url,
+                data: params,
+                beforeSend: function() {
+                    _this.loading = true
+                },
+                success: function(response) {
+                    _this.loading = false
+                    if (response.status == 1) {
+                        e.edit = false;
+                        if (response.data == 1) {
+                            vm.canSubmit = true;
+                        } else {
+                            vm.canSubmit = false;
+                        }
+                        console.log(vm.canSubmit);
+                        vm.ret.splice(index, 0);
+                    } else {
+                        layer.msg(response.info);
+                    }
+                },
+                error: function() {
+                    _this.loading = false
+                    layer.msg('<{$Think.lang.请求异常}>');
+                }
+            });
+        },
+        showImgFn: function(e, type) {
+            Vue.set(e, 'isShowImg', type)
+        },
+        cancel: function(index, e) {
+            if (e.need_num != e.need_num_bak) {
+                var confirmIndex = layer.confirm("<{$Think.lang.值已改变是否撤销修改}>?", {
+                    btn: ["<{$Think.lang.确认}>", "<{$Think.lang.取消}>"], //按钮
+                    title: "<{$Think.lang.提示}>"
+                }, function() {
+                    layer.close(confirmIndex);
+                    e.edit = false;
+                    e.need_num = e.need_num_bak;
+                    vm.ret.splice(index, 0);
+                }, function() {
+                    layer.close(confirmIndex);
+                    return false;
+                });
+            } else {
+                e.edit = false;
+                e.need_num = e.need_num_bak;
+                this.ret.splice(index, 0);
+            }
+        },
+        lastStep: function() {
+            var _this = this;
+            var url = '<{:U("AllocationExtendAttribution/lastStep")}>';
+            var params = this.params;
+            $.ajax({
+                type: 'post',
+                async: true,
+                url: url,
+                data: params,
+                beforeSend: function() {
+                    _this.loading = true
+                },
+                success: function(response) {
+                    //layer.close(showIndex);
+                    _this.loading = false
+                    var url = '<{:U("AllocationExtendAttribution/create_new_process")}>';
+                    location.href = url;
+                   /* layer.msg(response.info, {
+                        icon: 16,
+                        time: 1000
+                    }, function() {
+                        var url = '<{:U("AllocationExtendAttribution/create_new_process")}>';
+                        location.href = url;
+                    });*/
+                },
+                error: function() {
+                    //layer.close(showIndex);
+                    _this.loading = false
+                    layer.msg('<{$Think.lang.请求异常}>');
+                }
+            });
+        },
+        next:function(id){
+            var _this = this
+            var orderDetal = function (orderId, title) {
+                var dom = document.createElement('a');
+                var _href = orderId
+                dom.setAttribute("onclick", "opennewtab(this,'"+_this.$lang(title) + "')");
+                dom.setAttribute("_href", _href);
+                dom.click();
+            }
+            orderDetal('/index.php?m=allocation_extend_attribution&a=info&id='+ id,'库存归属变更详情')
+            setTimeout(function(){var url = window.location.pathname + window.location.search;
+                sessionStorage.setItem('closeWindow','/index.php?m=allocation_extend_attribution&a=new_one')},1000)
+        },
+        launchAllocation: function(type) {
+            var _this = this;
+            if (this.canSubmit == false) {
+                layer.msg('<{$Think.lang.需调拨数量不能为空}>');
+                return false;
+            }
+            var url = '<{:U("AllocationExtendAttribution/launch_allo")}>';
+            var params = {
+                'allo_type': type,
+                'token': token,
+            };
+            $.ajax({
+                type: 'post',
+                async: true,
+                url: url,
+                timeout:20000,
+                data: params,
+                beforeSend: function() {
+                    showIndex = layer.load(2, {
+                        shade: [0.5, '#fff']
+                    });
+                },
+                success: function(response) {
+                    layer.close(showIndex);
+                    if (response.status == 1) {
+                        _this.next(response.data.allo_id)
+
+                    } else {
+                        layer.msg(response.info);
+                    }
+                },
+                error: function() {
+                    layer.close(showIndex);
+                    layer.msg('<{$Think.lang.请求异常}>')
+                }
+            });
+        },
+        launchAllAllocation: function() {
+            _this = this;
+            //全部调拨
+            var url = '<{:U("AllocationExtendAttribution/update_or_add_all_allo")}>';
+            var params = this.params;
+            $.ajax({
+                type: 'post',
+                async: true,
+                url: url,
+                data: params,
+                beforeSend: function() {
+                    showIndex = layer.load(2, {
+                        shade: [0.5, '#fff']
+                    });
+                },
+                success: function(response) {
+                    layer.close(showIndex);
+                    if (response.status == 1) {
+                        vm.canSubmit = true;
+                        layer.msg(response.info, {
+                            icon: 16,
+                            time: 1000
+                        }, function() {
+                            _this.search();
+                            //location.reload();
+                        });
+                    } else {
+                        layer.msg(response.info);
+                        vm.canSubmit = false;
+                    }
+                },
+                error: function() {
+                    layer.close(showIndex);
+                    layer.msg('<{$Think.lang.请求异常}>')
+                }
+            });
+        },
+        sendRequest: function(url, requestParams, async, type) {
+            var showIndex = 0;
+            console.log(requestParams);
+            $.ajax({
+                type: type,
+                async: async,
+                url: url,
+
+                // contentType: "application/json",
+                // dataType:'json',
+                // data: JSON.stringify({
+                //     "field" : "ETC",
+                //     "CD" : val,
+                //     "need_open" : "Y",
+                //     "need_default" : "Y"
+                // }),
+
+
+
+
+                data: requestParams,
+                beforeSend: function() {
+                    showIndex = layer.load(2, {
+                        shade: [0.5, '#fff']
+                    });
+                },
+                success: function(response) {
+                    layer.close(showIndex);
+                    if (response.status == 1) {
+                        vm.ret = response.data.ret;
+                        vm.page = response.data.page;
+                        vm.count = response.data.count;
+                        for (key in vm.ret) {
+                            if (vm.ret[key].need_num > 0) {
+                                if (vm.ret[key].inputHide) {} else {
+                                    Vue.set(vm.ret[key], 'inputHide', true)
+                                }
+                            }
+                        }
+                    } else {
+                        layer.msg(response.info);
+                    }
+                },
+                error: function() {
+                    layer.close(showIndex);
+                    layer.msg('<{$Think.lang.请求异常}>')
+                }
+            });
+        },
+        outTeamChoseItems: function(val) {
+            if (val == this.into_team) {
+                this.menuWarehouses = true
+            } else {
+                this.menuWarehouses = false;
+            }
+        },
+        outWarehouseChoseItems: function(val) {
+            if (val == this.into_warehouse) {
+                this.menuTeam = true
+            } else {
+                this.menuTeam = false;
+            }
+        },
+    }
+    });
+
+    function flip(pageInex) {
+        vm.flip(pageInex);
+    }
+    function saveAs(obj, fileName) {
+        var tmpa = document.createElement("a");
+        tmpa.download = fileName || "下载";
+        tmpa.href = URL.createObjectURL(obj);
+        tmpa.click();
+        setTimeout(function() {
+            URL.revokeObjectURL(obj);
+        }, 100);
+    }
+
+    const wopts = {
+        bookType: 'xlsx',
+        bookSST: false,
+        type: 'binary'
+    };
+    function downloadExl(data, type,name) {
+        const wb = {
+            SheetNames: ['Sheet1'],
+            Sheets: {},
+            Props: {}
+        };
+        wb.Sheets['Sheet1'] = XLSX.utils.json_to_sheet(data); //通过json_to_sheet转成单页(Sheet)数据
+        saveAs(new Blob([s2ab(XLSX.write(wb, wopts))], {
+            type: "application/octet-stream"
+        }), name+ '.' + (wopts.bookType == "biff2" ? "xls" : wopts.bookType));
+    }
+
+    function s2ab(s) {
+        if (typeof ArrayBuffer !== 'undefined') {
+            var buf = new ArrayBuffer(s.length);
+            var view = new Uint8Array(buf);
+            for (var i = 0; i != s.length; ++i) view[i] = s.charCodeAt(i) & 0xFF;
+            return buf;
+        } else {
+            var buf = new Array(s.length);
+            for (var i = 0; i != s.length; ++i) buf[i] = s.charCodeAt(i) & 0xFF;
+            return buf;
+        }
+
+    }
+</script>
+
+</html>

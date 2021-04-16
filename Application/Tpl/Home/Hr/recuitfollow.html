@@ -1,0 +1,246 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+    <title>招聘跟进</title>
+    <link rel="stylesheet" href="../Public/utils/css/public.style.css?v=0907">
+    <link rel="stylesheet" href="../Public/css/element-ui.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="../Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="../Public/../Hr/depList.css?v=123">
+    <link rel="stylesheet" href="../Public/icon/css/font-awesome.min.css">
+    <style>
+    caption {
+        background: #546E7A;
+        height: 32px;
+        text-align: left;
+        color: #FFFFFF;
+        padding: 5px 20px;
+        line-height: 32px;
+        font-size: 16px;
+    }
+
+    #recFollow th {
+        background: #ecf2f7;
+        height: 40px;
+        text-align: center;
+        font-size: .7rem;
+        color: #546e7a;
+        letter-spacing: 0;
+        border: 1px solid #cadee7;
+        white-space: nowrap;
+    }
+    .conFormat{
+        margin-top: 1px;
+        margin-bottom: -18px;
+        line-height: 1.8;
+        font-size: 11px;
+    }
+    .text {
+        white-space: normal;
+        width: 10%;
+    }
+    .text span{
+        display: inline-block;
+        width: 100px;
+        text-align: left;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+    </style>
+</head>
+
+<body>
+    <div id="recFollow" v-cloak class="recruit use-btn">
+        <div class="col-30 text-right" style="margin-bottom: 10px;">
+            <?php if(ButtonAction::hidden()){ ?>
+                <button class="btn-pub btn-blue" type="button" @click="addRec()"><i class="fa fa-plus"></i>&nbsp;&nbsp;{{$lang('新建简历')}}</button>
+            <?php }?>
+        </div>
+        <div class="row">
+            <div class="col-100">
+                <table class="table-list">
+                    <caption>{{$lang('待跟进候选人')}}</caption>
+                        <tr style="background: #F7F9FB;">
+                            <th>{{$lang('序号')}}</th>
+                            <th>{{$lang('面试时间')}}</th>
+                            <th>{{$lang('姓名')}}</th>
+                            <th>{{$lang('部门')}}</th>
+                            <th>{{$lang('应聘岗位')}}</th>
+                            <th>{{$lang('面试官')}}</th>
+                            <th>{{$lang('电话')}}</th>
+                            <th>{{$lang('邮箱')}}</th>
+                            <th>{{$lang('简历来源')}}</th>
+                            <th>{{$lang('简历状态')}}</th>
+                            <th>{{$lang('评价')}}</th>
+                            <th>{{$lang('预约日期')}}</th>
+                            <th>{{$lang('操作')}}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="item in waitdata">
+                            <td>{{item.IDS}}</td>
+                            <td>{{item.JOB_TIME2}}</td>
+                            <td>{{item.NAME}}</td>
+                            <td>{{item.DEPT}}</td>
+                            <td>{{item.JOBS}}</td>
+                            <td>{{item.NAME2}}</td>
+                            <td>{{item.TEL}}</td>
+                            <td>{{item.MAIL}}</td>
+                            <td>{{item.SOURCE}}</td>
+                            <td>{{item.STATUS}}</td>
+                            <td class="text" :title="item.JOB_MSG"><span>{{item.JOB_MSG}}</span></td>
+                            <td>{{item.JOB_DATE1}} {{item.JOB_TIME1}}</td>
+                            <td>
+                                <button class="btn-pub btn-blue" type="button" size="small" @click="review(item)">查看</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div style="margin-top: 20px;" class="use-row">
+            <div class="col-100 text-right">
+                <el-pagination @size-change="handleSizeChange1" @current-change="handleCurrentChange1" :current-page.sync="page1.sePage" :page-sizes="[5,10,20,50,100,200]" :page-size="page1.pageSize" layout="sizes, prev, pager, next" :total="waitCount"></el-pagination>
+            </div>
+        </div>
+        <div class="row" style="margin-top: 50px;">
+            <div class="col-100">
+                <table class="table-list">
+                    <caption>{{$lang('已沟通候选人')}}</caption>
+                    <thead>
+                        <tr style="background: #F7F9FB;">
+                            <th>{{$lang('序号')}}</th>
+                            <th>{{$lang('面试时间')}}</th>
+                            <th>{{$lang('姓名')}}</th>
+                            <th>{{$lang('部门')}}</th>
+                            <th>{{$lang('应聘岗位')}}</th>
+                            <th>{{$lang('面试官')}}</th>
+                            <th>{{$lang('电话')}}</th>
+                            <th>{{$lang('邮箱')}}</th>
+                            <th>{{$lang('简历来源')}}</th>
+                            <th>{{$lang('简历状态')}}</th>
+                            <th width="20%">{{$lang('评价')}}</th>
+                            <th>{{$lang('预约日期')}}</th>
+                            <th>{{$lang('操作')}}</th>
+                        </tr>
+                    </thead>
+                    <tbody> 
+                        <tr v-for="item in hasdata">
+                            <td>{{item.IDS}}</td>
+                            <td v-if="item.IS_NOT_ARRANGE==1">不安排</td>
+                            <td v-else>{{item.JOB_DATE2}} {{item.JOB_TIME2}}</td>
+                            <td>{{item.NAME}}</td>
+                            <td>{{item.DEPT}}</td>
+                            <td>{{item.JOBS}}</td>
+                            <td>{{item.NAME2}}</td>
+                            <td>{{item.TEL}}</td>
+                            <td>{{item.MAIL}}</td>
+                            <td>{{item.SOURCE}}</td>
+                            <td>{{item.STATUS}}</td>
+                            <td class="text" :title="item.JOB_MSG"><span>{{item.JOB_MSG}}</span></td>
+                            <td>{{item.JOB_DATE1}} {{item.JOB_TIME1}}</td>
+                            <td>
+                                <button class="btn-pub btn-blue" type="button" size="small" @click="review(item)">查看</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div style="margin-top: 20px;" class="use-row">
+            <div class="col-100 text-right">
+                <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="page.sePage" :page-sizes="[5,10,20,100,200]" :page-size="page.pageSize" layout="sizes, prev, pager, next" :total="hasCount"></el-pagination>
+            </div>
+        </div>
+    </div>
+    <!--引入js-->
+    <script type="text/javascript" src="../Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="../Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="../Public/js/vue-2.4.2.js?v=<{$Think.const.V}>"></script>
+    <script type="text/javascript" src="../Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="../Public/js/element-ui.js?v=<{$Think.const.V}>"></script>
+    <script type="text/javascript">
+    var recFo = new Vue({
+        el: '#recFollow',
+        data: {
+            waitdata: [],
+            hasdata: [],
+            page: {
+                sePage: 1,
+                pageSize: 5,
+                sePage: 1,
+                pageSize: 5,
+            },
+            page1: {
+                sePage: 1,
+                pageSize: 5,
+                sePage: 1,
+                pageSize: 5,
+            },
+            hasCount: 0,
+            waitCount: 0,
+        },
+
+        created: function() {
+            this.search();
+        },
+
+        methods: {
+            search: function() {
+                var params = { 'pagenow': this.page1.sePage, 'pageSize': this.page1.pageSize }
+                console.log(params);
+                axios.post("/index.php?m=api&a=waitFollow", { param: params })
+
+                    .then(function(res) {
+                        if (res.data.code === 200) {
+                            recFo.waitdata = res.data.data;
+                            recFo.waitCount = parseInt(res.data.msg);
+                        }
+
+                    })
+
+                var param = { 'pagenow': this.page.sePage, 'pageSize': this.page.pageSize }
+                axios.post("/index.php?m=api&a=hasCommun", { param: param })
+                    .then(function(res) {
+                        if (res.data.code === 200) {
+                            recFo.hasdata = res.data.data;
+                            recFo.hasCount = parseInt(res.data.msg);
+                        }
+
+                    })
+            },
+            handleSizeChange: function(size) {
+                this.page.pageSize = size;
+                this.search();
+            },
+            handleCurrentChange: function(currentPage) {
+                this.page.sePage = currentPage;
+                this.search();
+            },
+            handleSizeChange1: function(size) {
+                this.page1.pageSize = size;
+                this.search();
+            },
+            handleCurrentChange1: function(currentPage) {
+                this.page1.sePage = currentPage;
+                this.search();
+            },
+            review: function(item) {
+                var id = item.ID;
+                location.href = '/index.php?m=Hr&a=recruit&recuitfollow=5&resid=' + id;
+                this.showRec = true;
+            },
+            //新建简历
+            addRec: function () {
+                location.href = "index.php?m=Hr&a=recruit&recuitfollow=5";
+            }
+
+        }
+    })
+    </script>
+</body>
+
+</html>

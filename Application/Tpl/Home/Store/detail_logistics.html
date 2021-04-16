@@ -1,0 +1,802 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+    <title>物流配置</title>
+    <link rel="stylesheet" href="../Public/utils/css/public.style.css?v=0907">
+    <link rel="stylesheet" href="../Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="../Public/../Hr/depList.css?v=123">
+    <link rel="stylesheet" href="../Public/icon/css/font-awesome.min.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+
+        #detailLogistics table {
+            margin-top: 20px;
+        }
+
+        #detailLogistics th {
+            background: #ecf2f7;
+            height: 40px;
+            text-align: center;
+            font-size: .7rem;
+            color: #546e7a;
+            letter-spacing: 0;
+            border: 1px solid #cadee7;
+            white-space: nowrap;
+        }
+
+        .store_detail {
+            margin-left: 30px;
+            margin-bottom: 50px;
+        }
+
+        .store_detail .active {
+            opacity: 1;
+        }
+
+        .store_detail a {
+            cursor: pointer;
+            font-weight: bold;
+            opacity: 0.5;
+            margin-right: 30px;
+        }
+
+        .el-popover__title {
+            font-size: 16px;
+            font-weight: 500;
+            margin: 5px 0 20px;
+        }
+
+        .popover-wrap {
+            box-shadow: 3px 5px 20px #48576a;
+        }
+        .castTime{
+            display: flex;
+            justify-content: flex-start;
+            width: 100%;
+            align-items: center;
+        }
+        .castTime .el-input{
+            width: auto;
+            margin-right: 20px;
+        }
+    </style>
+</head>
+
+<body>
+<div id="detailLogistics" class="recruit use-btn" style="padding-bottom: 260px;" v-cloak>
+    <input type="hidden" id="id" value=<?php echo $id; ?>>
+    <div class="store_detail">
+        <a onclick="changenewtab(this,'<{$Think.lang.基础配置}>')" _href="<{:U('store/detail')}>&id=<?php echo $id; ?>">
+            <{$Think.lang.基础配置}>
+        </a>
+        <a onclick="changenewtab(this,'<{$Think.lang.仓库配置}>')" _href="<{:U('store/detail_ware')}>&id=<?php echo $id; ?>">
+            <{$Think.lang.仓库配置}>
+        </a>
+        <a class="active">
+            <{$Think.lang.物流配置}>
+        </a>
+        <a onclick="changenewtab(this,'<{$Think.lang.高级配置}>')" _href="<{:U('store/detail_other')}>&id=<?php echo $id; ?>">
+            <{$Think.lang.高级配置}>
+        </a>
+        <a onclick="changenewtab(this,'<{$Think.lang.财务配置}>')" _href="<{:U('store/detail_finance')}>&id=<?php echo $id; ?>">
+            <{$Think.lang.财务配置}>
+        </a>
+        <a onclick="changenewtab(this,'<{$Think.lang.走仓推荐}>')" _href="<{:U('store/detail_warehouse_recommended')}>&id=<?php echo $id; ?>">
+            <{$Think.lang.走仓推荐}>
+        </a>
+        <a onclick="changenewtab(this,'<{$Think.lang.日志信息}>')" _href="<{:U('store/detail_log')}>&id=<?php echo $id; ?>">
+            <{$Think.lang.日志信息}>
+        </a>
+    </div>
+    <el-row>
+        <el-col>
+            <el-input :placeholder="$lang('物流公司')" v-model="form.searchVal" style="width: 400px;vertical-align: middle;">
+                <el-select v-model="form.condition" slot="prepend" :placeholder="$lang('请选择')" style="width: 130px">
+                    <el-option :label="$lang('物流公司')" value="logCompany" key="PLAT_CD"></el-option>
+                    <el-option :label="$lang('物流方式')" value="logWay" key="STORE_NAME"></el-option>
+                </el-select>
+            </el-input>
+            <el-button @click="search()" type="success">{{$lang('查询')}}</el-button>
+            <el-button @click="reset()">{{$lang('重置')}}</el-button>
+        </el-col>
+    </el-row>
+    <el-row style="margin-top:15px;">
+        <el-col :span="12">
+            <div class="use-row use-btn">
+                <div class=" text-left result-num">
+                   {{$lang('搜索结果：共')}}
+                    <b>{{ logisticsCount }}</b>{{$lang('条记录') }}
+                </div>
+            </div>
+        </el-col>
+        <el-col :span="12" class="text-right">
+            <el-button type="primary" size="small" @click="addEntry()">{{$lang('新增') }}</el-button>
+        </el-col>
+    </el-row>
+
+    <div class="row">
+        <div class="col-100">
+            <table class="table-list">
+                <thead>
+                <tr style="background: #F7F9FB;">
+                    <th width="10%">{{$lang('物流公司') }}</th>
+                    <th width="25%">{{$lang('物流方式') }}</th>
+                    <th width="25%">{{$lang('妥投时间') }}
+                        <el-tooltip class="item" effect="dark" content="物流轨迹的妥投时间，开始时间是扫描时间" placement="top-start">
+                          <i class="el-icon-question" style="font-size: 18px;font-weight: bold"></i>
+                        </el-tooltip>
+                    </th>
+                    <th width="20%">{{$lang('订单金额区间（美元）') }}</th>
+                    <th width="15%">{{$lang('收件人国家') }}</th>
+                    <th width="15%">{{$lang('操作') }}</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="item in dataList">
+                    <td>{{item.CD_VAL}}</td>
+                    <td>{{item.LOGISTICS_MODE}}</td>
+                    <td>
+                        <div  class="castTime">
+                            <el-input type="number" :disabled="true" v-model="item.cast_time" auto-complete="off" placeholder="<{$Think.lang.妥投时间}>"></el-input><span><{$Think.lang.天}></span>
+                            <el-switch
+                                style="margin-left: 20px"
+                                :disabled="true"
+                                v-model="item.cast_switch"
+                                active-color="#13ce66"
+                                inactive-color="#ff4949">
+                            </el-switch>
+                            <span style="margin-left: 20px" v-if="item.cast_switch"><{$Think.lang.开}></span>
+                            <span style="margin-left: 20px" v-else><{$Think.lang.关}></span>
+                        </div>
+                    </td>
+                    <td>
+                        <el-popover :title="$lang('金额区间')" width="525" trigger="click" popper-class="popover-wrap" v-model="item.popover_amount">
+                            <div class="text-right">
+                                <div v-if="item.popover_amount">
+                                    <el-input v-model="item.order_amount_range.l_money" :placeholder="$lang('最小金额')" style="width: 120px;"></el-input>
+                                    <el-select v-model="item.order_amount_range.l_meta" :placeholder="$lang('区间')" style="width: 75px;">
+                                        <el-option label="≤" value="≤"></el-option>
+                                        <el-option label="<" value="<"></el-option>
+                                    </el-select>
+                                    <span style="font-size: 14px;">{{$lang('订单金额（美元）')}}</span>
+                                    <el-select v-model="item.order_amount_range.r_meta" :placeholder="$lang('区间')" style="width: 75px;">
+                                        <el-option label="≤" value="≤"></el-option>
+                                        <el-option label="<" value="<"></el-option>
+                                    </el-select>
+                                    <el-input v-model="item.order_amount_range.r_money" :placeholder="$lang('最大金额')" style="width: 120px;"></el-input>
+                                </div>
+                                <div style="margin: 20px 0 5px;">
+                                    <el-button @click="cancelAmount(item)">{{$lang('取消')}}</el-button>
+                                    <el-button type="primary" @click="saveAmount(item)">{{$lang('确定')}}</el-button>
+                                </div>
+                            </div>
+                            <el-button slot="reference" type="text">
+                                        <span v-if="item.order_amount_range.l_money">
+                                            {{item.order_amount_range.l_money}} {{item.order_amount_range.l_meta}} {{$lang('订单金额')}} {{item.order_amount_range.r_meta}} {{item.order_amount_range.r_money}}
+                                        </span>
+                                <span v-else>
+                                           {{$lang('无金额限制')}}
+                                        </span>
+                            </el-button>
+                        </el-popover>
+                    </td>
+                    <td>
+                        <el-popover :title="$lang('支持的国家')" width="300" @show="getCountry(item)" trigger="click" popper-class="popover-wrap" v-model="item.popover_country">
+                            <div class="text-right">
+                                <div v-if="item.popover_country">
+                                    <el-select auto-complete="on" v-model="recipient_country" filterable multiple collapse-tags :placeholder="$lang('请选择国家')" style="width: 100%">
+                                        <el-option v-for="k in country" :key="k.id" :label="k.NAME" :value="k.id"></el-option>
+                                    </el-select>
+                                </div>
+                                <div style="margin: 20px 0 5px;">
+                                    <el-button @click="cancelCountry(item)">{{$lang('取消')}}</el-button>
+                                    <el-button type="primary" @click="saveCountry(item)">{{$lang('确定')}}</el-button>
+                                </div>
+                            </div>
+                            <el-button slot="reference" type="text">
+                                        <span :title="getName(item.recipient_country,country)" v-if="item.recipient_country" style="display: inline-block; width: 120px; overflow: hidden; text-overflow: ellipsis;">
+                                            {{getName(item.recipient_country,country)}}
+                                        </span>
+                                <span v-else>
+                                            {{$lang('所有国家')}}
+                                        </span>
+                            </el-button>
+                        </el-popover>
+                    </td>
+                    <td>
+                        <el-button size="small" type="info" @click="delEntry(item)" :disabled="item.disabled">{{$lang('删除')}}</el-button>
+                        <el-button size="small" type="primary" @click="onEdit(item)">{{$lang('编辑')}}</el-button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div style="margin-top: 20px;" class="use-row">
+        <div class="col-100 text-right">
+            <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="page.sePage" :page-sizes="[20,50,100,200]"
+                           :page-size="page.pageSize" layout="sizes,prev, pager, next" :total="logisticsCount"></el-pagination>
+        </div>
+    </div>
+
+    <el-dialog title="<{$Think.lang.新增}>" :visible.sync="dialogAdd" width="600px" :before-close="cancelAdd">
+        <el-row>
+            <el-col>
+                <div style="margin-bottom:10px;font-weight: 600;"><{$Think.lang.选择物流}> <span style="color: red;vertical-align: middle;">*</span></div>
+                <div>
+                    <el-select filterable clearable @change="checkLogCom" v-model="addData.logistics_company" placeholder="<{$Think.lang.物流公司}>" style="width:270px;">
+                        <el-option v-for="item in logisticsCompany" :key="item.cd" :label="item.cdVal" :value="item.cd"> </el-option>
+                    </el-select>
+                    <el-select filterable clearable  :disabled="!logisticsType.length" v-model="addData.logistics_mode_id" placeholder="<{$Think.lang.物流方式}>" style="width:270px;">
+                        <el-option v-for="item in logisticsType" :key="item.ID" :label="item.CD_VAL" :value="item.ID"> </el-option>
+                    </el-select>
+                </div>
+            </el-col>
+            <el-col>
+                <div style="margin-bottom:10px;margin-top: 20px;font-weight: 600;"><{$Think.lang.妥投时间}></div>
+                <div  class="castTime">
+                    <div style="display: flex;justify-content: space-between;align-items: center;"><el-input type="number" id="castTime" min="0" v-model="addData.cast_time" auto-complete="off" placeholder="<{$Think.lang.请输入妥投时间}>"></el-input><span><{$Think.lang.天}></span></div>
+                    <div style="display: flex;justify-content: space-between;align-items: center;margin-left: 20px">
+                       <el-switch
+                           v-model="addData.cast_switch"
+                           active-color="#13ce66"
+                           inactive-color="#ff4949">
+                       </el-switch>
+                       <span style="margin-left: 20px" v-if="addData.cast_switch"><{$Think.lang.开}></span>
+                       <span style="margin-left: 20px" v-else><{$Think.lang.关}></span>
+                   </div>
+                </div>
+            </el-col>
+            <el-col>
+                <div style="margin: 20px 0 10px;font-weight: 600;"><{$Think.lang.金额区间}></div>
+                <div>
+                    <el-input v-model="addData.order_amount_range.l_money" :placeholder="$lang('最小金额')" style="width:130px;"> </el-input>
+                    <el-select v-model="addData.order_amount_range.l_meta" :placeholder="$lang('区间')" style="width:80px;">
+                        <el-option  label="<" value="<"> </el-option>
+                        <el-option label="≤" value="≤"> </el-option>
+                    </el-select>
+                    <span>
+                            <{$Think.lang.订单金额}>&nbsp; ( <{$Think.lang.美元}> )
+                        </span>
+                    <el-select v-model="addData.order_amount_range.r_meta" :placeholder="$lang('区间')" style="width:80px;">
+                        <el-option  label="<" value="<"> </el-option>
+                        <el-option  label="≤" value="≤"> </el-option>
+                    </el-select>
+                    <el-input v-model="addData.order_amount_range.r_money" :placeholder="$lang('最小金额')" style="width:130px;"> </el-input>
+                </div>
+            </el-col>
+            <el-col>
+                <div style="margin: 20px 0 10px;font-weight: 600;"><{$Think.lang.支持的国家}></div>
+                <div>
+                    <el-select filterable clearable multiple v-model="addData.recipient_country" :placeholder="$lang('请选择')" style="width:545px;">
+                        <el-option v-for="item in country" :key="item.id" :label="item.NAME" :value="item.id"> </el-option>
+                    </el-select>
+                </div>
+            </el-col>
+        </el-row>
+        <span slot="footer" class="dialog-footer">
+                <el-button @click="cancelAdd()">{{$lang('取消')}}</el-button>
+                <el-button type="primary" @click="saveAdd()">{{$lang('确定')}}</el-button>
+            </span>
+    </el-dialog>
+
+    <el-dialog title="<{$Think.lang.修改}>" :visible.sync="dialogEdit" width="600px" :before-close="beforeCloseEdit">
+        <el-row>
+            <el-col>
+                <div style="margin-bottom:10px;font-weight: 600;"><{$Think.lang.选择物流}> <span style="color: red;vertical-align: middle;">*</span></div>
+                <div>
+                    <el-select :disabled="true" filterable clearable @change="onChangeByEdit" v-model="editData.logistics_company" placeholder="<{$Think.lang.物流公司}>" style="width:270px;">
+                        <el-option v-for="item in logisticsCompany" :key="item.cd" :label="item.cdVal" :value="item.cd"> </el-option>
+                    </el-select>
+                    <el-select :disabled="true" filterable clearable  :disabled="!logisticsType.length" v-model="editData.logistics_mode_id" placeholder="<{$Think.lang.物流方式}>" style="width:270px;">
+                        <el-option v-for="item in logisticsType" :key="item.ID" :label="item.CD_VAL" :value="item.ID"> </el-option>
+                    </el-select>
+                </div>
+            </el-col>
+            <el-col>
+                <div style="margin-bottom:10px;margin-top: 20px;font-weight: 600;"><{$Think.lang.妥投时间}></div>
+                <div  class="castTime">
+                    <div style="display: flex;justify-content: space-between;align-items: center;">
+                        <el-input type="number" id="castTime" min="0"  v-model="editData.cast_time" auto-complete="off" placeholder="<{$Think.lang.请输入妥投时间}>"></el-input><span><{$Think.lang.天}></span>
+                    </div>
+                    <div style="display: flex;justify-content: space-between;align-items: center;margin-left: 20px">
+                        <el-switch
+                            v-model="editData.cast_switch"
+                            active-color="#13ce66"
+                            inactive-color="#ff4949">
+                        </el-switch>
+                        <span style="margin-left: 20px" v-if="editData.cast_switch"><{$Think.lang.开}></span>
+                        <span style="margin-left: 20px" v-else><{$Think.lang.关}></span>
+                    </div>
+
+                </div>
+            </el-col>
+            <el-col>
+                <div style="margin: 20px 0 10px;font-weight: 600;"><{$Think.lang.金额区间}></div>
+                <div>
+                    <el-input v-model="editData.order_amount_range.l_money" :placeholder="$lang('最小金额')" style="width:130px;"> </el-input>
+                    <el-select v-model="editData.order_amount_range.l_meta" :placeholder="$lang('区间')" style="width:80px;">
+                        <el-option  label="<" value="<"> </el-option>
+                        <el-option label="≤" value="≤"> </el-option>
+                    </el-select>
+                    <span>
+                            <{$Think.lang.订单金额}>&nbsp; ( <{$Think.lang.美元}> )
+                        </span>
+                    <el-select v-model="editData.order_amount_range.r_meta" placeholder="区间" style="width:80px;">
+                        <el-option  label="<" value="<"> </el-option>
+                        <el-option  label="≤" value="≤"> </el-option>
+                    </el-select>
+                    <el-input v-model="editData.order_amount_range.r_money" :placeholder="$lang('最小金额')" style="width:130px;"> </el-input>
+                </div>
+            </el-col>
+            <el-col>
+                <div style="margin: 20px 0 10px;font-weight: 600;"><{$Think.lang.支持的国家}></div>
+                <div>
+                    <el-select filterable clearable multiple v-model="editData.recipient_country" :placeholder="$lang('请选择')" style="width:545px;">
+                        <el-option v-for="item in country" :key="item.id" :label="item.NAME" :value="item.id"> </el-option>
+                    </el-select>
+                </div>
+            </el-col>
+        </el-row>
+        <span slot="footer" class="dialog-footer">
+                <el-button @click="onCloseByEdit">{{$lang('取消')}}</el-button>
+                <el-button type="primary" @click="onSaveByEdit">{{$lang('确定')}}</el-button>
+            </span>
+    </el-dialog>
+</div>
+</body>
+<!--引入js-->
+<script type="text/javascript" src="../Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="../Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="../Public/js/axios.min.js"></script>
+<script type="text/javascript" src="../Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript">
+    var detailLogistics = new Vue({
+        el: '#detailLogistics',
+        data: {
+            id: '',
+            //openWindow: true,  //是否开启了弹窗
+            //tipConfigShow: false, //仓库全选配置提示弹窗
+            dialogAdd:false,      //新增弹框
+            dialogEdit:false,
+            dataList: {
+
+            },
+            form: {
+                condition: 'logCompany',
+                searchVal: '',
+            },
+            addData:{
+                logistics_company:'',
+                logistics_mode_id:'',
+                order_amount_range:{
+                    l_money:'',
+                    l_meta:'',
+                    r_meta:'',
+                    r_money:'',
+                },
+                recipient_country:[],
+                cast_switch:false
+            },
+            editData:{
+                logistics_company:'',
+                logistics_mode_id:'',
+                order_amount_range:{
+                    l_money:'',
+                    l_meta:'',
+                    r_meta:'',
+                    r_money:'',
+                },
+                recipient_country:[],
+                cast_switch:false
+            },
+            recipient_country: [],
+            country: [],    //国家数据
+            logisticsCompany: [],   //物流公司
+            logisticsType: [],      //物流方式
+            currentRow:{},
+            page: {
+                sePage: 1,
+                pageSize: 20,
+            },
+            logisticsCount: 0,
+            getName:function(key,data){
+                var names = [],
+                    keys = key.split(',')
+                keys.forEach(function(e) {
+                    var result = data.filter(function(item){ return e == item.id})
+                    result.length && names.push(result[0].NAME);
+                });
+                return  names.length ? names.join(',') : '';
+            }
+        },
+        created: function () {
+            this.search();
+            this.baseData();
+
+        },
+        mounted(){
+
+        },
+
+        methods: {
+            baseData: function () {
+                var query = {
+                    query: ["country_status"]
+                }
+                axios.post("/index.php?m=Data&a=cdList", query) .then(function (res) {
+                    detailLogistics.country = res.data.data.country_status;
+                })
+            },
+            search: function () {
+                var id = $("#id").val();
+                this.id = id;
+                var url = "/index.php?m=api&a=store_getSupportLogistics&id=" + id + "&pageno=" + this.page.sePage + "&pageSize=" + this.page.pageSize;
+                if (this.form.condition) {
+                    url += "&condition=" + this.form.condition
+                }
+                if (this.form.searchVal) {
+                    url += "&searchVal=" + this.form.searchVal
+                }
+                axios.post(url)
+                    .then(function (res) {
+                        if (res.data.code === 200) {
+                            var data = res.data.data;
+                            detailLogistics.logisticsCount = parseInt(data[0].count);
+
+                            detailLogistics.dataList = data;
+
+                            for (var i = detailLogistics.dataList.length; i--;) {
+                                if (!detailLogistics.dataList[i].order_amount_range) {
+                                    Vue.set(detailLogistics.dataList[i], 'order_amount_range', {});
+                                }
+                                Vue.set(detailLogistics.dataList[i], 'popover_amount', false);
+                                Vue.set(detailLogistics.dataList[i], 'popover_country', false);
+                                Vue.set(detailLogistics.dataList[i], 'cast_switch', detailLogistics.dataList[i].cast_switch==='0'?false:true);
+
+                            }
+
+                            if (detailLogistics.logisticsCount === 0) {
+                                detailLogistics.dataList = [];
+                            }
+                        }
+                    })
+            },
+            handleCurrentChange: function (size) {
+                this.page.sePage = size;
+                this.search();
+            },
+            handleSizeChange: function (size) {
+                this.page.pageSize = size;
+                this.search();
+            },
+            cancelAmount:function(item){
+                item.popover_amount = false;
+                this.search();
+            },
+            saveAmount: function (item) {
+                if(!item.order_amount_range.l_meta || !item.order_amount_range.r_meta){
+                    this.$message({ message: this.$lang('区间不能为空'), type: 'warning' });
+                    return false;
+                }
+                if(isNaN(item.order_amount_range.r_money) || isNaN(item.order_amount_range.l_money)){
+                    this.$message({ message: this.$lang('金额必须为数字'), type: 'warning' });
+                    return false;
+                }
+
+                if(+item.order_amount_range.l_money > +item.order_amount_range.r_money){
+                    this.$message({ message: this.$lang('最小金额不能大于最大金额'), type: 'warning' });
+                    return false;
+                }
+
+                var param = {
+                    "data": [
+                        {
+                            "mode_info_id":item.mode_info_id,
+                            "order_amount_range":JSON.stringify(item.order_amount_range),
+                            "recipient_country": item.recipient_country
+                        }
+                    ]
+                }
+                axios.post("/index.php?m=store&a=modeInfoEdit", param).then( (res) =>{
+                    if (res.data.code == 200) {
+                        detailLogistics.$message({
+                            message: this.$lang('修改成功'),
+                            type: 'success',
+                        });
+                        Vue.set(item, 'popover_amount', false);
+                        detailLogistics.search();
+                    } else {
+                        detailLogistics.$message({
+                            message:this.$lang('修改失败'),
+                            type: 'error',
+                        });
+                    }
+
+                })
+            },
+            getCountry:function(item){
+                this.recipient_country = item.recipient_country ? item.recipient_country.split(',') : []
+            },
+            cancelCountry:function(item){
+                item.popover_country = false;
+                this.search();
+            },
+            saveCountry: function (item) {
+                var param = {
+                    "data": [
+                        {
+                            "mode_info_id":item.mode_info_id,
+                            "order_amount_range":JSON.stringify(item.order_amount_range),
+                            "recipient_country": detailLogistics.recipient_country.join(',')
+                        }
+                    ]
+                }
+                axios.post("/index.php?m=store&a=modeInfoEdit", param).then((res)=> {
+                    if (res.data.code == 200) {
+                        detailLogistics.$message({
+                            message: this.$lang('修改成功'),
+                            type: 'success',
+                        });
+                        Vue.set(item, 'popover_country', false);
+                        detailLogistics.search();
+                    } else {
+                        detailLogistics.$message({
+                            message: this.$lang('修改失败'),
+                            type: 'error',
+                        });
+                    }
+                })
+            },
+            addEntry:function(){
+                this.dialogAdd = true;
+                this.$nextTick(()=>{
+                    console.log("获取",document.getElementById("castTime"));
+                    document.getElementById("castTime").addEventListener("keypress",(event)=>{
+                        if(event.keyCode == 45){
+                            event.preventDefault();
+                        }
+                    });
+                })
+
+                axios.post('/index.php?m=store&a=logisticsCompany&id=' + $("#id").val()).then((res)=>{
+                    var baseData = res.data;
+                    if(baseData.code == 2000){
+                        detailLogistics.logisticsCompany = baseData.data;
+                    }else{
+                        detailLogistics.$message({ message: this.$lang('基础数据获取失败'), type: 'error' });
+                    }
+
+                })
+            },
+            checkLogCom:function(val){
+                this.addData.logistics_mode_id = '';
+                this.logisticsType = val ? this.logisticsCompany[val].LOGISTICS_MODE : [];
+            },
+            saveAdd:function(){
+                if(!this.addData.logistics_mode_id){
+                    this.$message({ message: this.$lang('请选择物流方式'), type: 'warning' });
+                    return false;
+                }
+                console.log("国家",this.addData.recipient_country)
+                let cast_time = this.addData.cast_time?this.addData.cast_time:"";
+                let cast_switch = null;
+
+                if(this.addData.cast_time){
+                    cast_switch= this.addData.cast_switch?"1":"0";
+                }else {
+                    cast_switch= "";
+                }
+
+                let param = {data:[{}]};
+
+                param.data[0].store_id = $("#id").val();
+                param.data[0].logistics_mode_id = this.addData.logistics_mode_id;
+                param.data[0].order_amount_range = JSON.stringify(this.addData.order_amount_range);
+                param.data[0].recipient_country = this.addData.recipient_country.join(',');
+                param.data[0].cast_time = cast_time;
+                param.data[0].cast_switch = cast_switch;
+
+                this.cancelAdd();
+                axios.post('/index.php?m=store&a=modeInfoAdd',param).then((res)=>{
+                    var data = res.data;
+                    if(data.code == 200){
+                        detailLogistics.$message({ message: this.$lang('新增成功'), type: 'success' });
+                        detailLogistics.search();
+                    }else{
+                        detailLogistics.$message({ message: this.$lang('新增失败'), type: 'error' });
+                    }
+                })
+            },
+            cancelAdd: function () {
+                this.dialogAdd = false;
+                this.addData = {
+                    logistics_company: '',
+                    logistics_mode_id: '',
+                    order_amount_range: {
+                        l_money: '',
+                        l_meta: '',
+                        r_meta: '',
+                        r_money: '',
+                    },
+                    recipient_country: [],
+                    cast_time:'',
+                    cast_switch:false
+                };
+                this.logisticsType=[];
+                console.log("关闭了",this.addData);
+
+            },
+            onChangeByEditCastTime(){
+                if(this.editData.cast_time < 0){
+                    detailLogistics.$message({ message: this.$lang('妥投时间不可为负数'), type: 'error' });
+                }
+            },
+            onChangeByEdit(val){
+
+                this.editData.logistics_mode_id = '';
+                this.logisticsType = val ? this.logisticsCompany[val].LOGISTICS_MODE : [];
+            },
+            onEdit(item){
+              console.log("当前项",item);
+                this.currentRow = item;
+                this.dialogEdit = true;
+                this.$nextTick(()=>{
+                    document.getElementById("castTime").addEventListener("keypress",(event)=>{
+                        if(event.keyCode == 45){
+                            event.preventDefault();
+                        }
+                    });
+                })
+                axios.post('/index.php?m=store&a=logisticsCompany&id=' + $("#id").val()).then((res)=>{
+                    var baseData = res.data;
+                    if(baseData.code == 2000){
+                        detailLogistics.logisticsCompany = baseData.data;
+                        // this.baseData();
+
+                        axios.post("/index.php?m=store&a=modeInfoDetail",{
+                            logistics_mode_info_id: item.mode_info_id
+                        }).then((res)=>{
+                            console.log("详情",res);
+                            let data = res.data.data;
+                            this.editData.logistics_company = data.logistics_company;
+                            this.logisticsType = this.editData.logistics_company ? this.logisticsCompany[this.editData.logistics_company].LOGISTICS_MODE : [];
+
+                            this.editData.logistics_mode_id = data.logistics_mode_id;
+
+                            this.editData.cast_time = Number(data.cast_time);
+                            this.editData.cast_switch = data.cast_switch==="1"?true:false;
+                            console.log("当前数据",this.editData.cast_switch)
+                            let order_amount_range = JSON.parse(data.order_amount_range);
+                            this.editData.order_amount_range.l_money = order_amount_range.l_money;
+                            this.editData.order_amount_range.l_meta = order_amount_range.l_meta;
+                            this.editData.order_amount_range.r_meta = order_amount_range.r_meta;
+                            this.editData.order_amount_range.r_money = order_amount_range.r_money;
+
+                            if(data.recipient_country){
+                                let recipient_country = data.recipient_country.split(",");
+                                this.editData.recipient_country = recipient_country;
+                            }
+                            // console.log("字符串",recipient_country.split(","))
+
+                        })
+                    }else{
+                        detailLogistics.$message({ message: this.$lang('基础数据获取失败'), type: 'error' });
+                    }
+
+                })
+
+            },
+            beforeCloseEdit(){
+                this.dialogEdit = false;
+                this.editData = {
+                    logistics_company: '',
+                    logistics_mode_id: '',
+                    order_amount_range: {
+                        l_money: '',
+                        l_meta: '',
+                        r_meta: '',
+                        r_money: '',
+                    },
+                    recipient_country: [],
+                    cast_time:'',
+                    cast_switch:false
+                };
+                this.logisticsType=[];
+            },
+            onCloseByEdit(){
+                this.dialogEdit = false;
+                this.editData = {
+                    logistics_company: '',
+                    logistics_mode_id: '',
+                    order_amount_range: {
+                        l_money: '',
+                        l_meta: '',
+                        r_meta: '',
+                        r_money: '',
+                    },
+                    recipient_country: [],
+                    cast_time:'',
+                    cast_switch:false
+                };
+                this.logisticsType=[];
+            },
+            onSaveByEdit(){
+                if(!this.editData.logistics_mode_id){
+                    this.$message({ message: this.$lang('请选择物流方式'), type: 'warning' });
+                    return;
+                }
+                if(this.editData.cast_time<0){
+                    this.$message({ message: this.$lang('妥投时间不能为负数'), type: 'warning' });
+                    return;
+                }
+
+                let cast_time = this.editData.cast_time?this.editData.cast_time:"";
+                let cast_switch = null;
+
+                if(this.editData.cast_time){
+                    cast_switch= this.editData.cast_switch?"1":"0";
+                }else {
+                    cast_switch= "";
+                }
+
+                let param = {data:[{}]};
+
+                param.data[0].mode_info_id = this.currentRow.mode_info_id;
+                param.data[0].order_amount_range = JSON.stringify(this.editData.order_amount_range);
+                param.data[0].recipient_country = this.editData.recipient_country.join(',');
+                param.data[0].cast_time = cast_time;
+                param.data[0].cast_switch = cast_switch;
+
+                this.onCloseByEdit();
+                axios.post('/index.php?m=store&a=modeInfoEdit',param).then((res)=>{
+                    let data = res.data;
+                    if(data.code == 200){
+                        detailLogistics.$message({ message: this.$lang('修改成功'), type: 'success' });
+                        detailLogistics.search();
+                    }else{
+                        detailLogistics.$message({ message: this.$lang(data.info), type: 'error' });
+                    }
+                })
+            },
+            delEntry: function (item) {
+                Vue.set(item,'disabled',true);
+                var param = {
+                    "data": [{
+                        "mode_info_id": item.mode_info_id
+                    }]
+                }
+                axios.post('/index.php?m=store&a=modeInfoDel', param).then((res) =>{
+                    var data = res.data;
+                    if (data.code == 200) {
+                        detailLogistics.$message({ message: this.$lang('删除成功'), type: 'success' });
+                        detailLogistics.search();
+                    } else {
+                        detailLogistics.$message({ message: this.$lang('删除成功'), type: 'error' });
+                    }
+                })
+            },
+            reset: function () {
+                for (k in this.form) {
+                    this.form[k] =  k == 'condition' ? 'logCompany':'';
+                }
+                this.search();
+            }
+        }
+    })
+</script>
+
+</html>
+<script>
+    import ElCol from "../../Guds/Public/js/vendor";
+    export default {
+        components: {ElCol}
+    }
+</script>

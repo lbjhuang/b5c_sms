@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css">
+    <link href="./Application/Tpl/Home/Public/lib/My97DatePicker/skin/WdatePicker.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/lib/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/common.css">
+    <!-- <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui.css?v=<{$Think.const.V}>"> -->
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/purchaseDetail.css">
+    <link rel="stylesheet" href="../Public/css/logistics.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <title><{$Think.lang.运费详情}></title>
+    <style>
+        [v-cloak]{display: none !important;}
+        .layui-layer-content{width:500px;background:white !important;border:1px solid #cccccc;border-right:2px solid #cccccc}
+    </style>
+</head>
+<body>
+<div class="col-lg-12 col-md-12 col-sm-12 rule_add" id="rule_add">
+    <input  type="hidden" id="modelID" value=<?php echo $modelID; ?>>
+    <input type="hidden" id="logModeId" value=<?php echo $logModeId ?>>
+    <div class="row row_title">
+        <a class="active" v-cloak>{{TITLE_NAME}}</a>
+    </div>
+    <div class="detail_form">
+        <form id="edit_part">
+            <table class="table table-bg">
+                <tbody>
+                <tr>
+                    <td colspan="6" class="table_title">{{$lang('基础信息')}}</td>
+                </tr>
+                    <tr>
+                        <td width="10%">{{$lang('物流公司')}}</td>
+                        <td width="23%"><span v-cloak>{{$lang(logCompany)}}</span></td>
+                        <td width="10%">{{$lang('物流方式')}}</td>
+                        <td width="23%"><span v-cloak>{{LOGISTICS_MODE}}</span></td>
+                        <td width="10%">{{$lang('模板名称')}}</td>
+                        <td width="24%"><span v-cloak>{{$lang(baseModelData.MODEL_NM)}}</span></td>
+                    </tr>
+                    <tr>
+                        <td>{{$lang('启用')}}</td>
+                        <td>
+                            <span v-if="baseModelData.STATE_CODE=='0'" v-cloak>{{$lang('启用')}}</span>
+                            <span v-else-if="baseModelData.STATE_CODE=='1'" v-cloak>{{$lang('未启用')}}</span>
+                        </td>
+                        <td>{{$lang('出发地')}}</span></td>
+                        <td>
+                            <div class="rule_detail_startPlace" v-cloak>
+                                <template v-if="startPlaceToMany" v-for="(data,index) in startPlace">
+                                    <span>{{$lang(data)}}</span>
+                                </template>
+                                <span v-if="startPlaceAlldisplay" @click="startPlacedisplay()" class="all" v-cloak>({{$lang('查看全部')}})</span>
+                                <div v-if="startPlaceshow" v-cloak>
+                                    <p>{{$lang('支持以下仓库出发')}}： <i title="<{$Think.lang.关闭弹框}>" @click="startPlacedisplayNone()">X</i> </p>
+                                    <div :class="startPlaceShowActive?'active':''">
+                                        <template v-if="startPlaceToMany" v-for="(data,index) in startPlaceToMany">
+                                            <span>{{data}}</span>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{$lang('时效(天)')}}</td>
+                        <td>
+                            <span v-if="baseModelData.DAY1" v-cloak>{{Number(baseModelData.DAY1).toFixed(0)}} ~ {{Number(baseModelData.DAY2).toFixed(0)}} </span>
+                            <span v-if="!baseModelData.DAY1" v-cloak>0 ~ {{Number(baseModelData.DAY2).toFixed(0)}}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>{{$lang('计价方式')}}</td>
+                        <td>
+                            <span v-if="baseModelData.DENOMINATED_TYPE=='0'" v-cloak>{{$lang('仅计重')}}</span>
+                            <span v-else-if="baseModelData.DENOMINATED_TYPE=='1'" v-cloak>{{$lang('计泡')}}</span>
+                        </td>
+                        <td>{{$lang('计泡系数')}}</td>
+                        <td v-if="baseModelData.DENOMINATED_TYPE=='1'">{{Number(baseModelData.COEFFICIENT).toFixed(2)}}</td>
+                        <td v-else> {{$lang('无')}} </td>
+                        <td>{{$lang('最大重量')}}(kg)</td>
+                        <td>
+                            <span v-if="baseModelData.MAX_WEIGHT_TYPE=='1'" v-cloak>{{$lang('无限制')}}</span>
+                            <span v-else v-cloak>{{Number(baseModelData.MAX_WEIGHT).toFixed(3)}}</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <table class="table table-bg">
+                <tbody>
+                <tr>
+                    <td colspan="8" class="table_title">
+                        {{$lang('价格详情')}}
+                    </td>
+                </tr>
+                <tr>
+                    <td width="10%">{{$lang('运费折扣')}}</td>
+                    <td width="12%"><span v-cloak>{{Number(baseModelData.POSTTAGE_DISCOUNT).toFixed(2)}}%</span></td>
+                    <td width="10%"><span v-cloak>{{$lang('运费折扣')}}-{{$lang('有效期')}}</span></td>
+                    <td width="18%">
+                        <span v-if="baseModelData.POSTTAGE_DISCOUNT_DATE_START && baseModelData.POSTTAGE_DISCOUNT_DATE_END" v-cloak>
+                            {{baseModelData.POSTTAGE_DISCOUNT_DATE_START}} ~ {{baseModelData.POSTTAGE_DISCOUNT_DATE_END}}
+                        </span>
+                        <span v-if="baseModelData.POSTTAGE_DISCOUNT_DATE_START && !baseModelData.POSTTAGE_DISCOUNT_DATE_END" v-cloak>
+                            {{baseModelData.POSTTAGE_DISCOUNT_DATE_START}} ~ <{$Think.lang.永久}>
+                            
+                        </span>
+                        <span v-if="!baseModelData.POSTTAGE_DISCOUNT_DATE_START && baseModelData.POSTTAGE_DISCOUNT_DATE_END" v-cloak>
+                            {{$lang('任何时间')}} ~ {{baseModelData.POSTTAGE_DISCOUNT_DATE_END}}
+                             
+                        </span>
+                        <span v-if="!baseModelData.POSTTAGE_DISCOUNT_DATE_START && !baseModelData.POSTTAGE_DISCOUNT_DATE_END" v-cloak>
+                            {{$lang('永久')}}
+                        </span>
+                        
+                    </td>
+                    <td width="10%">{{$lang('处理费折扣')}}</td>
+                    <td width="12%"><span v-cloak>{{Number(baseModelData.PROCESS_DISCOUNT).toFixed(2)}}%</span></td>
+                    <td width="10%">{{$lang('处理费折扣')}}{{$lang('有效期')}}</td>
+                    <td width="18%">
+                        <span v-if="baseModelData.PROCESS_DISCOUNT_DATE_START && baseModelData.PROCESS_DISCOUNT_DATE_END" v-cloak>
+                            {{baseModelData.PROCESS_DISCOUNT_DATE_START}} ~ {{baseModelData.PROCESS_DISCOUNT_DATE_END}}
+                        </span>
+                        <span v-if="baseModelData.PROCESS_DISCOUNT_DATE_START && !baseModelData.PROCESS_DISCOUNT_DATE_END" v-cloak>
+                            {{baseModelData.PROCESS_DISCOUNT_DATE_START}} ~ {{$lang('永久')}}
+                        </span>
+                        <span v-if="!baseModelData.PROCESS_DISCOUNT_DATE_START && baseModelData.PROCESS_DISCOUNT_DATE_END" v-cloak>
+                            {{$lang('任何时间')}} ~ {{baseModelData.PROCESS_DISCOUNT_DATE_END}}
+                        </span>
+                        <span v-if="!baseModelData.PROCESS_DISCOUNT_DATE_START && !baseModelData.PROCESS_DISCOUNT_DATE_END" v-cloak>
+                            {{$lang('永久')}}
+                        </span>
+                    </td>
+                </tr>
+                <template v-if="baseModelData.POSTTAGE_VAL" v-for="(data,index) in baseModelData.POSTTAGE_VAL" v-cloak>
+                   <tr>
+                       <td><span>{{$lang('区间')}}({{index + 1}})(kg)</span></td>
+                       <td>{{data.WEIGHT1}} - {{data.WEIGHT2}}</td>
+                       <td>{{$lang('固定费用')}}</td>
+                       <td>{{data.COST}}</td>
+                       <td>{{$lang('每X千克')}}</td>
+                       <td>{{data.PROCESS_WEIGHT}}</td>
+                       <td>{{$lang('每X千克费用（元）')}}</td>
+                       <td>{{data.PROCESS_COST}}</td>
+                   </tr>
+               </template>
+                </tbody>
+            </table>
+            <table class="table table-bg">
+                <tbody>
+                <tr>
+                    <td colspan="8" class="table_title">{{$lang('限制条件')}}(CM)</td>
+                </tr>
+                <tr>
+                    <td>{{$lang('不支持类型')}}</td>
+                    <td colspan="7">
+                        <div class="rule_add_limited rule_add_span rule_add_limited_detail" v-if="baseModelData.BAN_ITEM_CAT" v-cloak>
+                            <template v-for="(data,index) in baseModelData.BAN_ITEM_CAT">
+                                <span :key="index">{{$lang(data)}}</span>
+                            </template>
+                        </div>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td width="10%">{{$lang('最长边')}}(CM)</td>
+                    <td width="12%">
+                        <span v-if="baseModelData.LENGTH1_START && baseModelData.LENGTH1_END" v-cloak>{{Number(baseModelData.LENGTH1_START).toFixed(2)}} ~ {{Number(baseModelData.LENGTH1_END).toFixed(2)}}</span>
+                        <span v-if="baseModelData.LENGTH1_START && !baseModelData.LENGTH1_END" v-cloak>{{Number(baseModelData.LENGTH1_START).toFixed(2)}} ~ +∞</span>
+                        <span v-if="!baseModelData.LENGTH1_START && baseModelData.LENGTH1_END" v-cloak>0 ~ {{Number(baseModelData.LENGTH1_END).toFixed(2)}}</span>
+                        <span v-if="!baseModelData.LENGTH1_START && !baseModelData.LENGTH1_END" v-cloak>{{$lang('无限制')}}</span>
+                    </td>
+                    <td width="10%">{{$lang('第二长边')}}(CM)</td>
+                    <td width="18%">
+                        <span v-if="baseModelData.LENGTH2_START && baseModelData.LENGTH2_END" v-cloak>{{Number(baseModelData.LENGTH2_START).toFixed(2)}} ~ {{Number(baseModelData.LENGTH2_END).toFixed(2)}}</span>
+                        <span v-if="baseModelData.LENGTH2_START && !baseModelData.LENGTH2_END" v-cloak>{{Number(baseModelData.LENGTH2_START).toFixed(2)}} ~ +∞</span>
+                        <span v-if="!baseModelData.LENGTH2_START && baseModelData.LENGTH2_END" v-cloak>0 ~ {{Number(baseModelData.LENGTH2_END).toFixed(2)}}</span>
+                        <span v-if="!baseModelData.LENGTH2_START && !baseModelData.LENGTH2_END" v-cloak>{{$lang('无限制')}}</span>
+                        
+                    </td>
+                    <td width="10%">{{$lang('长宽高之和')}}(CM)</td>
+                    <td width="12%"><span v-if="baseModelData.LENGTH3_MAX" v-cloak>{{Number(baseModelData.LENGTH3_MAX).toFixed(2)}}</span> <span v-else>{{$lang('无限制')}}</span> </td>
+                    <td width="10%">{{$lang('体积')}}(CM^3)</td>
+                    <td width="18%"> <span v-if="baseModelData.VOLUME_MAX" v-cloak> {{Number(baseModelData.VOLUME_MAX).toFixed(2)}}</span> <span v-else>{{$lang('无限制')}}</span>  </td>
+                </tr>
+                </tbody>
+            </table>
+            <table class="table table-bg">
+                <tbody>
+                <tr>
+                    <td colspan="8" class="table_title">{{$lang('已选区域')}}</td>
+                </tr>
+                <tr class="wait rule_detail_wait">
+                    <td colspan="8">
+                        <div class="rule_add_span rule_add_span_yet rule_add_span_yet_detail" v-cloak>
+                            <template v-for="(key,number) in CountryState">
+                                <span :class="key.all?'':'apartTrueSpan'"  @click="AreaDisplay(number)">{{$lang(key.zh_name)}}
+                                  <i v-if="key.all">{{$lang('默认全境')}}</i>
+                                  <i class="apartTrue" v-else>{{$lang('部分区域')}}</i>
+                                </span>
+                                <div class="pop_detail" v-show="key.display">
+                                        <p>{{$lang('选择支持配送到')}}{{key.zh_name}}{{$lang('的区域')}}<i @click="AreaDisplayNone(number)">X</i></p>
+                                        <h3>{{$lang('已选择')}}：</h3>
+                                        <div class="pop_detail_body" >
+                                            <span v-if="key.all">{{$lang('全部')}}</span>
+                                            <template v-for="(data,index) in key.province">
+                                                <span>{{$lang(data.zh_name)}}</span>
+                                            </template>
+                                        </div>
+                                </div>
+                            </template>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <table class="table table-bg relue_detail_textarea">
+                <tbody>
+                    <tr>
+                        <td colspan="8" class="table_title must">{{$lang('注意事项')}}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="8" class="table_span">
+                         </td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div class="col-lg-12 col-md-12 col-sm-12 submit-button">
+                 <?php if(ButtonAction::hidden()){ ?>
+                <button @click="edit(baseModelData.ID)"  type="button" class="rule_button_submit">{{$lang('修改')}}</button>
+                 <?php } ?>
+                 <?php if(ButtonAction::hidden()){ ?>
+                <!-- <button type="reset" class="rule_button_submit">{{$lang('删除')}}</button> -->
+                 <?php } ?>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/lib/My97DatePicker/WdatePicker.js"></script>
+<!-- <script type="text/javascript" src="/Application/Tpl/Home/Public/js/vue-2.4.2.js?v=<{$Think.const.V}>"></script> -->
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/axios.min.js"></script>
+<!-- <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui.js?v=<{$Think.const.V}>"></script> -->
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script src="/Application/Tpl/Home/Public/lib/layer/1.9.3/layer.js" type="text/javascript"></script>
+<script src="/Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script src="/Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" charset="utf-8" src="/Application/Tpl/Home/Public/ueEdit/ueditor.config.js"></script>
+<script type="text/javascript" charset="utf-8" src="/Application/Tpl/Home/Public/ueEdit/ueditor.all.min.js"> </script>
+<script type="text/javascript" charset="utf-8" src="/Application/Tpl/Home/Public/ueEdit/lang/zh-cn/zh-cn.js"></script>
+<script src="/Application/Tpl/Logistics/FreightRules/rule_detail.js?v=<{$Think.const.V}>" ></script>
+</html>

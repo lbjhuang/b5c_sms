@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>收款认领列表</title>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/../Hr/hrstyle.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+</head>
+
+<style>
+    [v-cloak] {
+        display: none;
+    }
+    .btn-pub{
+        outline: none;
+    }
+    .show-list .table-list tr th{
+        padding:0px 6px;
+    }
+    .use-row .col-100{
+        overflow: auto;
+    }
+    .el-pagination{
+        height: 200px;
+    }
+    .show-list .el-form-item__label{
+        padding:0px;
+    }
+    .show-list .table-list tr td{
+        white-space:normal;
+        line-height: 22px;
+    }
+</style>
+
+<body>
+    <div id="cost" class="show-list" v-cloak>
+        <el-form ref="form" :model="form" :label-position="labelPosition" label-width="100px">
+            <div class="use-row">
+                <div class="col-100">
+                    <table class="search-table">
+                        <tbody>
+                            <tr>
+                                <td style="width:33%">
+                                    <el-form-item :label="$lang('认领状态')">
+                                        <el-select collapse-tags :placeholder="$lang('全部')" v-model="form.claim_status"
+                                            clearable>
+                                            <el-option :key="item.CD" :label="$lang(item.CD_VAL)" :value="item.CD" v-for="item in baseData.claim_status"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                </td>
+                                <td style="width:33%">
+                                    <el-form-item :label="$lang('流水ID')">
+                                        <el-input v-model="form.running_id" :placeholder='$lang("请输入流水ID")'>
+                                        </el-input>
+                                    </el-form-item>
+                                </td>
+                                <td style="width:33%">
+                                    <el-form-item :label="$lang('付款账户名')">
+                                        <el-input v-model="form.payment_name" :placeholder='$lang("请输入付款账户名")'>
+                                        </el-input>
+                                    </el-form-item>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <el-form-item :label="$lang('创建时间')">
+                                        <el-date-picker style="width:100%;height: 40px;" v-model="form.create_date"
+                                            :clearable="clearDate" value-format="yyyy-MM-dd" size="small" type="daterange"
+                                            align="right" unlink-panels :range-separator="$lang('至')"
+                                            :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')"
+                                            :picker-options="pickerOptions">
+                                        </el-date-picker>
+                                    </el-form-item>
+                                </td>
+                                <td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="col-100 use-btn">
+                                        <el-button type="primary" @click="search('first_page')">
+                                            {{$lang('查询')}}</el-button>
+                                        <el-button @click="reset()">{{$lang('重置')}}</el-button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </el-form>
+        <div class="baseline"></div>
+        <div class="use-row create-wrap">
+            <div class="col-50 result-num occupy">
+                {{$lang('搜索结果')}}：&nbsp;&nbsp;{{$lang('共')}}
+                <b>{{totalCount}}</b> {{$lang('条')}}
+            </div>
+            <!-- <div class="col-50 text-right occupy" style="width: 50%">
+                <?php if(ButtonAction::hidden()){ ?>
+                <el-button type="primary" @click="exportList()">{{$lang('导出')}}</el-button>
+                <?php }?>
+            </div> -->
+        </div>
+        <div class="use-row">
+            <div class="col-100">
+                <table class="table-list" v-loading="tableLoading">
+                    <thead>
+                        <tr>
+                            <th>{{$lang('流水ID')}}</th>
+                            <th>{{$lang('币种')}}</th>
+                            <th>{{$lang('原始金额')}}</th>
+                            <th>{{$lang('我方信息')}} </th>
+                            <th>{{$lang('对方信息')}} </th>
+                            <th>{{$lang('发生日期')}}</th>
+                            <th>{{$lang('创建时间')}}</th>
+                            <th>{{$lang('付款细节')}}</th>
+                            <th>{{$lang('备注')}}</th>
+                            <th>{{$lang('已认领金额')}}</th>
+                            <th>{{$lang('待认领金额')}}</th>
+                            <th>{{$lang('认领状态')}}</th>
+                            <th>{{$lang('操作')}}</th>
+
+
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(item,index) in dataList">
+                            <td>{{item.account_transfer_no}}</td>
+                            <td>{{item.original_currency_val}}</td>
+                            <td>{{item.original_currency_val}} {{item.original_amount| separatNum}}</td>
+                            <td>{{item.company_name}}<br>
+                                {{item.our_bank}}<br>
+                                {{item.our_open_bank}}
+                            </td>
+                            <td>{{item.opp_company_name}}<br>
+                                {{item.opp_account_bank}}<br>
+                                {{item.opp_open_bank}}</td>
+                            <td>{{item.transfer_time}}</td>
+                            <td>{{item.create_time}}</td>
+                            <td style="max-width: 300px;" :title="item.remark">{{item.remark}}</td>
+                            <td>{{item.our_remark}}</td>
+                            <td>{{item.original_currency_val}} {{item.claimed_amount | separatNum}}</td>
+                            <td>{{item.original_currency_val}} {{item.claim_amount | separatNum}}</td>
+                            <td>{{$lang(item.claim_status_val)}}</td>
+                            <td>
+                                <el-button type="primary" @click="toDetail(item.account_transfer_no+'&time='+ new Date().getTime())">{{$lang('查看')}}</el-button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="use-row">
+            <div class="col-100 text-right">
+                <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="form.page"
+                    :page-sizes="[20, 50, 100, 200]" :page-size="form.page_size" layout="sizes, prev, pager, next,jumper"
+                    :total="totalCount"></el-pagination>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+    <script src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script>
+        if (getCookie('think_language') !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en)
+        }
+        var way = new Vue({
+            el: '#cost',
+            data: {
+                clearDate: false,
+                labelPosition: 'left',
+                totalCount: 0,
+                tableLoading: false,
+                form: {
+                    claim_status: "N002550100",
+                    running_id: "",
+                    payment_name: "",
+                    create_date: [],
+                    created_at: {
+                        start: '',
+                        end: ''
+                    },
+                    page: 1,
+                    page_size: 20
+                },
+                baseData: {},
+                dataList: [],
+                userList: [],
+                pickerOptions: {},
+                dateNow: utils.dateFormat(new Date(), 'yyyy-MM-dd'),
+            },
+            created: function () {
+                this.pickerOptions = {
+                    disabledDate:function(time) {
+                        return time.getTime() < new Date('2018-07-31');
+                    },
+                    shortcuts: [{
+                        text: this.$lang("最近一周"),
+                        onClick: function (picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: this.$lang("最近一个月"),
+                        onClick: function (picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: this.$lang("最近三个月"),
+                        onClick: function (picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }]
+                }
+
+                this.getBaseData();
+                this.search('first_page');
+            },
+            methods: {
+                getBaseData: function () {
+                    var _this = this;
+                    var param = {
+                        cd_type: {
+                            claim_status: false
+                        }
+                    }
+                    axios.post("/index.php?g=common&m=index&a=get_cd", param).then(function (res) {
+                        if (res.data.code == 2000) {
+                            _this.baseData = res.data.data;
+                        }
+                    })
+                },
+                search: function (type) {
+                    var _this = this;
+                    var postData = {};
+                    var date = {};
+                    for (var key in this.form) {
+                        if (this.form[key] && key != 'create_date' && key != 'page' && key != 'page_size' &&
+                            key != 'created_at') {
+                            postData[key] = this.form[key]
+                        }
+                    }
+                    if (this.form.create_date.length) {
+                        postData.created_at = {};
+                        postData.created_at.start = this.form.create_date.length ? this.form.create_date[0] :
+                            '';
+                        postData.created_at.end = this.form.create_date.length ? this.form.create_date[1] :
+                            '';
+                    }
+                    var param = {
+                        search: postData,
+                        pages: {
+                            per_page: this.form.page_size,
+                            current_page: this.form.page
+                        }
+                    }
+                    if (type == 'first_page') {
+                        this.form.page = 1;
+                        param.pages.current_page = 1;
+                    }
+                    this.tableLoading = true;
+
+                    axios.post("/index.php?m=B2b&a=claimList", param).then(function (res) {
+                        var data = res.data;
+                        _this.tableLoading = false;
+                        if (data.code == 200000) {
+                            _this.dataList = data.data.data;
+                            _this.totalCount = +data.data.pages.total;
+                        } else {
+                            _this.$message({
+                                message: _this.$lang('获取数据失败'),
+                                type: 'warning'
+                            });
+                        }
+                    })
+                },
+                handleSizeChange: function (size) {
+                    this.form.page_size = size;
+                    this.search('first_page');
+                },
+                handleCurrentChange: function (currentPage) {
+                    this.form.page = currentPage;
+                    this.search();
+                },
+                toDetail: function toDetail(id) {
+                    let href = "/index.php?m=b2b&a=receipt_claim_detail&account_transfer_no=" + id;
+                    let dom = document.createElement('a');
+                    dom.setAttribute("onclick", "opennewtab(this,'" + this.$lang('收款认领详情') + "')");
+                    dom.setAttribute("_href", href);
+                    dom.click();
+                },
+                reset: function () {
+                    this.form = {
+                        create_date: [],
+                        claim_status: "",
+                        running_id: "",
+                        payment_name: "",
+                        created_at_start: "",
+                        created_at_end: "",
+                        page: 1,
+                        page_size: this.form.page_size
+                    }
+                    this.search('first_page');
+                },
+                exportList: function () {
+                    var param = this.form;
+                    var tmep = document.createElement('form');
+                    tmep.action = '/index.php?g=report&m=income&a=export';
+                    tmep.method = "post";
+                    tmep.style.display = "none";
+                    var opt = document.createElement("input");
+                    opt.name = 'export_params';
+                    opt.value = JSON.stringify(param);
+                    tmep.appendChild(opt);
+                    document.body.appendChild(tmep);
+                    tmep.submit();
+                    $(tmep).remove();
+                },
+            },
+            filters: {
+                formatDate: function formatDate(time) {
+                    var date = new Date(time);
+                    return _formatDate(date, 'yyyy-MM-dd hh:mm');
+                },
+                separatNum: function (num) { //千分位方法
+                    var num = Number(num).toFixed(2);
+                    num = num + "";
+                    var _arr = num.split(".");
+                    return _arr[1] === "00" ? (num - 0).toLocaleString() + ".00" : (num - 0).toLocaleString();
+                },
+                percentage: function (num) {
+
+                    return num ? ((num * 100).toFixed(2) + "%") : '';
+                },
+            },
+            watch: {
+                form: {
+                    handler: function handler(newValue, oldValue) {
+                        // this.search();
+                    },
+
+                    deep: true
+                }
+            },
+        })
+    </script>
+</body>
+
+</html>

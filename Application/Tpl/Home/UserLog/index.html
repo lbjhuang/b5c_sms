@@ -1,0 +1,358 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="renderer" content="webkit|ie-comp|ie-stand">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no" />
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="../Public/lib/html5.js"></script>
+    <script type="text/javascript" src="../Public/lib/respond.min.js"></script>
+    <script type="text/javascript" src="../Public/lib/PIE-2.0beta1/PIE_IE678.js"></script>
+    <![endif]-->
+    <link href="../Public/css/H-ui-3.1.min.css" rel="stylesheet" type="text/css" >
+    <link rel="stylesheet" type="text/css" href="../Public/css/style.css" />
+    <link rel="stylesheet" href="../Public/css/element-ui.css?v=">
+    <link rel="stylesheet" href="../Public/css/default.css">
+    <title></title>
+</head>
+<style>
+    [v-cloak] {
+        display: none;
+    }
+    .search-table td{
+        padding-right:20px;
+    }
+    .baseline{
+        border-bottom: 1px solid #ccc;
+        margin: 10px 0 15px;
+    }
+    .result-num{
+        font-size: 14px;
+        margin-bottom: 10px;
+    }
+
+    .show-list,.detail-list{
+        border-collapse: collapse;
+        border-spacing: 0;
+        width: 100%;
+    }
+    .show-list tr th ,.detail-list tr th {
+        background: #546E7A;
+        height: 40px;
+        text-align: center;
+        font-size: .7rem;
+        color: #FFFFFF;
+        letter-spacing: 0;
+        border: 1px solid #668491;
+        white-space: nowrap;
+    }
+
+    .show-list tr td,.detail-list tr td {
+        font-size: 0.68rem;
+        color: #263238;
+        letter-spacing: 0;
+        text-align: center;
+        padding: 0.5rem;
+        border: 1px solid #CADEE7;
+        font-family: "Microsoft YaHei";
+        white-space: nowrap;
+    }
+    .show-list tr:nth-of-type(even) {
+        background: #F7F9FB;
+        border: 1px solid #CADEE7;
+    }
+    .detail-list tr td:nth-of-type(odd){
+        background: #F7F9FB;
+    }
+    .msg{
+        display: block;
+        resize: vertical;
+        padding: 5px 7px;
+        line-height: 1.5;
+        width: 100%;
+        color: #1f2d3d;
+        background-color: #fff;
+        background-image: none;
+        border: 1px solid #bfcbd9;
+        border-radius: 4px;
+        transition: border-color .2s cubic-bezier(.645,.045,.355,1);
+        min-height: 300px;
+        max-height: 600px;
+    }
+    .el-dialog__body {
+        padding: 15px 20px;
+    }
+    .hig{
+        background: #3bb4f233 !important;
+    }
+</style>
+<body>
+<div style="padding: 20px;"  id="app" v-cloak>
+    <img src="../Public/images/ajax-loader.gif" width="" height="" alt="" class="img_load-pos hide"/>
+    <el-form ref="params" :model="params" :label-position="labelPosition" label-width="85px">
+        <div class="use-row">
+            <div class="col-100">
+                <table class="search-table">
+                    <tbody>
+                    <tr>
+                        <td>
+                            <el-form-item label="<{$Think.lang.用户名称}>">
+                                <el-input v-model="params.user" placeholder="<{$Think.lang.操作用户}>"></el-input>
+                            </el-form-item>
+                        </td>
+                        <td>
+                            <el-form-item label="<{$Think.lang.IP地址}>">
+                                <el-input placeholder="<{$Think.lang.IP地址}>" v-model="params.ip"></el-input>
+                            </el-form-item>
+                        </td>
+                        <td>
+                            <el-form-item label="<{$Think.lang.系统来源}>">
+                                <el-select :filterable="true" placeholder="<{$Think.lang.系统名称}>" v-model="params.source" clearable style="width:90%;">
+                                    <el-option v-for="(idx, val) in systemSource" :key="val" :label="idx" :value="val" ></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </td>
+                        <td>
+                            <el-form-item label="<{$Think.lang.日志类型}>">
+                                <el-input placeholder=" <{$Think.lang.日志类型}>" v-model="params.noteType"></el-input>
+                            </el-form-item>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <el-form-item label="<{$Think.lang.模块名称}>">
+                                <el-input placeholder="<{$Think.lang.模块名称}>" v-model="params.model"></el-input>
+                            </el-form-item>
+                        </td>
+                        <td>
+                            <el-form-item label="<{$Think.lang.操作名称}>">
+                                <el-input placeholder="<{$Think.lang.操作名称}>" v-model="params.action"></el-input>
+                            </el-form-item>
+                        </td>
+                        <td>
+                            <el-form-item label="<{$Think.lang.操作时间}>">
+                                <el-date-picker v-model="cTime" style="width:90%;" type="daterange" align="right"
+                                                unlink-panels range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期">
+                                </el-date-picker>
+                            </el-form-item>
+                        </td>
+                        <td>
+                            <el-form-item label="<{$Think.lang.关键词}>">
+                                <el-input placeholder="<{$Think.lang.关键词}>" v-model="params.nodeId"></el-input>
+                            </el-form-item>
+                        </td>
+                        <td style="vertical-align: text-top;">
+                            <el-button type="primary"  size='small' @click="search()">&nbsp;&nbsp;<{$Think.lang.搜索}>&nbsp;&nbsp; </el-button>&nbsp;&nbsp;
+                            <el-button @click="reset()" size='small'> &nbsp;&nbsp;<{$Think.lang.重置}>&nbsp;&nbsp; </el-button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </el-form>
+    <!--数据列表 -->
+    <div class="baseline"></div>
+    <div class="use-row">
+        <div class="col-50 result-num">
+            <{$Think.lang.搜索结果}>：&nbsp;&nbsp;<{$Think.lang.共}> <b>{{count}}</b> <{$Think.lang.条记录}>&nbsp;
+        </div>
+    </div>
+    <div class="use-row">
+        <table class="show-list">
+            <thead>
+            <tr>
+                <th><{$Think.lang.用户名称}></th>
+                <th><{$Think.lang.日志类型}></th>
+                <th><{$Think.lang.系统来源}></th>
+                <th><{$Think.lang.IP地址}></th>
+                <th><{$Think.lang.ES对应空间}></th>
+                <th><{$Think.lang.操作时间}></th>
+                <th><{$Think.lang.请求内容}></th>
+                <th><{$Think.lang.模块名称}></th>
+                <th><{$Think.lang.操作名称}></th>
+                <th><{$Think.lang.nodeId}></th>
+            </tr>
+            </thead>
+            <tr v-for="(r, k) in result"  :class="[r.hig?'hig':'']">
+                <td>{{r._source.user}}</td>
+                <td>
+                    <span v-if="r._source.noteType in logType">{{logType[r._source.noteType]}}</span>
+                    <span v-else>-</span>
+                </td>
+                <td>
+                    <span v-if="r._source.source in systemSource">{{systemSource[r._source.source]}}</span>
+                    <span v-else>-</span>
+                </td>
+                <td>{{r._source.ip}}</td>
+                <td>{{r._source.space}}</td>
+                <td>{{r._source.cTime}}</td>
+                <td>
+                    <el-button type="text" @click="showDetail(r._source)"><{$Think.lang.查看详情}></el-button>
+                </td>
+                <td>{{r._source.model}}</td>
+                <td>{{r._source.action}}</td>
+                <td>{{r._source.nodeId}}</td>
+            </tr>
+        </table>
+        <div class="col-100 text-right">
+            <ul class="pagination" v-html="page"></ul>
+        </div>
+        <el-dialog title="请求内容详情" :visible.sync="detailVisible" :close="closeModal()">
+            <table class="detail-list" style="margin-bottom: 20px">
+                <tr>
+                    <td><{$Think.lang.操作用户}></td>
+                    <td>{{singleData.user}}</td>
+                    <td><{$Think.lang.日志类型}></td>
+                    <td>
+                        <span v-if="singleData.noteType">{{logType[singleData.noteType]}}</span>
+                        <span v-else>-</span>
+                    </td>
+                    <td><{$Think.lang.系统来源}></td>
+                    <td>
+                        <span v-if="singleData.source">{{systemSource[singleData.source]}}</span>
+                        <span v-else>-</span>
+                    </td>
+
+                </tr>
+                <tr>
+                    <td><{$Think.lang.IP地址}></td>
+                    <td>{{singleData.ip}}</td>
+                    <td><{$Think.lang.ES对应空间}></td>
+                    <td>{{singleData.space}}</td>
+                    <td><{$Think.lang.创建时间}></td>
+                    <td>{{singleData.cTime}}</td>
+                </tr>
+                <tr>
+                    <td><{$Think.lang.模块}></td>
+                    <td>
+                        <span>{{singleData.model}}</span>
+                        <!--<span v-if="singleData.nodeId">{{node[singleData.nodeId].TITLE}}</span>-->
+                        <!--<span v-else>{{singleData.model}}</span>-->
+                    </td>
+                    <td><{$Think.lang.操作}></td>
+                    <td>
+                        <span>{{singleData.action}}</span>
+                        <!--<span v-if="singleData.nodeId in node">{{node[singleData.nodeId].NAME}}</span>-->
+                        <!--<span v-else>{{singleData.action}}</span>-->
+                    </td>
+                    <td><{$Think.lang.nodeId}></td>
+                    <td>{{singleData.nodeId}}</td>
+                </tr>
+            </table>
+            <textarea class="msg">{{singleData.msg}}</textarea>
+        </el-dialog>
+    </div>
+</div>
+
+<script src="../Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="../Public/js/vue-2.4.2.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="../Public/lib/layer-v3.0.3/layer/layer.js"></script>
+<script type="text/javascript" src="../Public/js/jquery.form.min.js"></script>
+<script type="text/javascript" src="../Public/js/element-ui.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="../Public/utils/utils.js"></script>
+
+<script >
+    var vm = new Vue({
+        el: '#app',
+        data:{
+            params: {
+                user: '',
+                ip: '',
+                noteType: '',
+                source: 'N001950500',
+                model:'',
+                action: '',
+                p: '',
+                startTime:'',
+                endTime:''
+            },
+            detailVisible:false,
+            singleData:'',
+            labelPosition: 'left',
+            result: <{$result}>,
+            node: <{$node}>,
+            page: <{$page}>,
+            count: <{$count}>,
+            systemSource: <{$systemSource}>,
+            logType: <{$logType}>,
+            cTime : [],
+        },
+        methods: {
+            search: function () {
+                var url = '<{:U("UserLog/index")}>';
+                this.params.p = 1;
+                var params = this.params;
+                params.startTime = utils.dateFormat(this.cTime[0],'yyyy-MM-dd');
+                params.endTime = utils.dateFormat(this.cTime[1],'yyyy-MM-dd');
+                this.sendRequest(url, params, true, 'post');
+            },
+            flip: function(index) {
+                var params = vm.params;
+                params.p = index + 1;
+                var url = '<{:U("UserLog/index")}>';
+                this.sendRequest(url, params, true, 'post');
+            },
+            reset: function() {
+                vm.params = {
+                    user: '',
+                    ip: '',
+                    noteType: '',
+                    source: '',
+                };
+                this.cTime = [];
+            },
+            sendRequest: function(url, requestParams, async, type) {
+                var showIndex = 0;
+                $.ajax({
+                    type: type,
+                    async: async,
+                    url: url,
+                    data: requestParams,
+                    beforeSend: function () {
+                        showIndex = layer.load(2, {
+                            shade: [0.5,'#fff']
+                        });
+                    },
+                    success:function(response){
+                        layer.close(showIndex);
+                        vm.result = response.data.result;
+                        vm.page = response.data.page;
+                        vm.count = response.data.count;
+                    },
+                    error:function(){
+                        layer.close(showIndex);
+                        layer.msg('<{$Think.lang.请求异常}>')
+                    }
+                });
+            },
+            showDetail:function(msg){
+                for(var i = 0,len = this.result.length; i < len ;i++){
+                    if(this.result[i]._source == msg){
+                        Vue.set(this.result[i],'hig',true);
+                        break;
+                    }
+                }
+                this.singleData = msg;
+                this.detailVisible = true;
+            },
+            closeModal:function(){
+                for(var i = 0,len = this.result.length; i < len ;i++){
+                    if(this.result[i]._source == this.singleData && !this.detailVisible){
+                        Vue.set(this.result[i],'hig',false);
+                        break;
+                    }
+                }
+            }
+        }
+    });
+    function flip(pageInex){
+        vm.flip(pageInex - 1);
+    }
+</script>
+</body>
+</html>

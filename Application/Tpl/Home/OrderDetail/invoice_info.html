@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="../Public/lib/bootstrap/css/bootstrap.min.css">
+	<title><{$Think.lang.未开票单}></title>
+    <link rel="stylesheet" href="../Public/css/purchase.css"/>
+    <link rel="stylesheet" href="../Public/css/default.css"/>
+	<script type="text/javascript" src="../Public/lib/My97DatePicker/WdatePicker.js"></script>
+    <link rel="stylesheet" href="../Public/css/purchaseDetail.css?v=2017028"/>
+    <style>
+        .demo-class .layui-layer-btn0{
+            border: 1px solid #dedede !important;
+            background-color: #f1f1f1 !important;
+        }
+        .demo-class .layui-layer-btn1{
+            color: white !important;
+            border-color: #4898d5 !important;
+            background-color: #2e8ded !important;
+        }
+        .demo-class .layui-layer-btn a{
+            height: 32px;
+            line-height: 30px;
+            margin-left: 13px;
+        }
+        .demo-class .layui-layer-ico {
+            top: 30px !important;
+        }
+        .purchaseLinkHover {
+            cursor: pointer;
+            color: blue !important;
+            font-style: italic;
+            text-decoration: underline !important;
+        }
+    </style>
+</head>
+<body>
+<div class="col-lg-12 col-md-12 col-sm-12 purchase_detail invoice_detail" id="invoiceDetail">
+    <div class="row row_title common_title">
+        <a class="active"><{$Think.lang.发票收取}></a>
+    </div>
+    <form action="">
+        <div class="detail_form">
+            <table class="table table-bg">
+                <thead>
+                <th width="15%"></th>
+                <th width="35%"></th>
+                <th width="15%"></th>
+                <th width="35%"></th>
+                </thead>
+                <tbody>
+                <tr>
+                    <td colspan="6"><{$Think.lang.订单信息}></td>
+                </tr>
+                <tr>
+                    <td><{$Think.lang.采购PO单号}></td>
+                    <td><{$order.online_purchase_order_number}></td>
+                    <td><{$Think.lang.采购类型}></td>
+                    <td><{:L($purchase_type[$order['purchase_type']])}></td>
+                </tr>
+                <tr>
+                    <td width="10%"><{$Think.lang.订单号}></td>
+                    <td width="40%">
+                    <a onclick="opennewtab(this,'<{$Think.lang.订单详情页}>')" _href="<{:U('purchase_order_detail',['relevance_id'=>$order['relevance_id']])}>" 
+                            class="purchaseLinkHover"><{$order.procurement_number}></a>
+                            <!-- <span class="purchase_commonBuy"><{:L($purchase_type[$order['purchase_type']])}></span> -->
+                    </td>
+                    <td><{$Think.lang.采购金额}></td>
+                    <td><{:cdVal($order['amount_currency'])}> <{:number_format($order['amount'],2)}></td>
+                </tr>
+                <tr>
+                    <td><{$Think.lang.我方公司}></td>
+                    <td><{:L(cdVal($order['our_company']))}></td>
+                    <td><{$Think.lang.采购团队}></td>
+                    <td><{:cdVal($order['payment_company'])}></td>
+                </tr>
+                <tr>
+                    <td width="10%"><{$Think.lang.供应商}></td>
+                    <td width="40%"><{$order.supplier_id}></td>
+                    <td><{$Think.lang.供应商（EN）}></td>
+                    <td><{$order.supplier_id_en}></td>
+                </tr>
+                <tr>
+                    <td><{$Think.lang.发票类型}></td>
+                    <td><{:cdVal($order['invoice_type'])}></td>
+                    <td><{$Think.lang.税点}></td>
+                    <td><{:cdVal($order['tax_rate'])}></td>
+                </tr>
+                <tr>
+                    <td><{$Think.lang.应付状态}></td>
+                    <td><{$order.payment_status}></td>
+                    <td><{$Think.lang.在途发票金额}></td>
+                    <td><{$order.amount_currency_val}> <{$on_way_invoice_amount}></td>
+                </tr>
+                <tr>
+                    <td><{$Think.lang.开票状态}></td>
+                    <td>
+                        <switch name="order.invoice_status">
+                            <case value="0">未开票</case>
+                            <case value="1">部分开票</case>
+                            <case value="2">已开票</case>
+                        </switch>
+                    </td>
+                    <td><{$Think.lang.订单备注}></td>
+                    <td colspan="3"><{$order.order_remark}></td>
+                </tr>
+                </tbody>
+            </table>
+            <table class="table table-goodsDetail">
+                <p class="table-p"><{$Think.lang.商品信息}></p>
+                <thead>
+                    <th width="10%">SKUID/<{$Think.lang.条形码}></th>
+                    <th width="15%"><{$Think.lang.商品名称}></th>
+                    <th width="10%"><{$Think.lang.商品属性}></th>
+                    <th width="8%"><{$Think.lang.采购数量}></th>
+                    <th width="8%" ><{$Think.lang.采购单价}></th>
+                    <th width="8%"><{$Think.lang.金额小计}></th>
+                    <th width="8%"><{$Think.lang.已开票金额}></th>
+                    <th width="15%"><{$Think.lang.开票名称}></th>
+                    <th width="10%"><{$Think.lang.待开票金额}></th>
+                </thead>
+                <tbody>
+                <volist name="order.goods" id="v">
+                <?php
+                    $number_total           += $v['goods_number'];
+                    $money_total            += $v['goods_money'];
+                    $invoiced_money_total   += $v['invoiced_money'];
+                    $uninvoice_money        = $v['goods_money']-$v['invoiced_money'];
+                    if($uninvoice_money <0 ) $uninvoice_money = 0;
+                    $uninvoice_money_total  += $uninvoice_money;
+                ?>
+                <tr>
+                    <td><{$v.search_information}></td>
+                    <td><{$v.goods_name}></td>
+                    <td class="invoice_td_span"><span><{$v.goods_attribute}></span></td>
+                    <td><{:number_format($v['goods_number'])}></td>
+                    <td><{:number_format($v['unit_price'],2)}></td>
+                    <td><{:number_format($v['goods_money'],2)}></td>
+                    <td><{:number_format($v['invoiced_money'],2)}></td>
+                    <td><{$v.invoice_name}></td>
+                    <td><{:number_format($uninvoice_money,2)}></td>
+                </tr>
+
+                </volist>
+                <tr class="total">
+                    <td><{$Think.lang.合 计}></td>
+                    <td></td>
+                    <td></td>
+                    <td><{:number_format($number_total)}></td>
+                    <td><{:cdVal($order['amount_currency'])}></td>
+                    <td><{:number_format($money_total,2)}></td>
+                    <td><{:number_format($invoiced_money_total,2)}></td>
+                    <td></td>
+                    <td><{:number_format($uninvoice_money_total,2)}></td>
+                </tr>
+                </tbody>
+            </table>
+            <div class="col-lg-12  col-md-12 col-xs-12 col-lg-12-btn">
+                 <?php if(ButtonAction::hidden()){ ?>
+                <if condition="$order['order_status'] neq 'N001320500'">
+                    <if condition="$order['invoice_status'] neq 2">
+                        <button type="button" class="btn-sure" onclick="location='<{:U("invoice_add",['relevance_id'=>$order['relevance_id']])}>'"><{$Think.lang.收到发票}></button>
+                    </if>
+                    <if condition="($order['invoice_status'] neq 2) AND ($order['has_invoice_unconfirmed'] neq 1)">
+                        <button type="button" class="btn-back" style="background: #4CAF50; color: white;" id="invoice_end" ><{$Think.lang.标记完结}></button>
+                    </if>
+                    <if condition="($order['invoice_status'] eq 2) AND ($order['is_marking_end_billing'] eq 1)">
+                    <button type="button" class="btn-back" style="background: #4CAF50; color: white;" id="invoiceEndWithdraw"><{$Think.lang.撤回开票完结}></button>
+                    </if>
+                </if>
+                <?php } ?>
+                
+
+                <button type="button" class="btn-back" onclick="goList()"><{$Think.lang.返回列表}></button>
+            </div>
+            <div class="invoice_detail_yet">
+                <volist name="invoice" id="v" key="k">
+                    <table class="table table-bg">
+                        <thead>
+                        <th width="15%"></th>
+                        <th width="35%"></th>
+                        <th width="15%"></th>
+                        <th width="35%"></th>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td colspan="6" class="invoice_detail_yet_head">
+                                <div>
+                                    <div class="invoice_detail_yet_head_left">
+                                        <{$Think.lang.发票信息}>(<{$k}>/<{:count($invoice)}>)
+                                    </div>
+                                    <div class="invoice_detail_yet_head_right">
+                                        <if condition="$v.status eq 2">
+                                            <!-- 假设已退回状态是2 ，2的时候才显示 -->
+                                            <a  href="<{:U('invoice_edit',['id'=>$v['id']])}>"><{$Think.lang.编辑}></a>
+                                        </if>
+                                        <if condition="$v.status eq '1'">
+                                            <a  href="javascript:confirmSendBack(<{$v['id']}>)"><{$Think.lang.退回}></a>
+                                        </if>
+                                        <a href="<{:U('invoice_detail',['id'=>$v['id']])}>"><{$Think.lang.查看}></a>
+                                        <if condition="$v.status eq 0">
+                                            <a  href="javascript:sendBack(<{$v['id']}>)"><{$Think.lang.退回}></a>
+                                        </if>
+                                        <if condition="($v.status eq 0) and ($order['order_status'] neq 'N001320500')">
+                                            <a href="<{:U('invoice_confirm',['id'=>$v['id']])}>" class="edit_btn_sure"><{$Think.lang.确认}></a>
+                                        </if>
+                                        <if condition="$v.status eq 2">
+                                            <!-- 2 已退回显示删除 -->
+                                            <a  href="javascript:deleteInvoice(<{$v['id']}>)" ><{$Think.lang.删除}></a>
+                                        </if>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><{$Think.lang.操作编号}></td>
+                            <td><{$v.action_no}></td>
+                            <td><{$Think.lang.发票状态}></td>
+                            <!--<td><{$v['status']?'已确认':'待确认'}></td>-->
+                            <td>
+                                <{$v['status']?($v['status']==='2'?'已退回':'已确认'):'待确认'}>
+                                <?php if ($v['status'] === '2' && $v['return_reason']) {?>
+                                <span style='color:red'>(<{$v.return_reason}>)</span>
+                                <?php }?>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><{$Think.lang.发票抬头}></td>
+                            <td><{$v.invoice_title}></td>
+                            <td><{$Think.lang.备注}></td>
+                            <td><{$v.remark}></td>
+                        </tr>
+                        <tr>
+                            <td><{$Think.lang.发票号}></td>
+                            <td>
+                                <volist name="v.invoice_no" id="vo">
+                                    <p><{$vo.no}></p>
+                                </volist>
+                            </td>
+                            <td><{$Think.lang.发票总金额}></td>
+                            <td><{:cdVal($order['amount_currency'])}> <{:number_format($v['invoice_money'],2)}></td>
+                        </tr>
+                        <tr>
+                            <td><{$Think.lang.发票类型}></td>
+                            <td><{:cdVal($v['invoice_type'])}></td>
+                            <td><{$Think.lang.税点}></td>
+                            <td><{:cdVal($v['tax_rate'])}></td>
+                        </tr>
+                        <tr>
+                            <td><{$Think.lang.提交人}></td>
+                            <td><{$v.create_user}></td>
+                            <td><{$Think.lang.提交时间}></td>
+                            <td><{$v.create_time}></td>
+                        </tr>
+                        <if condition="$v.status eq 1">
+                            <tr>
+                                <td><{$Think.lang.财务确认人}></td>
+                                <td><{$v.confirm_user}></td>
+                                <td><{$Think.lang.确认时间}></td>
+                                <td><{$v.confirm_time}></td>
+                            </tr>
+                        </if>
+                        </tbody>
+                    </table>
+                    <table class="table table-goodsDetail">
+                        <p class="table-p"><{$Think.lang.商品明细}></p>
+                        <thead>
+                            <tr>
+                                <th width="15%">SKUID/<{$Think.lang.条形码}></th>
+                                <th width="25%"><{$Think.lang.商品名称}></th>
+                                <th width="15%"><{$Think.lang.商品属性}></th>
+                                <th width="12%" ><{$Think.lang.采购单价}></th>
+                                <th width="13%" ><{$Think.lang.开票金额}></th>
+                                <th width="20%"><{$Think.lang.开票名称}></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <volist name="v.goods" id="vo">
+                                <tr>
+                                    <td><{$order['goods'][$vo[information_id]]['search_information']}></td>
+                                    <td><{$order['goods'][$vo[information_id]]['goods_name']}></td>
+                                    <td class="invoice_td_span"><span><{$order['goods'][$vo[information_id]]['goods_attribute']}></span></td>
+                                    <td><{:number_format($order['goods'][$vo[information_id]]['unit_price'],2)}></td>
+                                    <td><{:number_format($vo['invoice_money'],2)}></td>
+                                    <td><{$vo.invoice_name}></td>
+                                </tr>
+                            </volist>
+                        </tbody>
+                    </table>
+                </volist>
+            </div>
+        </div>
+    </form>
+</div>
+</body>
+<script type="text/javascript" src="../Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="../Public/lib/bootstrap/js/tether.min.js"></script>
+<script type="text/javascript" src="../Public/lib/bootstrap/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="../Public/lib/jquery.form.min.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script src="/Application/Tpl/Home/Public/lib/layer-v3.0.3/layer/layer.js" type="text/javascript"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+<script>
+    $(function () {
+            var query = utils.parseQuery(window.location.search);
+            goList = function () {
+                backTab("/index.php?m=order_detail&a=invoice_list", '采购发票');
+            }
+
+        /**
+         * 退回发票
+         * @param id
+         * @author ziling 2019.5.14
+         */
+        sendBack = function (id) {
+                if(!id){
+                    return
+                }
+                utils.modal(true,{
+                    width:500,
+                    content:'<div style="margin-bottom:10px;"><?php echo (L("退回原因")); ?>：</div><textarea id="finBack" rows="3" maxlength="200" placeholder="<?php echo (L("请输入退回理由")); ?>" style="width: 95%;border-radius: 3px"></textarea>',
+                    btnClass:'btn-primary',
+                    title:'<?php echo (L("提示")); ?>',
+                    confirmText:'<?php echo (L("确认")); ?>',
+                    cancelText:'<?php echo (L("取消")); ?>',
+                    confirmFn:function () {
+                        var value = $('#finBack').val();
+                        $.ajax({
+                            url: '/index.php?g=purchase&m=invoice&a=invoice_return',
+                            type: 'post',
+                            contentType: 'application/json; charset=utf-8',
+                            data: JSON.stringify({ id: String(id),return_reason:value}),
+                            success: function (res) {
+                                if (res.code == 2000) {
+                                    layer.msg("退回成功", { time: 1500,icon:6});
+                                    setTimeout(function () {
+                                        window.location.reload();
+                                    }, 1500);
+                                } else {
+                                    layer.msg(res.msg,{time: 1500,icon:5});
+                                }
+                            },
+                            error: function () {
+                                layer.msg("网络错误",{time: 1500,icon:5});
+                            }
+                        })
+                    }
+                });
+            }
+            confirmSendBack = function (id) {
+                if(!id){
+                    return
+                }
+                utils.modal(true,{
+                    width:500,
+                    content:'<div style="margin-bottom:10px;"><?php echo (L("退回原因")); ?>：</div><textarea id="finBack" rows="3" maxlength="200" placeholder="<?php echo (L("请输入退回理由")); ?>" style="width: 95%;border-radius: 3px"></textarea>',
+                    btnClass:'btn-primary',
+                    title:'<?php echo (L("提示")); ?>',
+                    confirmText:'<?php echo (L("确认")); ?>',
+                    cancelText:'<?php echo (L("取消")); ?>',
+                    confirmFn:function () {
+                        var value = $('#finBack').val();
+                        $.ajax({
+                            url: '/index.php?g=purchase&m=invoice&a=invoice_confirmed_return',
+                            type: 'post',
+                            contentType: 'application/json; charset=utf-8',
+                            data: JSON.stringify({ id: String(id),return_reason:value}),
+                            success: function (res) {
+                                if (res.code == 2000) {
+                                    layer.msg("退回成功", { time: 1500,icon:6});
+                                    setTimeout(function () {
+                                        window.location.reload();
+                                    }, 1500);
+                                } else {
+                                    layer.msg(res.msg,{time: 1500,icon:5});
+                                }
+                            },
+                            error: function () {
+                                layer.msg("网络错误",{time: 1500,icon:5});
+                            }
+                        })
+                    }
+                });
+            }
+        /**
+         * 删除发票
+         * @param id
+         * @author ziling 2019.5.14
+         */
+        deleteInvoice = function (id){
+                if(!id){
+                    return
+                }
+                $.ajax({
+                    url: '/index.php?g=purchase&m=invoice&a=invoice_del',
+                    type: 'post',
+                    contentType: 'application/json; charset=utf-8',
+                    data: JSON.stringify({ id: String(id)}),
+                    success: function (res) {
+                        if (res.code == 2000) {
+                            layer.msg("删除成功", { time: 1500,icon:6});
+                            //RefreshInvoiceList 用作监听 采购发票列表刷新
+                            sessionStorage.setItem('RefreshInvoiceList','yes');
+                            setTimeout(function () {
+                                window.location.reload();
+                            }, 1500);
+                        } else {
+                            layer.msg(res.msg,{time: 1500,icon:5});
+                        }
+                    },
+                    error: function () {
+                        layer.msg("网络错误",{time: 1500,icon:5});
+                    }
+                })
+            }
+
+            $("#invoice_end").click(function () {
+                layer.confirm('该订单实际收到发票的金额没有达到订单应收的发票金额，是否确认发票收取完结？', {
+                    area: ['360px', '180px'],
+                    icon: 3,
+                    skin: 'demo-class',
+                    title: '提示',
+                    btn: ['取消', '确定',] //按钮
+                }, function () {
+                    layer.closeAll();
+                }, function () {
+                    $.ajax({
+                        url: '/index.php?m=order_detail&a=invoice_end',
+                        type: 'post',
+                        data: { relevance_id: query.relevance_id },
+                        success: function (res) {
+                            if (res.code == 2000) {
+                                layer.msg("标记成功", { time: 1500,icon:6});
+                                setTimeout(function () {
+                                    window.location.reload();
+                                }, 1500);
+                            } else {
+                                layer.msg("标记失败",{time: 1500,icon:5});
+                            }
+                           
+                           
+                        }
+                    })
+                });
+            })
+
+            $("#invoiceEndWithdraw").click(function () {
+                $.ajax({
+                    url: '/index.php?m=order_detail&a=invoiceEndWithdraw',
+                    type: 'post',
+                    data: { relevance_id: query.relevance_id },
+                    success: function (res) {
+                        if (res.code == 2000) {
+                            layer.msg("撤回成功", { time: 1500,icon:6});
+                            setTimeout(function () {
+                                window.location.reload();
+                            }, 1500);
+                        } else {
+                            layer.msg("撤回失败",{time: 1500,icon:5});
+                        }
+                        
+                        
+                    }
+                })
+            })
+        })
+</script>
+</html>

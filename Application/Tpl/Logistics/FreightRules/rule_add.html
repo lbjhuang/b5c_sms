@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css">
+    <link href="./Application/Tpl/Home/Public/lib/My97DatePicker/skin/WdatePicker.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/lib/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/common.css">
+    <!-- <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui.css?v=<{$Think.const.V}>"> -->
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/purchaseDetail.css">
+    <link rel="stylesheet" href="../Public/css/logistics.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <title><{$Think.lang.创建规则}></title>
+    <style>
+        [v-cloak]{display: none !important;}
+        .layui-layer-content{width:500px;background:white !important;border:1px solid #cccccc;border-right:2px solid #cccccc}
+    </style>
+</head>
+<body id="ruleAddBody">
+<div class="col-lg-12 col-md-12 col-sm-12 rule_add" id="rule_add" v-cloak>
+    <input type="hidden" id="logModeId" value=<?php echo $logModeId; ?> >
+    <input type="hidden" id="postageId" value=<?php echo $postageId;  ?> >
+    <div class="row row_title">
+        <a class="active">{{form.logCompany}}-{{form.LOGISTICS_MODE}}-{{$lang('规则详情')}}</a>
+    </div>
+    <div class="detail_form">
+        <form id="edit_part">
+            <table class="table table-bg">
+                <tbody>
+                <tr>
+                    <td colspan="6" class="table_title">{{$lang('基础信息')}}</td>
+                </tr>
+                    <tr>
+                        <td width="10%">{{$lang('物流公司')}}</td>
+                        <td width="23%"> <span v-cloak>{{this.$lang(form.logCompany)}}</span></td>
+                        <td width="10%">{{$lang('物流方式')}}</td>
+                        <td width="23%"> <span v-cloak>{{form.LOGISTICS_MODE}}</span></td>
+                        <td width="10%" class="must">{{$lang('模板名称')}}</td>
+                        <td width="24%"><input type="text" class="form-control onkeypressInput" v-model="form.MODEL_NM" name="MODEL_NM" ></td>
+                    </tr>
+                    <tr>
+                        <td class="must"><{$Think.lang.状态}></td>
+                        <td>
+                            <select class="form-control " v-model="form.STATE_CODE" id="onkeypressSelect">
+                                <option value="0">{{$lang('启用')}}</option>
+                                <option value="1">{{$lang('停用')}}</option>
+                            </select>
+                        </td>
+                        <td class="must">{{$lang('出发地')}}<span class="redColor">({{$lang('支持多地')}})</span></td>
+                        <td>
+                           <div class="rule_add_startPlace">
+                               <el-select filterable v-model="form.OUT_AREAS" name="form.OUT_AREAS" multiple :placeholder="$lang('请选择')" id="onKeyPressSelectAll">
+                                   <el-option
+                                           v-for="item in OUT_AREASTotal"
+                                           :key="item.CD_VAL"
+                                           :label="$lang(item.CD_VAL)"
+                                           :value="item.value">
+                                   </el-option>
+                               </el-select>
+                           </div>
+                        </td>
+                        <td>{{$lang('时效(天)')}}</td>
+                        <td>
+                            <div class="rule_add_period">
+                                <input type="text" class="form-control onkeypressInput" id="onkeypressDay" v-model="form.DAY1" name="DAY1"   @blur="onlyNum1($event,'DAY1')"  @keyup="onlyNum($event,'DAY1')" />
+                                <span class="must">-</span>
+                                <input type="text" class="form-control onkeypressInput" v-model="form.DAY2" name="DAY2"  @blur="onlyNum1($event,'DAY2')"  @keyup="onlyNum($event,'DAY2')" />
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="must">{{$lang('计价方式')}}</td>
+                        <td>
+                            <el-radio-group  v-model="form.DENOMINATED_TYPE" name="DENOMINATED_TYPE">
+                                <el-radio label="0">{{$lang('仅计重')}}</el-radio>
+                                <el-radio label="1" >{{$lang('计泡')}}</el-radio>
+                            </el-radio-group>
+                        </td>
+                        <td :class="form.DENOMINATED_TYPE == '1'? 'must':''">{{$lang('计泡系数')}}</td>
+                        <td><input type="text" class="form-control onkeypressInput" v-model="form.COEFFICIENT"  :disabled="form.DENOMINATED_TYPE == '0' || form.DENOMINATED_TYPE == ''"  @blur="onlyNum1($event,'COEFFICIENT')"  @keyup="onlyNum($event,'COEFFICIENT')"/></td>
+
+                        <td :class="form.MAX_WEIGHT_TYPE?'':'must'">{{$lang('最大重量')}}(kg)</td>
+                        <td>
+                            <div class="rule_addMaxWeight">
+                                <input type="text" class="form-control onkeypressInput" :disabled="form.MAX_WEIGHT_TYPE" v-model="form.MAX_WEIGHT" name="form.MAX_WEIGHT"  @blur="onlyNum1($event,'MAX_WEIGHT')"   @keyup="onlyNum($event,'MAX_WEIGHT')"/>
+                                <el-checkbox-group v-model="form.MAX_WEIGHT_TYPE">
+                                    <el-checkbox >{{$lang('无限制')}}</el-checkbox>
+                                </el-checkbox-group>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <table class="table table-bg">
+                <tbody>
+                <tr>
+                    <td colspan="8" class="table_title">
+                        {{$lang('价格详情')}}
+                        <button type="button" class="btn btn-none" @click="deleteNewContinued()">{{$lang('删除区间')}}</button>
+                        <button type="button" class="btn btn-none" @click="addNewContinued()">{{$lang('新增区间')}}</button>
+                    </td>
+                </tr>
+                <tr>
+                    <td width="10%" class="must">{{$lang('运费折扣')}}</td>
+                    <td width="12%" class="discount-rate"> <input type="text" class="form-control onkeypressInput" v-model="form.POSTTAGE_DISCOUNT"   name="form.POSTTAGE_DISCOUNT"  @keyup="posttageDiscount($event,'POSTTAGE_DISCOUNT')" @blur="posttageDiscountBlur('POSTTAGE_DISCOUNT')"/><span>%</span></td>
+                    <td width="10%">{{$lang('运费折扣')}}-{{$lang('有效期')}}</td>
+                    <td width="18%">
+                        <div class="rule_add_period">
+                            <div class="input-group common_data">
+                                <input name="start_time" class="onkeypressInput" :value="form.POSTTAGE_DISCOUNT_DATE_START" id="POSTTAGE_DISCOUNT_DATE_START" onfocus="WdatePicker({maxDate:'#F{$dp.$D(\'POSTTAGE_DISCOUNT_DATE_END\')}'})" :placeholder="$lang('请选择日期')" @blur="POSTTAGE_DISCOUNT_DATE_START1()">
+                                <i></i>
+                            </div>
+                            <span>-</span>
+                            <div class="input-group common_data">
+                                <input name="end_time" class="onkeypressInput"  v-model="form.POSTTAGE_DISCOUNT_DATE_END" id="POSTTAGE_DISCOUNT_DATE_END" onfocus="WdatePicker({minDate:'#F{$dp.$D(\'POSTTAGE_DISCOUNT_DATE_START\')}'})" :placeholder="$lang('请选择日期')" @blur="POSTTAGE_DISCOUNT_DATE_END1()">
+                               <i></i>
+                            </div>
+                        </div>
+                    </td>
+                    <td width="10%" class="must">{{$lang('处理费折扣')}}</td>
+                    <td width="12%" class="discount-rate"><input type="text" class="form-control onkeypressInput" v-model="form.PROCESS_DISCOUNT" @keyup="posttageDiscount($event,'PROCESS_DISCOUNT')" @blur="posttageDiscountBlur('PROCESS_DISCOUNT')"><span>%</span></td>
+                    <td width="10%">{{$lang('处理费折扣')}}-{{$lang('有效期')}}</td>
+                    <td width="18%">
+                        <div class="rule_add_period">
+                            <div class="rule_add_period">
+                                <div class="input-group common_data">
+                                    <input name="start_time" :value="form.PROCESS_DISCOUNT_DATE_START" class="onkeypressInput" id="PROCESS_DISCOUNT_DATE_START"  onfocus="WdatePicker({maxDate:'#F{$dp.$D(\'PROCESS_DISCOUNT_DATE_END\')}'})" :placeholder="$lang('请选择日期')" @blur="PROCESS_DISCOUNT_DATE_START1()"/>
+                                    <i></i>
+                                </div>
+                                <span>-</span>
+                                <div class="input-group common_data">
+                                    <input name="end_time" v-model="form.PROCESS_DISCOUNT_DATE_END" class="onkeypressInput" id="PROCESS_DISCOUNT_DATE_END"  onfocus="WdatePicker({minDate:'#F{$dp.$D(\'PROCESS_DISCOUNT_DATE_START\')}'})" :placeholder="$lang('请选择日期')" @blur="PROCESS_DISCOUNT_DATE_END1()"/>
+                                    <i></i>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <template v-for="(postval,index) in form.postVal">
+                    <tr>
+                        <td class="must">{{$lang('区间')}}({{Number(index)+1}})(kg)</td>
+                        <td>
+                            <div class="rule_add_period">
+                                <input type="text" class="form-control onkeypressInput" v-model="postval.WEIGHT1" name="WEIGHT1"  @blur="onlyNum1($event,'WEIGHT1','1',index)"   @keyup="onlyNum($event,'WEIGHT1','1',index)">
+                                <span>-</span>
+                                <input type="text" class="form-control onkeypressInput" v-model="postval.WEIGHT2" name="WEIGHT2"  @blur="onlyNum1($event,'WEIGHT2','1',index)"   @keyup="onlyNum($event,'WEIGHT2','1',index)">
+                            </div>
+                        </td>
+                        <td class="must">{{$lang('固定费用')}}</td>
+                        <td>
+                            <input type="text" class="form-control onkeypressInput" v-model="postval.COST" name="COST"  :disabled="postval.TYPE==''"  @blur="onlyNum1($event,'COST','1',index)"  @keyup="onlyNum($event,'COST','1',index)"/>
+                        </td>
+                        <td class="must"> {{$lang('每X千克')}} <td>
+                            <input type="text" class="form-control onkeypressInput" v-model="postval.PROCESS_WEIGHT" name="COST"  :disabled="postval.TYPE==''"  @blur="onlyNum1($event,'PROCESS_WEIGHT','1',index)"  @keyup="onlyNum($event,'PROCESS_WEIGHT','1',index)"/>
+                        </td>
+                        <td class="must">{{$lang('每X千克费用（元）')}}</td>
+                        <td>
+                            <input type="text" class="form-control onkeypressInput" v-model="postval.PROCESS_COST" name="PROCESS_COST" :disabled="postval.TYPE==''"  @blur="onlyNum1($event,'PROCESS_COST','1',index)"  @keyup="onlyNum($event,'PROCESS_COST','1',index)"/>
+                        </td>
+                    </tr>
+                </template>
+                </tbody>
+            </table>
+            <table class="table table-bg">
+                <tbody>
+                <tr>
+                    <td colspan="8" class="table_title">{{$lang('限制条件')}}(CM)</td>
+                </tr>
+                <tr>
+                    <td  style="width: 293px;">{{$lang('不支持类型')}}(CM)</td>
+                    <td colspan="7">
+
+                        <div class="rule_add_limited rule_add_span" >
+                            <span class="limitedType_all" @click="limitedTypeAll()">{{$lang('以下均不支持')}}</span>
+                            <template v-for="(val,k) in unSupType">
+                                <span :value="val.CD" class="limitedType_items"  @click="limitedTypeItems()">{{$lang(val.CD_VAL)}}</span>
+                            </template>
+                        </div>
+                    </td>
+                </tr>
+                 <tr>
+                    <td width="10%">{{$lang('最长边')}}</td>
+                    <td width="15%">
+                        <div class="rule_add_period">
+                            <input type="text" :class="longestSide?'form-control onkeypressInput':'redBorder form-control onkeypressInput'"  v-model="form.LENGTH1_START" name="form.LENGTH1_START"  @blur="onlyNum1($event,'LENGTH1_START')"  @keyup="onlyNum($event,'LENGTH1_START')"/>
+                            <span>-</span>
+                            <input type="text" :class="longestSide?'form-control onkeypressInput':'redBorder form-control onkeypressInput'"  v-model="form.LENGTH1_END" name="form.LENGTH1_END" @blur="onlyNum1($event,'LENGTH1_END')"  @keyup="onlyNum($event,'LENGTH1_END')"/>
+                        </div>
+                    </td>
+                    <td width="10%">{{$lang('第二长边')}}</td>
+                    <td width="15%">
+                        <div class="rule_add_period">
+                            <input type="text" :class="secondLongestSide?'form-control onkeypressInput':'redBorder form-control onkeypressInput'"  v-model="form.LENGTH2_START" name="form.LENGTH2_START" @blur="onlyNum1($event,'LENGTH2_START')"  @keyup="onlyNum($event,'LENGTH2_START')"/>
+                            <span>-</span>
+                            <input type="text" :class="secondLongestSide?'form-control onkeypressInput':'redBorder form-control onkeypressInput'"  v-model="form.LENGTH2_END" name="form.LENGTH2_END"   @blur="onlyNum1($event,'LENGTH2_END')"  @keyup="onlyNum($event,'LENGTH2_END')"/>
+                        </div>
+                    </td>
+                    <td width="10%">{{$lang('长宽高之和')}}(≦)</td>
+                    <td width="15%"><input type="text" class="form-control onkeypressInput" v-model="form.LENGTH3_MAX" name="form.LENGTH3_MAX"  @blur="onlyNum1($event,'LENGTH3_MAX')"  @keyup="onlyNum($event,'LENGTH3_MAX')"></td>
+                    <td width="10%">{{$lang('体积')}}(≦)</td>
+                    <td width="15%">
+                        <input type="text" class="form-control onkeypressInput" v-model="form.VOLUME_MAX" name="form.VOLUME_MAX"  @blur="onlyNum1($event,'VOLUME_MAX')"  @keyup="onlyNum($event,'VOLUME_MAX')"/>
+
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+             <table class="table table-bg">
+                <tbody>
+                <tr>
+                    <td colspan="8" class="table_title must">{{$lang('选择目的地')}}</td>
+                </tr>
+                <tr>
+                    <td colspan="8" class="rule_add_destinationSearch">
+                        <div>
+                            <input type="text" class="form-control destination_searchInput onkeypressInput"   :placeholder="$lang('请复制国家或省份,并以英文逗号,隔开')" style="text-align: center">
+                            <i @click="InputChoseCountry()">{{$lang('确认')}}</i>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+             </table>
+                <table class="table table-bg">
+                    <tbody>
+                        <tr>
+                            <td colspan="8" class="rule_add_tdTitle rule_add_tdTitle_top">{{$lang('已选区域')}}
+                                <button type="button" @click="AlreadyChoseAllBack()">{{$lang('全不选')}}</button>
+                                <i class="fa fa-minus" aria-hidden="true"></i>
+                            </td>
+                        </tr>
+                        <tr class="wait">
+                            <td colspan="8">
+                                <div class="rule_add_span_yet">
+                                    <template v-for="(k,index) in form.AlreadyChose">
+                                        <span :value="k.zh_name" :id="k.rank" :class="k.apart? 'apartTrueSpan':'apartFalseSpan'" :data-id="k.CD" @click="deleteAreaChoseItems(k,index)" v-if="k.zh_name">{{$lang(k.zh_name)}}
+                                            <i @click="AlreadyChoseProvince(k)"   v-if="k.apart" class="apartTrue">{{$lang('部分区域')}}</i>
+                                            <i @click="AlreadyChoseProvince(k)"  class="apartFalse" v-else>{{$lang('默认全境')}}</i>
+                                        </span>
+                                    </template>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <table class="table table-bg">
+                    <tbody>
+                    <tr>
+                        <td colspan="8" class="rule_add_tdTitle rule_add_tdTitle_top">{{$lang('待选区域')}}</td>
+                    </tr>
+                    <tr>
+                       <td colspan="8" class="rule_add_tdTitle">{{$lang('待选')}}-{{$lang('热门区域')}}
+                           <button type="button" @click="hotAreaChoseAll(HOT_AREAS)" v-if="HOT_AREAS.length>0">{{$lang('全选')}}</button>
+                           <i class="fa fa-minus" aria-hidden="true"></i>
+                       </td>
+                    </tr>
+                    <tr class="wait">
+                        <td colspan="8">
+                            <div class="rule_add_span">
+                                <template v-for="(k,index) in HOT_AREAS">
+                                    <span :value="k.zh_name" :id="k.rank" :data-id="k.CD" @click="hotAreaChoseItems(k,index)">{{$lang(k.zh_name)}}</span>
+                                </template>
+                            </div>
+                        </td>
+                    </tr>
+                    <template v-for="(data,index) in SEND_AREAS">
+                            <tr class="rule_add_tr">
+                                <td colspan="10" class="rule_add_tdTitle">
+                                    <template  v-for="(data1,index1) in data"  v-if="index1 == 0">
+                                        <span style="width: 110px;">
+                                             {{$lang(interStr(data1.CD_VAL))}}
+                                        </span>
+                                        <button type="button" @click="areaChoseAll(data,index,data1)" v-if="data.length>1">{{$lang('全选')}}</button>
+                                        <i class="fa fa-minus" aria-hidden="true" @click="AreaDisplay(data,'hide')" v-if="data.show"></i>
+                                        <i class="fa fa-plus" aria-hidden="true" @click="AreaDisplay(data,'show')" v-else></i>
+                                    </template>
+                                </td>
+                            </tr>
+                            <tr class="wait" v-if="data.show">
+                                <td colspan="8">
+                                    <div class="rule_add_span">
+                                        <template v-for="(k,index2) in data">
+                                            <span :value="k.zh_name" :id="k.rank" :data-id="k.CD" @click="areaChoseItems(k,index2,index)" v-if="k.zh_name">{{$lang(k.zh_name)}}</span>
+                                        </template>
+                                    </div>
+                                </td>
+                            </tr>
+                </template>
+                </tbody>
+            </table>
+            <table class="table table-bg">
+                <tbody>
+                <tr>
+                    <td colspan="8" class="table_title must">{{$lang('注意事项')}}</td>
+                </tr>
+                <tr>
+                    <td colspan="8" id="ueditorTop">
+                        <div id= "id1"><script id="editor" type="text/plain" style="width:100%;height:150px;"></script> </div>
+                        </td>
+                </tr>
+                </tbody>
+            </table>
+            <div class="col-lg-12 col-md-12 col-sm-12 submit-button">
+                <button type="button" class="rule_button_submit" @click="addPostageTemp()">{{$lang('提交')}}</button>
+                <button type="reset" class="rule_button_submit">{{$lang('重置')}}</button>
+            </div>
+        </form>
+    </div>
+    <div class="popArea" v-show=" popArea_status || popArea_result" v-cloak>
+        <div class="popArea-body">
+            <form action="">
+                <p v-if="popArea_status">{{$lang('请选择支持配送到')}}{{$lang(PopEreaCountry)}}{{$lang('的区域')}} <i @click="popAreaHide()">X</i></p>
+                <p v-if="popArea_result">{{$lang('导入结果提醒')}}：<i @click="popAreaHidestatus()">X</i></p>
+                <div class="popArea-yet popArea-span">
+                    <!--<p v-if="popArea_status"><{$Think.lang.已选择}><span @click="popChoseProvinceAllBack(ProvinceStateChose)" v-if="ProvinceStateChose.length > 0"><{$Think.lang.全不选}></span></p>-->
+                    <p v-if="popArea_status">{{$lang('已选择')}}</p>
+                    <p v-if="popArea_result">{{$lang('已成功的数据')}}：</p>
+                    <div v-if="popArea_status" class="rule_add_span rule_add_span_yet" :id="ChoseProvinceYet?'ChoseProvinceYetId':'de'">
+                        <template v-for="(province,index) in ProvinceStateChose">
+                            <span @click="popChoseProvinceBack(province)">{{$lang(province.zh_name)}}</span>
+                        </template>
+                    </div>
+                    <div v-if="popArea_result" class="popArea_result_span">
+                        <template v-for="(key,index) in resultSuccessStatesCountry">
+                            <span v-if="key.zh_name">{{$lang(key.zh_name)}}</span>
+                        </template>
+                        <template v-for="(key,index) in resultSuccessStatesProvince">
+                            <span v-if="key.zh_name">{{$lang(key.zh_name)}}</span>
+                        </template>
+                    </div>
+                </div>
+                <span class="popArea-body-line"></span>
+                <div class="popArea-none popArea-span">
+                    <p v-if="popArea_status">{{$lang('未选择')}}<span @click="popChoseProvinceAll(ProvinceState)" v-if="ProvinceState.length > 0">{{$lang('全选')}}</span></p>
+                    <p v-if="popArea_result">{{$lang('已失败的数据有')}}：</p>
+                    <div v-if="popArea_status" class="rule_add_span rule_add_span_yet"  :id="ChoseProvinceNot?'ChoseProvinceNotId':'de'">
+                        <template v-for="(yetData,index) in ProvinceState">
+                            <span @click="popChoseProvince(yetData,index)">{{$lang(yetData.zh_name)}}</span>
+                        </template>
+                    </div>
+                    <div v-if="popArea_result" class="popArea_result_span_fails" >
+                        <template v-for="(key,index) in resultSuccessStatesCountryYet">
+                            <span v-if="key.zh_name">{{$lang(key.zh_name)}}<i>{{$lang('失败原因')}}：{{$lang('已存在')}}</i></span>
+                        </template>
+                        <template v-for="(key,index)  in resultSuccessStatesProvinceYet">
+                            <span v-if="key.zh_name">{{$lang(key.zh_name)}}<i>{{$lang('失败原因')}}：{{$lang('已存在')}}</i></span>
+                        </template>
+                        <template v-for="(key,index)  in resultFalseStates">
+                            <span>{{key}}<i>{{$lang('失败原因')}}：{{$lang('不支持该区域')}}</i></span>
+                        </template>
+                    </div>
+                </div>
+                <div class="popArea-submit" v-if="popArea_status">
+                    <button type="button" @click="popAreaStatusSubmit()">{{$lang('确定')}}</button>
+                    <button type="button" class="cancel" @click="popAreaStatusCancel()">{{$lang('取消')}}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/lib/My97DatePicker/WdatePicker.js"></script>
+<!-- <script type="text/javascript" src="/Application/Tpl/Home/Public/js/vue-2.4.2.js?v=<{$Think.const.V}>"></script> -->
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/axios.min.js"></script>
+<!-- <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui.js?v=<{$Think.const.V}>"></script> -->
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script src="/Application/Tpl/Home/Public/lib/layer/1.9.3/layer.js" type="text/javascript"></script>
+<script type="text/javascript" charset="utf-8" src="/Application/Tpl/Home/Public/ueEdit/ueditor.config.js"></script>
+<script type="text/javascript" charset="utf-8" src="/Application/Tpl/Home/Public/ueEdit/ueditor.all.min.js"> </script>
+ <script type="text/javascript" charset="utf-8" src="/Application/Tpl/Home/Public/ueEdit/lang/zh-cn/zh-cn.js"></script>
+<script src="/Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script src="/Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script src="/Application/Tpl/Logistics/FreightRules/rule_add.js?v=<{$Think.const.V}>" ></script>
+</html>

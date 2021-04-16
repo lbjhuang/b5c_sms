@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.config.VER_NUM}>">
+    <title>$lang('BOX数据库')</title>
+    <style>
+        #rkWrap{
+            padding:20px;
+        }
+        .ten{
+            font-size: 37px;
+        }
+        .one{
+            font-size: 22px;
+        }
+    </style>
+</head>
+
+<body style="height: 100%; overflow: auto;">
+    <div id="rkWrap">
+        <div style="margin: 25px 0;display: flex;  flex-direction: row-reverse;">
+            <el-button @click="opentab('/index.php?m=stock&a=volume_aadd','新增BOX')">{{$lang('添加BOX')}}</el-button>
+        </div>
+        <div>
+            <el-table
+                    :data="tableData"
+                    border
+                    style="width: 100%">
+                <el-table-column
+                        prop="date"
+                        :label="$lang('BOX序号')"
+                        >
+                    <template  slot-scope="scope">
+                        <div class="td-box">
+                            <div >
+                                {{$lang('BOX') + scope.row.id}}
+                            </div>
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column
+                        prop="name"
+                        :label="$lang('包含SKU及数量')"
+                        >
+                    <template  slot-scope="scope">
+                        <div>
+                            <div v-for="v in scope.row.boxingDetails">
+                               {{$lang('sku')+':'+v.sku+' '+$lang('数量')+':'+ v.num}}
+                            </div>
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column
+                        prop="address"
+                        :label="$lang('外包装规格')"
+                >
+                    <template  slot-scope="scope">
+                        <div class="td-box">
+                            <div >
+                                {{scope.row.unit+' '+ scope.row.length+ '*'+ scope.row.width + '*'+  scope.row.height + ' ' +scope.row.unitVolume}}
+                            </div>
+                        </div>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </div>
+        <div style="display: flex;margin: 20px;    flex-direction: row-reverse;">
+            <el-pagination
+                    @size-change="handleSizeChange"
+                    @current-change="handleCurrentChange"
+                    :current-page="data.page"
+                    :page-sizes="[10,50, 200, 300, 400]"
+                    :page-size="data.pageSize"
+                    layout="total, sizes, prev, pager, next, jumper"
+                    :total="totalCount">
+            </el-pagination>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js?<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script>
+      $(window).on("storage", function (e) {
+        if (e.originalEvent.key === 'reload.volume_database') {
+          setTimeout(function(){
+            parent.$('[data-href="/index.php?m=stock&a=volume_database"]').click()
+          },300)
+          vm.getData();
+          sessionStorage.removeItem('reload.volume_database');
+        }
+      });
+        var vm = new Vue({
+            el: '#rkWrap',
+            data:{
+              data:{
+                "sku": "",
+                "volume": "",
+                "pageSize": 10,
+                "page": 1
+              },
+              totalCount:0,
+              tableData:[],
+              options: [{
+                value: '0',
+                label: 'BOX1（sku编号*数量）'
+              }, {
+                value: '1',
+                label: 'BOX2（sku编号*数量）'
+              }, {
+                value: '2',
+                label: 'BOX3（sku编号*数量）'
+              }, {
+                value: '3',
+                label: 'BOX4（sku编号*数量）'
+              }, {
+                value: '4',
+                label: 'BOX4（sku编号*数量）'
+              }],
+            },
+            created: function() {
+              this.getData()
+            },
+            methods: {
+              opentab: function (href,title) {
+                var dom = document.createElement('a');
+                dom.setAttribute("onclick", "opennewtab(this,'" + this.$lang(title) + "')");
+                dom.setAttribute("_href", href);
+                dom.click();
+              },
+              getData:function(){
+                  var _this = this;
+                axios.post('/index.php?m=B5caiApi&a=api&goto_url=boxing/page.json',this.data).then(function(res) {
+                  if(res.data.code === 2000){
+                      var data = res.data.data.data
+                      _this.tableData = res.data.data.data
+                    _this.totalCount = Number(res.data.data.totalCount)
+                  }else{
+                    // _this.$message.error(res.data.msg);
+                  }
+                })
+              },
+              handleSizeChange:function(v){
+                this.data.pageSize = v
+                this.getData()
+              },
+              handleCurrentChange:function(v){
+                this.data.page = v
+                this.getData()
+              }
+            },
+            filters: {
+            }
+        });
+    </script>
+</body>
+
+</html>

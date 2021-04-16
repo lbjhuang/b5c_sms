@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="../Public/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="../Public/icon/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../Public/css/send.css"/>
+    <link rel="stylesheet" href="../Public/utils/css/public.style.css">
+    <link rel="stylesheet" href="../Public/css/new-button.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <title><{$Think.lang.收款列表}></title>
+    <script type="text/javascript">
+        var url = window.location.href;
+    </script>
+    <style>
+        .wrap {
+            box-sizing: border-box;
+            padding: 20px;
+            margin: 0;
+        }
+        .row {
+            margin: 0;
+        }
+
+        .row + .row {
+            margin-top: 20px;
+        }
+        [class*="col-"]{
+            padding: 0;
+        }
+        .pagination > li > a{
+            letter-spacing: 0;
+            font-size: 0.6rem;
+        }
+        .cred{
+            color: red;
+        }
+        .b2b-table .use-body .use-btn a{color: white;cursor: pointer}
+    </style>
+</head>
+<body>
+<div id="gathering_list" v-cloak="" class="wrap">
+    <form action="" method="post">
+        <div class="row">
+            <div class="col-lg-12 col-md-12 col-sm-12 use-title">
+                <span>{{$lang('应收款单')}}</span>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12 col-md-12 col-sm-12 new-btn-group">
+                <button :class="(!action.main_gathering && action.main_gathering !== 0 )?'active':''" @click="go(null,'main_gathering')" type="button" >{{$lang('全部')}}</button>
+                <button v-for="s in initdata.main_gathering_state" @click="go(s.CD,'main_gathering')" type="button" :class="(action.main_gathering !== '' && s.CD == action.main_gathering)?'active':''">{{$lang(s.CD_VAL)}}</button>
+                <input type="hidden" name="main_gathering_state" v-model="action.main_gathering">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12 col-md-12 col-sm-12 new-btn-group">
+                <button :class="(!action.unconfirmed && action.unconfirmed !== 0 )?'active':''" @click="go(null,'unconfirmed')" type="button" >{{$lang('全部')}}</button>
+                <button v-for="d in initdata.unconfirmed_state" @click="go(d.CD,'unconfirmed')" type="button" :class="(action.unconfirmed !== '' && d.CD == action.unconfirmed)?'active':''">{{$lang(d.CD_VAL)}}</button>
+                <input type="hidden" name="unconfirmed_state" v-model="action.unconfirmed">
+            </div>
+        </div>
+        <div class="row b2b-form">
+            <div class="col-lg-3 col-md-3 col-sm-3">
+                <label>{{$lang('客户名称')}}</label>
+                <input type="text" placeholder="" @change="customerNameChange()" name="client_id" v-model="action.CLIENT_NAME">
+            </div>
+            <div class="col-lg-3 col-md-3 col-sm-3">
+                <select name="orderId" v-model="action.orderId" style="width: 130px;min-width: 130px;">
+                    <!-- <option selected value="" disabled><{$Think.lang.请选择订单号}></option> -->
+                    <option :key="item.orderId" :value="item.orderId" v-for="item in orderNum">{{$lang(item.orderName)}}</option>
+                </select>
+                <input type="text" v-model="action.PO_ID" @change="orderNumChange" name="PO_ID" style="width: 50%;min-width: 230px;" :placeholder="$lang('可查询多个单号，用英文逗号分割')">
+            </div>
+            <div class="col-lg-3 col-md-3 col-sm-3">
+                <label class="text-left">{{$lang('销售团队')}}</label>
+                <el-select v-model="action.sales_team_code" filterable :placeholder="$lang('请选择销售团队')" >
+                    <el-option
+                            v-for="item in initdata.sales_team"
+                            :key="item.CD"
+                            :label="$lang(item.CD_VAL)"
+                            :value="item.CD">
+                    </el-option>
+                </el-select>
+                <select style="visibility: hidden;" name="sales_team_id" v-model="action.sales_team_code">
+                    <option value="">{{$lang('请选择销售团队')}}</option>
+                    <option v-for="s in initdata.sales_team" :value="s.CD">{{$lang(s.CD_VAL)}}</option>
+                </select>
+            </div>
+            <div class="col-lg-3 col-md-3 col-sm-3">
+                <label class="text-left">{{$lang('收款类型')}}</label>
+                <select name="transaction_type" v-model="action.transaction_type">
+                    <option value="">{{$lang('请选择收款类型')}}</option>
+                    <option value="0">{{$lang('货款')}}</option>
+                    <option value="1">{{$lang('退税')}}</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-12 search-btn-group">
+                <button type="submit" class="search-btn">{{$lang('查询')}}</button>
+                <button type="reset" @click="clean()" class="reset-btn">{{$lang('重置')}}</button>
+            </div>
+        </div>
+    </form>
+    <div class="baseline"></div>
+    <div class="row">
+        <div class="col-lg-6 col-md-6 result-num">
+            <!-- <{$Think.lang.结果}>:<{$Think.lang.共}><b>&nbsp;&nbsp;{{count}}&nbsp;&nbsp;</b> <{$Think.lang.条记录}> -->
+            {{$lang('结果')}}:{{$lang('共')}}<b>&nbsp;&nbsp;{{count}}&nbsp;&nbsp;</b>{{$lang('条记录')}}
+        </div>
+        <div class="col-lg-6 col-md-6 text-right use-btn">
+            <!--<a href="<{:U('gathering_down')}>" class="btn-pub btn-green"><{$Think.lang.导出}></a>-->
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-12 col-md-12">
+            <table class="b2b-table">
+                <thead>
+                <tr class="use-head">
+                    <th width="4%"><input type="checkbox"></th>
+                    <th width="6%"> {{$lang('B2B订单号')}}</th>
+                    <th width="6%"> {{$lang('PO单号')}}</th>
+                    <th width="8%"> {{$lang('收款单号')}}</th>
+                    <th width="10%">{{$lang('客户')}}</th>
+                    <th width="8%"> {{$lang('款项类型')}}</th>
+                    <th width="11%">{{$lang('收款节点与比例')}}</th>
+                    <th width="8%"> {{$lang('预期金额')}}</th>
+                    <th width="8%"> {{$lang('预期收款时间')}}</th>
+                    <th width="8%"> {{$lang('待确认状态')}}</th>
+                    <th width="7%"> {{$lang('收款状态')}}</th>
+                    <th width="7%"> {{$lang('收款时间')}}</th>
+                    <th width="8%"> {{$lang('逾期情况')}}</th>
+                    <th width="8%"> {{$lang('逾期天数')}}</th>
+                    <th width="10%">{{$lang('销售')}}</th>
+                    <th width="8%"> {{$lang('操作')}}</th>
+                </tr>
+                </thead>
+                <tbody class="use-body">
+                <tr class="" v-for="(g,key) in gathering_list">
+                    <td><input type="checkbox"></td>
+                    <td>{{g.PO_ID}}</td>
+                    <td>{{g.THR_PO_ID}}</td>
+                    <td>{{g.ID}}</td>
+                    <td>{{$lang(g.client_id)}}</td>
+                    <td v-if="g.transaction_type == 1 && g.P_ID">{{$lang('退税子单')}}</td>
+                    <td v-else-if="g.transaction_type == 1">{{$lang('退税')}}</td>  <!-- 货款 -->
+                    <td v-else-if="g.transaction_type == 2">{{$lang('子单')}}</td>
+                    <td v-else="">{{$lang('货款')}}</td>
+                    <td v-if="g.transaction_type == 2 && g.receiving_code">{{show_node(g.receiving_code)}}</td>
+                    <td v-else-if="!g.transaction_type">{{$lang(show_node(g.receiving_code))}}</td>
+                    <td v-else="">-</td>
+                    <td v-if="g.expect_receipt_amount && g.transaction_type == 2">{{king((parseFloat(g.collect_this) + parseFloat(g.received_this)).toFixed(2))}}</td>
+                    <!--<td v-if="g.expect_receipt_amount && g.transaction_type == 2">{{king(g.expect_receipt_amount)}}</td>-->
+                    <td v-else-if="g.expect_receipt_amount">{{king(g.expect_receipt_amount)}}</td>
+                    <td v-else=""></td>
+                    <td v-if="g.expect_receipt_date">{{GetDateStr(g.expect_receipt_date,0)}}</td>
+                    <td v-else-if="g.completion_date_end">{{GetDateStr(g.completion_date_end,0)}}</td>
+                    <td v-else=""></td>
+                    <td v-if="0 != g.main_unconfirmed_state">{{$lang('有')}}</td>
+                    <td v-else="">{{$lang('无')}}</td>
+                    <td v-if="g.receipt_operation_status">{{initdata.main_gathering_state[(parseInt(g.main_receipt_operation_status))].CD_VAL}}</td> <!-- 收款状态 -->
+                    <td v-else="">{{$lang('待收款')}}</td>
+                    <td v-if="g.actual_receipt_date">{{GetDateStr(g.actual_receipt_date,0)}}</td>
+                    <td v-else=""></td>
+                    <!-- 逾期 -->
+                    <td  v-if="g.transaction_type != 1">
+                        <span v-if="g.overdue_statue == 0">{{$lang('当期未逾期')}}</span>
+                        <span class="cred" v-else-if="g.overdue_statue == 1">{{$lang('当期逾期')}}</span>
+                        <span v-else-if="g.overdue_statue == 2">{{$lang('实际未逾期')}}</span>
+                        <span class="cred" v-else-if="g.overdue_statue == 3">{{$lang('实际逾期')}}</span>
+                        <span v-else></span>
+                    </td>
+                    <td v-else=""></td>
+                    <td>
+                        <span class="crea" v-if="g.overdue_day">{{g.overdue_day}}</span>
+                    </td>
+                    <td v-if="g.sales_team_id">{{g.PO_USER}}&#45;&#45;{{initdata.sales_team[g.sales_team_id].CD_VAL}}</td>
+                    <td class="no-wrap">
+                        <!--<a onclick="opennewtab(this,'收款详情页')"   :href="'<{:U('gathering_all_detail')}>&id='+g.ID+'&main_id='+g.ID" :_href="'<{:U('gathering_all_detail')}>&id='+g.ID+'&main_id='+g.ID" class="primary-btn"><{$Think.lang.查看}></a>-->
+                        <!-- <a onclick="opennewtab(this,'收款详情页')"  :_href="'<{:U('gathering_all_detail')}>&id='+g.ID+'&main_id='+g.ID" class="primary-btn">{{$lang('查看')}}</a> -->
+                        <a @click="toDetail(g.ID,'收款详情页')" class="primary-btn">{{$lang('查看')}}</a>
+                        <a v-if="!g.receipt_operation_status" :href="'<{:U('gathering_detail')}>&id='+g.ID" class="btn-pub btn-blue">{{$lang('收款')}}</a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="col-lg-12 col-md-12">
+            <ul class="pagination"> <{$page}></ul>
+        </div>
+    </div>
+</div>
+<script src="../Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="../Public/js/stock/alert.js"></script>
+<!-- <script type="text/javascript" src="../Public/js/vue.js"></script> -->
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="../Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script>
+    var vm = new Vue({
+        el: '#gathering_list',
+        data: {
+            gathering_list:<{$gathering_list}>,
+            count:"<{$count}>",
+            initdata:<{$initdata}>,
+            action:<{$action}>,
+            overdue_text:['未逾期','逾期'],
+            orderNum: [{
+                orderId: 'THR_PO_ID',
+                orderName: 'PO单号 '
+            }, {
+                orderId: 'PO_ID',
+                orderName: 'B2B订单号'
+            }],
+            gathering:0
+        },
+        methods:{
+            toDetail: function toDetail (id, title) {
+                var dom = document.createElement('a');
+                var _href="<{:U('gathering_all_detail')}>&id="+id+'&main_id='+id;
+                dom.setAttribute("onclick", "opennewtab(this,'"+this.$lang(title) + "')");
+                dom.setAttribute("_href", _href);
+                dom.click();
+            },
+            node_to_code(e,type){
+                return this.initdata[type][e]
+            },
+            show_node(e){
+                var d = JSON.parse(e)
+                if(!d.nodeType)return null
+                var init_data = this.initdata
+                var run_e = ''
+                if(this.node_to_code(d.nodeType,'node_type')){
+                    if(d.nodeType in init_data.node_type && d.nodeWorkday in init_data.node_is_workday) {
+                   run_e = init_data.number_th[d.nodei]+':'+init_data.node_type[d.nodeType].CD_VAL+init_data.node_date[d.nodeDate].CD_VAL+init_data.node_is_workday[d.nodeWorkday].CD_VAL+'-'+d.nodeProp+'%'
+                       }
+                }
+                return run_e
+            },
+            gather_date(k){
+                var gather_key = this.gathering_list[k]
+                var d = JSON.parse(gather_key.receiving_code)
+                var times =  null
+                if(!d.nodeType)return null
+                switch (parseInt(d.nodeType)){
+                    case 0:
+//                        合同
+                         times = gather_key.po_time
+                        break;
+                    case 1:
+//                        发货
+//                        times = gather_key.SUBMIT_TIME
+                        times = gather_key.DELIVERY_TIME
+                        break;
+                    case 2:
+//                      入港
+                        times = gather_key.Estimated_arrival_DATE
+                        break;
+                    case 3:
+//                        入库
+                        times = gather_key.WAREING_DATE
+                        break;
+
+                    default:
+                }
+                var gather_date_string = this.GetDateStr(times,this.initdata.node_date[d.nodeDate].CD_VAL)
+                if(!times)return null
+                return gather_date_string
+            },
+            GetDateStr(times,AddDayCount) {
+                var dd = new Date(times);
+                dd.setDate(dd.getDate()+AddDayCount);
+                var y = dd.getFullYear();
+                var m = dd.getMonth()+1;
+                var d = dd.getDate();
+                return y+"-"+m+"-"+d;
+            },
+            king:function(e){
+                var k = e.toString().split('.')
+                if(e.toString().indexOf('.') > 0){
+                    var s = '.'+k[1]
+                }else{
+                    var s = ''
+                }
+                return k[0].toString().replace(/\d{1,3}(?=(\d{3})+(\.\d*)?$)/g, '$&,')+s;
+            },
+            overdue:function(e,t_date) {
+                var overdue_text = this.overdue_text[0]
+                var gather_date= this.gather_date(e)
+                if(!gather_date)return overdue_text
+                var gather_date_t  = new Date(gather_date)
+                var this_date = new Date().getTime()
+                if(t_date)this_date = new Date(t_date)
+                if(gather_date_t <  this_date){
+                    overdue_text = '<span class="cred">'+this.overdue_text[1]+'<span>'
+                    this.gathering_list[e].style = true
+                }
+                return overdue_text
+            },
+            go:function (e,type) {
+                this.action[type] = e
+            },
+            clean: function (){
+                this.action.orderId = 'THR_PO_ID';
+                this.action.sales_team_code = '';
+                this.action.PO_ID = '';
+                this.action.CLIENT_NAME = '';
+                this.action.transaction_type = '';
+                this.action.gathering = 0;
+            },
+            customerNameChange: function (value) {
+                this.action.CLIENT_NAME = this.action.CLIENT_NAME.replace(/\s+/g,"");
+                console.log(this.action.CLIENT_NAME)
+            },
+            orderNumChange: function orderNumChange () {
+                this.action.PO_ID = this.action.PO_ID.replace(/\s+/g,"");
+            }
+        }
+    })
+</script>
+</body>
+</html>

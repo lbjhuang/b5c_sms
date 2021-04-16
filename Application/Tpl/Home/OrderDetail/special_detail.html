@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>特价商品详情页</title>
+    <link rel="stylesheet" href="../Public/utils/css/public.style.css?v=0907">
+    <link rel="stylesheet" href="../Public/css/element-ui.css?v=">
+    <link rel="stylesheet" href="../Public/css/default.css">
+    <link rel="stylesheet" href="../Public/../Hr/depList.css?v=20170922">
+    <link rel="stylesheet" href="../Public/icon/css/font-awesome.min.css">
+</head>
+<style>
+    #spe-detail {
+        padding: 10px 10px 80px;
+    }
+
+    .spe-table {
+        width: 100%;
+        font-size: 13px;
+        color: #546E7A;
+        font-family: MicrosoftYaHei;
+        border-bottom: 1px solid #CADEE7;
+        border-right: 1px solid #CADEE7;
+        background: #F7F9FB;
+        margin: 20px 0;
+    }
+
+    .spe-table th {
+        padding: 8px;
+        border-top: 1px solid #CADEE7;
+        border-left: 1px solid #CADEE7;
+        background: #e4e9ed;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .spe-table td {
+        padding: 8px;
+        border-top: 1px solid #CADEE7;
+        border-left: 1px solid #CADEE7;
+        background: #F7F9FB;
+        text-align: center;
+    }
+
+    .spe-table td:nth-child(odd) {
+        text-align: center;
+    }
+
+    .pur-info td:nth-child(odd) {
+        width: 15%;
+        background: #f5fafe;
+    }
+
+    .pur-info td:nth-child(even) {
+        width: 35%;
+    }
+
+    .ce-title {
+        font-family: MicrosoftYaHei-Bold;
+        font-size: 17px;
+        color: #263238;
+        letter-spacing: 0;
+        margin-bottom: 15px;
+        font-weight: 600;
+    }
+
+    .spe-table caption {
+        background: #546E7A;
+        font-family: MicrosoftYaHei;
+        font-size: 16px;
+        color: #FFFFFF;
+        letter-spacing: 0;
+        padding: 6px 10px 8px;
+        text-align: left;
+    }
+
+    .spe-table td i {
+        cursor: pointer;
+    }
+
+    .required {
+        color: red;
+    }
+
+    .select-group .el-select {
+        width: 32% !important;
+        display: inline-block;
+    }
+
+    .suffix {
+        position: relative
+    }
+
+    .suffix i {
+        position: absolute;
+        right: 4px;
+        top: 46%;
+        transform: translate(-50%, -50%);
+        cursor: pointer;
+    }
+
+    .thumbnail-wrap {
+        position: relative;
+        z-index: 999;
+    }
+
+    .thumbnail-wrap .img-wrap {
+        position: absolute;
+        top: -60px;
+        left: 100px;
+        width: 300px;
+        height: 300px;
+        border: 1px solid #eef5f9;
+    }
+
+    .thumbnail-wrap img {
+        box-shadow: 4px 4px 20px #242525;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+</style>
+
+<body>
+    <div id="spe-detail" v-cloak>
+        <table class="spe-table pur-info" cellpadding="0" cellspacing="0">
+            <caption>
+                <{$Think.lang.采购信息}>
+            </caption>
+            <tbody>
+                <tr>
+                    <td>
+                        <{$Think.lang.供应商}> <span v-if="type == 'edit'" class="required"> *</span> </td>
+                    <td>
+                        <el-input v-if="type == 'edit'" v-model="form.supplier" style="width:97.35%;"></el-input>
+                        <span v-else>{{form.supplier}}</span>
+                    </td>
+                    <td>
+                        <{$Think.lang.发票信息}> <span v-if="type == 'edit'" class="required"> *</span> </td>
+                    <td :class="[form.has_invoice == 1?'select-group':'']">
+                        <span v-if="type == 'edit'">  
+                            <el-select clearable filterable v-model="form.has_invoice" placeholder="<{$Think.lang.是否有发票}>" style="width: 97.35%;">
+                                <el-option v-for="(item,key) in selects.has_invoice" :key="key" :value="key" :label="item"></el-option>
+                            </el-select>
+                            <el-select v-if="form.has_invoice == 1" clearable filterable v-model="form.invoice_type" placeholder="<{$Think.lang.请选择发票类型}>">
+                                <el-option v-for="item in selects.invoice_type" :key="item.CD" :value="item.CD" :label="item.CD_VAL"></el-option>
+                            </el-select>
+                            <el-select v-if="form.has_invoice == 1" clearable filterable v-model="form.tax_rate" placeholder="<{$Think.lang.请选择税点}>">
+                                <el-option v-for="item in selects.tax_rate" :key="item.CD" :value="item.CD" :label="item.CD_VAL"></el-option>
+                            </el-select>
+                        </span>
+                        <span v-else>{{getValue(selects.has_invoice,form.has_invoice)}}  {{getValue(selects.invoice_type,form.invoice_type)}}  {{getValue(selects.tax_rate,form.tax_rate)}} </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <{$Think.lang.发货地}> <span v-if="type == 'edit'" class="required"> *</span> </td>
+                    <td class="select-group">
+                        <span v-if="type == 'edit'">
+                            <el-select clearable filterable v-model="form.country" placeholder="<{$Think.lang.请选择国家}>" @change="getAddress('province',form.country)">
+                                <el-option v-for="item in selects.country" :key="item.ID" :value="item.ID" :label="item.NAME"></el-option>
+                            </el-select>
+                            <el-select clearable filterable v-model="form.province" placeholder="<{$Think.lang.请选择省市}>" @change="getAddress('city',form.province)">
+                                <el-option v-for="item in selects.province" :key="item.ID" :value="item.ID" :label="item.NAME"></el-option>
+                            </el-select>
+                            <el-select clearable filterable v-model="form.city" placeholder="<{$Think.lang.请选择城市}>">
+                                <el-option v-for="item in selects.city" :key="item.ID" :value="item.ID" :label="item.NAME"></el-option>
+                            </el-select>
+                        </span>
+                        <span v-else>{{getValue(selects.country,form.country,'NAME')}} {{getValue(selects.province,form.province,'NAME')}}  {{getValue(selects.city,form.city,'NAME')}} </span>
+                    </td>
+                    <td>
+                        <{$Think.lang.预计可发货时间}> <span v-if="type == 'edit'" class="required"> *</span></td>
+                    <td>
+                        <el-date-picker v-if="type == 'edit'" type="date" placeholder="<{$Think.lang.请选择日期}>" v-model="form.expected_ship_time" style="width:97.35%;"></el-date-picker>
+                        <span v-else>{{form.expected_ship_time}}</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <{$Think.lang.采购同事}> <span v-if="type == 'edit'" class="required"> *</span> </td>
+                    <td class="select-input">
+                        <el-select v-if="type == 'edit'" style="width:97.35%;" clearable filterable v-model="form.purchase_staff" placeholder="<{$Think.lang.请选择采购同事}>">
+                            <el-option v-for="(item,key) in selects.purchase_staff" :key="key" :value="item.M_NAME" :label="item.M_NAME"></el-option>
+                        </el-select>
+                        <span v-else>{{form.purchase_staff}}</span>
+
+                    </td>
+                    <td>
+                        <{$Think.lang.采购团队}> <span v-if="type == 'edit'" class="required"> *</span> </td>
+                    <td>
+                        <el-select v-if="type == 'edit'" style="width:97.35%;" clearable filterable v-model="form.purchase_team" placeholder="<{$Think.lang.请选择采购团队}>">
+                            <el-option v-for="item in selects.purchase_team" :key="item.CD" :value="item.CD" :label="item.CD_VAL"></el-option>
+                        </el-select>
+                        <span v-else>{{getValue(selects.purchase_team,form.purchase_team)}}</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <{$Think.lang.上传附件}>
+                    </td>
+                    <td style="text-align:left">
+                        <el-upload v-if="type == 'edit'" style="display: inline-block;" :before-upload="beforeFile" :on-remove="removeFile" multiple class="upload-demo" action="/index.php?m=order_detail&a=file_upload" :on-success="uploadFileFun" name="annex" ref="annex" :file-list="fileName">
+                            <el-button size="small" type="primary">点击上传</el-button>
+                        </el-upload>
+                        <span v-else v-for="item in fileName" style="display: inline-block; width: 100%; text-align: center">
+                            <span  style="color:#1e6c98;cursor:pointer" title="下载文件" @click="downAtta(item.saveName)">{{item.name}}</a><br>
+                        </span>
+                    </td>
+                    <td>
+                        <{$Think.lang.备注}>
+                    </td>
+                    <td>
+                        <el-input v-if="type == 'edit'" style="width:97.35%;" v-model="form.remark"></el-input>
+                        <span v-else>{{form.remark}}</span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <table class="spe-table" cellpadding="0" cellspacing="0">
+            <caption>
+                <el-row>
+                    <el-col :span="10"> <{$Think.lang.商品信息}></el-col>
+                    <el-col :span="14" class="text-right">
+                        <el-upload v-if="type == 'edit'" style="display: inline-block;" class="upload-demo" action="/index.php?m=order_detail&a=special_offer_import_goods" :on-success="importFileFun" ref="importExc" :show-file-list="false">
+                            <el-button size="small" type="primary"><{$Think.lang.批量导入}></el-button>
+                        </el-upload>
+                        &nbsp;&nbsp;
+                        <el-button v-if="type == 'edit'" type="success" round size="small" @click="downTmep()"><{$Think.lang.下载模版}></el-button>
+                    </el-col>
+                </el-row>
+            </caption>
+            <thead>
+                <tr>
+                    <th>SKU ID/Bar Code <span v-if="type == 'edit'" class="required"> *</span></th>
+                    <th><{$Think.lang.商品名称}> <span v-if="type == 'edit'" class="required"> *</span></th>
+                    <th><{$Think.lang.SKU信息}> <span v-if="type == 'edit'" class="required"> *</span></th>
+                    <th><{$Think.lang.图片}></th>
+                    <th><{$Think.lang.价格}> <span v-if="type == 'edit'" class="required"> *</span></th>
+                    <th><{$Think.lang.数量}> <span v-if="type == 'edit'" class="required"> *</span></th>
+                    <th><{$Think.lang.金额}></th>
+                    <th><{$Think.lang.热度评级}> <span v-if="type == 'edit'" class="required"> *</span></th>
+                    <th><{$Think.lang.授权&链路}> <span v-if="type == 'edit'" class="required"> *</span></th>
+                    <th><{$Think.lang.备注}></th>
+                    <th v-if="type == 'edit'"><{$Think.lang.操作}></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="(item,key) in form.goods">
+                    <td>
+                        <div class="suffix" v-if="type == 'edit'">
+                            <el-input placeholder="<{$Think.lang.请输入}>" v-model="item.search_code"></el-input>
+                            <i class="fa fa-search" @click="search(item,key)"></i>
+                        </div>
+                        <span v-else>
+                            <span v-if="item.search_code">{{item.search_code}}</span>
+                        <span v-else>{{item.sku_id}}</span>
+                        </span>
+                    </td>
+                    <td>
+                        <span v-if="!item.searchType">{{item.goods_name}}</span>
+                        <el-input placeholder="<{$Think.lang.请输入}>" v-if="item.searchType" v-model="item.goods_name" @blur="getHot(item)"></el-input>
+                    </td>
+                    <td>
+                        <span v-if="!item.searchType">{{item.goods_attribute}}</span>
+                        <el-input placeholder="<{$Think.lang.请输入}>" v-if="item.searchType" v-model="item.goods_attribute"></el-input>
+                    </td>
+                    <td>
+                        <img v-if="item.gudsImgCdnAddr" :src="item.gudsImgCdnAddr" alt="" width="60" height="60" @mouseover="showImgFn(item,true)"  @mouseout="showImgFn(item,false)">
+                        <div class="thumbnail-wrap" v-if="item.showImg && item.gudsImgCdnAddr">
+                            <div class="img-wrap">
+                                <img :src="item.gudsImgCdnAddr" alt="" width="300" height="300">
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <el-input v-if="type == 'edit'" placeholder="<{$Think.lang.请输入内容}>" v-model="item.price" class="input-with-select" @blur="calcAmount(item)" @focus="checkCurr(item)">
+                            <el-select style="width: 80px;" v-model="item.currency" slot="prepend" placeholder="<{$Think.lang.币种}>" @change="cehckCurrency(item.currency,key,true)">
+                                <el-option v-for="item in selects.currency" :key="item.CD" :value="item.CD" :label="item.CD_VAL"></el-option>
+                            </el-select>
+                        </el-input>
+                        <span v-else>{{getValue(selects.currency,item.currency)}} {{item.price | numberFormat}}</span>
+                    </td>
+                    <td>
+                        <el-input v-if="type == 'edit'" placeholder="<{$Think.lang.请输入数量}>" v-model="item.number" clearable @blur="calcAmount(item)" @keyup.native="inNum($event,item)"> </el-input>
+                        <span v-else>{{item.number}}</span>
+                    </td>
+                    <td class="no-wrap">{{item.amount | numberFormat }}</td>
+                    <td>{{item.hotness}}</td>
+                    <td>
+                        <el-select v-if="type == 'edit'" v-model="item.authorization_and_link" filterable placeholder="<{$Think.lang.请选择}>" clearable>
+                            <el-option v-for="(item,key) in selects.authorization_and_link" :key="key" :value="key" :label="item"></el-option>
+                        </el-select>
+                        <span v-else>{{getValue(selects.authorization_and_link,item.authorization_and_link)}}</span>
+                    </td>
+                    <td>
+                        <el-input v-if="type == 'edit'" placeholder="<{$Think.lang.请输入内容}>" v-model="item.remark" clearable> </el-input>
+                        <span v-else>{{item.remark}}</span>
+                    </td>
+                    <td class="no-wrap" v-if="type == 'edit'">
+                        &nbsp;&nbsp;
+                        <i class="fa fa-plus" @click="addInfo(key)"></i>&nbsp;&nbsp;
+                        <i class="fa fa-minus" @click="delInfo(key)"></i>&nbsp;&nbsp;
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="text-center" v-if="type == 'edit'">
+            <el-button type="primary" @click="submit()" :disabled="submitType == true"><{$Think.lang.提交}></el-button>&nbsp;&nbsp;&nbsp;&nbsp;
+            <el-button @click="reset"><{$Think.lang.重置}></el-button>
+        </div>
+        <el-dialog title="导入错误" :visible.sync="importVisible" width="20%" size="tiny">
+            <span style="color: #ff0000c9;font-size: 16px;"><{$Think.lang.是否下载错误报告}>?</span>
+            <span slot="footer" class="dialog-footer">
+                <el-button @click="importVisible = false"><{$Think.lang.否}></el-button>
+                <el-button type="primary" @click="dwonErrTmep()"><{$Think.lang.是}></el-button>
+            </span>
+        </el-dialog>
+        <table id="errTable" style="display:none">
+            <tr>
+                <td>商品编码/条形码(SKUID、Bar/JAN code)</td>
+                <td>币种(Currency)</td>
+                <td>单价(Unit Price)</td>
+                <td>数量(Quantity)</td>
+                <td>授权&链路(Authorization&link)</td>
+                <td>备注(Remarks)</td>
+                <td>提示/Notice</td>
+            </tr>
+            <tr v-for="item in errData">
+                <td>{{item.gsku}}</td>
+                <td>{{item.currency}}</td>
+                <td>{{item.price}}</td>
+                <td>{{item.number}}</td>
+                <td>{{item.auth_and_link}}</td>
+                <td>{{item.remark}}</td>
+                <td>{{item.msg}}</td>
+            </tr>
+        </table>
+    </div>
+    <script type="text/javascript" src="../Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="../Public/utils/utils.js"></script>
+    <script type="text/javascript" src="../Public/lib/jquery.table2excel.js"></script>
+    <script src="../Public/js/H-ui.js"></script>
+    <script src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="../Public/js/vue-2.4.2.js?v=<{$Think.const.V}>"></script>
+    <script type="text/javascript" src="../Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="../Public/js/element-ui.js?v=<{$Think.const.V}>"></script>
+    <script src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script>
+        var initData = {};
+        var speDe = new Vue({
+            el: '#spe-detail',
+            data: {
+                app_status: '<{:APP_STATUS}>',
+                labelPosition: 'left',
+                labelModal: 'top',
+                importVisible: false,
+                total_rows: 10,
+                importType: false,
+                submitType: false,
+                type: 'edit',
+                fileName: [],
+                errData: [],
+                //表单
+                form: {
+                    id: '',
+                    supplier: '',
+                    has_invoice: '',
+                    invoice_type: '',
+                    tax_rate: '',
+                    country: '',
+                    province: '',
+                    city: '',
+                    expected_ship_time: '',
+                    purchase_staff: '',
+                    purchase_team: '',
+                    attachment: [],
+                    remark: '',
+                    fileList: [],
+                    goods: [{
+                        id: '',
+                        search_code: '',
+                        sku_id: '',
+                        goods_name: '',
+                        goods_attribute: '',
+                        currency: '',
+                        price: '',
+                        number: '',
+                        amount: '',
+                        hotness: '',
+                        authorization_and_link: '',
+                        remark: '',
+                    }],
+                },
+                //下拉数据
+                selects: {
+                    country: [],
+                    province: [],
+                    city: [],
+                },
+                //暂存数据
+                saveVal: {},
+                //获取数据值
+                getValue: function(data, key, value) {
+                    var dataType = Object.prototype.toString.call(data);
+                    if (dataType == '[object Array]' && key) {
+                        var result = data.filter(function(item) {
+                            if (value == 'NAME') {
+                                return item.ID == key;
+                            } else {
+                                return item.CD == key;
+                            }
+                        });
+                        return value == 'NAME' ? result[0] && result[0].NAME || '' : result[0] && result[0].CD_VAL || '';
+                    } else if (dataType == '[object Object]' && key) {
+                        return data[key];
+                    }
+                },
+                //封装post接口
+                queryPost: function(url, param) {
+                    var headers = {
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        }
+                    }
+                    return axios.post(url, Qs.stringify(param), headers);
+                },
+                //解析URl
+                parseQuery: function(str) {
+                    return str.split('&').reduce(function(memo, x) {
+                        var qa = x.split('=');
+                        if (!qa[0]) {return memo};
+                        var obj = {};
+                        obj[qa[0]] = qa[1] ? qa[1] : "";
+                        //简介写法 [qa[0]]: qa[1] ? qa[1] : ""
+                        return utils.assignObj(memo,obj);
+                    }, {})
+                }
+            },
+            created: function() {
+                this.saveVal = this.form;
+                var param = this.parseQuery(window.location.href.split("?")[1]);
+                this.type = param.type;
+                this.getSelect();
+                if (param.id) {
+                    this.getInit(param.id);
+                }
+                this.getAddress('country');
+            },
+            methods: {
+                //获取下拉数据
+                getSelect: function() {
+                    axios.get('/index.php?m=order_detail&a=special_offer_init').then(function(res) {
+                        var data = res.data.info;
+                        for (var key in data) {
+                            Vue.set(speDe.selects, key, data[key])
+                        }
+                    })
+                },
+                //获取初始值
+                getInit: function(id) {
+                    this.queryPost('/index.php?m=order_detail&a=special_offer_detail', {
+                        id: id
+                    }).then(function(res) {
+                        initData = JSON.parse(JSON.stringify(res.data.info).concat());
+                        speDe.form = res.data.info;
+                        if (!res.data.info.goods) {
+                            speDe.form.goods = [{
+                                id: '',
+                                search_code: '',
+                                sku_id: '',
+                                goods_name: '',
+                                goods_attribute: '',
+                                currency: '',
+                                price: '',
+                                number: '',
+                                amount: '',
+                                hotness: '',
+                                authorization_and_link: '',
+                                remark: '',
+                            }];
+                            initData.goods = {
+                                id: '',
+                                search_code: '',
+                                sku_id: '',
+                                goods_name: '',
+                                goods_attribute: '',
+                                currency: '',
+                                price: '',
+                                number: '',
+                                amount: '',
+                                hotness: '',
+                                authorization_and_link: '',
+                                remark: '',
+                            }
+                        }
+                        speDe.fileName = speDe.form.attachment && JSON.parse(speDe.form.attachment)
+                        speDe.getAddress('province', speDe.form.country)
+                        speDe.getAddress('city', speDe.form.province)
+                    })
+                },
+                //获取地址信息
+                getAddress: function(param, id) {
+                    axios.get('/index.php?m=order_detail&a=get_address&pid=' + (id || '')).then(function(res) {
+                        Vue.set(speDe.selects, param, res.data.info);
+                    })
+                },
+                search: function(item, index) {
+                    if (!item.sku_id && !item.search_code) {
+                        this.$message({
+                            message: 'ID 不能为空',
+                            type: 'error'
+                        });
+                        return false;
+                    }
+                    var param = item.search_code ? item.search_code : item.sku_id;
+                    axios.get('/index.php?m=order_detail&a=special_offer_search_goods&gsku=' + param).then(function(res) {
+                        if (res.data.status) {
+                            var data = res.data.data;
+                            Vue.set(speDe.form.goods[index], 'search_code', data.gsku);
+                            Vue.set(speDe.form.goods[index], 'sku_id', data.sku);
+                            Vue.set(speDe.form.goods[index], 'goods_name', data.goods_name);
+                            Vue.set(speDe.form.goods[index], 'goods_attribute', data.goods_attribute);
+                            Vue.set(speDe.form.goods[index], 'searchType', false);
+                            Vue.set(speDe.form.goods[index], 'gudsImgCdnAddr', data.gudsImgCdnAddr);
+                            speDe.getHot(data.sku, index);
+                        } else {
+                            speDe.$message({
+                                message: '商品信息未录入ERP，可以手工填写商品名称和SKU信息',
+                                type: 'warning'
+                            });
+                            for (var key in speDe.form.goods[index]) {
+                                if (key != 'search_code') {
+                                    speDe.form.goods[index][key] = '';
+                                }
+                            }
+                            Vue.set(speDe.form.goods[index], 'searchType', true);
+                        }
+                    })
+                },
+                //增加商品信息
+                addInfo: function(key) {
+                    this.form.goods.push({
+                        id: '',
+                        search_code: '',
+                        sku_id: '',
+                        goods_name: '',
+                        goods_attribute: '',
+                        currency: '',
+                        price: '',
+                        number: '',
+                        amount: '',
+                        hotness: '',
+                        authorization_and_link: '',
+                        remark: '',
+                    });
+                },
+                //删除品信息
+                delInfo: function(key) {
+                    if (this.form.goods.length > 1) {
+                        this.form.goods.splice(key, 1);
+                    } else {
+                        this.$message({
+                            message: '不可删除最后一条',
+                            type: 'error'
+                        });
+                    }
+                },
+                //选择币种
+                cehckCurrency: function(currency, key, asd) {
+                    var goods = this.form.goods;
+                    if (key == 0 && !this.importType) {
+                        for (var i = 0, len = goods.length; i < len; i++) {
+                            Vue.set(goods[i], 'currency', currency)
+                        }
+                    }
+                },
+                //计算金额
+                calcAmount: function(item) {
+                    item.number = parseInt(item.number || 0);
+                    item.amount = ((item.number || 0) * (item.price || 0)).toFixed(4);
+                },
+                //提交表单操作
+                submit: function() {
+                    $("#Hui-tabNav ul li.active span").text("特价商品详情页")
+                    if (!this.form.supplier) {
+                        speDe.$message({
+                            message: '请填写供应商',
+                            type: 'error'
+                        });
+                        return false;
+                    }
+                    if (!this.form.has_invoice) {
+                        speDe.$message({
+                            message: '请选择是否有发票',
+                            type: 'error'
+                        });
+                        return false;
+                    }
+                    if (this.form.has_invoice == 1 && !this.form.invoice_type) {
+                        speDe.$message({
+                            message: '请选择发票类型',
+                            type: 'error'
+                        });
+                        return false;
+                    }
+                    if (this.form.has_invoice == 1 && !this.form.tax_rate) {
+                        speDe.$message({
+                            message: '请选择税点',
+                            type: 'error'
+                        });
+                        return false;
+                    }
+                    if (!this.form.country) {
+                        speDe.$message({
+                            message: '请选择国家',
+                            type: 'error'
+                        });
+                        return false;
+                    }
+                    if (!this.form.province) speDe.$message({
+                        message: '请选择省份',
+                        type: 'error'
+                    });
+                    if (!this.form.city) {
+                        speDe.$message({
+                            message: '请选择城市',
+                            type: 'error'
+                        });
+                        return false;
+                    }
+                    if (!this.form.expected_ship_time) {
+                        speDe.$message({
+                            message: '请填写发货时间',
+                            type: 'error'
+                        });
+                        return false;
+                    }
+                    if (!this.form.purchase_staff) {
+                        speDe.$message({
+                            message: '请填写采购同事',
+                            type: 'error'
+                        });
+                        return false;
+                    }
+                    if (!this.form.purchase_team) {
+                        speDe.$message({
+                            message: '请填写采购团队',
+                            type: 'error'
+                        });
+                        return false;
+                    }
+                    var goods = this.form.goods;
+                    for (var i = 0, len = goods.length; i < len; i++) {
+                        if (!goods[i].search_code) {
+                            speDe.$message({
+                                message: '商品SKU ID不能为空',
+                                type: 'error'
+                            });
+                            return false;
+                        };
+                        if (!goods[i].goods_name) {
+                            speDe.$message({
+                                message: '商品价格不能为空',
+                                type: 'error'
+                            });
+                            return false;
+                        };
+                        if (!goods[i].goods_attribute) {
+                            speDe.$message({
+                                message: '商品价格不能为空',
+                                type: 'error'
+                            });
+                            return false;
+                        };
+                        if (!goods[i].price) {
+                            speDe.$message({
+                                message: '商品价格不能为空',
+                                type: 'error'
+                            });
+                            return false;
+                        };
+                        if (!goods[i].number || goods[i].number < 1) {
+                            speDe.$message({
+                                message: '商品数量有误',
+                                type: 'error'
+                            });
+                            return false;
+                        };
+                        if (!goods[i].hotness) {
+                            speDe.$message({
+                                message: '商品热度评级不能为空',
+                                type: 'error'
+                            });
+                            return false;
+                        };
+                        if (!goods[i].authorization_and_link) {
+                            speDe.$message({
+                                message: '商品授权&链路不能为空',
+                                type: 'error'
+                            });
+                            return false;
+                        };
+                    }
+                    this.submitType = true;
+                    this.form.expected_ship_time = utils.dateFormat(this.form.expected_ship_time, 'yyyy-MM-dd')
+                    var goods = []
+                    this.form.goods.forEach(function(item) {
+                        var obj = {};
+                        for (var k in item) {
+                            if (k != 'searchType') {
+                                obj[k] = item[k];
+                            }
+                        }
+                        goods.push(obj);
+                    })
+                    this.form.goods = goods;
+                    $.ajax({
+                        type: "POST",
+                        url: '/index.php?m=order_detail&a=special_offer_save',
+                        contentType: "application/x-www-form-urlencoded",
+                        data: this.form,
+                        dataType: "json",
+                        success: function(res) {
+                            if (res.status) {
+                                speDe.$message({
+                                    message: '保存成功',
+                                    type: 'success'
+                                })
+                                setTimeout(function() {
+                                    var route = document.createElement("a");
+                                    route.setAttribute("style", "display: none");
+                                    route.setAttribute("onclick", "backNewtab(this,'特价提案')");
+                                    route.setAttribute("_href", '/index.php?m=order_detail&a=special_offer');
+                                    route.onclick();
+                                }, 1500);
+                            } else {
+                                setTimeout(function() {
+                                    speDe.submitType = false;
+                                }, 1500);
+                                speDe.$message({
+                                    message: '保存失败',
+                                    type: 'error'
+                                })
+                            }
+
+                        }
+                    })
+                },
+                //重置表单按钮
+                reset: function() {
+                    for (var key in this.form) {
+                        if (key == 'goods') {
+                            this.form.goods = [{
+                                id: '',
+                                search_code: '',
+                                sku_id: '',
+                                goods_name: '',
+                                goods_attribute: '',
+                                currency: '',
+                                price: '',
+                                number: '',
+                                amount: '',
+                                hotness: '',
+                                authorization_and_link: '',
+                                remark: '',
+                            }]
+                        } else {
+                            this.form[key] = '';
+                        }
+                    }
+                },
+                //上传附件
+                uploadFileFun: function(res, file, fileList) {
+                    if (res.data === 1) {
+                        this.$message({
+                            message: '上传成功',
+                            type: 'success'
+                        });
+                        //保存时发送的名称
+                        var saveFile = [];
+                        for (var i = 0, len = fileList.length; i < len; i++) {
+                            saveFile.push({
+                                name: fileList[i].response ? fileList[i].response.info.name : fileList[i].name,
+                                saveName: fileList[i].response ? fileList[i].response.info.savename : fileList[i].saveName
+                            })
+                        }
+                        speDe.fileName = saveFile;
+                        this.form.attachment = JSON.stringify(saveFile)
+                    } else {
+                        //清空文件列表
+                        this.$refs.annex.clearFiles();
+                        this.$message({
+                            message: res.info,
+                            type: 'error'
+                        });
+                    }
+                },
+                //删除附件
+                removeFile: function(file, fileList) {
+                    this.fileName = fileList;
+                    //保存时发送的名称
+                    var saveFile = [];
+                    for (var i = 0, len = fileList.length; i < len; i++) {
+                        saveFile.push({
+                            name: fileList[i].name,
+                            saveName: fileList[i].savename
+                        })
+                    }
+                    this.form.attachment = JSON.stringify(saveFile)
+                },
+                beforeFile: function(file) {
+                    for (var i = 0, len = this.fileName.length; i < len; i++) {
+                        if (this.fileName[i].name == file.name) {
+                            speDe.$message({
+                                message: '附件已存在',
+                                type: 'error'
+                            });
+                            return false;
+                        }
+                    }
+                },
+                //导入sku
+                importFileFun: function(res, file, fileList) {
+                    if (res.status) {
+                        this.importType = true;
+                        this.$message({
+                            message: '导入成功',
+                            type: 'success'
+                        });
+                        var importData = res.data,
+                            reData = [];
+                        for (var i = 0, len = importData.length; i < len; i++) {
+                            reData[i] = {
+                                id: '',
+                                search_code: '',
+                                sku_id: '',
+                                goods_name: '',
+                                goods_attribute: '',
+                                currency: '',
+                                price: '',
+                                number: '',
+                                amount: '',
+                                hotness: '',
+                                authorization_and_link: '',
+                                remark: '',
+                            }
+                            reData[i].sku_id = res.data[i].gsku;
+                            reData[i].search_code = res.data[i].gsku;
+                            reData[i].goods_name = res.data[i].goods_name;
+                            reData[i].goods_attribute = res.data[i].goods_attribute;
+                            reData[i].currency = res.data[i].currency;
+                            reData[i].price = res.data[i].price;
+                            reData[i].number = res.data[i].number; 
+                            reData[i].remark = res.data[i].remark;
+                            reData[i].remark = res.data[i].gudsImgCdnAddr;
+                            reData[i].amount = ((res.data[i].number || 0) * (res.data[i].price || 0)).toFixed(4);
+                            reData[i].authorization_and_link = res.data[i].auth_and_link == '有授权' ? '0' : res.data[i].auth_and_link == '无授权有链路' ? '1' : '2';
+                            (function(i) {
+                                var param = [{
+                                        spu: res.data[i].sku.substring(0, 8),
+                                        goods_name: res.data[i].goods_name
+                                    }]
+                                axios.post("http://3rd-biapi.izene.org/external/get_spu_heat_v2", param).then(function(res) {
+                                    if (res.data.res[0].isSucces) {
+                                        reData[i].hotness = res.data.res[0].spu.level + '(' + res.data.res[0].spu.hotness + ')';
+                                    } else {
+                                        reData[i].hotness = '-';
+                                    }
+                                })
+                            })(i)
+
+                        }
+                        if (this.form.goods[0].sku_id) {
+                            this.form.goods = this.form.goods.concat(reData);
+                        } else {
+                            this.form.goods = reData;
+                        }
+                        setTimeout(function() {
+                            speDe.importType = false;
+                        }, 1500)
+                    } else {
+                        //清空文件列表
+                        this.$refs.importExc.clearFiles();
+                        this.importVisible = true;
+                        this.errData = res.data;
+                    }
+                },
+                //获取热度
+                getHot: function(spu, key) {
+                    var param = key != undefined ? [{
+                        spu: spu.substring(0, 8)
+                    }] : [{
+                        spu: spu.sku_id.substring(0, 8),
+                        goods_name: spu.goods_name
+                    }];
+                    axios.post("http://3rd-biapi.izene.org/external/get_spu_heat_v2",param).then(function(res) {
+                        if (res.data.res[0].isSucces) {
+                            if (key != undefined) {
+                                Vue.set(speDe.form.goods[key], 'hotness', res.data.res[0].spu.level + '(' + res.data.res[0].spu.hotness + ')')
+                            } else {
+                                spu.hotness = res.data.res[0].spu.level + '(' + res.data.res[0].spu.hotness + ')';
+                            }
+                        } else {
+                            if (key != undefined) {
+                                Vue.set(speDe.form.goods[key], 'hotness', '-')
+                            } else {
+                                spu.hotness = '-';
+                            }
+                        }
+                    })
+                },
+                inNum: function(event, item) {
+                    if (isNaN(event.key) || item.amount < 0) {
+                        speDe.$message({
+                            message: '数量填写有误,不可输入字母和小数点',
+                            type: 'error'
+                        });
+                        return false;
+                    }
+                },
+                downTmep: function() {
+                    window.location = "/index.php?m=common_file&a=download&name=special_offer_import.xls";
+                },
+                downAtta: function(item) {
+                    window.location = "/index.php?m=order_detail&a=download&file=" + item;
+                },
+                dwonErrTmep: function() {
+                    $("#errTable").table2excel({
+                        exclude: ".noExl", //过滤位置的 css 类名
+                        filename: "<{$Think.lang.错误报告}>.xls", //文件名称
+                        name: "Excel Document Name.xlsx",
+                        exclude_img: true,
+                        exclude_links: true,
+                        exclude_inputs: true
+                    });
+
+                    this.importVisible = false;
+                    /* var result = this.errData,
+                        secondaryTitle = ['商品编码/条形码(SKUID、Bar/JAN code)', '币种(Currency)', '单价(Unit Price)', '数量(Quantity)', '授权&链路(Authorization&link)', '备注(Remarks),提示/Notice\n'],
+                        content = {},
+                        data = [secondaryTitle];
+                    for (var i = 0, len = result.length; i < len; i++) {
+                        content[i] = [];
+                        for (var key in result[i]) {
+                            if (key == 'goods_attribute' || key == 'goods_name' || key == 'sku') continue;
+                            content[i].push(result[i][key]);
+                        }
+                        var tem = content[i];
+                        tem[tem.length - 1] = tem[tem.length - 1] + '\n';
+                        data.push(content[i])
+                    }
+                    var blob = new Blob(data, { type: "text/plain;charset=utf-8" }),
+                        Temp = document.createElement("a");
+                        Temp.href = window.URL.createObjectURL(blob);
+                        Temp.download = "错误报告导出.xls";
+                        document.querySelector('body').appendChild(Temp);
+                        Temp.click(); */
+                },
+                checkCurr: function(item) {
+                    if (!item.currency) {
+                        speDe.$message({
+                            message: '请选择币种',
+                            type: 'error'
+                        });
+                    }
+                },
+                showImgFn:function(item,type){
+                    Vue.set(item,'showImg',type)
+                }
+            },
+            filters: {
+                numberFormat: function (val) {
+                    if (val) {
+                        var num = parseFloat(val).toLocaleString();
+                        return num.indexOf('.') > 0 ? num : num + ".00";
+                    }
+                }
+            }
+        })
+    </script>
+
+</body>
+
+</html>

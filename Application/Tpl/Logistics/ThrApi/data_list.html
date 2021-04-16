@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>{{$lang('运单统计')}}</title>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.8.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="/Application/Tpl/Logistics/ThrApi/data_list.css">
+    <style>
+        .statistics{
+            padding: 40px;
+        }
+        .headr .code-input{
+            width: 250px;
+        }
+        .line-color{
+            width: 100%;
+            height: 2px;
+            background: #ccc;
+            margin-bottom: 20px;
+        }
+        /* 物流轨迹弹窗 */ 
+        .text-left{
+            position: relative;
+            margin: 0;
+        }
+        .track-tile{
+            text-align: left;
+        }
+        .track-center{
+            position: absolute;
+            background: #fff;
+            z-index: 2;
+            top: 0;
+            left: 125px;
+        }
+        .track-center .dot-wrap{
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 1px solid #ccc;
+            text-align: center;
+            line-height: 16px;
+        }
+        .track-center .dot-wrap .dot{
+            width: 10px;
+            height: 10px;
+            display: inline-block;
+            background: #ccc;
+            border-radius: 50%;
+        }
+        .track-center .dot-wrap .dot.active{
+            background: orange;
+        }
+        .track-right {
+            display: inline-block;
+            width: 130px;
+            vertical-align: top;
+            font-size: 13px;
+            padding-bottom: 10px;
+        }
+        .text-left .track-left{
+            padding-bottom: 10px;
+            border-left: 1px solid #ccc;
+            padding-left: 16px;
+            min-height: 46px;
+        }
+        .track-left {
+            display: inline-block;
+            width: 260px;
+            vertical-align: top;
+            font-size: 13px;
+            padding-left: 15px;
+        }
+        .track-color {
+            color: orange;
+        }
+        
+        .el-popover.el-popper div {
+            text-align: center;
+        }
+        .el-popover__title {
+            text-align: left !important;
+            font-weight: 600;
+            font-size: 15px;
+            padding: 5px 14px;
+            margin: 0;
+        }
+        /* 结束 */
+        
+        .el-table__header thead th{
+            background: #546E7A;
+            color: #fff;
+            border-bottom: 1px solid #668491;
+            border-right: 1px solid #668491;
+            text-align: center;
+        }
+        .content .result{
+            overflow: hidden;
+            margin-bottom: 25px;
+        }
+        .content .result .result-left{
+            float: left;
+        }
+        .content .result .result-right{
+            float: right;
+        }
+        .page-wrap{
+            margin-top: 20px;
+        }
+        .dialog .el-select{
+            width: 350px;
+        }
+        .dialog .el-input{
+            width: 350px;
+        }
+        .textarea_box{
+            position: relative;
+        }
+        .textarea_box .demo{
+            position: absolute;
+            bottom: 6px;
+            right: 6px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="statistics" id="statistics" v-cloak>
+        <div class="headr">
+            <el-form :inline="true" :model="search" class="demo-form-inline" ref="searchFrom">
+                <el-form-item :label="$lang('平台筛选')">
+                    <el-select v-model="search.api_platform_cd" @change="api_platform_change">
+                        <el-option v-if="platformOption" v-for="(item,index) in platformOption" :key="index" :label="$lang(item.CD_VAL)" :value="item.CD"></el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item :label="$lang('时间范围')">
+                    <el-date-picker
+                    v-model="search.date"
+                    type="daterange"
+                    value-format="yyyy-MM-dd"
+                    :range-separator="$lang('至')"
+                    :start-placeholder="$lang('开始日期')"
+                    :end-placeholder="$lang('结束日期')"
+                    :clearable="false">
+                    </el-date-picker>
+                </el-form-item>
+                <div>
+                    <el-form-item :label="$lang('条件搜索')">
+                        <el-select v-model="search.type">
+                            <el-option :label="$lang('物流运单号')" value="logistics_no"></el-option>
+                            <el-option :label="$lang('erp订单号')" value="order_no"></el-option>
+                        </el-select>
+                        <el-input class="code-input" :placeholder="$lang('支持多订单查询，英文逗号分隔')" v-model="search.value" @keyup.enter.native="keyup"></el-input>
+                        <!-- <el-select :placeholder="$lang('物流状态')" clearable v-model="search.logistics_status_cd">
+                            <el-option :label="item.CD_VAL" :value="item.CD" v-for="(item, index) in logic_status" :key="index"></el-option>
+                        </el-select> -->
+                        <el-select v-if="logicStatusType == '1'" v-model="search.logistics_status_cd" clearable :placeholder="$lang('物流状态')">
+                            <el-option :label="item.ETC3 ? item.CD_VAL + '('+item.ETC3+')':item.CD_VAL" :value="item.CD" v-for="(item, index) in logicStatus" :key="index"></el-option>
+                        </el-select>
+                        <el-select v-else-if="logicStatusType == '2'" v-model="search.logistics_status_cd" clearable placeholder="物流状态">
+                            <el-option :label="item.CD_VAL" :value="item.CD" v-for="(item, index) in logics_platform_friend_status" :key="index"></el-option>
+                        </el-select>
+                        <el-input class="code-input" :placeholder="$lang('物流公司')" v-model="search.company"></el-input>
+                    </el-form-item>
+                    <el-form-item>
+                        <el-button type="primary" @click="onSearch">{{$lang('查询')}}</el-button>
+                        <el-button @click="reast">{{$lang('重置')}}</el-button>
+                    </el-form-item>
+                </div>
+            </el-form>
+        </div>
+        <div class="line-color"></div>
+        <div class="content">
+            <div class="result">
+                <span class="result-left">{{$lang('查询结果：共')}}{{total}}{{$lang('条记录')}}&nbsp;&nbsp;&nbsp;&nbsp;
+                    <el-button type="primary" size="mini" @click="add">{{$lang('手工添加')}}</el-button>
+                    <el-button type="primary" size="mini" @click="exportOrder">{{$lang('导出')}}</el-button>
+                </span>
+                <span class="result-right">{{$lang('日均订单量：')}}{{average}}{{$lang('单/日')}}</span>
+            </div>
+            <div class="table-wrap" v-loading="loading">
+                <el-table :data="tableData" :show-summary="true" :summary-method="getSummaries" :border="true" style="width: 100%">
+                    <el-table-column :label="$lang('第三方订单号')" align="center" width="190">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.order_no}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('物流运单号')" align="center" width="190">
+                        <template slot-scope="scope">
+                            <div id="order-number">
+                                <el-popover width="520" :title="$lang('物流动态')" trigger="click" v-model="scope.row.popoverValue" :modal-append-to-body="false" @hide="hideChange">
+                                    <div style="padding-left:15px;overflow: auto;max-height: 550px;">
+                                        <i class="el-icon-close close" style="position: absolute; top:15px; right:15px;font-size: 22px;cursor: pointer" @click="scope.row.popoverValue = false"></i>
+                                        <p class="track-tile">
+                                            <span class="track-right">{{$lang('时间')}}</span>
+                                            <span class="track-left">{{$lang('地点和跟踪进度')}}</span>
+                                        </p>
+                                        <p v-if="key<trackIndex" class="text-left" v-for="(item,key) in trackData" :key="key" :class="{'track-color':!key}">
+                                            <span class="track-right">[ {{item.day || '-'}} ]
+                                            </br>
+                                            {{$lang(item.week)}} &nbsp;&nbsp; {{item.time}}
+                                            </span>
+                                            <span class="track-left">{{item.remark || '-'}}</span>
+                                            <span class="track-center">
+                                                <i class="dot-wrap">
+                                                    <span class="dot" :class="{active:!key}" v-if="key===0||key ===trackData.length-1"></span>
+                                                    <span class="el-icon-arrow-up" v-else></span>
+                                                </i>
+                                            </span>
+                                        </p>
+                                        <!--  v-if="trackData.length>3" -->
+                                        <p style="text-align: right;cursor: pointer;" @click="seeTrack" v-if="trackData && trackData.length>trackIndex">{{$lang('展开')}}</p>
+                                        <p style="text-align: right;cursor: pointer;" @click="closeTrack" v-if="trackIndex>4">{{$lang('收起')}}</p>
+                                        <p v-show="!trackData" style=" color: #999; font-size: 14px;">
+                                            {{$lang('暂无物流信息')}}
+                                        </p>
+                                    </div>
+
+                                    <a href="javascript:void(0);" class="to-detail-btn" style="text-decoration: none" slot="reference" type="text" @click="getTrack(scope.row)">{{scope.row.logistics_no}}</a>
+                                </el-popover>
+                            </div>
+                            <!-- <span>{{scope.row.logistics_no}}</span> -->
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('查询结果')" align="center" width="130">
+                        <template slot-scope="scope">
+                            <span>{{$lang(scope.row.api_request_status_cd_val)}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('物流状态')" align="center" width="130">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.logistics_status_cd_val}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('物流公司')" align="center" width="140">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.company_cd_val}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('最新查询时间')" align="center" width="200">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.updated_at}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('API调用次数')" align="center" width="130">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.api_numbers}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('API对接平台')" align="center" width="160">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.api_platform_cd_val}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('费用')" align="center" width="90">
+                        <template slot-scope="scope">
+                            <span>{{$lang(scope.row.fee)}}</span>
+                            <!-- <span>{{scope.row.fee_status === '1' ? '免费' : '收费'}}</span> -->
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('备注')" align="center">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.remark}}</span>
+                            <span style="color: #F56C6C;cursor: pointer;" @click="dele(scope.row)" v-if="scope.row.api_platform_cd === 'N002850004'">删除</span>
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </div>
+            <div class="page-wrap" style="text-align: right;padding-bottom:330px;">
+                <el-pagination background @size-change="SizeChange" @current-change="CurrentChange" :current-page="pageIndex" :page-size="pageSize" :page-sizes="[10, 30, 50, 100]" layout="total, sizes, prev, pager, next, jumper" :total="total"></el-pagination>
+            </div>
+        </div>
+        <el-dialog :title="$lang(title)" :visible.sync="manualAdd" center width="660px" @close="formClose" :close-on-click-modal="false" :close-on-press-escape="false">
+            <el-form :model="formData" :rules="rules" ref="ruleForm" label-width="130px" size="small" class="dialog">
+              <el-form-item :label="$lang('所属店铺') + '：'" prop="plat_cd">
+                <el-select v-model="formData.plat_cd" filterable :placeholder="$lang('请选择所属店铺')" @change="changeBlur">
+                  <el-option :label="item.CD_VAL" :value="item.CD" v-for="(item, index) in stores" :key="index"></el-option>
+                </el-select>
+              </el-form-item>
+              <el-form-item :label="$lang('第三方订单id') + '：'" prop="order_id">
+                <el-input v-model="formData.order_id" autocomplete="off" :placeholder="$lang('请输入第三方订单id')" @keyup.13.native="enterOrderNo" @blur="changeBlur"></el-input>
+              </el-form-item>
+              <el-form-item :label="$lang('物流运单号') + '：'" prop="tracking_number">
+                <el-input v-model="formData.tracking_number" autocomplete="off" :placeholder="$lang('请输入物流运单号')" @keyup.13.native="enterTrackingNo"></el-input>
+              </el-form-item>
+              <el-form-item :label="$lang('物流状态') + '：'" prop="b5c_logistics_status">
+                <el-select v-model="formData.b5c_logistics_status" :placeholder="$lang('请选择物流状态')">
+                  <el-option :label="item.ETC3 ? item.CD_VAL + '('+item.ETC3+')':item.CD_VAL" :value="item.CD" v-for="(item, index) in logicStatus" :key="index"></el-option>
+                </el-select>
+                <!-- '('+item.ETC3 ? item.ETC3 : ''+')' -->
+              </el-form-item>
+              <el-form-item :label="$lang('物流公司') + '：'" prop="logistics_cd">
+                <el-select v-model="formData.logistics_cd" :placeholder="$lang('请选择物流公司')" disabled>
+                  <el-option :label="item.cdVal" :value="item.cd" v-for="(item, index) in logisticsCompany" :key="index"></el-option>
+                </el-select>
+              </el-form-item>
+              <el-form-item :label="$lang('备注') + '：'">
+                <el-input v-model="formData.remark" autocomplete="off" :placeholder="$lang('请输入备注')"></el-input>
+              </el-form-item>
+              <div class="textarea_box">
+                <div>
+                    <el-radio-group v-model="textradio">
+                        <el-radio-button label="chineseTxt">{{$lang('TXT数据类型（中文）')}}</el-radio-button>
+                        <el-radio-button label="englishTxt">{{$lang('TXT数据类型（英文）')}}</el-radio-button>
+                    </el-radio-group>
+                </div>
+                <el-input
+                    type="textarea"
+                    :rows="10"
+                    :placeholder="$lang('请输入内容')"
+                    v-model="chineseTxt"
+                    v-if="textradio === 'chineseTxt'">
+                </el-input>
+                <el-input
+                    type="textarea"
+                    :rows="10"
+                    :placeholder="$lang('请输入内容')"
+                    v-model="englishTxt"
+                    v-else>
+                </el-input>
+                <el-popover width="520" :title="$lang('示例内容')" trigger="hover" v-model="popoverValue" :modal-append-to-body="false" >
+                    <p>2019/10/31 13:55:04+订单信息已生成 order generated</p>
+                    <p>2019/11/04 08:08:42+司机已提货 Parcel Received</p>
+                    <p>2019/11/04 08:08:55+面单信息预录入 Information Accepted</p>
+                    <p>2019/11/05 06:58:16+分拣中心已收货 Received by Australia Logistics Center</p>
+                    <p>2019/11/05 06:58:16+货物已安排航空仓位 Parcel arranged for Cargo</p>
+                    <p>2019/11/05 19:12:40+发往澳洲机场 Sending to Australia Airport</p>
+                    <p>2019/11/06 09:18:33+发往中国海关 Sending to CHINA CUSTOMS</p>
+                        
+                    <span class="demo" slot="reference">{{$lang('示例')}}</span>
+                </el-popover>
+              </div>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+              <el-button @click="manualAdd = false">{{$lang('取消')}}</el-button>
+              <el-button type="primary" @click="query">{{$lang('确定')}}</el-button>
+            </div>
+          </el-dialog>
+    </div>
+</body>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.8.2.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="/Application/Tpl/Logistics/ThrApi/data_list.js?v=<{$Think.config.VER_NUM}>"></script>
+</html>

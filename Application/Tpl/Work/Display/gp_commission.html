@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="content-type" content="text/html;charset=utf-8" />
+		<meta name="renderer" content="webkit|ie-comp|ie-stand" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="renderer" content="webkit|ie-comp|ie-stand" />
+		<link
+			rel="stylesheet"
+			href="./Application/Tpl/Home/Public/css/element-ui-2.13.0.css?v=<{$Think.config.VER_NUM}>"
+		/>
+		<link
+			rel="stylesheet"
+			href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>"
+		/>
+		<link
+			rel="stylesheet"
+			href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>"
+		/>
+		<link
+			rel="stylesheet"
+			href="./Application/Tpl/Work/css/gp_commission.css?v=<{$Think.config.VER_NUM}>"
+		/>
+		<title>{{$lang('GP佣金收入录入')}}</title>
+		<style></style>
+	</head>
+
+	<body>
+		<div id="vm" v-cloak>
+			<section class="query">
+				<div>{{$lang('时间')}}</div>
+				<el-date-picker
+					style="margin-left: 10px"
+					v-model="monthRange"
+					type="monthrange"
+					:range-separator="$lang('至')"
+					:start-placeholder="$lang('开始时间')"
+					:end-placeholder="$lang('结束时间')"
+					value-format="yyyy-MM"
+					@change="tableDataGet"
+				>
+				</el-date-picker>
+			</section>
+			<section class="operate">
+				<el-button @click="addDialogShow = true"
+					>{{$lang('新增数据')}}</el-button
+				>
+				<el-button @click="logDialogOpen">{{$lang('查看日志')}}</el-button>
+			</section>
+			<el-table
+				style="margin-top: 20px"
+				:data="tableData.datas"
+				border
+				v-loading="tableLoading"
+			>
+				<el-table-column
+					prop="income_date"
+					:label="$lang('时间')"
+					align="center"
+				>
+				</el-table-column>
+				<el-table-column
+					prop="income_group_name"
+					:label="$lang('小组')"
+					align="center"
+				>
+				</el-table-column>
+				<el-table-column
+					prop="commission_income"
+					:label="$lang('GP店铺佣金收入（$）')"
+					align="center"
+				>
+					<template slot-scope="scope">
+						{{scope.row.commission_income | formatNum}}
+					</template>
+				</el-table-column>
+				<el-table-column
+					prop="remark"
+					show-overflow-tooltip
+					:label="$lang('备注')"
+					align="center"
+				>
+				</el-table-column>
+				<el-table-column :label="$lang('操作')" align="center">
+					<template slot-scope="scope">
+						<el-button @click="tableEdit(scope.row)"
+							>{{$lang('编辑')}}</el-button
+						>
+					</template>
+				</el-table-column>
+			</el-table>
+			<el-pagination
+				class="pagination"
+				background
+				:page-sizes="[10, 50, 100]"
+				:page-size.sync="tablePageSize"
+				@size-change="tableDataGet"
+				:current-page.sync="tablePage"
+				@current-change="tableDataGet"
+				layout="prev, pager, next, sizes"
+				:total="tableData.totalCount"
+			>
+			</el-pagination>
+			<el-dialog
+				:visible.sync="addDialogShow"
+				:title="$lang('新增数据')"
+				center
+				@open="groupDataGet(1)"
+				v-loading="dialogLoading"
+				@closed="addDialogClosed"
+			>
+				<el-form
+					:model="addForm"
+					ref="addForm"
+					label-width="200px"
+					:rules="rules"
+					prop="income_date"
+					class="form"
+				>
+					<el-form-item :label="$lang('时间')" prop="income_date">
+						<el-date-picker
+							v-model="addForm.income_date"
+							value-format="yyyy-MM"
+							type="month"
+						>
+						</el-date-picker>
+					</el-form-item>
+					<el-form-item :label="$lang('小组')" prop="income_group">
+						<el-select v-model="addForm.income_group" :placeholder="$lang('请选择')">
+							<el-option
+								v-for="item in groupData"
+								:key="item.erp_code"
+								:label="item.name"
+								:value="item.erp_code"
+							></el-option>
+						</el-select>
+					</el-form-item>
+					<el-form-item
+						:label="$lang('GP店铺佣金收入（$）')"
+						prop="commission_income"
+					>
+						<el-input
+							type="number"
+							v-model="addForm.commission_income"
+							:placeholder="$lang('请输入数字')"
+						></el-input>
+					</el-form-item>
+					<el-form-item :label="$lang('备注')" prop="remark">
+						<el-input type="textarea" v-model="addForm.remark"></el-input>
+					</el-form-item>
+				</el-form>
+				<div slot="footer">
+					<el-button type="primary" @click="tableAdd"
+						>{{$lang('确定')}}</el-button
+					>
+					<el-button @click="addDialogShow = false"
+						>{{$lang('取消')}}</el-button
+					>
+				</div>
+			</el-dialog>
+			<el-dialog
+				:visible.sync="editDialogShow"
+				:title="$lang('编辑数据')"
+				center
+				@open="groupDataGet(2)"
+				v-loading="dialogLoading"
+				@closed="editDialogClosed"
+			>
+				<el-form
+					:model="editForm"
+					ref="editForm"
+					label-width="200px"
+					:rules="rules"
+					prop="income_date"
+					class="form"
+				>
+					<el-form-item :label="$lang('时间')" prop="income_date">
+						<el-date-picker
+							v-model="editForm.income_date"
+							value-format="yyyy-MM"
+							type="month"
+						>
+						</el-date-picker>
+					</el-form-item>
+					<el-form-item :label="$lang('小组')" prop="income_group">
+						<el-select v-model="editForm.income_group" :placeholder="$lang('请选择')">
+							<el-option
+								v-for="item in groupData"
+								:key="item.erp_code"
+								:label="item.name"
+								:value="item.erp_code"
+							></el-option>
+						</el-select>
+					</el-form-item>
+					<el-form-item
+						:label="$lang('GP店铺佣金收入（$）')"
+						prop="commission_income"
+					>
+						<el-input
+							type="number"
+							v-model="editForm.commission_income"
+							:placeholder="$lang('请输入数字')"
+						></el-input>
+					</el-form-item>
+					<el-form-item :label="$lang('备注')" prop="remark">
+						<el-input type="textarea" v-model="editForm.remark"></el-input>
+					</el-form-item>
+				</el-form>
+				<div slot="footer">
+					<el-button type="primary" @click="tableEditSubmit"
+						>{{$lang('确定')}}</el-button
+					>
+					<el-button @click="editDialogShow = false"
+						>{{$lang('取消')}}</el-button
+					>
+				</div>
+			</el-dialog>
+			<el-dialog :visible.sync="logDialogShow" center>
+				<el-table :data="logData.datas" border>
+					<el-table-column
+						prop="operating_time"
+						:label="$lang('操作时间')"
+						align="center"
+					>
+					</el-table-column>
+					<el-table-column
+						prop="operator"
+						:label="$lang('操作人')"
+						align="center"
+					>
+					</el-table-column>
+					<el-table-column prop="message" :label="$lang('详细信息')">
+					</el-table-column>
+				</el-table>
+				<el-pagination
+					class="pagination"
+					background
+					:page-sizes="[10, 50, 100]"
+					:page-size.sync="logPageSize"
+					@size-change="logDataGet"
+					:current-page.sync="logPage"
+					@current-change="logDataGet"
+					layout="prev, pager, next, sizes"
+					:total="logData.totalCount"
+				>
+				</el-pagination>
+			</el-dialog>
+		</div>
+		<script src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+		<script src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+		<script src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+		<script src="./Application/Tpl/Home/Public/js/vue-2.6.10.js"></script>
+		<script src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+		<script src="./Application/Tpl/Home/Public/js/element-ui-2.13.0.js"></script>
+		<script src="./Application/Tpl/Home/Public/js/queryString.js"></script>
+		<script src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+		<script src="./Application/Tpl/Home/DataCenter/utils/globalConstAndFunc.js?v=<{$Think.config.VER_NUM}>"></script>
+
+		<script>
+			var vm = new Vue({
+				el: '#vm',
+				filters: {
+					/**
+					 * 字符串超出部分用省略号表示
+					 *
+					 * @param {String} str 传入的字符串
+					 * @param {number} length 字符串的最多展示多少
+					 * @return 原字符串或截断后用省略号代替的字符串
+					 */
+					strOmit(str, length) {
+						return str.length > length ? str.slice(0, length) + '...' : str
+					},
+					/**
+					 * 数值千分位表示，考虑小数情况
+					 *
+					 * @param number 数值(Number或者String)
+					 * @param {boolean} addSymbol 返回的结果是否加上%(boolean)
+					 * @param {boolean} dot2 返回的结果中，小数是否统一保留两位
+					 * @return 金额格式的字符串,如'1,234,567.45'
+					 */
+					formatNum(number, addSymbol, dot2) {
+						let hasMinus = false
+						if (number === '-') {
+							return number
+						} else if (number != null) {
+							let numStr = dot2
+								? parseFloat(number).toFixed(2)
+								: number.toString()
+							if (numStr.startsWith('-')) {
+								hasMinus = true
+								numStr = numStr.slice(1)
+							}
+							const numArr = numStr.split('.')
+							let [num, dotNum] = numArr
+							let result = []
+							const operateNum = num.split('').reverse()
+							const length = operateNum.length
+							for (let i = 0; i < length; i++) {
+								result.push(operateNum[i])
+								if ((i + 1) % 3 === 0 && i !== length - 1) {
+									result.push(',')
+								}
+							}
+							if (dotNum) {
+								result.reverse().push('.', ...dotNum)
+							} else {
+								result.reverse()
+							}
+
+							if (addSymbol) {
+								result = result.join('').concat('%')
+							} else {
+								result = result.join('')
+							}
+
+							if (hasMinus) {
+								result = '-' + result
+							}
+
+							return result
+						}
+					},
+					/**
+					 * 数值>=百万时，返回以M为单位的数
+					 * 数值<百万时,不加单位
+					 * 返回结果都要保留两位小数,带有千分位分隔符
+					 *
+					 * @param number 数值(Number或者String)
+					 * @return 金额格式的字符串,如'1,234,567.45'
+					 */
+					toMillion(value) {
+						// 是否添加单位M
+						let addUnit = false
+
+						// 是否是负数
+						let hasMinus = false
+
+						if (value === '-' || value == null) {
+							return value
+						}
+						if (typeof value === 'string') {
+							value = parseFloat(value)
+						}
+						if (value >= 1000000) {
+							addUnit = true
+							value = value / 1000000
+						}
+						value = value.toFixed(2)
+
+						// 添加千分位
+						if (value.startsWith('-')) {
+							hasMinus = true
+							value = value.slice(1)
+						}
+						const numArr = value.split('.')
+						let [num, dotNum] = numArr
+						let result = []
+						const operateNum = num.split('').reverse()
+						const length = operateNum.length
+						for (let i = 0; i < length; i++) {
+							result.push(operateNum[i])
+							if ((i + 1) % 3 === 0 && i !== length - 1) {
+								result.push(',')
+							}
+						}
+						if (dotNum) {
+							result.reverse().push('.', ...dotNum)
+						} else {
+							result.reverse()
+						}
+						result = result.join('')
+						if (hasMinus) {
+							result = '-' + result
+						}
+						return addUnit ? result + 'M' : result
+					},
+					ratioZero(value) {
+						if (value === '0%' || value === '0.00%') {
+							return '-'
+						} else {
+							return value
+						}
+					},
+					/**
+					 * 将数值四舍五入(保留2位小数)后格式化成金额形式
+					 *
+					 * @param num 数值(Number或者String)
+					 * @return 金额格式的字符串,如'1,234,567.45'
+					 * @type String
+					 */
+					formatCurrency(num) {
+						num = num.toString().replace(/\$|\,/g, '')
+						if (isNaN(num)) num = '0'
+						sign = num == (num = Math.abs(num))
+						num = Math.floor(num * 100 + 0.50000000001)
+						cents = num % 100
+						num = Math.floor(num / 100).toString()
+						if (cents < 10) cents = '0' + cents
+						for (var i = 0; i < Math.floor((num.length - (1 + i)) / 3); i++)
+							num =
+								num.substring(0, num.length - (4 * i + 3)) +
+								',' +
+								num.substring(num.length - (4 * i + 3))
+						return (sign ? '' : '-') + num + '.' + cents
+					},
+				},
+				data() {
+					var validateNum = (rule, value, callback) => {
+						const msg = this.$lang('请输入数字')
+						if (!value) {
+							return callback(new Error(msg))
+						} else {
+							callback()
+						}
+					}
+					return {
+						language: 'cn',
+						apiHost: GlobalConstAndFunc.api(),
+						monthRange: [],
+						tableData: {},
+						tablePage: 1,
+						tablePageSize: 10,
+						tableLoading: false,
+						rules: {
+							commission_income: {
+								validator: validateNum,
+								trigger: 'blur',
+							},
+						},
+						addDialogShow: false,
+						addForm: {
+							income_date: new Date().toISOString().slice(0, 7),
+							income_group: null,
+							commission_income: '',
+							remark: '',
+						},
+						editDialogShow: false,
+						editForm: {},
+						dialogLoading: false,
+						groupData: [],
+						logData: {},
+						logPage: 1,
+						logPageSize: 10,
+						logDialogShow: false,
+					}
+				},
+				computed: {},
+				created() {
+					if (getCookie('think_language') !== "zh-cn") {
+						ELEMENT.locale(ELEMENT.lang.en)
+						this.language = 'us'
+					};
+					this.tableDataGet()
+				},
+				mounted() {},
+				methods: {
+					queryPost: function (url, param) {
+						var headers = {
+							headers: {
+								'erp-req': true,
+								'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+							},
+						}
+						param.language = this.language
+
+						return axios.post(
+							this.apiHost + '/gpCommissionIncome' + url,
+							param,
+							headers
+						)
+					},
+					// 格式化所选时间范围为接口要求的格式
+					monthRangeForApi(index) {
+						if (this.monthRange) {
+							return this.monthRange[index]
+						}
+						return ''
+					},
+					tableDataGet() {
+						this.tableLoading = true
+						const postData = {
+							'erp-req': true,
+							'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+							start_time: this.monthRangeForApi(0),
+							end_time: this.monthRangeForApi(1),
+							page: this.tablePage,
+							pageSize: this.tablePageSize,
+						}
+						this.queryPost('/queryGpCommissionIncome', postData)
+							.then((res) => {
+								if (res.data.success) {
+									this.tableData = res.data
+									this.tableLoading = false
+								} else {
+									this.$message.error(this.$lang(res.data.msg))
+								}
+							})
+							.catch((err) => {
+								console.log(err)
+							})
+					},
+					addDialogClosed() {
+						this.$refs['addForm'].resetFields()
+					},
+					editDialogClosed() {
+						this.$refs['editForm'].resetFields()
+					},
+					/**
+					 * 获取小组数据
+					 * @param number 数值(Number或者String)
+					 * @param {number} type 1代表新增弹框中调用，2代表编辑弹框中调用
+					 * @param {boolean} dot2 返回的结果中，小数是否统一保留两位
+					 * @return 金额格式的字符串,如'1,234,567.45'
+					 */
+					groupDataGet(type) {
+						this.dialogLoading = true
+						const postData = {
+							'erp-req': true,
+							'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+							language: this.language
+						}
+						this.queryPost('/queryGroupInfo', postData)
+							.then((res) => {
+								if (res.data.success) {
+									this.groupData = res.data.datas
+									if (type === 1) {
+										this.addForm.income_group = res.data.datas[0].erp_code
+									}
+									this.dialogLoading = false
+								} else {
+									this.$message.error(this.$lang(res.data.msg))
+								}
+							})
+							.catch((err) => {
+								console.log(err)
+							})
+
+					},
+					tableEdit(row) {
+						this.editForm = row
+						this.editDialogShow = true
+					},
+					tableEditSubmit() {
+						this.$refs['editForm'].validate((valid) => {
+							if (valid) {
+								const postData = {
+									'erp-req': true,
+									'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+									...this.editForm,
+									commission_income: parseFloat(
+										Number(this.editForm.commission_income).toFixed(2)
+									),
+								}
+								this.queryPost('/editGpCommissionIncome', postData)
+									.then((res) => {
+										if (res.data.code == '200') {
+											this.$message.success(this.$lang(res.data.msg))
+											this.editDialogShow = false
+											this.tablePage = 1
+											this.tableDataGet()
+										} else if (res.data.code == '500') {
+											const content = this.$lang('已存在相同记录，无法保存')
+											this.$alert(content, '', {
+												confirmButtonText: this.$lang('确定'),
+												type: 'warning',
+											})
+										} else {
+											this.$message.error(this.$lang(res.data.msg))
+										}
+									})
+									.catch((err) => {
+										console.log(err)
+									})
+							}
+						})
+					},
+					tableAdd() {
+						this.$refs['addForm'].validate((valid) => {
+							if (valid) {
+								const postData = {
+									'erp-req': true,
+									'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+									...this.addForm,
+									commission_income: parseFloat(Number(this.addForm.commission_income).toFixed(2)),
+								}
+								this.queryPost('/addGpCommissionIncome', postData)
+									.then((res) => {
+										if (res.data.code == '200') {
+											this.$message.success(this.$lang(res.data.msg))
+											this.addDialogShow = false
+											this.tablePage = 1
+											this.tableDataGet()
+										} else if (res.data.code == '500') {
+											const content = this.$lang('已存在相同记录，无法保存')
+											this.$alert(content, '', {
+												confirmButtonText: this.$lang('确定'),
+												type: 'warning',
+											})
+										} else {
+											this.$message.error(this.$lang(res.data.msg))
+										}
+									})
+									.catch((err) => {
+										console.log(err)
+									})
+							}
+						})
+					},
+					logDialogOpen() {
+						this.logDataGet()
+						this.logDialogShow = true
+					},
+					logDataGet() {
+						const postData = {
+							'erp-req': true,
+							'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+							// start_time: this.monthRangeForApi(0),
+							// end_time: this.monthRangeForApi(1),
+							page: this.logPage,
+							pageSize: this.logPageSize,
+						}
+						this.queryPost('/queryGpCommissionIncomeLog', postData)
+							.then((res) => {
+								if (res.data.success) {
+									this.logData = res.data
+								} else {
+									this.$message.error(this.$lang(res.data.msg))
+								}
+							})
+							.catch((err) => {
+								console.log(err)
+							})
+					},
+				},
+			})
+		</script>
+	</body>
+</html>

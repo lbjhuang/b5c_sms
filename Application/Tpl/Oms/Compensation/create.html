@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/warehouse/css/table.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/warehouse/css/default.css">
+
+    <title>{{$lang('新建赔付单')}}</title>
+</head>
+<style>
+    [v-cloak] {
+        display: none;
+    }
+
+    .title {
+        font-size: 30px;
+        margin-left: 20px;
+        font-weight: 600;
+    }
+
+    .platform-input {
+        display: flex;
+        justify-content: space-evenly;
+    }
+
+    .apply-materials .content {
+        display: flex;
+        justify-content: space-evenly;
+        align-items: center;
+    }
+
+    .apply-materials .content .left {
+        flex: 0.2;
+    }
+
+    .apply-materials .content .right {
+        flex: 0.5;
+        margin: 10px;
+    }
+
+    .op-btn-group {
+        text-align: center;
+    }
+
+    .upload-btn {
+        height: 28px;
+        line-height: 28px;
+        background-color: rgba(255, 255, 255, 1);
+        box-sizing: border-box;
+        border: 1px solid rgb(119, 117, 117);
+        border-radius: 8px;
+        display: inline-block;
+        width: 100px;
+        text-align: center;
+        cursor: pointer;
+    }
+
+    .table tr {
+        display: flex;
+    }
+
+    .table tr td {
+        flex: 0.3;
+    }
+</style>
+
+<body>
+    <div id="app" v-cloak v-loading="loading">
+        <div class="title">{{$lang('新建赔付单')}}</div>
+        <!-- 基础信息 -->
+        <div class="table-container">
+            <div class="table-header">
+                {{$lang('基础信息')}}
+            </div>
+            <table class="table" border="0" cellpadding="0" cellspacing="0">
+                <tbody>
+                    <tr>
+                        <td>{{$lang('订单号')}}</td>
+                        <td>
+                            <div class="platform-input">
+                                <el-input :disabled="!!data.b5c_order_no" style="width: 60%;" v-model="platform_id">
+                                </el-input>
+                                <el-button v-if="!data.b5c_order_no" @click="handleSearch">{{$lang('查询')}}</el-button>
+                            </div>
+                        </td>
+                        <td>{{$lang('赔付单号')}}</td>
+                        <td :class="{'back-td': data}"></td>
+                    </tr>
+                    <tr>
+                        <td>{{$lang('平台订单ID')}}</td>
+                        <td :class="{'back-td': data}">{{data.order_id}}</td>
+                        <td>{{$lang('发货仓库')}}</td>
+                        <td :class="{'back-td': data}">{{data.delivery_warehouse}}</td>
+                    </tr>
+                    <tr>
+                        <td>{{$lang('运单号')}}</td>
+                        <td :class="{'back-td': data}">{{data.waybill_number}}</td>
+                        <td>{{$lang('出库时间')}}</td>
+                        <td :class="{'back-td': data}">{{data.sendout_time | dateFormat}}</td>
+                    </tr>
+                    <tr>
+                        <td>{{$lang('申请人')}}</td>
+                        <td :class="{'back-td': data}">{{data.create_by}}</td>
+                        <td>{{$lang('站点')}}</td>
+                        <td :class="{'back-td': data}">{{data.plat_name}}</td>
+                    </tr>
+                    <tr>
+                        <td>{{$lang('申请时间')}}</td>
+                        <td :class="{'back-td': data}">{{data.create_at}}</td>
+                        <td>{{$lang('完结时间')}}</td>
+                        <td :class="{'back-td': data}">/</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <!-- 申请材料 -->
+        <div class="table-container apply-materials">
+            <div class="table-header">{{$lang('申请材料')}}</div>
+            <el-form label-width="100px" :model="form" :rules="rules" ref="form">
+                <div class="content">
+                    <div class="left">
+                        <!-- <el-button>{{$lang('上传')}}</el-button> -->
+                        <!-- <form action="" class="btn excel-delivery" @click="handleUpload"
+                            style="z-index:1; width: 50px; margin-left: 20px;">
+                            <label class="btn upload-btn">{{$lang("上传")}}</label>
+                            <input type="file" id="upload-file" @change="uploadApplyFile" style="display: none">
+                        </form> -->
+                        <el-upload style="display: inline;" :multiple="true" :on-remove="handleFileRemove"
+                            :on-error="handleError" :before-upload="beforeUpload" :on-success="handleSuccess"
+                            action="/index.php?g=Common&m=file&a=file_upload" :auto-upload="true" accept="application">
+                            <el-button size="small" type="primary">
+                                {{$lang('上传文件')}}
+                            </el-button>
+                        </el-upload>
+                    </div>
+                    <div class="right">
+                        <el-form-item :label="$lang('申请原因')" prop="reason_cd">
+                            <el-select :placeholder="$lang('请选择')" v-model="form.reason_cd" style="width: 100%">
+                                <el-option v-for="reason in reasons" :key="reason.CD" :label="$lang(reason.CD_VAL)"
+                                    :value="reason.CD"></el-option>
+                            </el-select>
+                        </el-form-item>
+                        <el-form-item :label="$lang('备注：')" prop="material_remark">
+                            <el-input type="textarea" rows="3" v-model="form.material_remark"></el-input>
+                        </el-form-item>
+                    </div>
+                </div>
+            </el-form>
+        </div>
+        <!-- 商品信息 -->
+        <div class="table-container">
+            <div class="table-header">{{$lang('商品信息')}}</div>
+            <el-table :data="data.guds" border>
+                <el-table-column :label="$lang('SKU ID')" prop="sku_id"></el-table-column>
+                <el-table-column :label="$lang('平台SKU ID')" prop="b5c_sku_id"></el-table-column>
+                <el-table-column :label="$lang('中文名称')" prop="spu_name_cn"></el-table-column>
+                <el-table-column :label="$lang('英文名称')" prop="spu_name_en"></el-table-column>
+                <el-table-column :label="$lang('商品图片')" width="175px">
+                    <template slot-scope="scope">
+                        <img :src="scope.row.image_url">
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('条形码')" prop="upc_id"></el-table-column>
+                <el-table-column :label="$lang('属性（值）')" prop="opt_name_value_str"></el-table-column>
+                <el-table-column :label="$lang('规格')" prop="specification"></el-table-column>
+                <el-table-column :label="$lang('重量')" prop="weight"></el-table-column>
+                <el-table-column :label="$lang('数量')" prop="item_count"></el-table-column>
+                <el-table-column :label="$lang('成本价格（USD）')" prop="cost_usd_price"></el-table-column>
+                <el-table-column :label="$lang('交易价格（' + (data.guds && data.guds[0].trading_currency || 'USD') + '）')" prop="trading_price"></el-table-column>
+            </el-table>
+        </div>
+        <div class="op-btn-group">
+            <el-button @click="handleSave">{{$lang('保存')}}</el-button>
+        </div>
+    </div>
+    <!--引入js-->
+
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js?v=<{$Think.const.V}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.const.V}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.6.3.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/warehouse/js/utils.js?v=20210312"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/warehouse/js/request.js?v=20210312"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/warehouse/js/vue-mixins.js?v=20210312"></script>
+    <script>
+        if (getCookie('think_language') !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en)
+        }
+        const app = new Vue({
+            el: '#app',
+            mixins: [mixins],
+            data() {
+                return {
+                    data: {},
+                    goods: [],
+                    pid: getUrlParameterByName('pid'), // 平台id
+                    platform_id: null,
+                    loading: false,
+                    form: {
+                        b5c_order_no: '',
+                        reason_cd: '',
+                        material_remark: '',
+                        material_img_json: []
+                    },
+                    reasons: [],
+                    rules: {
+                        reason_cd: [
+                            { required: true, message: this.$lang('申请原因必选'), trigger: 'blur' }
+                        ],
+                        material_remark: [
+                            { max: 300, message: this.$lang('当前字数限制在300'), trigger: 'blur' }
+                        ]
+                    }
+                }
+            },
+            created() {
+                this.getData();
+                this.getReasons();
+            },
+            methods: {
+                getData() {
+                    if (this.pid) {
+                        this.loading = true;
+                        request('index.php?g=OMS&m=Compensation&a=checkCompen', { b5c_order_no: this.pid }, null, { timeout: this.platform_id }).then(res => {
+                            this.loading = false;
+                            if (res.code === 2000) {
+                                this.platform_id = this.pid;
+                                this.data = res.data;
+                                this.form.b5c_order_no = res.data.b5c_order_no;
+                            }
+                        })
+                    }
+                },
+                handleSearch() {
+                    if (this.platform_id.length > 50) {
+                        return this.$message.warning(this.$lang('长度必须为50以内'));
+                    }
+                    if (!/^[A-Za-z0-9]+$/.test(this.platform_id)) {
+                        return this.$message.warning(this.$lang('平台订单号只能为英文字母和数字'));
+                    }
+                    this.pid = this.platform_id;
+                    this.getData();
+                },
+                getReasons() {
+                    request('index.php?g=OMS&m=Compensation&a=compenCommonList').then(res => {
+                        this.reasons = res.data.Compen_reason || [];
+                    })
+                },
+                beforeUpload(file) {
+                    const isLt50M = file.size / 1024 / 1024 > 50;
+                    if (isLt50M) {
+                        this.$message.warning(this.$lang('文件不能大于50M'));
+                        return false;
+                    }
+                },
+                handleError() {
+                    this.$message.error(this.$lang('上传失败'))
+                },
+                handleFileRemove(file) {
+                    const index = this.form.material_img_json.findIndex(item => item.name === file.name);
+                    this.form.material_img_json.splice(index, 1);
+                },
+                handleSuccess(res) {
+                    if (res.errno && res.errno !== 0) {
+                        this.$message.error(res.msg);
+                        return;
+                    };
+                    res.info.map(file => this.form.material_img_json.push(file));
+                },
+                handleSave() {
+                    this.$refs.form.validate(valid => {
+                        if (valid) {
+                            if (!this.form.b5c_order_no) {
+                                return this.$message.warning(this.$lang('缺少订单号'));
+                            }
+                            const params = Object.assign({}, this.form);
+                            params.material_img_json = params.material_img_json.map(file => {
+                                return {
+                                    name: file.name,
+                                    savename: file.savename
+                                }
+                            });
+                            request('index.php?g=OMS&m=Compensation&a=compenCreate', params).then(res => {
+                                if (res.code !== 2000) {
+                                    return this.$message.error(this.$lang(res.msg));
+                                }
+                                this.$message.success(this.$lang('保存成功'));
+                                setTimeout(() => {
+                                    newTab("/index.php?g=oms&m=compensation&a=compensation_list", this.$lang('物流赔付单列表'));
+                                    closeTab();
+                                })
+                            })
+                        }
+                    })
+                },
+            }
+        })
+    </script>
+</body>
+
+</html>

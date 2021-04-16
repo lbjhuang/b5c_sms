@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" type="text/css" href="../Public/lib/icheck/icheck.css"/>
+    <link rel="stylesheet" href="../Public/lib/bootstrap/css/bootstrap.min.css">
+    <title><{$Think.lang.信息确认}></title>
+    <link rel="stylesheet" href="../Public/css/purchase.css"/>
+    <script type="text/javascript" src="../Public/lib/My97DatePicker/WdatePicker.js"></script>
+    <link rel="stylesheet" href="../Public/css/purchaseDetail.css?v=2017028"/>
+    <link rel="stylesheet" href="../Public/css/common.css?v=2017203">
+    <link rel="stylesheet" href="../Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="../Public/lib/webuploader/0.1.5/webuploader.css"/>
+    <style>.layui-layer-content{width:500px;background:white !important;border:1px solid #cccccc;border-right:2px solid #cccccc}</style>
+</head>
+<body>
+<div class="col-lg-12 col-md-12 col-sm-12 purchase_detail invoice_detail" id="invoiceDdd">
+    <div class="row row_title">
+        <a class="active"></a>
+    </div>
+    <form method="post" >
+        <div class="detail_form">
+            <table class="table table-bg">
+                <thead>
+                <th width="15%"></th>
+                <th width="35%"></th>
+                <th width="15%"></th>
+                <th width="35%"></th>
+                </thead>
+                <tbody>
+                <tr>
+                    <td colspan="6"><{$Think.lang.订单信息}></td>
+                </tr>
+                <tr>
+                    <td><{$Think.lang.采购PO单号}></td>
+                    <td><{$order.online_purchase_order_number}></td>
+                    <td><{$Think.lang.采购类型}></td>
+                    <td><{:L($purchase_type[$order['purchase_type']])}></td>
+                </tr>
+                <tr>
+                    <td><{$Think.lang.订单号}></td>
+                    <td>
+                    <a onclick="opennewtab(this,'<{$Think.lang.订单详情页}>')" _href="<{:U('purchase_order_detail',['relevance_id'=>$order['relevance_id']])}>" 
+                            class="purchaseLinkHover"><{$order.procurement_number}></a>
+                    </td>
+                    <td><{$Think.lang.采购金额}></td>
+                    <td><{:cdVal($order['amount_currency'])}> <{:number_format($order['amount'],2)}></td>
+
+                </tr>
+                <tr>
+                    <td><{$Think.lang.供应商}></td>
+                    <td><{$order.supplier_id}></td>
+                    <td><{$Think.lang.供应商（EN）}></td>
+                    <td><{$order.supplier_id_en}></td>
+                </tr>
+                <tr>
+                    <td><{$Think.lang.我方公司}></td>
+                    <td><{:cdVal($order['our_company'])}></td>
+                    <td><{$Think.lang.采购团队}></td>
+                    <td><{:cdVal($order['payment_company'])}></td>
+                </tr>
+                <tr>
+                    <td><{$Think.lang.发票类型}></td>
+                    <td>
+                        <select name="invoice_type">
+                            <volist name="invoice_type" id="v">
+                                <option value="<{$v.CD}>" <if condition="$order['invoice_type'] eq $v['CD']">selected</if>><{$v.CD_VAL}></option>
+                            </volist>
+                        </select>
+                    </td>
+                    <td><{$Think.lang.税点}></td>
+                    <td>
+                        <select name="tax_rate">
+                            <volist name="tax_rate" id="v">
+                                <option value="<{$v.CD}>" <if condition="$order['tax_rate'] eq $v['CD']">selected</if>><{$v.CD_VAL}></option>
+                            </volist>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td><{$Think.lang.应付状态}></td>
+                    <td><{$order.payment_status}></td>
+                    <td><{$Think.lang.在途发票金额}></td>
+                    <td><{$order.amount_currency_val}> <{$on_way_invoice_amount}></td>
+                </tr>
+                <tr>
+                    <td><{$Think.lang.开票状态}></td>
+                    <td>
+                        <switch name="order.invoice_status">
+                            <case value="0">待开票</case>
+                            <case value="1">部分开票</case>
+                            <case value="2">已开票</case>
+                        </switch>
+                    </td>
+                    <td><{$Think.lang.订单备注}></td>
+                    <td><{$order.order_remark}></td>
+                </tr>
+                </tbody>
+            </table>
+            <table class="table table-goodsDetail">
+                <p class="table-p"><{$Think.lang.商品信息}></p>
+                <thead>
+                <th width="5%"><input type="checkbox" class="invoice_confirm_checkAll"></th>
+                <th width="9%">SKUID/<{$Think.lang.条形码}></th>
+                <th width="13%"><{$Think.lang.商品名称}></th>
+                <th width="12%"><{$Think.lang.商品属性}></th>
+                <th width="7%"><{$Think.lang.采购数量}></th>
+                <th width="7%" ><{$Think.lang.采购单价}></th>
+                <th width="8%"><{$Think.lang.金额小计}></th>
+                <th width="8%"><{$Think.lang.已开票金额}></th>
+                <th width="13%"><{$Think.lang.开票名称}></th>
+                <th width="10%"><{$Think.lang.本次开票金额}></th>
+                <th width="10%"><{$Think.lang.商品单位}></th>
+                <th width="12%" nowrap><{$Think.lang.待开票金额}></th>
+                </thead>
+                <tbody>
+                <volist name="order.goods" id="v">
+                    <?php
+                        $number_total           += $v['goods_number'];
+                        $money_total            += $v['goods_money'];
+                        $invoiced_money_total   += $v['invoiced_money'];
+                        $uninvoice_money        = $v['goods_money']-$v['invoiced_money'];
+                        if($uninvoice_money < 0 ) $uninvoice_money = 0;
+                        $uninvoice_money_total  += $uninvoice_money;
+                    ?>
+                    <tr class="goods">
+                        <td>
+                            <if condition="$v['goods_money'] gt $v['invoiced_money']">
+                                <input type="checkbox" class="invoice_confirm_checkbox">
+                                <input type="hidden" name="goods_id[<{$v.information_id}>]" value="<{$v.id}>">
+                            </if>
+                        </td>
+                        <td><{$v.search_information}></td>
+                        <td><{$v.goods_name}></td>
+                        <td class="invoice_td_span"><span><{$v.goods_attribute}></span></td>
+                        <td><{:number_format($v['goods_number'])}></td>
+                        <td><{:number_format($v['unit_price'],2)}></td>
+                        <td><{:number_format($v['goods_money'],2)}></td>
+                        <td><{:number_format($v['invoiced_money'],2)}></td>
+                        <td>
+                            <input type="text" class="form-control invoice_name" name="invoice_name[<{$v.information_id}>]" value="<{$v.invoice_name}>" disabled>
+                        </td>
+                        <td>
+                            <input type="text" class="form-control invoice_money" value="<{$v.invoice_money}>" max-value="<{$v['goods_money']-$v['invoiced_money']}>" disabled>
+                            <input type="hidden" class="invoice_money_s" name="invoice_money_g[<{$v.information_id}>]" max-value="<{$v['goods_money']-$v['invoiced_money']}>">
+                        </td>
+                        <td>
+                            <select name="valuation_unit[<{$v.information_id}>]" class="valuation_unit" disabled>
+                                <volist name="valuation_unit" key="key" id="value">
+                                    <option value="<{$value.CD}>" <if condition="$v['valuation_unit'] eq $value['CD']">selected</if>><{$value.CD_VAL}></option>
+                                </volist>
+                            </select>
+                        </td>
+                        <td class="uninvoice_money">
+                            <{:number_format($uninvoice_money,2)}>
+                        </td>
+                    </tr>
+
+                </volist>
+                <tr class="total">
+                    <td><{$Think.lang.合 计}></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td><{:number_format($number_total)}></td>
+                    <td><{:cdVal($order['amount_currency'])}></td>
+                    <td><{:number_format($money_total,2)}></td>
+                    <td><{:number_format($invoiced_money_total,2)}></td>
+                    <td></td>
+                    <td class="invoice_money_total"></td>
+                    <td></td>
+                    <td>
+                        <span class="uninvoice_money_total"><{:number_format($uninvoice_money_total,2)}></span>
+                        <input name="uninvoice_moeny" type="hidden">
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <table class="table table-bg">
+                <thead>
+                <th width="15%"></th>
+                <th width="35%"></th>
+                <th width="15%"></th>
+                <th width="35%"></th>
+                </thead>
+                <tbody>
+                <tr>
+                    <td colspan="6"><{$Think.lang.开票信息}></td>
+                </tr>
+                <tr>
+                    <td><{$Think.lang.操作编号}></td>
+                    <td><{$invoice['action_no']?$invoice['action_no']:'-'}></td>
+                    <td><{$Think.lang.发票总金额}></td>
+                    <td class="invoice_confirm_span"><span><{:cdVal($order['amount_currency'])}></span><span class="invoice_money_total">0.00</span><input type="hidden" name="invoice_money" value="0"></td>
+                </tr>
+                <tr>
+                    <td><{$Think.lang.发票抬头}></td>
+                    <td><input name="invoice_title" value="<{$order.supplier_invoice_title}>" class="form-control" <if condition="$order.purchase_type eq 'N001890100'">readonly</if> ></td>
+                    <td><{$Think.lang.备注}></td>
+                    <td><input class="form-control" name="remark" value="<{$invoice.remark}>"></td>
+                </tr>
+                <tr>
+                    <td class="must"><{$Think.lang.发票号}></td>
+                    <td>
+                        <if condition="$invoice eq null">
+                            <div class="upload-box" style="display: inline-block;">
+                                <div class="upload-box-child"><input type="text" class="form-control invoice_no" name="invoice_no[]">
+                                    <div style="display: inline-block">
+                                        <i class="upload-minus fujian_delete" onclick="uploadMinus(this)" data-msg="1">
+                                            <img src="/Application/Tpl/Home/Public/images/delete.png" alt=""></i>&nbsp;
+                                        <i class="upload-plus fujian_add" onclick="uploadPlus(this)" style="margin-left: 5px">
+                                            <img src="/Application/Tpl/Home/Public/images/add.png" alt="">
+                                        </i>
+                                    </div>
+                                </div>
+                            </div>
+                        <else />
+                            <volist name="invoice['invoice_no']" id="v">
+                                <div class="upload-box" style="display: inline-block;">
+                                    <div class="upload-box-child"><input type="text" class="form-control invoice_no" name="invoice_no[]" value="<{$v.no}>">
+                                        <div style="display: inline-block">
+                                            <i class="upload-minus fujian_delete" onclick="uploadMinus(this)" data-msg="1">
+                                                <img src="/Application/Tpl/Home/Public/images/delete.png" alt=""></i>&nbsp;
+                                            <i class="upload-plus fujian_add" onclick="uploadPlus(this)" style="margin-left: 5px">
+                                                <img src="/Application/Tpl/Home/Public/images/add.png" alt="">
+                                            </i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </volist>
+                        </if>
+                    </td>
+                    <td><{$Think.lang.发票扫描件}></td>
+                    <td class="show_main">
+                        <if condition="$invoice eq null">
+                            <div class="show_main_content">
+                                <div class="show_main_content_body" id="show_main_content_body1" style="text-align: left">
+                                    <!--<input type="file" name="invoice_scan" class="invoice_scan">-->
+                                    <button type="button" class="invoice_scan" style="background: none; border: none;"><{$Think.lang.上传}></button>
+                                    <span class="scan_show" style="float: none; line-height: 30px;width: auto;"></span>
+                                    <input type="hidden" name="scan[]">
+                                </div>
+                            </div>
+                        <else />
+                            <volist name="invoice['invoice_no']" id="v">
+                                <div class="show_main_content">
+                                    <div class="show_main_content_body" id="show_main_content_body1" style="text-align: left">
+                                        <!--<input type="file" name="invoice_scan" class="invoice_scan">-->
+                                        <button type="button" class="invoice_scan" style="background: none; border: none;"><{$Think.lang.上传}></button>
+                                        <span class="scan_show" style="float: none; line-height: 30px;width: auto;"><{$v['scan']?$v['no']:''}></span>
+                                        <input type="hidden" name="scan[]" value="<{$v.scan}>">
+                                    </div>
+                                </div>
+                            </volist>
+                        </if>
+                    </td>
+                </tr>
+                <tr>
+                    <td><{$Think.lang.提交人}></td>
+                    <td class="show_main"><{:$invoice['create_user']?$invoice['create_user']:session('m_loginname')}></td>
+                    <td><{$Think.lang.提交时间}></td>
+                    <td><{$invoice['create_time']?$invoice['create_time']:''}></td>
+                </tr>
+                </tbody>
+            </table>
+            <input type="hidden" name="relevance_id" value="<{$order.relevance_id}>">
+            <input type="hidden" name="id" value="<{$invoice.id}>">
+            <div class="col-lg-12  col-md-12 col-xs-12 col-lg-12-btn">
+                <button type="button" class="btn-sure" id="save"><{$Think.lang.保存}></button>
+                <button type="button" class="btn-back" onclick="history.back(-1);" id="cancel"><{$Think.lang.取消}></button>
+            </div>
+        </div>
+    </form>
+</div>
+</body>
+<script type="text/javascript" src="../Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="../Public/lib/bootstrap/js/tether.min.js"></script>
+<script type="text/javascript" src="../Public/lib/bootstrap/js/bootstrap.min.js"></script>
+<script src="../Public/lib/layer/1.9.3/layer.js" type="text/javascript"></script>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="../Public/utils/utils.js"></script>
+<script type="text/javascript" src="../Public/lib/jquery.form.min.js"></script>
+<script type="text/javascript" src="../Public/lib/webuploader/0.1.5/webuploader.js"></script>
+<script>
+    
+    function mVal(str) {
+        var val = $(str).val();
+        if(val == '') {
+            val = '0';
+        }
+        return val;
+    }
+    function checkNum(money) {
+        return /^(\d{1,3}(,\d{3})*|\d+)(\.\d{1,2})?$/.test(money);
+    }
+    function numberFormat(num) {
+        if(isNaN(num)) {
+            if(num) {
+                return num.replace(/(\d{1,3})(?=(\d{3})+(?:$|\D))/g,'$1,');
+            }else {
+                return false;
+            }
+        }else {
+            return num.toString().replace(/(\d{1,3})(?=(\d{3})+(?:$|\D))/g,'$1,');
+        }
+    }
+    function init() {
+        $('.invoice_money').each(function () {
+            var money = $(this).val();
+            if($(this).val()) {
+                $(this).parents('tr').find('.invoice_confirm_checkbox').prop('checked',true).change();
+                $(this).val(money).change();
+            }
+        })
+    }
+    //上传组件
+    var htmlIndex=1;
+    function uploadPlus() {
+        htmlIndex++;
+        var html = '<div class="upload-box-child">'+
+            '<input type="text" class="form-control invoice_no" name="invoice_no[]">'+
+            '<div style="display: inline-block" >'+
+            '<i class="upload-minus fujian_delete" onclick="uploadMinus(this)" data-msg="'+htmlIndex+'"><img src="../Public/images/delete.png" alt=""></i>&nbsp;' +
+            '<i class="upload-plus fujian_add"  onclick="uploadPlus(this)" style="margin-left: 5px"><img src="../Public/images/add.png" alt=""></i>'+
+            '</div>'+
+            '</div>';
+        $('.upload-box').append(html);
+        var htmlImg= ' <div class="show_main_content_body" id="show_main_content_body'+htmlIndex+'" style="text-align: left">'+
+            '<button type="button" class="invoice_scan" style="background: none; border: none;"><{$Think.lang.上传}></button>'+
+            '<span class="scan_show" style="float: none; line-height: 30px;width: auto;"></span>'+
+            '<input type="hidden" name="scan[]">'
+        $(".show_main_content").append(htmlImg)
+        uploader_init('.invoice_scan:last');
+
+    }
+    function uploadMinus(ts) {
+        var number = $('.upload-box-child').size();
+        if(number == 1) {
+            alert('<{$Think.lang.必须保留一个上传按钮}>');
+            return false;
+        }
+        $(ts).parents('.upload-box-child').remove();
+        var data_msg=ts.getAttribute("data-msg");
+        $("#show_main_content_body"+data_msg+"").remove()
+    }
+    function uploader_init(dom) {
+        uploader = WebUploader.create({
+            swf: '../Public/lib/webuploader/0.1.5/Uploader.swf',
+            server: '<{:U("file_upload")}>',
+            pick: dom,
+            uploadAccept : 'json',
+            auto : true,
+            duplicate:true,
+        });
+        uploader.on('uploadSuccess',function (file,res) {
+            utils.lazy_loading();
+            var uploader_id =  '#rt_'+file.source.ruid;
+            if(res.status == 1) {
+                $(uploader_id).parents('.invoice_scan').next().html(res.info.name);
+                $(uploader_id).parents('.invoice_scan').next().next().val(res.info.savepath+res.info.savename);
+                layer.msg("<span class='invoice_detail_bomb_tip'><i>√</i><{$Think.lang.上传成功}></span>");
+            }else {
+                layer.msg("<span class='invoice_detail_bomb_tip'><i style='color: red;'>x</i><{$Think.lang.上传失败:}>"+res.info+"</span>");
+            }
+        })
+        uploader.on('uploadStart',function (file) {
+            utils.lazy_loading("show");
+        })
+    }
+    $(function () {
+        function getQueryString(name) {
+            var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+            var r = window.location.search.substr(1).match(reg);
+            if (r != null) return unescape(r[2]);
+            return null;
+        }
+
+        var orderId = getQueryString('a');
+        if(orderId == 'invoice_edit'){
+            $('.row_title a').text('<{$Think.lang.发票编辑}>');
+        }else{
+            $('.row_title a').text('<{$Think.lang.发票收取}>');
+        }
+        
+        $(".show_main_delete").click(function () {
+            $(this).parent().find("label").html("<{$Think.lang.请选择文件}>");
+            $(this).parent().find("input").val("")
+        })
+        $(".invoice_confirm_checkAll").click(function () {
+            if($(this).prop("checked")){
+                $(".invoice_confirm_checkbox").prop("checked",true).change();
+            }else{
+                $(".invoice_confirm_checkbox").prop("checked",false).change();
+            }
+        })
+        $(".invoice_confirm_checkbox").click(function () {
+            var invoice_confirm_checkbox_index=0;
+            $(".invoice_confirm_checkbox").each(function () {
+                if($(this).prop("checked")){}
+                else {invoice_confirm_checkbox_index++;}
+            })
+            if(invoice_confirm_checkbox_index == 0){
+                $(".invoice_confirm_checkAll").prop("checked",true)
+            }else{
+                $(".invoice_confirm_checkAll").prop("checked",false)
+            }
+        })
+        $('.invoice_confirm_checkbox').change(function () {
+            var tr = $(this).parents('tr');
+            if($(this).prop('checked')) {
+                tr.find('.invoice_name').prop('disabled',false);
+                tr.find('.invoice_money').prop('disabled',false).val(tr.find('.invoice_money').attr('max-value')).change();
+                tr.find('.valuation_unit').prop('disabled',false);
+            }else {
+                tr.find('.invoice_name').prop('disabled',true);
+                tr.find('.invoice_money').prop('disabled',true).val('').change();
+                tr.find('.invoice_money_s').prop('disabled',true).val('');
+                tr.find('.valuation_unit').prop('disabled',true);
+            }
+        });
+        $('.invoice_money').change(function () {
+            var money       = mVal(this);
+            var max         = parseFloat($(this).attr('max-value'));
+            if(!checkNum(money)) {
+                layer.msg("<span class='invoice_detail_bomb_tip'><{$Think.lang.请填写正确的金额}></span>");
+                $(this).val('').change();
+                return false;
+            }
+            money = parseFloat(money.replace(/,/g,''));
+            var uninvoice   = max-money;
+            if(uninvoice < 0) {
+                uninvoice = 0;
+            }
+            $(this).next().val(money.toFixed(2));
+            $(this).parents('tr').find('.uninvoice_money').html(numberFormat(uninvoice.toFixed(2)));
+            if(money != 0) {
+                $(this).val(numberFormat(money.toFixed(2)));
+            }
+            var invoice_money_total     = 0;
+            var uninvoice_money_total   = 0;
+            $('.invoice_money').each(function (i,v) {
+                var invoice_money   = parseFloat(mVal(this).replace(/,/g,''));
+                invoice_money_total += invoice_money;
+            })
+            $("input[name='invoice_money']").val(invoice_money_total.toFixed(2));
+            $('.invoice_money_total').html(numberFormat(invoice_money_total.toFixed(2)));
+            $('.uninvoice_money').each(function () {
+                var uninvoice_money       = parseFloat($(this).html().replace(/,/g,''));
+                uninvoice_money_total   += uninvoice_money;
+            })
+            $('input[name="uninvoice_moeny"]').val(uninvoice_money_total.toFixed(2));
+            $('.uninvoice_money_total').html(numberFormat(uninvoice_money_total.toFixed(2)));
+        })
+        $('#save').click(function () {
+            var n = false;
+            $('.invoice_money').each(function () {
+                if(!$(this).prop('disabled') && ($(this).val() == '' || $(this).val() == 0)) {
+                    n = true;
+                    return false;
+                }
+            })
+            if(n) {
+                layer.msg("<span class='invoice_detail_bomb_tip'><i style='color: red;'>x</i><{$Think.lang.开票金额必须大于0}></span>");
+                return false;
+            }
+            var has_empty_no = false;
+            $('.invoice_no').each(function () {
+                if(!$(this).val().trim()) {
+                    has_empty_no = true;
+                    return false;
+                }
+            })
+            if(has_empty_no) {
+                layer.msg("<span class='invoice_detail_bomb_tip'><i style='color: red;'>x</i><{$Think.lang.发票号必填}></span>");
+                return false;
+            }
+            if($("input[name='invoice_money']").val() == 0) {
+                layer.msg("<span class='invoice_detail_bomb_tip'><i style='color: red;'>x</i><{$Think.lang.开票总金额必须大于0}></span>");
+                return false;
+            }
+            var url = "<{:U('')}>";
+            $('form').ajaxForm({
+                dataType : 'json',
+                url : url,
+                beforeSend: function(){
+                    utils.lazy_loading("show")
+                },
+                success : function (res) {
+                    utils.lazy_loading()
+                    if(res.status == 1) {
+                        utils.modal(true, {width:500,title:"<{$Think.lang.添加发票结果}>",content:res.info,confirmFn:function(){window.location = "<{:U('invoice_info',['relevance_id'=>$order['relevance_id']])}>";}},false)
+                    }else {
+                        utils.modal(true, {width:500,title:"<{$Think.lang.添加发票结果}>",content:res.info},false)
+                    }
+                }
+            })
+            $('form').submit();
+        })
+        init();
+        uploader_init('.invoice_scan');
+    })
+</script>
+</html>

@@ -1,0 +1,1270 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="/Application/Tpl/Oms/Order/orderDetail.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <title>{{$lang('申请售后')}}</title>
+    <style>
+        [v-cloak] {
+            display: none !important;
+        }
+        
+        .to-detail-btn {
+            text-decoration: underline;
+            cursor: pointer;
+            color: #1E7EB4;
+        }
+        
+        .cell {
+            word-break: break-all;
+            word-wrap: normal;
+            text-overflow: ellipsis;
+            vertical-align: middle;
+            width: 100%;
+            box-sizing: border-box;
+            white-space: normal;
+            line-height: 20px;
+        }
+        
+        .dispach-basic-info td {
+            padding: 10px 6px;
+        }
+        
+        .el-table,
+        .el-table__body-wrapper {
+            overflow: visible !important;
+        }
+        .returnServiceDialog{
+            overflow: hidden !important;
+        }
+        .returnServiceDialog .el-table__body-wrapper{
+            overflow: auto !important;
+        }
+        
+        
+        .el-table--enable-row-hover .el-table__body tr:hover>td {
+            background-color: #ffffff;
+        }
+        
+        .consignee-basic-info td {
+            padding: 0px 8px;
+        }
+        
+        .el-table .cell {
+            word-break: break-word !important;
+        }
+        .inlineDiv{
+            border: 1px solid #ddd;
+            display: flex;
+        }
+        .inlineDiv .el-date-editor{
+            width: 100%;
+        }
+        
+        .inlineDiv .el-form-item {
+            /* width: 200px;
+            display: inline-block; */
+            display: flex;
+            flex: 1;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 10px 10px 30px;
+            margin: 0;
+            /* border-right: 1px solid #ddd; */
+        }
+        
+        .inlineDiv .el-select {
+            width: 100%;
+        }
+        
+        /* .inlineDiv .el-form-item {
+            margin-left: 10px;
+        } */
+        
+        .head-sale {
+            margin: 10px 0;
+        }
+        
+        .el-pagination {
+            padding: 20px 0;
+        }
+        
+        .order-list-table.table-common tr th {
+            color: rgb(255, 255, 255);
+            background: rgb(84, 110, 122);
+        }
+        
+        .returnSaleTag {
+            color: red;
+        }
+        .giftLogo{
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            background: #f99c64;
+            color: #FFF;
+            padding: 2px 4px;
+        }
+        .order-basic-info{
+            margin-bottom: 30px;
+        }
+        .informationForm .el-input{
+            width: 200px;
+        }
+        .informationForm ul{
+            padding: 0;
+            display: flex;
+            flex-wrap: wrap;
+            border-left: 1px solid #ddd;
+            box-sizing: border-box;
+        }
+        .informationForm ul li{
+            width: 33.333%;
+            text-align: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #ddd;
+            border-right: 1px solid #ddd;
+            box-sizing: border-box;
+        }
+    </style>
+
+</head>
+
+<body class="orderDetail">
+    <div class="order-operation-log" id="order-detail" v-cloak>
+        <div class="order-basic-info">
+            <div class="head-sale">
+                <span>售后类型：</span>
+                <el-checkbox v-model="returnSale" :disabled="(!reissueSale)">退货</el-checkbox>
+                <el-checkbox v-if="afterSaleType != '1'" v-model="reissueSale" :disabled="(!returnSale)">补发</el-checkbox>
+            </div>
+        </div>
+        <el-table :data="tableData" stripe border show-header style="width: 100%">
+            <el-table-column prop="order_no" :label="$lang('订单号')">
+            </el-table-column>
+            <el-table-column :label="$lang('商品名称')">
+                <template slot-scope="scope">
+                    <div v-if="scope.row.product_info && scope.row.product_info.hasOwnProperty('spu_name')">
+                        {{scope.row.product_info.spu_name}}
+                    </div>
+                    <span v-if="scope.row.guds_type == '1' " class="giftLogo">赠品</span>
+                </template>
+            </el-table-column>
+            <el-table-column :label="$lang('商品图片')" style="position: relative;">
+                <template slot-scope="scope">
+                    <img v-if="scope.row.product_info && scope.row.product_info.hasOwnProperty('thumbnail')" :src="scope.row.product_info.thumbnail" style="cursor: pointer;" width="80" height="80" @mouseenter="showImg(scope.row)" @mouseleave="showImg(scope.row)">
+                    <div style="position: absolute; top: 10px; left: 100%; box-shadow: 0 0 5px #536d7a;z-index:999" v-if="scope.row.bigImg">
+                        <img :src="scope.row.product_info.thumbnail" width="300" height="300">
+                    </div>
+                </template>
+            </el-table-column>
+            <el-table-column :label="$lang('商品编码')">
+                <template slot-scope="scope">
+                    <div v-if="scope.row.product_info && scope.row.product_info.hasOwnProperty('sku_id')">{{scope.row.product_info.sku_id}}</div>
+                </template>
+            </el-table-column>
+            <el-table-column :label="$lang('商品属性')">
+                <template slot-scope="scope">
+                    <div v-if="scope.row.product_info && scope.row.product_info.hasOwnProperty('product_attr')">{{scope.row.product_info.product_attr}}</div>
+                </template>
+            </el-table-column>
+            <el-table-column prop="order_goods_num" :label="$lang('订单件数')">
+            </el-table-column>
+            <el-table-column prop="over_return_num" :label="$lang('可退货件数')" v-if="returnSale">
+            </el-table-column>
+            <!-- <el-table-column prop="over_reissue_num" :label="$lang('可补发件数')" v-if="reissueSale">
+            </el-table-column> -->
+        </el-table>
+
+        <div class="order-basic-info" v-if="returnSale">
+            <header style="margin-top:10px">
+                {{$lang('退货')}}
+            </header>
+            <el-form :model="return_base_info" ref="return_base_info" :rules="rules" label-width="100px" label-position="top">
+                <div class="inlineDiv">
+                    <el-form-item v-if="afterSaleType != '1'" :label="$lang('物流单号')" prop="logistics_no">
+                        <el-input v-model="return_base_info.logistics_no"></el-input>
+                    </el-form-item>
+                    <el-form-item v-if="afterSaleType == '1'" :label="$lang('物流单号')" prop="logistics_no2">
+                        <el-input :placeholder="$lang('自动获取，无需填写')" disabled  v-model="return_base_info.logistics_no"></el-input>
+                    </el-form-item>
+                    <el-form-item v-if="afterSaleType != '1'" :label="$lang('物流方式')" prop="logistics_way_code">
+                        <el-input v-model="return_base_info.logistics_way_code"></el-input>
+                    </el-form-item>
+                    <el-form-item v-if="afterSaleType == '1'" :label="$lang('物流方式')" prop="logistics_way_code2">
+                        <el-input v-model="return_base_info.logistics_way_code"></el-input>
+                    </el-form-item>
+                    <el-form-item :label="$lang('预计物流费用')" style="width: auto;" prop="logistics_fee">
+                        <el-select v-model="return_base_info.logistics_fee_currency_code" :placeholder="$lang('币种')" style="width: 80px;">
+                            <el-option v-for="item in baseData.currency" :label="item.CD_VAL" :value="item.CD" :key="item.CD"></el-option>
+                        </el-select>
+                        <el-input style="width:110px;" v-model="return_base_info.logistics_fee" @blur="logisticsBlur"></el-input>
+                    </el-form-item>
+                    <!-- <el-form-item style="margin-left:0;width:110px;" prop="logistics_fee">
+                        <el-input v-model="return_base_info.logistics_fee" @blur="logisticsBlur"></el-input>
+                    </el-form-item> -->
+                    <el-form-item :label="$lang('服务费')" prop="service_fee">
+                        <el-select  style="width: 80px;"  v-model="return_base_info.service_fee_currency_code" :placeholder="$lang('币种')">
+                            <el-option v-for="item in baseData.currency" :label="item.CD_VAL" :value="item.CD" :key="item.CD"></el-option>
+                        </el-select>
+                        <el-input style="width: 110px;" v-model="return_base_info.service_fee" @blur="serviceBlur"></el-input>
+                    </el-form-item>
+                    <!-- <el-form-item style="width: 110px;margin-left: 0;" prop="service_fee">
+                        <el-input v-model="return_base_info.service_fee" @blur="serviceBlur"></el-input>
+                    </el-form-item> -->
+                    <el-form-item v-if="afterSaleType == '1'" :label="$lang('售后原因')"  prop="service_fee">
+                        <el-input disabled v-model="return_base_info.return_reason"></el-input>
+                    </el-form-item>
+                    <el-form-item v-if="afterSaleType == '1'" :label="$lang('退货时间')"  prop="service_fee">
+                        <el-date-picker
+                            v-model="return_base_info.return_time"
+                            type="date"
+                            :clearable="false" 
+                            value-format="yyyy-MM-dd"
+                            placeholder="选择日期">
+                        </el-date-picker>
+                    </el-form-item>
+                    <el-form-item v-if="afterSaleType == '1'" :label="$lang('是否关联订单')"  prop="service_fee">
+                        <el-radio v-model="return_base_info.is_relevance_order" label="0">{{$lang('不关联')}}</el-radio>
+                    </el-form-item>
+                    <el-form-item  v-if="afterSaleType != '1'" :label="$lang('是否属于仅退款不退货')" style="width: 170px;" prop="service_fee">
+                        <el-radio v-model="return_base_info.only_return_money" :label="0">{{$lang('否')}}</el-radio>
+                        <el-radio v-model="return_base_info.only_return_money" :label="1">{{$lang('是')}}</el-radio>
+                    </el-form-item>
+                </div>
+                <el-form-item class="btn-item">
+                    <el-button type="info" size="mini" @click="addReturnGoods">{{$lang('添加')}}</el-button>
+                    <el-button size="mini" @click="delReturnGoods">{{$lang('移除')}}</el-button>
+                </el-form-item>
+                <el-table border show-header :data="returnGudsInfo" tooltip-effect="dark" class="guds-basic-table" @selection-change="handleSelectionRet">
+                    <el-table-column type="selection" width="55"></el-table-column>
+                    <el-table-column :label="$lang('商品编码')">
+                        <template slot-scope="scope">
+                            <el-select v-model="returnGudsInfo[scope.$index]['sku_id']" :placeholder="$lang('请选择商品编码')" filterable @change="changeReturn(scope.$index,scope.row)">
+                                <el-option v-for="(item,index) in returnUpcId" :label="item" :value="item" :key="index"></el-option>
+                            </el-select>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="spu_name" :label="$lang('商品名称')">
+                    </el-table-column>
+                    <el-table-column prop="product_attr" :label="$lang('商品属性')">
+                    </el-table-column>
+                    <el-table-column prop="thumbnail" :label="$lang('商品图片')" style="position: relative;">
+                        <template slot-scope="scope">
+                            <img v-if="!!scope.row.thumbnail" :src="scope.row.thumbnail" style="cursor: pointer;" width="80" height="80" @mouseenter="showImg(scope.row)" @mouseleave="showImg(scope.row)">
+                            <div style="position: absolute; top: 10px; left: 100%; box-shadow: 0 0 5px #536d7a;z-index:999" v-if="scope.row.bigImg">
+                                <img :src="scope.row.thumbnail" width="300" height="300">
+                            </div>
+                        </template>
+                    </el-table-column>
+                    <el-table-column :render-header="renderHeaderRetNum">
+                        <template slot-scope="scope">
+                            <el-input size="small" v-model="returnGudsInfo[scope.$index]['yet_return_num']" @blur="yet_return_numBlur(scope.$index)"></el-input>
+                        </template>
+                    </el-table-column>
+                    <el-table-column v-if="afterSaleType != '1'" :label="$lang('退货仓库')" :render-header="renderHeaderRetWar">
+                        <template slot-scope="scope">
+                            <el-select v-model="returnGudsInfo[scope.$index]['warehouse_code']" :placeholder="$lang('请选择仓库')" filterable>
+                                <el-option v-for="item in baseData.warehouse" :label="item.CD_VAL" :value="item.CD" :key="item.CD"></el-option>
+                            </el-select>
+                        </template>
+                    </el-table-column>
+                    <el-table-column v-if="afterSaleType == '1'" :label="$lang('处理方式')">
+                        <template slot-scope="scope">
+                            <el-button v-if="!returnGudsInfo[scope.$index]['handle_type']" size="mini"  @click="addProcessingMethod(scope.row,scope.$index)">{{$lang('添加')}}</el-button>
+                            <span style="text-decoration: underline;" @click="addProcessingMethod(scope.row,scope.$index)">{{returnGudsInfo[scope.$index]['handle_type_num']}}</span>
+                        </template>
+                    </el-table-column>
+                </el-table>
+                <el-form-item v-if="afterSaleType != '1'" :label="$lang('售后原因')" prop="return_reason">
+                    <el-input type="textarea" v-model="return_base_info.return_reason"></el-input>
+                </el-form-item>
+            </el-form>
+        </div>
+        <!--品牌信息-->
+        <div class="order-basic-info" v-if="reissueSale">
+            <header style="margin-top:10px">
+                {{$lang('补发')}}
+            </header>
+            <el-form :model="reissue_base_info" ref="reissue_base_info" :rules="rules" label-width="100px" label-position="top">
+                <div class="inlineDiv">
+                    <el-form-item :label="$lang('收货人姓名')" prop="receiver_name">
+                        <el-input v-model="reissue_base_info.receiver_name" :placeholder="$lang('请输入姓名')"></el-input>
+                    </el-form-item>
+                    <el-form-item :label="$lang('收货人手机号')" prop="receiver_phone">
+                        <el-input v-model="reissue_base_info.receiver_phone" :placeholder="$lang('请输入手机号')" @blur="phoneBlur"></el-input>
+                    </el-form-item>
+                    <el-form-item :label="$lang('详细地址')" prop="country_id" style="width: 100px;">
+                        <el-input v-model="reissue_base_info.country_id" :placeholder="$lang('国家')"></el-input>
+                    </el-form-item>
+                    <el-form-item prop="province_id" style="width: 100px;margin-left: 0;">
+                        <el-input v-model="reissue_base_info.province_id" :placeholder="$lang('省份')"></el-input>
+                    </el-form-item>
+                    <el-form-item prop="city_id" style="width: 100px;margin-left: 0">
+                        <el-input v-model="reissue_base_info.city_id" :placeholder="$lang('城市')"></el-input>
+                    </el-form-item>
+                    <el-form-item prop="address" style="width: 280px;margin-left: 0">
+                        <el-input v-model="reissue_base_info.address" :placeholder="$lang('详细地址')"></el-input>
+                    </el-form-item>
+                    <el-form-item :label="$lang('邮编')" prop="postal_code">
+                        <el-input v-model="reissue_base_info.postal_code" :placeholder="$lang('请输入邮编')"></el-input>
+                    </el-form-item>
+                    <el-form-item :label="$lang('邮箱')" prop="email">
+                        <el-input v-model="reissue_base_info.email" :placeholder="$lang('请输入邮箱')"></el-input>
+                    </el-form-item>
+                </div>
+                <el-form-item class="btn-item">
+                    <el-button type="info" size="mini" @click="addReissueGoods">{{$lang('添加')}}</el-button>
+                    <el-button size="mini" @click="delReissueGoods">{{$lang('移除')}}</el-button>
+                </el-form-item>
+                <el-table border show-header :data="reisGudsInfo" tooltip-effect="dark" class="guds-basic-table" @selection-change="handleSelectionRes">
+                    <el-table-column type="selection" width="55"></el-table-column>
+                    <el-table-column :label="$lang('商品编码')">
+                        <template slot-scope="scope">
+                            <el-input v-model="reisGudsInfo[scope.$index]['sku_id']" :placeholder="$lang('输入商品编码')" @blur="handerSearchRes(scope.$index, scope.row)">
+                                <i class="el-icon-search el-input__icon" style="cursor:pointer;" slot="suffix"></i>
+                            </el-input>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="spu_name" :label="$lang('商品名称')">
+                    </el-table-column>
+                    <el-table-column prop="product_attr" :label="$lang('商品属性')">
+                    </el-table-column>
+                    <el-table-column prop="thumbnail" :label="$lang('商品图片')" style="position: relative;">
+                        <template slot-scope="scope">
+                            <img v-if="!!scope.row.thumbnail" :src="scope.row.thumbnail" style="cursor: pointer;" width="80" height="80" @mouseenter="showImg(scope.row)" @mouseleave="showImg(scope.row)">
+                            <div style="position: absolute; top: 10px; left: 100%; box-shadow: 0 0 5px #536d7a;z-index:999" v-if="scope.row.bigImg">
+                                <img :src="scope.row.thumbnail" width="300" height="300">
+                            </div>
+                        </template>
+                    </el-table-column>
+                    <el-table-column :render-header="renderHeaderResNum">
+                        <template slot-scope="scope">
+                            <el-input size="small" v-model="reisGudsInfo[scope.$index]['yet_reissue_num']" @blur="yet_reissue_numBlur(scope.$index)"></el-input>
+                        </template>
+                    </el-table-column>
+                </el-table>
+                <el-form-item :label="$lang('售后原因')" prop="reissue_reason">
+                    <el-input type="textarea" v-model="reissue_base_info.reissue_reason"></el-input>
+                </el-form-item>
+            </el-form>
+        </div>
+        <!-- 仓库信息 -->
+        <div v-if="afterSaleType == '1'" class="order-basic-info">
+            <header style="margin-top:10px">
+                {{$lang('仓库信息 （收货方）')}}
+            </header>
+            <div class="informationForm">
+                <ul>
+                    <li>
+                        <span>{{$lang('仓库名')}}</span>
+                        <!-- <el-input size="small" v-model="warehouse_info" @blur="warehouseInfoBlur"></el-input> -->
+                        <el-select v-model="warehouse_info" :placeholder="$lang('请选择仓库名')" filterable @change="warehouseInfoBlur">
+                            <el-option v-for="item in reply_order_warehouse" :label="item.ETC" :value="item.ETC" :key="item.CD"></el-option>
+                        </el-select>
+                        <span style="color: red;">*</span>
+                    </li>
+                    <li>
+                        <span>{{$lang('快递公司')}}</span>
+                        <!-- <el-input size="small" v-model="express_name" @blur="warehouseInfoBlur"></el-input> -->
+                        <el-select v-model="express_name" :placeholder="$lang('请选择快递公司')" value-key="CD_VAL" filterable>
+                            <el-option v-for="item in reply_order_express" :label="item.CD_VAL" :value="item" :key="item.CD"></el-option>
+                        </el-select>
+                        <span style="color: red;">*</span>
+                    </li>
+                    <li></li>
+                </ul>
+            </div>
+        </div>
+        <!-- 客户信息 -->
+        <div v-if="afterSaleType == '1'" class="order-basic-info">
+            <header style="margin-top:10px">
+                {{$lang('客户信息（发货方）')}}
+            </header>
+            <div class="informationForm">
+                <ul>
+                    <li>
+                        <span>{{$lang('收货人姓名')}}</span>
+                        <el-input size="small" v-model="customer_info.receiver_name"></el-input>
+                        <span style="color: red;">*</span>
+                    </li>
+                    <li>
+                        <span>{{$lang('所在城市')}}</span>
+                        <el-input size="small" v-model="customer_info.city_name"></el-input>
+                        <span style="color: red;">*</span>
+                    </li>
+                    <li>
+                        <span>{{$lang('税号')}}</span>
+                        <el-input size="small" v-model="customer_info.duty_paragraph"></el-input>
+                    </li>
+                    <li>
+                        <span>{{$lang('邮编')}}</span>
+                        <el-input size="small" v-model="customer_info.postal_code"></el-input>
+                        <span style="color: red;">*</span>
+                    </li>
+                    <li>
+                        <span>{{$lang('地址一')}}</span>
+                        <el-input size="small" v-model="customer_info.address_1"></el-input>
+                        <span style="color: red;">*</span>
+                    </li>
+                    <li>
+                        <span>{{$lang('客户电话')}}</span>
+                        <el-input size="small" v-model="customer_info.receiver_phone"></el-input>
+                    </li>
+                    <li>
+                        <span>{{$lang('所属国家')}}</span>
+                        <el-input size="small" :placeholder="$lang('二字码')" v-model="customer_info.two_char"></el-input>
+                        <span style="color: red;">*</span>
+                    </li>
+                    <li>
+                        <span>{{$lang('地址二')}}</span>
+                        <el-input size="small" v-model="customer_info.address_2"></el-input>
+                    </li>
+                    <li>
+                        <span>{{$lang('传真')}}</span>
+                        <el-input size="small" v-model="customer_info.fax"></el-input>
+                    </li>
+                    <li>
+                        <span>{{$lang('所属国家名')}}</span>
+                        <el-input size="small" :placeholder="$lang('国家名')" v-model="customer_info.country_name"></el-input>
+                        <span style="color: red;">*</span>
+                    </li>
+                    <li>
+                        <span>{{$lang('所属省份')}}</span>
+                        <el-input size="small" v-model="customer_info.province_id"></el-input>
+                    </li>
+                    <li>
+                        <span>{{$lang('E-mail')}}</span>
+                        <el-input size="small" v-model="customer_info.email"></el-input>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="btn-item text-center">
+            <el-button type="primary" size="small" @click="save" v-loading.fullscreen="fullscreenLoading">{{$lang('提交申请')}}</el-button>
+        </div>
+        <el-dialog title="处理方式" :visible.sync="dialogReturnService">
+            <el-table class="returnServiceDialog" max-height="250" ref="multipleTable" :row-class-name="tableRowClassName" @selection-change="handleSelectionChange"  border style="width: 100%" :data="return_service_data">
+                <el-table-column property="ReturnServiceNo" :label="$lang('退货服务编号')" ></el-table-column>
+                <el-table-column property="ReturnServiceName" :label="$lang('退货服务名称')" ></el-table-column>
+                <el-table-column property="ItemNumber" :label="$lang('项目编号')"></el-table-column>
+                <el-table-column property="ItemName" :label="$lang('项目名称')"></el-table-column>
+                <el-table-column property="Fee" :label="$lang('费用说明')"></el-table-column>
+                <el-table-column
+                    type="selection"
+                    width="55">
+                </el-table-column>
+                <el-table-column :label="$lang('数量')" width="100">
+                    <template slot-scope="scope">
+                        <div>
+                            <el-input v-model="scope.row.num"></el-input>
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column property="Comments" :label="$lang('备注')"></el-table-column>
+            </el-table>
+            <div style="text-align: right;margin-top: 20px;">
+                <el-button type="primary" size="small" @click="processingMethod('submit')" >{{$lang('提交')}}</el-button>
+                <el-button type="info" size="small" @click="processingMethod('reset')" >{{$lang('重置')}}</el-button>
+                <el-button type="info" size="small" @click="processingMethod('close')" >{{$lang('关闭')}}</el-button>
+            </div>
+        </el-dialog>
+
+    </div>
+    <!--引入js-->
+    <script type="text/javascript" src="/Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="/Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="/Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="/Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+
+    <script>
+        var VM = new Vue({
+            el: '#order-detail',
+            components: {},
+            data: {
+                order_no: '', //订单号
+                platCd: '', // 平台code
+                order_id: '',
+                warehouse_code: '',
+                tableData: [], //售后订单数据
+                returnGudsInfo: [],
+                reisGudsInfo: [],
+                returnRq: [],
+                reisRq: [],
+                multipleSelectionRet: [],
+                multipleSelectionRes: [],
+                baseData: {},
+                returnUpcId: [],
+                returnNum: 0,
+                reisNum: 0,
+                multipleSelectionReturn:[],
+                return_service_data:[],
+                reply_order_express:[],
+                reply_order_warehouse:[],
+                afterSaleType:'',
+                dialogReturnService:false,
+                dialogReturnServiceIndex:'',
+                tableLoading: true,
+                reissueSale: false,
+                returnSale: true,
+                bigImg: false,
+                fullscreenLoading: false,
+                warehouse_info:'',
+                express_name:'',
+                customer_info:{
+                    receiver_name:'',
+                    postal_code:'',
+                    two_char:'',
+                    country_name:'',
+                    city_name:'',
+                    address_1:'',
+                    address_2:'',
+                    province_id:'',
+                    duty_paragraph:'',
+                    receiver_phone:'',
+                    fax:'',
+                    email:''
+                },
+                return_base_info: {
+                    logistics_no: '',
+                    logistics_way_code: '',
+                    logistics_fee_currency_code: 'N000590300',
+                    logistics_fee: 0,
+                    service_fee_currency_code: 'N000590300',
+                    service_fee: 0,
+                    return_reason: '',
+                    only_return_money:0,
+                    return_time:'',
+                    is_relevance_order:'',
+                },
+                reissue_base_info: {
+                    receiver_name: '',
+                    receiver_phone: '',
+                    country_id: '',
+                    province_id: '',
+                    city_id: '',
+                    address: '',
+                    postal_code: '',
+                    email: '',
+                    reissue_reason: '',
+                },
+                rules: {},
+                queryPost: function(url, param) {
+                    var headers = {
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    }
+                    return axios.post(url, Qs.stringify(param), headers);
+                }
+            },
+            created: function created() {
+                this.init();
+                /*if(this.platCd === 'N000832500'){
+                  this.$message.warning(this.$lang('Amazon平台自动退货入库，禁止发起退货'))
+                }*/
+            },
+            methods: {
+                renderHeaderRetNum(h, data) {  
+                    return h("div", [
+                        h("span", {
+                            style: {
+                                color: '#f56c6c'
+                            }
+                        }, '*'),
+                        h("span", this.$lang('退货件数')),
+                    ])
+                },
+                renderHeaderRetWar(h, {column}) {  
+                    return h("div", [
+                        h("span", {
+                            style: {
+                                color: '#f56c6c'
+                            }
+                        }, '*'),
+                        h('span', column.label),
+                        // h("span", this.$lang('退货仓库')),
+                    ])
+                },
+                renderHeaderResNum(h, data) {  
+                    return h("div", [
+                        h("span", {
+                            style: {
+                                color: '#f56c6c'
+                            }
+                        }, '*'),
+                        h("span", this.$lang('补发件数')),
+                    ])
+                },
+                init() {
+                    this.rules = {
+                        logistics_no: [{
+                            required: true,
+                            message: this.$lang('请输入物流单号'),
+                            trigger: 'blur'
+                        }],
+                        logistics_way_code: [{
+                            required: true,
+                            message: this.$lang('请输入物流方式'),
+                            trigger: 'blur'
+                        }],
+                        logistics_fee: [{
+                            required: true,
+                            message: this.$lang('请输入物流费用'),
+                            trigger: 'blur'
+                        }],
+                        service_fee: [{
+                            required: true,
+                            message: this.$lang('请输入服务费'),
+                            trigger: 'blur'
+                        }],
+                        return_reason: [{
+                            required: true,
+                            message: this.$lang('请输入售后原因'),
+                            trigger: 'blur'
+                        }],
+                        receiver_name: [{
+                            required: true,
+                            message: this.$lang('请输入收货人姓名'),
+                            trigger: 'blur'
+                        }],
+                        receiver_phone: [{
+                            required: true,
+                            message: this.$lang('请输入手机号'),
+                            trigger: 'blur'
+                        }],
+                        country_id: [{
+                            required: true,
+                            message: this.$lang('请输入国家'),
+                            trigger: 'blur'
+                        }],
+                        province_id: [{
+                            required: true,
+                            message: this.$lang('请输入省份'),
+                            trigger: 'blur'
+                        }],
+                        address: [{
+                            required: true,
+                            message: this.$lang('请输入详细地址'),
+                            trigger: 'blur'
+                        }],
+                        postal_code: [{
+                            required: true,
+                            message: this.$lang('请输入邮编'),
+                            trigger: 'blur'
+                        }],
+                        reissue_reason: [{
+                            required: true,
+                            message: this.$lang('请输入售后原因'),
+                            trigger: 'blur'
+                        }],
+                    };
+                    this.order_no = getQueryVariable("order_no");
+                    this.warehouse_code = getQueryVariable("warehouse");
+                    this.order_id = getQueryVariable("order_id");
+                    this.platCd = getQueryVariable("platCd");
+                    /*if(this.platCd === 'N000832500'){
+                      this.returnSale = false
+                    }*/
+                    this.getOrderLog();
+                    this.getWarehouseData();
+                    this.getCommonData()
+                    this.addReturnGoods('all')
+                },
+                getCommonData(){
+                    var _this = this
+                    axios.post('index.php?g=oms&m=CommonData&a=commonData', {
+                        data: {
+                            query: {
+                                "return_service": true,
+                                "reply_order_warehouse": true,
+                                "reply_order_express": true,
+                            }
+                        }
+                    }).then(function (res) {
+                        if (res.data.code == 2000) {
+                            _this.return_service_data = res.data.data.return_service
+                            _this.reply_order_express = res.data.data.reply_order_express
+                            _this.reply_order_warehouse = res.data.data.reply_order_warehouse
+                        }
+                    })
+                },
+                getWarehouseData() {
+                    let param = {
+                        cd_type: {
+                            warehouse: true,
+                            currency: true
+                        }
+                    }
+                    this.queryPost("/index.php?g=common&m=index&a=get_cd", param).then((res) => {
+                        var _data = res.data;
+                        if (_data.code === 2000) {
+                            this.baseData = _data.data;
+                        } else {
+                            this.$message.error(this.$lang(_data.msg));
+                        }
+                    }).catch(function(err) {
+                        console.log(err);
+                    });
+                },
+                warehouseInfoBlur(val){
+                    console.log(val);
+                    // var warehouseInfo = this.warehouse_info
+                    if(val.indexOf('易达') == -1){
+                        this.$message({
+                            message: this.$lang('当前只支持在易达仓库!'),
+                            type: "warning"
+                        });
+                        this.warehouse_info = ''
+                    }
+                },
+                addReturnGoods(type) {
+                    let {
+                        sku_id,
+                        spu_name,
+                        product_attr,
+                        thumbnail,
+                        upc_id,
+                        returnIndex,
+                    } = '';
+                    var _this = this;
+                    var data = {
+                        order_no: _this.order_no,
+                        order_id: _this.order_id,
+                        platform_cd: _this.platCd
+                    }
+                    axios.post('/index.php?g=OMS&m=afterSale&a=orderProductSkus', data).then(function(res) {
+                        if (res.data.code == 200) {
+                            _this.returnUpcId = res.data.data;
+
+                            if(type == 'all'){
+                                console.log('1');
+                                var returnUpcIdArr = res.data.data
+                                for (var item in returnUpcIdArr) {
+                                    _this.returnGudsInfo.push({
+                                        sku_id:returnUpcIdArr[item],
+                                        spu_name,
+                                        product_attr,
+                                        thumbnail,
+                                        upc_id,
+                                        returnIndex: _this.returnNum++,
+                                        yet_return_num: 0,
+                                    }); 
+                                    _this.changeReturn(item,{sku_id:returnUpcIdArr[item]})
+
+                                }
+                            }else{
+                                console.log('2');
+
+                                _this.returnGudsInfo.push({
+                                    sku_id,
+                                    spu_name,
+                                    product_attr,
+                                    thumbnail,
+                                    upc_id,
+                                    returnIndex: _this.returnNum++,
+                                    yet_return_num: 0,
+                                });
+                            }
+                            
+                        } else {
+                            _this.$message.error(_this.$lang(res.data.msg));
+                        }
+                    }).catch(function(err) {
+                        console.log(err);
+                    });
+                },
+                changeReturn(index, row) {
+                    var _this = this;
+                    if (_this.returnRq.indexOf(row.sku_id) == -1) {
+                        var data = {
+                            search: {
+                                order_no: _this.order_no,
+                                sku_id: row.sku_id,
+                                type: 'return',
+                                order_id: _this.order_id,
+                                platform_cd: _this.platCd
+                            }
+                        }
+                        axios.post('/index.php?g=OMS&m=afterSale&a=getProducts', data).then(function(res) {
+                            if (res.data.code == 200) {
+                                _this.returnGudsInfo[index].spu_name = res.data.data.data[0].spu_name;
+                                _this.returnGudsInfo[index].product_attr = res.data.data.data[0].product_attr;
+                                _this.returnGudsInfo[index].thumbnail = res.data.data.data[0].thumbnail;
+                                _this.returnGudsInfo[index].yet_return_num = res.data.data.data[0].over_return_num;
+                                _this.returnGudsInfo[index].upc_id = res.data.data.data[0].upc_id;
+                                _this.$set(_this.returnGudsInfo[index], 'warehouse_code', _this.warehouse_code)
+                                _this.$set(_this.returnRq, index, row.sku_id)
+                            } else {
+                                _this.$message.error(_this.$lang(res.data.msg));
+                            }
+                        }).catch(function(err) {
+                            console.log(err);
+                        });
+                    } else {
+                        this.$message({
+                            message: _this.$lang('该SKU已经添加过了!'),
+                            type: "warning"
+                        });
+                    }
+                },
+                delReturnGoods() {
+                    if (this.multipleSelectionRet.length) {
+                        for (let item of this.multipleSelectionRet) {
+                            this.returnGudsInfo.forEach((val, ind) => {
+                                if (item.returnIndex == val.returnIndex) {
+                                    this.returnGudsInfo.splice(ind, 1);
+                                }
+                            });
+                            this.returnRq.forEach((val, ind) => {
+                                if (item.sku_id == val) {
+                                    this.returnRq.splice(ind, 1);
+                                }
+                            })
+                        }
+                    } else {
+                        this.$message({
+                            message: "Please select at least one item",
+                            type: "warning"
+                        });
+                    }
+                },
+                addProcessingMethod(val,index){
+                    if(val.handle_type_num){
+                        var _this = this
+                        _this.return_service_data = _this.returnGudsInfo[index].return_service_data
+                        _this.dialogReturnService = true
+                        _this.dialogReturnServiceIndex = index
+                        var rowIndex = JSON.parse(_this.returnGudsInfo[index].row_index)
+                        var selection = []
+                        rowIndex.forEach(row => {
+                            _this.$nextTick(() => {
+                                _this.$refs.multipleTable.toggleRowSelection(_this.return_service_data[row],true);
+                            });
+                        });
+                    }else{
+                        this.getCommonData()
+                        this.dialogReturnService = true
+                        this.dialogReturnServiceIndex = index
+                    }
+                    
+                },
+                addReissueGoods() {
+                    let {
+                        sku_id,
+                        spu_name,
+                        product_attr,
+                        thumbnail,
+                        upc_id,
+                        returnIndex,
+                    } = '';
+                    this.reisGudsInfo.push({
+                        sku_id,
+                        spu_name,
+                        product_attr,
+                        thumbnail,
+                        upc_id,
+                        returnIndex: this.reisNum++,
+                        returnFlag: false,
+                        yet_reissue_num: 0,
+                    });
+                },
+                handerSearchRes(index, row) {
+                    var _this = this;
+                    if (_this.reisRq.indexOf(row.sku_id) == -1) {
+                        var data = {
+                            search: {
+                                order_no: _this.order_no,
+                                sku_id: row.sku_id,
+                                type: 'reissue',
+                                order_id: _this.order_id,
+                                platform_cd: _this.platCd
+                            }
+                        }
+                        axios.post('/index.php?g=OMS&m=afterSale&a=getProducts', data).then(function(res) {
+                            if (res.data.code == 200) {
+                                if (res.data.data.data) {
+                                    _this.reisGudsInfo[index].spu_name = res.data.data.data[0].spu_name;
+                                    _this.reisGudsInfo[index].product_attr = res.data.data.data[0].product_attr;
+                                    _this.reisGudsInfo[index].thumbnail = res.data.data.data[0].thumbnail;
+                                    _this.reisGudsInfo[index].upc_id = res.data.data.data[0].upc_id;
+                                    _this.reisGudsInfo[index].returnFlag = true;
+                                    _this.$set(_this.reisRq, index, row.sku_id)
+                                } else {
+                                    _this.$message.error(_this.$lang('请输入正确的商品编码'));
+                                    _this.reisGudsInfo[index].sku_id = '';
+                                    _this.reisGudsInfo[index].spu_name = '';
+                                    _this.reisGudsInfo[index].product_attr = '';
+                                    _this.reisGudsInfo[index].thumbnail = '';
+                                    _this.reisGudsInfo[index].upc_id = '';
+                                    _this.reisGudsInfo[index].returnFlag = false;
+                                    _this.$set(_this.reisRq, index)
+                                }
+                            } else {
+                                _this.$message.error(_this.$lang(res.data.msg));
+                            }
+                        }).catch(function(err) {
+                            console.log(err);
+                        });
+                    } else {
+                        this.$message({
+                            message: _this.$lang('该SKU已经添加过了!'),
+                            type: "warning"
+                        });
+                    }
+                },
+                delReissueGoods() {
+                    if (this.multipleSelectionRes.length) {
+                        for (let item of this.multipleSelectionRes) {
+                            this.reisGudsInfo.forEach((val, ind) => {
+                                if (item.returnIndex == val.returnIndex) {
+                                    this.reisGudsInfo.splice(ind, 1);
+                                }
+                            });
+                            this.reisRq.forEach((val, ind) => {
+                                if (item.sku_id == val) {
+                                    this.reisRq.splice(ind, 1);
+                                }
+                            })
+                        }
+                    } else {
+                        this.$message({
+                            message: "Please select at least one item",
+                            type: "warning"
+                        });
+                    }
+                },
+                handleSelectionRet: function handleSelectionRet(val) {
+                    this.multipleSelectionRet = val;
+                },
+                handleSelectionRes: function handleSelectionRes(val) {
+                    this.multipleSelectionRes = val;
+                },
+                getOrderLog: function getOrderLog() {
+                    var _this = this;
+                    var data = {
+                        order_no: _this.order_no,
+                        order_id: _this.order_id,
+                        platform_cd: _this.platCd
+                    }
+                    axios.post('/index.php?g=OMS&m=afterSale&a=applyDetail', data).then(function(res) {
+                        console.log(res)
+                        if (res.data.code == 200) {
+                            _this.tableData = res.data.data;
+                            _this.reissue_base_info.receiver_name = res.data.data[0].receiver_name;
+                            _this.reissue_base_info.receiver_phone = res.data.data[0].receiver_phone;
+                            _this.reissue_base_info.country_id = res.data.data[0].country ? res.data.data[0].country : res.data.data[0].country_code;
+                            _this.reissue_base_info.province_id = res.data.data[0].province;
+                            _this.reissue_base_info.city_id = res.data.data[0].city;
+                            _this.reissue_base_info.address = res.data.data[0].address;
+                            _this.reissue_base_info.postal_code = res.data.data[0].postal_code;
+                            _this.reissue_base_info.email = res.data.data[0].email;
+
+                            _this.customer_info.receiver_name = res.data.data[0].receiver_name;
+                            _this.customer_info.city_name = res.data.data[0].city;
+                            _this.customer_info.postal_code = res.data.data[0].postal_code;
+                            _this.customer_info.address_1 = res.data.data[0].address +' '+ res.data.data[0].doorplate;
+                            _this.customer_info.receiver_phone = res.data.data[0].receiver_tel;
+                            _this.customer_info.two_char = res.data.data[0].country_code;
+                            _this.customer_info.address_2 = res.data.data[0].address2;
+                            _this.customer_info.country_name = res.data.data[0].country;
+                            _this.customer_info.province_id = res.data.data[0].province;
+                            _this.customer_info.email = res.data.data[0].email;
+                            
+                           
+                            if(res.data.data[0].send_ord_status == 'N001820200' && res.data.data[0].whole_status_cd == 'N001821102'){
+                                _this.afterSaleType = '1'
+                                _this.return_base_info.return_reason = '回邮单'
+                                _this.return_base_info.return_time = _this.dateFormatCn(new Date())
+                                _this.return_base_info.is_relevance_order = '0'
+                            }else{
+                                _this.afterSaleType = '2'
+                            }
+                        } else {
+                            _this.$message.error(_this.$lang(res.data.info));
+                        }
+                    }).catch(function(err) {
+                        console.log(err);
+                    });
+                },
+                dateFormatCn:function(val){
+                    if(val == '' || val == null ){
+                        return('')
+                    }else{
+                        var myMonth = val.getMonth() + 1
+                        var myDate = val.getDate()
+                        if(myMonth<10){
+                            myMonth = "0" + myMonth
+                        }
+                        if(myDate<10){
+                            myDate = "0" + myDate
+                        }
+                        return(val.getFullYear()+'-'+myMonth+'-' +myDate)
+                    }
+
+                },
+                showImg: function showImg(item) {
+                    Vue.set(item, 'bigImg', !item.bigImg);
+                },
+                handleSelectionChange(val){
+                    this.multipleSelectionReturn = val;
+                },
+                tableRowClassName({row, rowIndex}) {
+                    row.row_index = rowIndex;
+                },
+                processingMethod(type){
+                    var multipleSelectionReturn = this.multipleSelectionReturn
+                    var index = this.dialogReturnServiceIndex
+
+                    if(type == 'submit'){
+                        var handle_type_data = []
+                        var handleTypeNum = ''
+                        var row_index = []
+                        var status = true
+
+
+                        for (var item in multipleSelectionReturn) {
+                            if( !multipleSelectionReturn[item].num || multipleSelectionReturn[item].num == ''){
+                                this.$message.error(this.$lang('请输入数量'));
+                                status = false
+                                return false;
+                            }
+                            var obj = {}
+                            obj.ReturnServiceNo = multipleSelectionReturn[item].ReturnServiceNo
+                            obj.ItemNumber = multipleSelectionReturn[item].ItemNumber
+                            obj.Quantity = multipleSelectionReturn[item].num
+                            handle_type_data.push(obj)
+                            handleTypeNum +=  multipleSelectionReturn[item].ReturnServiceNo + ' '
+                            row_index.push(multipleSelectionReturn[item].row_index)   
+                            
+                        
+                        }
+                        if(status && handleTypeNum){
+
+                            this.$set(this.returnGudsInfo[index],'handle_type_num',handleTypeNum);
+                            this.$set(this.returnGudsInfo[index],'row_index',JSON.stringify(row_index));
+                            this.$set(this.returnGudsInfo[index],'return_service_data',this.return_service_data);
+                            this.$set(this.returnGudsInfo[index],'handle_type',JSON.stringify(handle_type_data));
+
+                            this.multipleSelectionReturn = []
+                            this.$refs.multipleTable.clearSelection();
+                            this.dialogReturnService = false
+
+                        }
+
+                    }else if(type == 'reset'){
+                        this.multipleSelectionReturn = []
+                        this.$refs.multipleTable.clearSelection();
+                        this.getCommonData()
+                    }else if(type == 'close'){
+                        this.multipleSelectionReturn = []
+                        this.dialogReturnService = false
+                    }
+                },
+                save() {
+                    var fir = false;
+                    var sec = false;
+                    if (this.returnSale) {
+                        this.$refs['return_base_info'].validate(valid => {
+                            if (valid) {
+                                fir = true;
+                            }
+                        });
+                    }
+                    if (this.reissueSale) {
+                        this.$refs['reissue_base_info'].validate(valid => {
+                            if (valid) {
+                                sec = true;
+                            }
+                        });
+                    }
+                    this.reisGudsInfo.forEach(item => {
+                        if (!item.returnFlag) {
+                            item.sku_id = '';
+                            this.$message.error(this.$lang('请输入正确的商品编码搜索商品'));
+                            return;
+                        }
+                    })
+
+                    if(this.afterSaleType == '1'){
+
+                        var returnGudsInfoData = this.returnGudsInfo
+                        var returnGudsInfoArr = []
+
+                        for (var item in returnGudsInfoData) {
+                           var obj = {}
+                           obj.upc_id = returnGudsInfoData[item].upc_id
+                           obj.sku_id = returnGudsInfoData[item].sku_id
+                           obj.yet_return_num = returnGudsInfoData[item].yet_return_num
+                           obj.warehouse_code = returnGudsInfoData[item].warehouse_code
+                           obj.handle_type = returnGudsInfoData[item].handle_type
+                           returnGudsInfoArr.push(obj)
+                        }
+
+                        var param = {
+                            return_info:{
+                                base_info: this.return_base_info,
+                                // goods_info: this.returnGudsInfo
+                                goods_info: returnGudsInfoArr
+                            },
+                            warehouse_info:this.warehouse_info,
+                            express_name:this.express_name.CD_VAL,
+                            customer_info:this.customer_info,
+                            order_info: {
+                                order_no: this.order_no,
+                                order_id: this.order_id,
+                                platform_cd: this.platCd
+                            }
+                        }
+                        console.log('param',param);
+                        var _this = this;
+                        _this.fullscreenLoading = true;
+                        axios.post('/index.php?g=OMS&m=afterSale&a=reOrderApplySubmit', param).then(function(res) {
+                            console.log(res);
+                            if (res.data.code == 200) {
+                                _this.$message({
+                                    center: true,
+                                    type: 'success',
+                                    message: _this.$lang(res.data.msg)
+                                });
+                                setTimeout(function(){
+                                  window.location.reload();
+                                },1000)
+                            } else {
+                                    _this.$message.error(_this.$lang(res.data.msg));
+                                    _this.fullscreenLoading = false;
+                            }
+                        }).catch(function(err) {
+                            _this.$message({
+                                center: true,
+                                type: 'error',
+                                message: _this.$lang(err)
+                            });
+                            console.log(err);
+                        })
+
+                    }else{
+                        var data = {
+                            return_info: this.returnSale ? {
+                                base_info: this.return_base_info,
+                                goods_info: this.returnGudsInfo
+                            } : '',
+                            reissue_info: this.reissueSale ? {
+                                base_info: this.reissue_base_info,
+                                goods_info: this.reisGudsInfo
+                            } : '',
+                            order_info: {
+                                order_no: this.order_no,
+                                order_id: this.order_id,
+                                platform_cd: this.platCd
+                            }
+                        }
+                        if ((this.returnSale && fir) || (this.reissueSale && sec)) {
+                            var _this = this;
+                            _this.fullscreenLoading = true;
+                            axios.post('/index.php?g=OMS&m=afterSale&a=applySubmit', data).then(function(res) {
+                                if (res.data.code == 200) {
+                                    _this.$message({
+                                        center: true,
+                                        type: 'success',
+                                        message: _this.$lang(res.data.msg)
+                                    });
+                                    window.location.reload();
+                                } else {
+                                    _this.$message.error(_this.$lang(res.data.msg));
+                                    _this.fullscreenLoading = false;
+                                }
+                            }).catch(function(err) {
+                                _this.$message({
+                                    center: true,
+                                    type: 'error',
+                                    message: _this.$lang(err)
+                                });
+                                console.log(err);
+                            })
+                        }
+                    }
+
+
+                    
+                },
+                // 物流费
+                logisticsBlur: function() {
+                    var launch_num = parseFloat(this.return_base_info.logistics_fee);
+                    if (launch_num >= 0) {
+                        this.return_base_info.logistics_fee = launch_num;
+                    } else {
+                        this.return_base_info.logistics_fee = 0;
+                    }
+                    return;
+                },
+                // 服务费
+                serviceBlur: function() {
+                    var launch_num = parseFloat(this.return_base_info.service_fee);
+                    if (launch_num >= 0) {
+                        this.return_base_info.service_fee = launch_num;
+                    } else {
+                        this.return_base_info.service_fee = 0;
+                    }
+                    return;
+                },
+                //手机号码
+                phoneBlur: function() {
+                    // var launch_num = parseInt(this.reissue_base_info.receiver_phone);
+                    if (/^[0-9]+$/.test(this.reissue_base_info.receiver_phone)) {
+                        // this.reissue_base_info.receiver_phone = Number(launch_num);
+                    } else {
+                        this.reissue_base_info.receiver_phone = '';
+                    }
+                    return;
+                },
+                //退货件数
+                yet_return_numBlur: function(index) {
+                    var launch_num = parseInt(this.returnGudsInfo[index].yet_return_num);
+                    if (launch_num >= 0) {
+                        this.returnGudsInfo[index].yet_return_num = launch_num;
+                    } else {
+                        this.returnGudsInfo[index].yet_return_num = 0;
+                    }
+                    return;
+                },
+                //补发件数
+                yet_reissue_numBlur: function(index) {
+                    var launch_num = parseInt(this.reisGudsInfo[index].yet_reissue_num);
+                    if (launch_num >= 0) {
+                        this.reisGudsInfo[index].yet_reissue_num = launch_num;
+                    } else {
+                        this.reisGudsInfo[index].yet_reissue_num = 0;
+                    }
+                    return;
+                }
+            },
+        });
+        //获取url参数
+        function getQueryVariable(variable) {
+            var query = window.location.search.substring(1);
+            var vars = query.split("&");
+            for (var i = 0; i < vars.length; i++) {
+                var pair = vars[i].split("=");
+                if (pair[0] == variable) {
+                    return pair[1];
+                }
+            }
+            return false;
+        }
+    </script>
+</body>
+
+</html>

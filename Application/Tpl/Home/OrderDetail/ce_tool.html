@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <title>CE工具</title>
+</head>
+<link rel="stylesheet" href="../Public/utils/css/public.style.css?v=0907">
+<link rel="stylesheet" href="../Public/css/element-ui.css?v=">
+<link rel="stylesheet" href="../Public/../Hr/depList.css?v=20170922">
+<link rel="stylesheet" href="../Public/icon/css/font-awesome.min.css">
+<style>
+    #ce-tool {
+        padding: 10px 10px 80px;
+    }
+
+    .ce-table {
+        width: 100%;
+        font-size: 13px;
+        color: #546E7A;
+        font-family: MicrosoftYaHei;
+        border-bottom: 1px solid #CADEE7;
+        border-right: 1px solid #CADEE7;
+        background: #F7F9FB;
+        margin: 20px 0;
+    }
+
+    .ce-table td {
+        padding: 8px;
+        border-top: 1px solid #CADEE7;
+        border-left: 1px solid #CADEE7;
+        background: #F7F9FB;
+        text-align: center;
+    }
+
+    .ce-table td:nth-child(odd) {
+        text-align: center;
+    }
+
+    .ce-title {
+        font-family: MicrosoftYaHei-Bold;
+        font-size: 17px;
+        color: #263238;
+        letter-spacing: 0;
+        margin-bottom: 15px;
+        font-weight: 600;
+    }
+
+    .ce-table caption {
+        background: #546E7A;
+        font-family: MicrosoftYaHei;
+        font-size: 16px;
+        color: #FFFFFF;
+        letter-spacing: 0;
+        padding: 6px 10px 8px;
+        text-align: left;
+    }
+
+    .required {
+        color: red;
+    }
+
+    .el-select,
+    .el-input {
+        width: 95%;
+    }
+
+    .el-select .el-input {
+        width: 100%;
+    }
+
+    .el-date-editor--date+.el-select {
+        width: 45%;
+        display: inline-block;
+    }
+
+    .select-input .el-select {
+        width: 30%;
+    }
+
+    .select-input .el-select .el-input__inner {
+        border-radius: 4px 0 0 4px;
+    }
+
+    .select-input>.el-input {
+        width: 66%;
+        margin-left: -1%;
+    }
+
+    .select-input>.el-input .el-input__inner {
+        border-radius: 0 4px 4px 0;
+    }
+
+    .text-left td {
+        text-align: left;
+    }
+</style>
+
+<body>
+
+    <div id="ce-tool" v-cloak>
+        <div class="ce-title">CE Tool</div>
+        <!--采购信息-->
+        <table class="ce-table" cellpadding="0" cellspacing="0">
+            <caption>
+                <{$Think.lang.采购信息}>
+            </caption>
+            <tbody>
+                <tr>
+                    <td>
+                        <{$Think.lang.采购团队}>
+                            <span class="required"> *</span>
+                    </td>
+                    <td>
+                        <el-select clearable filterable v-model="form.purchase_team" placeholder="<{$Think.lang.请选择采购团队}>">
+                            <el-option v-for="item in selects.purchase_team" :key="item.CD" :value="item.CD_VAL" :label="item.CD_VAL"></el-option>
+                        </el-select>
+                    </td>
+                    <td>
+                        <{$Think.lang.付款-首付款}>
+                    </td>
+                    <td>
+                        <el-date-picker type="date" placeholder="<{$Think.lang.请选择日期}>" v-model="form.pre_payment_date" style="width: 50%;" @change="calcTotalProfit()"></el-date-picker>
+                        <el-select clearable filterable v-model="form.pre_payment_percent" placeholder="<{$Think.lang.请选择付款比例}>" @change="calcTotalProfit()">
+                            <el-option v-for="item in selects.pay_percent" :key="item.CD" :value="item.CD_VAL" :label="item.CD_VAL"></el-option>
+                        </el-select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <{$Think.lang.供应商}>
+                            <span class="required"> *</span>
+                    </td>
+                    <td>
+                        <el-input v-model="form.supplier"></el-input>
+                    </td>
+                    <td>
+                        <{$Think.lang.付款-中间款}>
+                    </td>
+                    <td>
+                        <el-date-picker type="date" placeholder="<{$Think.lang.请选择日期}>" v-model="form.mid_payment_date" style="width: 50%;" @change="calcTotalProfit()"></el-date-picker>
+                        <el-select clearable filterable v-model="form.mid_payment_percent" placeholder="<{$Think.lang.请选择付款比例}>" @change="calcTotalProfit()">
+                            <el-option v-for="item in selects.pay_percent" :key="item.CD" :value="item.CD_VAL" :label="item.CD_VAL"></el-option>
+                        </el-select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <{$Think.lang.商品成本}>
+                            <span class="required"> *</span>
+                    </td>
+                    <td class="select-input">
+                        <el-select clearable filterable v-model="form.purchase_currency" placeholder="<{$Think.lang.请选择币种}>" @change="checkPurCur()">
+                            <el-option v-for="item in selects.currency" :key="item.CD" :value="item.CD_VAL" :label="item.CD_VAL"></el-option>
+                        </el-select>
+                        <el-input v-model="form.purchase_amount" @keyup.native="inNum($event,'purchase_amount')" @blur="calcTotalProfit()" @focus="checkCurrency('purchase')"></el-input>
+                    </td>
+                    <td>
+                        <{$Think.lang.付款-尾款}>
+                    </td>
+                    <td>
+                        <el-date-picker type="date" placeholder="<{$Think.lang.请选择日期}>" v-model="form.end_payment_date" style="width: 50%;" @change="calcTotalProfit()"></el-date-picker>
+                        <el-select clearable filterable v-model="form.end_payment_percent" placeholder="<{$Think.lang.请选择付款比例}>" @change="calcTotalProfit()">
+                            <el-option v-for="item in selects.pay_percent" :key="item.CD" :value="item.CD_VAL" :label="item.CD_VAL"></el-option>
+                        </el-select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <{$Think.lang.采购端物流费用}>
+                    </td>
+                    <td class="select-input">
+                        <el-select clearable filterable v-model="form.pur_shipping_currency" placeholder="<{$Think.lang.请选择币种}>">
+                            <el-option v-for="item in selects.currency" :key="item.CD" :value="item.CD_VAL" :label="item.CD_VAL"></el-option>
+                        </el-select>
+                        <el-input v-model="form.pur_shipping" @keyup.native="inNum($event,'pur_shipping')" @focus="checkCurrency('pur_shipping')"
+                            @blur="calcTotalProfit()"></el-input>
+                    </td>
+                    <td>
+                        <{$Think.lang.备注}>
+                    </td>
+                    <td>
+                        <el-input v-model="form.purchase_remark"></el-input>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <!--销售信息-->
+        <table class="ce-table" cellpadding="0" cellspacing="0">
+            <caption>
+                <{$Think.lang.销售信息}>
+            </caption>
+            <tbody>
+                <tr>
+                    <td>
+                        <{$Think.lang.销售团队}>
+                            <span class="required"> *</span>
+                    </td>
+                    <td>
+                        <el-select clearable filterable v-model="form.sell_team" placeholder="<{$Think.lang.请选择销售团队}>">
+                            <el-option v-for="item in selects.sell_team" :key="item.CD" :value="item.CD_VAL" :label="item.CD_VAL"></el-option>
+                        </el-select>
+                    </td>
+                    <td>
+                        <{$Think.lang.收款-首付款}>
+                    </td>
+                    <td>
+                        <el-date-picker type="date" placeholder="<{$Think.lang.请选择日期}>" v-model="form.pre_receivable_date" style="width: 50%;" @change="calcTotalProfit()"></el-date-picker>
+                        <el-select clearable filterable v-model="form.pre_receivable_percent" placeholder="<{$Think.lang.请选择收款比例}>" @change="calcTotalProfit()">
+                            <el-option v-for="item in selects.pay_percent" :key="item.CD" :value="item.CD_VAL" :label="item.CD_VAL"></el-option>
+                        </el-select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <{$Think.lang.客户名称}>
+                            <span class="required"> *</span>
+                    </td>
+                    <td>
+                        <el-input v-model="form.buyer"></el-input>
+                    </td>
+                    <td>
+                        <{$Think.lang.收款-中间款}>
+                    </td>
+                    <td>
+                        <el-date-picker type="date" placeholder="<{$Think.lang.请选择日期}>" v-model="form.mid_receivable_date" style="width: 50%;" @change="calcTotalProfit()"></el-date-picker>
+                        <el-select clearable filterable v-model="form.mid_receivable_percent" placeholder="<{$Think.lang.请选择收款比例}>" @change="calcTotalProfit()">
+                            <el-option v-for="item in selects.pay_percent" :key="item.CD" :value="item.CD_VAL" :label="item.CD_VAL"></el-option>
+                        </el-select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <{$Think.lang.销售金额}>
+                            <span class="required"> *</span>
+                    </td>
+                    <td class="select-input">
+                        <el-select clearable filterable v-model="form.sales_currency" placeholder="<{$Think.lang.请选择币种}>">
+                            <el-option v-for="item in selects.currency" :key="item.CD" :value="item.CD_VAL" :label="item.CD_VAL"></el-option>
+                        </el-select>
+                        <el-input v-model="form.sales_amount" @keyup.native="inNum($event,'sales_amount')" @blur="calcTotalProfit()" @focus="checkCurrency('sales')"></el-input>
+                    </td>
+                    <td>
+                        <{$Think.lang.收款-尾款}>
+                    </td>
+                    <td>
+                        <el-date-picker type="date" placeholder="<{$Think.lang.请选择日期}>" v-model="form.end_receivable_date" style="width: 50%;" @change="calcTotalProfit()"></el-date-picker>
+                        <el-select clearable filterable v-model="form.end_receivable_percent" placeholder="<{$Think.lang.请选择收款比例}>" @change="calcTotalProfit()">
+                            <el-option v-for="item in selects.pay_percent" :key="item.CD" :value="item.CD_VAL" :label="item.CD_VAL"></el-option>
+                        </el-select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <{$Think.lang.销售端物流费用}>
+                    </td>
+                    <td class="select-input">
+                        <el-select clearable filterable v-model="form.sales_shipping_currency" placeholder="<{$Think.lang.请选择币种}>">
+                            <el-option v-for="item in selects.currency" :key="item.CD" :value="item.CD_VAL" :label="item.CD_VAL"></el-option>
+                        </el-select>
+                        <el-input v-model="form.sales_shipping" @keyup.native="inNum($event,'sales_shipping')" @focus="checkCurrency('sales_shipping')"
+                            @blur="calcTotalProfit()"></el-input>
+                    </td>
+                    <td>
+                        <{$Think.lang.备注}>
+                    </td>
+                    <td>
+                        <el-input v-model="form.sale_remark"></el-input>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <!--退税信息-->
+        <table class="ce-table text-left" cellpadding="0" cellspacing="0">
+            <caption>
+                <{$Think.lang.退税信息}>
+            </caption>
+            <tbody>
+                <tr>
+                    <td>
+                        <{$Think.lang.预计退税日期}>
+                    </td>
+                    <td>
+                        <el-date-picker type="date" placeholder="<{$Think.lang.请选择日期}>" v-model="form.drawback_date" style="width: 95%;" @change="calcTotalProfit()"></el-date-picker>
+                    </td>
+                    <td>
+                        <{$Think.lang.预计退税金额}>
+                    </td>
+                    <td class="select-input">
+                        <el-select clearable filterable v-model="form.drawback_currency" placeholder="<{$Think.lang.请选择币种}>">
+                            <el-option v-for="item in selects.currency" :key="item.CD" :value="item.CD_VAL" :label="item.CD_VAL"></el-option>
+                        </el-select>
+                        <el-input v-model="form.return_amount" @keyup.native="inNum($event,'return_amount')" @blur="calcTotalProfit()" @focus="checkCurrency('return_amount')"></el-input>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <!--预估利润-->
+        <table class="ce-table" cellpadding="0" cellspacing="0">
+            <caption>
+                <{$Think.lang.预估利润（单位：人民币）}>
+            </caption>
+            <tbody>
+                <tr>
+                    <td>
+                        <{$Think.lang.收款账期}>
+                    </td>
+                    <td>
+                        {{form.payment_period}}
+                        <{$Think.lang.天}>
+                    </td>
+                    <td>
+                        <{$Think.lang.退税周期}>
+                    </td>
+                    <td>
+                        {{form.drawback_period}}
+                        <{$Think.lang.天}>
+                    </td>
+                    <td>
+                        <{$Think.lang.综合账期}>
+                    </td>
+                    <td>
+                        {{form.syntDays}}
+                        <{$Think.lang.天}>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <{$Think.lang.销售金额}>
+                    </td>
+                    <td>￥ {{form.total_revenue_amount}}</td>
+                    <td>
+                        <{$Think.lang.采购金额（含税）}>
+                    </td>
+                    <td>￥ {{form.total_purchase_amount}}</td>
+                    <td>
+                        <{$Think.lang.费用}>
+                    </td>
+                    <td>￥ {{form.extra_cost}}</td>
+                </tr>
+                <tr>
+                    <td>
+                        <{$Think.lang.毛利（退税前）}>
+                    </td>
+                    <td>￥ {{form.gross_margin_amount}}</td>
+                    <td>
+                        <{$Think.lang.毛利率（退税前）}>
+                    </td>
+                    <td>{{form.gross_margin_rate}}</td>
+                    <td>
+                        <{$Think.lang.毛利（退税后）}>
+                    </td>
+                    <td>￥ {{form.total_gross_margin_amount}}</td>
+                </tr>
+                <tr>
+                    <td>
+                        <{$Think.lang.毛利率（退税后）}>
+                    </td>
+                    <td>{{form.total_gross_margin_rate}}</td>
+                    <td>
+                        <{$Think.lang.净利（退税后）}>
+                    </td>
+                    <td> {{form.net_profit}}</td>
+                    <td>
+                        <{$Think.lang.净利率（退税后）}>
+                    </td>
+                    <td>{{form.net_margin}}</td>
+                </tr>
+                <tr>
+                    <td rowspan="4">
+                        <{$Think.lang.CE评级（CE值）}>
+                    </td>
+                    <td rowspan="4">{{form.cash_efficiency_level}}
+                        <{$Think.lang.级}> ( {{form.cash_efficiency}} )</td>
+                    <td rowspan="4">
+                        <{$Think.lang.CE计算规则}>
+                    </td>
+                    <td rowspan="3">Purchase Amount (RMB)</td>
+                    <td><= 100,000</td>
+                    <td>100,000</td>
+                </tr>
+                <tr>
+                    <td> > 100,000 and < 2 ,000,000</td>
+                    <td>Purchase Amount (RMB)</td>
+                </tr>
+                <tr>
+                    <td> >= 2,000,000</td>
+                    <td>2,000,000 + ( Purchase Amount (RMB) - 2,000,000 ) / 2</td>
+                </tr>
+                <tr>
+                    <td colspan="3">CE=Net Margin %/( Purchase Amount(RMB)/200,000+Payment Days ) * 1000,000</td>
+                </tr>
+            </tbody>
+        </table>
+        <!--发送邮件-->
+        <table class="ce-table" cellpadding="0" cellspacing="0">
+            <caption>
+                <{$Think.lang.发送邮件}>
+            </caption>
+            <tbody>
+                <tr>
+                    <td>
+                        <{$Think.lang.收件人}>
+                    </td>
+                    <td>
+                        <el-input v-model="form.receive_address"></el-input>
+                    </td>
+                    <td>
+                        <{$Think.lang.抄送}>
+                    </td>
+                    <td>
+                        <el-input v-model="form.cc_address" placeholder="<{$Think.lang.抄送多个请用英文逗号分割}>"></el-input>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="text-center">
+            <?php if(ButtonAction::hidden()){ ?>
+            <el-button type="primary" style="background-color: #1e7eb4; border-color: #1d71a0;" @click="commitData()">
+                <{$Think.lang.提交}>
+            </el-button>
+            <?php }?>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="../Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script src="../Public/js/H-ui.js"></script>
+    <script src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="../Public/js/vue-2.4.2.js?v=<{$Think.const.V}>"></script>
+    <script type="text/javascript" src="../Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="../Public/js/element-ui.js?v=<{$Think.const.V}>"></script>
+    <script type="text/javascript" src="../Public/utils/utils.js"></script>
+    <script src="../Public/js/highcharts/highcharts.js"></script>
+    <script src="../Public/js/highcharts/exporting.js"></script>
+    <script type="text/javascript">
+        var ce = new Vue({
+            el: '#ce-tool',
+            data: {
+                form: {
+                    //采购信息
+                    purchase_team: '',
+                    pre_payment_date: '',
+                    pre_payment_percent: '',
+                    mid_payment_date: '',
+                    mid_payment_percent: '',
+                    end_payment_date: '',
+                    end_payment_percent: '',
+                    purchase_currency: '',
+                    purchase_amount: '',
+                    pur_shipping: '',
+                    pur_shipping_currency: '',
+                    purchase_remark: '',
+                    //销售信息：
+                    sell_team: '',
+                    pre_receivable_date: '',
+                    pre_receivable_percent: '',
+                    mid_receivable_date: '',
+                    mid_receivable_percent: '',
+                    end_receivable_date: '',
+                    end_receivable_percent: '',
+                    sales_currency: '',
+                    sales_shipping_currency: '',
+                    sales_shipping: '',
+                    sales_amount: '',
+                    buyer: '',
+                    sale_remark: '',
+                    sales_colleague: '',
+                    //退税信息：
+                    drawback_date: '',
+                    drawback_currency: '',
+                    return_amount: '',
+                    drawback_period: '',
+                    //预计利润
+                    total_revenue_amount: '',
+                    gross_margin_amount: '',
+                    gross_margin_rate: '',
+                    total_gross_margin_amount: '',
+                    total_gross_margin_rate: '',
+                    total_purchase_amount: '',
+                    net_profit: '',
+                    net_margin: '',
+                    cash_efficiency: '',
+                    cash_efficiency_level: '',
+                    account_interest: '',
+                    rebate_interest: '',
+                    cost_of_cash: '',
+                    extra_cost: '',
+                    //邮件
+                    receive_address: '',
+                    cc_address: '',
+                    syntDays: ''
+                },
+                selects: {}
+            },
+            created: function () {
+                this.getSelectData();
+            },
+            methods: {
+                //获取下拉数据
+                getSelectData: function () {
+                    axios.post("index.php?m=order_detail&a=ce_tool_base_data")
+                        .then(function (res) {
+                            ce.selects = res.data;
+                        })
+                },
+                //付款加权
+                paymentWeight: function () {
+                    var firstTime = 0,
+                        secondTime = this.form.mid_payment_date ? (this.form.mid_payment_date - this.form.pre_payment_date) / (24 * 60 * 60 * 1000) : 0,
+                        thirdTime = this.form.end_payment_date ? (this.form.end_payment_date - this.form.pre_payment_date) / (24 * 60 * 60 * 1000) : 0,
+                        firstPercent = this.form.pre_payment_percent ? this.form.pre_payment_percent / 100 : 0,
+                        secondPercent = this.form.mid_payment_percent ? this.form.mid_payment_percent / 100 : 0,
+                        thirdPercent = this.form.end_payment_percent ? this.form.end_payment_percent / 100 : 0;
+                    var weight = (firstTime * firstPercent + secondTime * secondPercent + thirdTime * thirdPercent) * (24 * 60 * 60 * 1000);
+                    return +this.form.pre_payment_date + weight;
+                },
+                //收款加权
+                salesWeight: function () {
+                    var firstSalesTime = 0,
+                        secondSalesTime = this.form.mid_receivable_date ? (this.form.mid_receivable_date - this.form.pre_receivable_date) / (24 * 60 * 60 * 1000) : 0,
+                        thirdSalesTime = this.form.end_receivable_date ? (this.form.end_receivable_date - this.form.pre_receivable_date) / (24 * 60 * 60 * 1000) : 0,
+                        firstSalesPercent = this.form.pre_receivable_percent ? this.form.pre_receivable_percent / 100 : 0,
+                        secondSalesPercent = this.form.mid_receivable_percent ? this.form.mid_receivable_percent / 100 : 0,
+                        thirdSalesPercent = this.form.end_receivable_percent ? this.form.end_receivable_percent / 100 : 0;
+                    var salesWeight = (firstSalesTime * firstSalesPercent + secondSalesTime * secondSalesPercent + thirdSalesTime * thirdSalesPercent) * (24 * 60 * 60 * 1000);
+                    return +this.form.pre_receivable_date + salesWeight;
+                },
+                //自动选择采购运费币种
+                checkPurCur: function () {
+                    this.form.pur_shipping_currency = this.form.purchase_currency;
+                },
+                //校验指数如数字
+                inNum: function (event, name) {
+                    var amount = parseFloat(this.form[name]);
+                    if (event.key !== '.' && isNaN(event.key)) {
+                        this.form[name] = isNaN(amount) ? '' : amount;
+                        return false;
+                    }
+                },
+                //校验是否选择币种
+                checkCurrency: function (type) {
+                    if (type === 'sales' && !this.form.sales_currency) {
+                        ce.$message({
+                            message: '请选择销售金额币种',
+                            type: 'error'
+                        });
+                    } else if (type === 'purchase' && !this.form.purchase_currency) {
+                        ce.$message({
+                            message: '请选择采购金额币种',
+                            type: 'error'
+                        });
+                    } else if (type === 'sales_shipping' && !this.form.sales_shipping_currency) {
+                        ce.$message({
+                            message: '请选择销售运费币种',
+                            type: 'error'
+                        });
+                    } else if (type === 'pur_shipping' && !this.form.pur_shipping_currency) {
+                        ce.$message({
+                            message: '请选择采购运费币种',
+                            type: 'error'
+                        });
+                    } else if (type === 'return_amount' && !this.form.drawback_currency) {
+                        ce.$message({
+                            message: '请选择退税金额币种',
+                            type: 'error'
+                        });
+                    }
+                },
+                //计算预计利润信息
+                calcTotalProfit: function () {
+                    //退税周期
+                    var drawback = Math.ceil(((+this.form.drawback_date || 0) - this.paymentWeight()) / (24 * 60 * 60 * 1000));
+                    this.form.drawback_period = drawback > 0 ? drawback : 0;
+                    //收款账期 = 收款日期加权 - 付款日期加权
+                    var payPer = Math.ceil((this.salesWeight() - this.paymentWeight()) / (24 * 60 * 60 * 1000));
+                    Vue.set(this.form, 'payment_period', payPer);
+                    //销售金额
+                    var salesAmount = this.form.sales_amount || 0,
+                        salesCurrency = this.selects.currency_rate[this.form.sales_currency] || 0;
+                    this.form.total_revenue_amount = (salesAmount * salesCurrency).toFixed(2);
+                    //采购金额
+                    var purAmount = this.form.purchase_amount || 0,
+                        purCurrency = this.selects.currency_rate[this.form.purchase_currency] || 0;
+                    this.form.total_purchase_amount = (purAmount * purCurrency).toFixed(2);
+                    //费用
+                    var purShipping = (this.form.pur_shipping || 0) * (this.selects.currency_rate[this.form.pur_shipping_currency] || 0),
+                        salesShipping = (this.form.sales_shipping || 0) * (this.selects.currency_rate[this.form.sales_shipping_currency] || 0);
+                    this.form.extra_cost = (purShipping + salesShipping).toFixed(2);
+                    //毛利（退税前） = 销售金额 - 采购金额
+                    this.form.gross_margin_amount = (this.form.total_revenue_amount - this.form.total_purchase_amount).toFixed(2);
+                    //毛利率(退税前)= 毛利/ 销售金额*100%
+                    this.form.gross_margin_rate = (this.form.gross_margin_amount / (+this.form.total_revenue_amount || 1) * 100).toFixed(2) + '%';
+                    //毛利(退税后)= 毛利（退税前）+ 退税金额
+                    var returnAmount = (this.form.return_amount || 0) * (this.selects.currency_rate[this.form.drawback_currency] || 0);
+                    this.form.total_gross_margin_amount = (+this.form.gross_margin_amount + returnAmount).toFixed(2);
+                    //毛利率(退税后）=毛利(退税后)/ 销售金额 *100%
+                    this.form.total_gross_margin_rate = (this.form.total_gross_margin_amount / (+this.form.total_revenue_amount || 1) * 100).toFixed(2) + '%';
+                    //净利 = 毛利(退税后) - 费用
+                    this.form.net_profit = (+this.form.total_gross_margin_amount - this.form.extra_cost).toFixed(2);
+                    //净利率 = 净利/销售金额*100%
+                    this.form.net_margin = (this.form.net_profit / (+this.form.total_revenue_amount || 1) * 100).toFixed(2) + '%';
+                    //ce值
+                    var totalPurChaseAmount;
+                    if (this.form.total_purchase_amount <= 100000) {
+                        totalPurChaseAmount = 100000
+                    } else if (this.form.total_purchase_amount > 2000000) {
+                        totalPurChaseAmount = 2000000 + (this.form.total_purchase_amount - 2000000) / 2
+                    } else {
+                        totalPurChaseAmount = this.form.total_purchase_amount;
+                    }
+
+                    var paymentDays = this.form.total_revenue_amount / (+this.form.total_revenue_amount + returnAmount) * this.form.payment_period + returnAmount / (+this.form.total_revenue_amount + returnAmount) * this.form.drawback_period,
+                        cost = (this.form.net_profit / this.form.total_revenue_amount) / (totalPurChaseAmount / 200000 + paymentDays) * 1000000;
+                    this.form.syntDays = Math.ceil(paymentDays);
+                    this.form.cash_efficiency = cost >= 0 ? Math.round(cost) : '客户提前付余款';
+                    //ce level
+                    this.form.cash_efficiency_level = this.calcLevel(Math.round(cost));
+
+
+                    /*//账期利息
+                     var intDay = this.form.total_purchase_amount / 365;
+                     this.form.account_interest = this.form.payment_period > 90 ? ((0.15 * 90) * intDay + 0.25 * (this.form.payment_period - 90) * intDay).toFixed(2) : ((0.15 * this.form.payment_period) * intDay).toFixed(2);
+                     //退税利息
+                     var rebateDay = this.form.return_amount * (this.selects.currency_rate[this.form.drawback_currency] || 0) / 365;
+                     this.form.rebate_interest = this.form.drawback_period > 90 ? ((0.15 * 90) * rebateDay + 0.25 * (this.form.drawback_period - 90) * rebateDay).toFixed(2) : ((0.15 * this.form.drawback_period) * rebateDay).toFixed(2);
+                     //利息总额
+                     this.form.cost_of_cash = (+this.form.account_interest + +this.form.rebate_interest).toFixed(2);*/
+
+
+                },
+                //ce Level
+                calcLevel: function (num) {
+                    return (num >= 3000 && 'S') || (num >= 2000 && 'A') || (num >= 1000 && 'B') || (num >= 800 && 'C') || (num >= 500 && 'D') || (num > 0 && 'F') || 'S';
+                },
+                insertEn: function () {
+                    ce.form.sales_colleague = ce.form.sales_colleague.replace(/[^\a-\z\A-\Z]/g, '');
+                },
+                //提交数据
+                commitData: function () {
+                    if (!this.form.purchase_team) {
+                        ce.$message({
+                            message: '请选择采购团队',
+                            type: 'warning'
+                        });
+                        return false
+                    }
+                    if (!this.form.supplier) {
+                        ce.$message({
+                            message: '请填写供应商',
+                            type: 'warning'
+                        });
+                        return false
+                    }
+                    if (!this.form.purchase_amount) {
+                        ce.$message({
+                            message: '请填写采购金额',
+                            type: 'warning'
+                        });
+                        return false
+                    }
+                    if (!this.form.sell_team) {
+                        ce.$message({
+                            message: '请选择销售团队',
+                            type: 'warning'
+                        });
+                        return false
+                    }
+                    if (!this.form.buyer) {
+                        ce.$message({
+                            message: '请填写客户名称',
+                            type: 'warning'
+                        });
+                        return false
+                    }
+                    if (!this.form.sales_amount) {
+                        ce.$message({
+                            message: '请填写销售金额',
+                            type: 'warning'
+                        });
+                        return false
+                    }
+                    var paymentPercent = (+this.form.pre_payment_percent || 0) + (+this.form.mid_payment_percent || 0) + (+this.form.end_payment_percent || 0),
+                        salesPercent = (+this.form.pre_receivable_percent || 0) + (+this.form.mid_receivable_percent || 0) + (+this.form.end_receivable_percent || 0);
+                    if (paymentPercent !== 100) {
+                        ce.$message({
+                            message: '请检查付款比例',
+                            type: 'warning'
+                        });
+                        return false
+                    }
+                    if (salesPercent !== 100) {
+                        ce.$message({
+                            message: '请检查收款比例',
+                            type: 'warning'
+                        });
+                        return false
+                    }
+                    //判断付款日期
+                    var prePayPercent = this.form.pre_payment_percent,
+                        midPayPercent = this.form.pre_payment_percent && this.form.mid_payment_percent,
+                        endPayPercent = this.form.pre_payment_percent && this.form.mid_payment_percent && this.form.end_payment_percent,
+                        prePayDate = false,
+                        midPayDate = false,
+                        endPayDate = false;
+                    if (endPayPercent) {
+                        endPayDate = (this.form.pre_payment_date && this.form.mid_payment_date && this.form.end_payment_date) && (+this.form.mid_payment_date - this.form.pre_payment_date) > 0 &&
+                            (+this.form.end_payment_date - this.form.pre_payment_date) > 0 && (+this.form.end_payment_date - this.form.mid_payment_date) > 0;
+                    } else if (midPayPercent) {
+                        midPayDate = endPayDate = this.form.pre_payment_date && this.form.mid_payment_date && (+this.form.mid_payment_date - this.form.pre_payment_date) > 0;
+                    } else if (prePayPercent) {
+                        prePayDate = midPayDate = endPayDate = this.form.pre_payment_date;
+                    }
+                    //判断收款日期
+                    var preSalesPercent = this.form.pre_receivable_percent,
+                        midSalesPercent = this.form.pre_receivable_percent && this.form.mid_receivable_percent,
+                        endSalesPercent = this.form.pre_receivable_percent && this.form.mid_receivable_percent && this.form.end_receivable_percent,
+                        preSalesDate = false,
+                        midSalesDate = false,
+                        endSalesDate = false;
+                    if (endSalesPercent) {
+                        endSalesDate = (this.form.pre_receivable_date && this.form.mid_receivable_date && this.form.end_receivable_date) && (+this.form.mid_receivable_date - this.form.pre_receivable_date) > 0 &&
+                            (+this.form.end_receivable_date - this.form.pre_receivable_date) > 0 && (+this.form.end_receivable_date - this.form.mid_receivable_date) > 0;
+                    } else if (midSalesPercent) {
+                        midSalesDate = endSalesDate = this.form.pre_receivable_date && this.form.mid_receivable_date && (+this.form.mid_receivable_date - this.form.pre_receivable_date) > 0;
+                    } else if (preSalesPercent) {
+                        preSalesDate = midSalesDate = endSalesDate = this.form.pre_receivable_date;
+                    }
+                    if (!endPayDate) {
+                        ce.$message({
+                            message: '请检查付款节点时间',
+                            type: 'warning'
+                        });
+                        return false
+                    }
+                    if (!endSalesDate) {
+                        ce.$message({
+                            message: '请检查收款节点时间',
+                            type: 'warning'
+                        });
+                        return false
+                    }
+                    if (!this.form.receive_address) {
+                        ce.$message({
+                            message: '请检查收件人地址',
+                            type: 'warning'
+                        });
+                        return false
+                    }
+                    if (!this.form.receive_address) {
+                        ce.$message({
+                            message: '请检查抄送地址',
+                            type: 'warning'
+                        });
+                        return false
+                    }
+
+                    this.form.pre_payment_date = this.form.pre_payment_date ? utils.dateFormat(this.form.pre_payment_date, 'yyyy-MM-dd') : '';
+                    this.form.mid_payment_date = this.form.mid_payment_date ? utils.dateFormat(this.form.mid_payment_date, 'yyyy-MM-dd') : '';
+                    this.form.end_payment_date = this.form.end_payment_date ? utils.dateFormat(this.form.end_payment_date, 'yyyy-MM-dd') : '';
+                    this.form.pre_receivable_date = this.form.pre_receivable_date ? utils.dateFormat(this.form.pre_receivable_date, 'yyyy-MM-dd') : '';
+                    this.form.mid_receivable_date = this.form.mid_receivable_date ? utils.dateFormat(this.form.mid_receivable_date, 'yyyy-MM-dd') : '';
+                    this.form.end_receivable_date = this.form.end_receivable_date ? utils.dateFormat(this.form.end_receivable_date, 'yyyy-MM-dd') : '';
+                    this.form.drawback_date = this.form.drawback_date ? utils.dateFormat(this.form.drawback_date, 'yyyy-MM-dd') : '';
+
+                    $.ajax({
+                        type: "POST",
+                        url: 'index.php?m=order_detail&a=ce_tool_email',
+                        data: ce.form,
+                        dataType: "json",
+                        success: function (message) {
+                            ce.form.pre_payment_date = ce.form.pre_payment_date ? utils.strToDate(ce.form.pre_payment_date, 'yyyy-MM-dd') : '';
+                            ce.form.mid_payment_date = ce.form.mid_payment_date ? utils.strToDate(ce.form.mid_payment_date, 'yyyy-MM-dd') : '';
+                            ce.form.end_payment_date = ce.form.end_payment_date ? utils.strToDate(ce.form.end_payment_date, 'yyyy-MM-dd') : '';
+                            ce.form.pre_receivable_date = ce.form.pre_receivable_date ? utils.strToDate(ce.form.pre_receivable_date, 'yyyy-MM-dd') : '';
+                            ce.form.mid_receivable_date = ce.form.mid_receivable_date ? utils.strToDate(ce.form.mid_receivable_date, 'yyyy-MM-dd') : '';
+                            ce.form.end_receivable_date = ce.form.end_receivable_date ? utils.strToDate(ce.form.end_receivable_date, 'yyyy-MM-dd') : '';
+                            ce.form.drawback_date = ce.form.drawback_date ? utils.strToDate(ce.form.drawback_date, 'yyyy-MM-dd') : '';
+                            if (!message.status) {
+                                ce.$message({
+                                    message: '请检查邮件地址',
+                                    type: 'error'
+                                });
+                            } else {
+                                ce.$message({
+                                    message: '邮件发送成功',
+                                    type: 'success'
+                                });
+                            }
+                        }
+                    })
+                }
+            }
+        })
+    </script>
+</body>
+
+</html>

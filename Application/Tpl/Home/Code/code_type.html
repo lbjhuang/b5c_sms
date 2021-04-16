@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>code type管理</title>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+          href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+          href="./Application/Tpl/Home/Public/../Hr/hrstyle.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+          href="./Application/Tpl/Home/Public/css/btn-new.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+          href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+</head>
+
+<style>
+    [v-cloak] {
+        display: none;
+    }
+
+    .el-row + .el-row {
+        margin-top: 15px;
+    }
+
+    .el-pagination {
+        margin-bottom: 180px;
+    }
+
+    .normal {
+        white-space: normal !important;
+        word-wrap: break-word;
+        word-break: break-all;
+    }
+
+    .create-wrap {
+        white-space: nowrap;
+    }
+
+
+    .show-list .el-form-item__label {
+        padding: 0px 10px 0px 0px;
+        font-weight: 600;
+        font-size: 16px;
+    }
+
+    .show-list .el-select {
+        width: 300px;
+    }
+
+    .utils-btn {
+        margin: 0px 30px;
+        color: #409EFF;
+        cursor: pointer;
+        text-decoration: underline;
+    }
+
+    .show-list .table-list tr th {
+        padding: 0px 6px;
+    }
+
+    .show-list .table-list tr td {
+        white-space: normal;
+    }
+
+    .sort-item {
+        display: flex;
+        justify-content: center;
+    }
+
+    .sort-item span {
+        line-height: 30px;
+    }
+
+    .caret-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin-left: 10px;
+    }
+
+    .caret-wrapper i {
+        cursor: pointer;
+        font-size: 18px;
+    }
+
+    .caret-wrapper i.active {
+        color: #409eff;
+    }
+
+    .descending {
+        margin-top: -8px;
+    }
+
+    .left-item {
+        float: left;
+    }
+
+    .right-btn {
+        float: right;
+    }
+
+    .result-num.occupy {
+        width: 100%;
+    }
+</style>
+
+<body>
+<div id="codeList" class="show-list" v-cloak>
+    <el-form ref="formSearch" :model="form" :label-position="labelPosition" label-width="130px">
+        <el-form-item label="Code Type">
+            <el-select v-model="form.type" placeholder="ALL" @change="doChangeType" filterable>
+                <el-option v-for="(typeItem,key) in typeList" :label="typeItem" :value="key" :key="key"></el-option>
+            </el-select>
+        </el-form-item>
+    </el-form>
+    <div class="baseline"></div>
+    <div class="use-row create-wrap">
+        <div class="result-num occupy">
+            <div class="left-item">
+                <!--{{$lang('当前展示数据量')}} : {{2}} , &nbsp;&nbsp;-->
+                <!--{{$lang('开启数据')}} : {{1}}-->
+            </div>
+            <?php if(ButtonAction::hidden()){ ?>
+            <div class="right-btn">
+                <el-button type="success" @click="dialogVisible = true">{{$lang('创建')}} Code Type</el-button>
+                <el-dialog
+                        :title="$lang('创建') + ' Code Type'"
+                        :visible.sync="dialogVisible"
+                        width="40%">
+                    <div>
+                        <span>Code Type Name：</span>
+                        <el-input style="width:60%" v-model="addTypeValue"></el-input>
+                    </div>
+                    <span slot="footer" class="dialog-footer">
+                      <el-button @click="dialogVisible = false">{{$lang('取消')}}</el-button>
+                      <el-button type="primary" :disabled="!isfinished" @click="doAddType">{{$lang('确定')}}</el-button>
+                    </span>
+                </el-dialog>
+            </div>
+            <?php }?>
+        </div>
+    </div>
+    <div class="use-row">
+        <div class="col-100">
+            <table class="table-list">
+                <thead>
+                <tr>
+                    <th>Code Type Name</th>
+                    <th>Code Type ID</th>
+                    <th>OFF/ON</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="(item,index) in dataList">
+                    <td>{{item.cd_type_name}}</td>
+                    <td>{{item.cd_type}}</td>
+                    <td>
+                        <el-switch
+                                @change="changeItem(item)"
+                                :disabled="isActive"
+                                v-model="item.status"
+                                :active-value="1"
+                                :inactive-value="0"
+                                active-text="On"
+                                inactive-text="Off">
+                        </el-switch>
+                        <el-dialog :title="$lang('提示')" :visible.sync="dialogMessage">
+                            <span>{{$lang('该Code Type下，还存在正在使用的Code Value，无法关闭')}}</span>
+                            <span slot="footer" class="dialog-footer">
+                               <el-button @click="dialogMessage = false">{{$lang('确认')}}</el-button>
+                             </span>
+                        </el-dialog>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript"
+        src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript"
+        src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.form.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+<script src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script src="./Application/Tpl/Home/Public/js/H-ui.admin.js?<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript"
+        src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script>
+  if (getCookie('think_language') !== "zh-cn") {
+    ELEMENT.locale(ELEMENT.lang.en)
+  }
+  var way = new Vue({
+    el: '#codeList',
+    data: {
+      isActive: false,
+      dialogMessage: false,
+      isfinished: true,
+      typeList: [],
+      dialogVisible: false,
+      addTypeValue: '',
+      form: {
+        type: 'N00068'
+      },
+      labelPosition: 'left',
+      totalCount: 0,
+      dataList: [],
+    },
+    created: function () {
+      this.getTypeList();
+      this.getCdTypeList('default');
+    },
+    methods: {
+      getTypeList: function () {
+        var _this = this;
+        var param = {
+          "status": 0
+        };
+        axios.post('/index.php?g=universal&m=dictionary&a=getCdTypeKeyVal', Qs.stringify(param)).then(function (res) {
+          var data = res.data;
+          if (data.code == 200) {
+            _this.typeList = data.data;
+          } else {
+            _this.$message({
+              message: _this.$lang('获取数据失败'),
+              type: 'error'
+            });
+          }
+        })
+      },
+      doChangeType: function () {
+        this.getCdTypeList();
+      },
+      getCdTypeList: function (type) {
+        var _this = this;
+        var param = {
+          "cd_type": _this.form.type,
+        };
+        if (type === 'default') {
+          param = {
+            "cd_type": _this.form.type,
+          };
+        }
+        axios.post('/index.php?g=universal&m=dictionary&a=getCdTypeList', Qs.stringify(param)).then(function (res) {
+          var data = res.data;
+          if (data.code == 200) {
+            _this.dataList = data.data;
+            _this.dataList.forEach(function (el) {
+              el.isEditStatus = false;
+            })
+          } else {
+            _this.$message({
+              message: _this.$lang('获取数据失败'),
+              type: 'error'
+            });
+          }
+        })
+      },
+      changeItem: function (item) {
+        this.isActive = true;
+        var _this = this;
+        var param = {
+          cd_type: item.cd_type,
+          status: item.status
+        };
+        axios.post('/index.php?g=universal&m=dictionary&a=changeCdTypeStatus', Qs.stringify(param)).then(function (res) {
+          var data = res.data;
+          if (data.code == 200) {
+            _this.dialogVisible = false;
+            _this.$message({
+              message: data.msg,
+              type: 'success'
+            });
+            _this.getCdTypeList()
+            setTimeout(function () {
+              _this.isActive = false
+            }, 3000)
+          } else {
+            _this.getCdTypeList();
+            setTimeout(function () {
+              _this.isActive = false
+            }, 3000)
+            _this.$message({
+              message: data.msg,
+              type: 'error',
+              duration: 3000
+            });
+          }
+        })
+      },
+      doAddType: function () {
+        var _this = this;
+        var param = {
+          "cd_type_name": this.trimStr(this.addTypeValue),
+        };
+        this.isfinished = false;
+        axios.post('/index.php?g=universal&m=dictionary&a=createCdType', Qs.stringify(param)).then(function (res) {
+          var data = res.data;
+          _this.addTypeValue = '';
+          _this.isfinished = true;
+          if (data.code == 200) {
+            _this.dialogVisible = false;
+            _this.$message({
+              message: data.msg,
+              type: 'success'
+            });
+            setTimeout(function () {
+              _this.getTypeList();
+              _this.getCdTypeList();
+            }, 1000)
+          } else {
+            _this.$message({
+              message: data.msg,
+              type: 'error'
+            });
+          }
+        }).catch(function () {
+          _this.isfinished = true;
+        })
+      },
+      trimStr: function (str) {
+        return str.replace(/(^\s*)|(\s*$)/g, "");
+      },
+    },
+    filters: {
+      numberFormat: function (val) {
+        if (val) {
+          var num = parseFloat(val).toLocaleString();
+          return num.indexOf('.') > 0 ? num : num + ".00";
+        }
+      }
+    },
+    watch: {
+      dateTime: {
+        handler: function handler(newValue, oldValue) {
+          this.form.start_time = newValue[0]
+          this.form.end_time = newValue[1];
+          var newDate = newValue[1].split('-');
+          newDate[2] = +newDate[2] + 1;
+          this.form.end_time = newDate.join('-');
+        },
+        deep: true
+      },
+      form: {
+        handler: function handler(newValue, oldValue) {
+          // this.getCdTypeList();
+        },
+        deep: true
+      }
+    },
+  })
+</script>
+</body>
+
+</html>
+
+
+

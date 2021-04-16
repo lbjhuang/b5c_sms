@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <title>盈亏预测编辑</title>
+    <style>
+        .el-date-picker{
+            z-index: 10000000!important;
+        }
+        .el-message-box__wrapper {
+            z-index: 10000 !important;
+        }
+    </style>
+</head>
+<body>
+<div id="rkWrap" v-cloak class="list-common">
+    <div style="display: flex;align-items: center;margin-bottom: 15px">
+        <span style="width: 100px">{{$lang('报告日期')}}</span>
+        <el-date-picker
+                v-model="formdata.report_date"
+                type="date"
+                format="yyyy-MM-dd"
+                value-format="yyyy-MM-dd"
+                :placeholder="$lang('选择日期')">
+        </el-date-picker>
+    </div>
+    <div id="editor">
+    </div>
+    <div style="display: flex;
+    margin: 10px 0;
+    justify-content: center;">
+        <el-button @click="chanel">{{$lang('取消')}}</el-button>
+        <el-button @click="setdata">{{$lang('提交')}}</el-button>
+    </div>
+</div>
+
+<script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js?<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/wang-editor/release/wangEditor2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script>
+
+  var vm = new Vue({
+    el: '#rkWrap',
+    data: {
+      id:getQueryVariable('id'),
+      editor: '',
+      editorText:'',
+      apiUrl:location.host === 'erp.gshopper.com'?'//insight.gshopper.com/insight-backend':'//insight.gshopper.stage.com/insight-backend',
+      formdata:{
+        'erp-cookie':'PHPSESSID='+getCookie('PHPSESSID')+';',
+        'erp-req':true,
+        'report_date':gettime(),
+        'content':''
+      }
+    },
+    created: function () {
+
+    },
+    methods: {
+      closewindow:function(){
+        parent.closeTab();
+        sessionStorage.setItem('display.list','true')
+
+      },
+      chanel:function(){
+        var _this = this
+        this.$confirm(this.$lang('确定取消编辑记录吗？(取消后记录不保存)'), '', {
+          confirmButtonText: this.$lang('确定'),
+          cancelButtonText: this.$lang('取消'),
+          type: 'warning'
+        }).then(() => {
+          /*this.$message({
+            type: 'success',
+            message: '删除成功!'
+          });*/
+          _this.closewindow()
+        }).catch(() => {
+          /*this.$message({
+            type: 'info',
+            message: '已取消删除'
+          });*/
+        });
+      },
+      htmlEncode:function (html){
+                     //1.首先动态创建一个容器标签元素，如DIV
+                     var temp = document.createElement ("div");
+                     //2.然后将要转换的字符串设置为这个元素的innerText或者textContent
+                     (temp.textContent != undefined ) ? (temp.textContent = html) : (temp.innerText = html);
+                     //3.最后返回这个元素的innerHTML，即得到经过HTML编码转换的字符串了
+                    var output = temp.innerHTML;
+                     temp = null;
+                     return output;
+                 },
+      htmlDecode:function (text){
+                     //1.首先动态创建一个容器标签元素，如DIV
+                     var temp = document.createElement("div");
+                     //2.然后将要转换的字符串设置为这个元素的innerHTML(ie，火狐，google都支持)
+                     temp.innerHTML = text;
+                     //3.最后返回这个元素的innerText或者textContent，即得到经过HTML解码的字符串了。
+                     var output = temp.innerText || temp.textContent;
+                     temp = null;
+                     return output;
+                 },
+      setdata:function(){
+        var _this = this;
+
+        if(!this.formdata.report_date){
+          _this.$message({
+            message: this.$lang('请选择报告日期'),
+            type: 'error'
+          });
+          return
+        }
+        var loadingObj=this.$loading({
+          lock:true,
+          text:this.$lang("提交中..."),
+          spinner:"el-icon-loading",
+          background:"rgba(0,0,0,0)",
+          target:document.querySelector(".submit-test-dialog")
+        })
+        var data= this.formdata
+        if(this.id){
+          data.id = this.id
+        }
+        axios.post(this.apiUrl+'/profitAndLostMonitoring/save',Qs.stringify(data),{
+          headers:{
+            'erp-cookie': data["erp-cookie"],
+            'erp-req':true,
+            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+          }
+        }).then(function (response) {
+          if(response.data.code === '200000'){
+            _this.$message({
+              message: _this.$lang(response.data.msg),
+              type: 'success'
+            });
+            setTimeout(function(){
+              _this.closewindow()
+            },1000)
+          }else{
+            _this.$message({
+              message: _this.$lang(response.data.msg),
+              type: 'error'
+            });
+          }
+          loadingObj.close()
+        })
+      },
+      getdata:function(){
+        var _this = this;
+        axios.post(this.apiUrl+'/profitAndLostMonitoring/queryReport',Qs.stringify({
+          'erp-cookie': this.formdata["erp-cookie"],
+          'erp-req':true,
+          id: this.id
+        }),{
+          headers:{
+            'erp-cookie': this.formdata["erp-cookie"],
+            'erp-req':true,
+            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+          }
+        }).then(function (response) {
+          if(response.data.code === '200000'){
+            if(response.data.datas && response.data.datas[0]){
+              if(response.data.datas[0].content){
+                _this.formdata.content =  response.data.datas[0].content
+              }
+
+              _this.editor.txt.html( _this.htmlDecode(_this.formdata.content))
+              _this.formdata.report_date = response.data.datas[0].report_date
+            }
+          }else{
+            _this.$message({
+              message: response.data.msg,
+              type: 'error'
+            });
+          }
+        })
+      }
+    },
+    mounted:function(){
+      var Editor = window.wangEditor;
+      var _this = this;
+      this.editor = new Editor('#editor');
+      this.editor.customConfig.uploadImgShowBase64 = true;
+      this.editor.customConfig.onchange = function (html) {
+        if (html === '<p><br></p>') {
+          html = ""
+        }
+        html = html.replace('<p><br></p>', '')
+        _this.formdata.content = _this.htmlEncode(html);
+      }
+      this.editor.create();
+      if(this.id){
+        this.getdata()
+      }
+    },
+    watch: {
+
+    }
+  });
+  //获取url参数
+  function getQueryVariable(variable) {
+    var query = window.location.search.substring(1);
+    var vars = query.split("&");
+    for (var i = 0; i < vars.length; i++) {
+      var pair = vars[i].split("=");
+      if (pair[0] == variable) {
+        return pair[1];
+      }
+    }
+    return false;
+  }
+
+
+    function gettime() {
+      var date = new Date(); // 获取一个时间对象
+      var r = date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate();
+      return r;
+    };
+
+
+</script>
+</body>
+</html>

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover"/>
+    <title>付款申请审批</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vant@2.8/lib/index.css"/>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <van-number-keyboard safe-area-inset-bottom/>
+    <style>
+        html {
+            height: 100vh;
+        }
+
+        #main {
+            height: 100%;
+        }
+        .payment__message__notice {
+            background: #e5e5e5;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 45px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling:touch;
+        }
+        .payment__message__notice-group {
+            margin-bottom: 10px;
+        }
+        .payment__message__notice-group-top{
+            margin-top: 54px;
+            height: 120px;
+            overflow-y: scroll;
+        }
+        .van-cell__title{
+            flex: 1;
+        }
+        .van-cell__value {
+            text-align: left;
+            flex: 2;
+        }
+
+        .cell__title {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .cell__title-main {
+
+        }
+
+        .cell__title-content {
+            font-size: 12px;
+            color: #dddddd;
+        }
+
+        .actions {
+            position: absolute;
+            left:0;
+            bottom:0;
+            height: 45px;
+            width: 100%;
+        }
+
+        .action__buttons {
+            height: 100%;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+        .van-button--disabled{
+            opacity: 1;
+        }
+    </style>
+</head>
+<body id="content">
+
+<div id="main">
+    <div class="payment__message__notice" :border=false>
+        <van-cell-group class="payment__message__notice-group">
+            <van-cell v-if="paymentMessageNotice.base_info.payment_audit_no" title="<{$Think.lang.付款单号}>" :border=false :value="paymentMessageNotice.base_info.payment_audit_no"></van-cell>
+            <van-cell v-if="paymentMessageNotice.base_info.payment_audit_no" title="<{$Think.lang.来源}>" :border=false :value="paymentMessageNotice.base_info.source_cd_val"></van-cell>
+            <van-cell v-if="paymentMessageNotice.base_info.payment_nature" title="<{$Think.lang.付款性质}>" :border=false :value="paymentMessageNotice.base_info.payment_nature==='1'?'对公':'对私'"></van-cell>
+            <van-cell v-if="paymentMessageNotice.base_info.our_company_cd_val" title="<{$Think.lang.我方公司}>" :border=false :value="paymentMessageNotice.base_info.our_company_cd_val"></van-cell>
+            <van-cell v-if="paymentMessageNotice.base_info.supplier_name" title="<{$Think.lang.供应商}>" :border=false :value="paymentMessageNotice.base_info.supplier_name"></van-cell>
+            <van-cell v-if="paymentMessageNotice.base_info.contract_information" title="<{$Think.lang.合同信息}>" :border=false :value="paymentMessageNotice.base_info.contract_information==='1'?'有':'无'"></van-cell>
+            <van-cell v-if="paymentMessageNotice.base_info.contract_no" title="<{$Think.lang.合同编号}>" :border=false :value="paymentMessageNotice.base_info.contract_no+'('+paymentMessageNotice.base_info.contract_name+')'"></van-cell>
+            <van-cell v-if="paymentMessageNotice.base_info.settlement_type_val" title="<{$Think.lang.结算类型}>" :border=false :value="paymentMessageNotice.base_info.settlement_type_val"></van-cell>
+            <van-cell v-if="paymentMessageNotice.base_info.procurement_nature_val" title="<{$Think.lang.采购性质}>" :border=false :value="paymentMessageNotice.base_info.procurement_nature_val"></van-cell>
+            <van-cell v-if="paymentMessageNotice.base_info.invoice_information_val" title="<{$Think.lang.发票信息}>" :border=false :value="paymentMessageNotice.base_info.invoice_information_val"></van-cell>
+            <van-cell v-if="paymentMessageNotice.base_info.bill_information_val" title="<{$Think.lang.账单信息}>" :border=false :value="paymentMessageNotice.base_info.bill_information_val"></van-cell>
+            <van-cell v-if="paymentMessageNotice.base_info.payment_type_val" title="<{$Think.lang.付款类型}>" :border=false :value="paymentMessageNotice.base_info.payment_type_val"></van-cell>
+            <van-cell v-if="paymentMessageNotice.base_info.actual_fee_applicant" title="<{$Think.lang.实际费用申请人}>" :border=false :value="paymentMessageNotice.base_info.actual_fee_applicant"></van-cell>
+            <van-cell v-if="paymentMessageNotice.base_info.actual_fee_Department" title="<{$Think.lang.实际费用归属部门}>" :border=false :value="paymentMessageNotice.base_info.actual_fee_Department"></van-cell>
+            <van-cell v-if="paymentMessageNotice.base_info.payable_currency_cd_val" title="<{$Think.lang.付款币种}>" :border=false :value="paymentMessageNotice.base_info.payable_currency_cd_val"></van-cell>
+            <van-cell v-if="paymentMessageNotice.base_info.created_by" title="<{$Think.lang.创建人}>" :border=false :value="paymentMessageNotice.base_info.created_by"></van-cell>
+            <van-cell v-if="paymentMessageNotice.base_info.created_at" title="<{$Think.lang.创建时间}>" :border=false :value="paymentMessageNotice.base_info.created_at"></van-cell>
+        </van-cell-group>
+
+        <template v-for="(item,index) in paymentMessageNotice.detail_info">
+            <van-cell-group :key="index" class="payment__message__notice-group" :border=false>
+                <van-cell value="内容">
+                    <template #title>
+                        <div class="cell__title">
+                            <span v-if="item.project_summary" class="cell__title-main">{{item.project_summary}}</span>
+                            <span  class="cell__title-content">{{item.subdivision_type_val}} <span v-if="item.subdivision_type_val">|</span> {{item.actual_fee_Department}}</span>
+                            <span v-if="item.subtotal" class="cell__title-content">{{item.subtotal}}</span>
+                        </div>
+                    </template>
+                </van-cell>
+            </van-cell-group>
+        </template>
+
+        <van-cell-group :border=false class="payment__message__notice-group">
+            <van-cell v-if="paymentMessageNotice.base_info.payment_channel_cd_val" title="<{$Think.lang.支付渠道}>" :border=false :value="paymentMessageNotice.base_info.payment_channel_cd_val"></van-cell>
+            <van-cell v-if="paymentMessageNotice.base_info.payment_way_cd_val" title="<{$Think.lang.支付方式}>" :border=false :value="paymentMessageNotice.base_info.payment_way_cd_val"></van-cell>
+            <van-cell v-if="paymentMessageNotice.base_info.payable_amount" title="<{$Think.lang.金额}>" :border=false :value="paymentMessageNotice.base_info.payable_amount"></van-cell>
+        </van-cell-group>
+
+        <van-cell-group :border=false class="payment__message__notice-group">
+            <van-cell v-if="paymentMessageNotice.base_info.payment_remark" title="<{$Think.lang.付款需求备注}>" :border=false :value="paymentMessageNotice.base_info.payment_remark"></van-cell>
+        </van-cell-group>
+
+        <van-popup
+                class="payment__message__notice-popup"
+                v-model="isShowPopup"
+                closeable
+                close-icon="close"
+                position="bottom"
+                :style="{ height: '30%' }"
+        >
+            <van-cell-group :border=false class="payment__message__notice-group payment__message__notice-group-top">
+                <template v-for="(item,index) in approvalReReasonForRefusal">
+                    <van-cell :key="index" :title="item.cdVal" @click="onSelectedReason(item)"></van-cell>
+                </template>
+            </van-cell-group>
+        </van-popup>
+    </div>
+    <div class="actions">
+        <div  class="action__buttons">
+            <van-button v-if="paymentMessageNotice.base_info.audit_status===1?true:false" class="action__button" :disabled="isDisabledDisagreeButton" :loading="disagreeButtonLoading"block type="warning" @click="onDisagree"><{$Think.lang.不同意}></van-button>
+            <van-button v-if="paymentMessageNotice.base_info.audit_status===1?true:false"  class="action__button" :disabled ="isDisabledAgreeButton"  :loading="agreeButtonLoading"  block type="primary" @click="onAgree"><{$Think.lang.同意}></van-button>
+            <van-button v-if="paymentMessageNotice.base_info.audit_status===2?true:false" class="action__button" disabled  block type="info"><{$Think.lang.已同意}></van-button>
+            <van-button v-if="paymentMessageNotice.base_info.audit_status===3?true:false" class="action__button" disabled  block type="info"><{$Think.lang.已拒绝}></van-button>
+            <van-button v-if="paymentMessageNotice.base_info.audit_status===4?true:false" class="action__button" disabled  block type="info"><{$Think.lang.审核完成}></van-button>
+        </div>
+    </div>
+</div>
+
+
+<script src="/Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js?v=20210203"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.js"></script><a href="javascript:void(0)" class="Hui-iconfont toTop" title="返回顶部" alt="返回顶部" style="width:40px;height:40px;display:none;position:fixed;right:50px;bottom:30px;z-index:999999"><img src="/Application/Tpl/Home/Public/images/top.png" style="width:42px;height:42px;margin-left:-1px;"></a>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<!--<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.min.js"></script>-->
+<script src="https://cdn.jsdelivr.net/npm/vant@2.8/lib/vant.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js?v=201907011048"></script>
+
+<script>
+    // var id = <{$order_id}>;
+
+    var vueApp = new Vue({
+        el: '#main',
+        data() {
+            return {
+                title: "付款消息通知",
+                isShowPopup: false,
+                review_no:null,
+                paymentMessageNotice: {base_info:{},detail_info:{}},
+                approvalReReasonForRefusal: [],
+                dataList: <?=$detail?>,
+                isDisabledDisagreeButton:false,
+                isDisabledAgreeButton:false,
+                disagreeButtonLoading:false,
+                agreeButtonLoading:false
+        }
+        },
+        computed: {
+            text: function () {
+            }
+        },
+        created() {
+            this.review_no = getQueryVariable('review_no');
+            axios.post(`/index.php?m=api&a=paymentDetailByReviewNo`,{ params: {review_no:this.review_no,user_name:this.dataList.user_info.name} })
+                .then(res=> {
+                    this.paymentMessageNotice=res.data;
+                    console.log("初始化数据paymentMessageNotice",this.paymentMessageNotice);
+                });
+
+            let data ={
+                query: {
+                    currency: true,
+                    accounting_return_reason: true,
+                    commission_type: true,
+                    transaction_type:true,
+                }
+            };
+            axios.post("/index.php?g=oms&m=CommonData&a=commonData", {data})
+                .then(res=> {
+                    this.approvalReReasonForRefusal = res.data.data.accounting_return_reason;
+                    console.log("初始化数据approvalReReasonForRefusal",this.approvalReReasonForRefusal);
+                });
+        },
+        methods: {
+            onDisagree() {
+                this.isShowPopup = true;
+            },
+            onSelectedReason(item){
+                const toast = vant.Toast.loading({
+                    duration: 0,
+                    forbidClick: true,
+                    message: '请稍后...',
+                    icon: '',
+                });
+                let data = {
+                    payment_audit_id : this.paymentMessageNotice.base_info.id,
+                    status : 0,
+                    source_cd : this.paymentMessageNotice.base_info.source_cd,
+                    is_return : 1,
+                    accounting_return_reason:item.cd
+                }
+                axios.post("/index.php?m=api&a=accountingAudit", data)
+                    .then(res=> {
+                        if(res.data.code == 200){
+                            axios.post(`/index.php?m=api&a=paymentDetailByReviewNo`,{ params: {review_no:this.review_no,user_name:this.dataList.user_info.name} })
+                                .then(res=> {
+                                    this.paymentMessageNotice=res.data;
+                                    this.isShowPopup=false;
+                                    toast.message = `审批退回成功`;
+                                    toast.icon = 'success';
+                                    setTimeout(()=>{
+                                        vant.Toast.clear();
+                                    },1000)
+                                });
+                        }else{
+                            toast.message = `审批退回失败`;
+                            toast.icon = 'fail';
+                            setTimeout(()=>{
+                                vant.Toast.clear();
+                            },1000)
+                        }
+                    });
+            },
+            onAgree() {
+                let data = {
+                    payment_audit_id : this.paymentMessageNotice.base_info.id,
+                    status : 1,
+                    source_cd : this.paymentMessageNotice.base_info.source_cd,
+                    is_return : 0,
+                }
+                this.isDisabledAgreeButton=true;
+                this.agreeButtonLoading=true;
+                this.isDisabledDisagreeButton=true;
+                axios.post("/index.php?m=api&a=accountingAudit", data)
+                    .then(res => {
+                        if(res.data.code == 200){
+                            vant.Toast({
+                                message: '审批同意',
+                                icon: 'success',
+                            });
+                            axios.post(`/index.php?m=api&a=paymentDetailByReviewNo`,{ params: {review_no:this.review_no,user_name:this.dataList.user_info.name} })
+                                .then(res=> {
+                                    this.paymentMessageNotice=res.data;
+                                    console.log("同意后的数据",this.paymentMessageNotice);
+                                    this.isDisabledAgreeButton=false;
+                                    this.agreeButtonLoading=false;
+                                    this.isDisabledDisagreeButton=false;
+                                });
+                        }else{
+                            vant.Toast({
+                                message: '审批通过失败',
+                                icon: 'fail',
+                            });
+                            this.isDisabledAgreeButton=false;
+                            this.agreeButtonLoading=false;
+                            this.isDisabledDisagreeButton=false;
+                        }
+                    }).catch(()=>{
+                    this.isDisabledAgreeButton=false;
+                    this.agreeButtonLoading=false;
+                    this.isDisabledDisagreeButton=false;
+                });
+            }
+        }
+    });
+
+    function getQueryVariable(variable) {
+        var query = window.location.search.substring(1);
+        var vars = query.split("&");
+        for (var i = 0; i < vars.length; i++) {
+            var pair = vars[i].split("=");
+            if (pair[0] == variable) {
+                return pair[1];
+            }
+        }
+        return false;
+    }
+</script>
+</body>
+</html>

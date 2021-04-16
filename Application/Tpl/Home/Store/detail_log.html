@@ -1,0 +1,180 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+    <title>日志信息</title>
+    <link rel="stylesheet" href="../Public/utils/css/public.style.css?v=0907">
+    <link rel="stylesheet" href="../Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="../Public/../Hr/depList.css?v=123">
+    <link rel="stylesheet" href="../Public/icon/css/font-awesome.min.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <style>
+    [v-cloak] {
+        display: none;
+    }
+    .store_detail {
+        margin-left: 30px;
+    }
+
+    .store_detail .active {
+        opacity: 1;
+    }
+
+    .store_detail a {
+        cursor: pointer;
+        font-weight: bold;
+        opacity: 0.5;
+        margin-right: 30px;
+    }
+    .log_header{
+        font-size: 16px;
+        line-height: 40px;
+        height: 40px;
+        margin-top: 20px;
+        padding-left: 20px;
+        text-align: left;
+        letter-spacing: 0;
+        color: rgb(255, 255, 255);
+        background: rgb(84, 110, 122);
+    }
+    .el-table__header-wrapper th{
+        color: rgb(86, 111, 123);
+        background: rgb(246, 249, 250);
+    }
+    </style>
+</head>
+
+<body>
+    <div id="logInfo" class="recruit use-btn" v-cloak>
+        <input type="hidden" id="detail_id" value=<?php echo $id; ?>>
+        <div class="store_detail">
+            <a onclick="changenewtab(this,'<{$Think.lang.基础配置}>')" _href="<{:U('store/detail')}>&id=<?php echo $id; ?>" ><{$Think.lang.基础配置}></a>
+            <a onclick="changenewtab(this,'<{$Think.lang.仓库配置}>')" _href="<{:U('store/detail_ware')}>&id=<?php echo $id; ?>">
+                <{$Think.lang.仓库配置}>
+            </a>
+            <a onclick="changenewtab(this,'<{$Think.lang.物流配置}>')" _href="<{:U('store/detail_logistics')}>&id=<?php echo $id; ?>">
+                <{$Think.lang.物流配置}>
+            </a>
+            <a onclick="changenewtab(this,'<{$Think.lang.高级配置}>')" _href="<{:U('store/detail_other')}>&id=<?php echo $id; ?>">
+                <{$Think.lang.高级配置}>
+            </a>
+            <a onclick="changenewtab(this,'<{$Think.lang.财务配置}>')" _href="<{:U('store/detail_finance')}>&id=<?php echo $id; ?>">
+                <{$Think.lang.财务配置}>
+            </a>
+            <a onclick="changenewtab(this,'<{$Think.lang.走仓推荐}>')" _href="<{:U('store/detail_warehouse_recommended')}>&id=<?php echo $id; ?>">
+                <{$Think.lang.走仓推荐}>
+            </a>
+            <a class="active"><{$Think.lang.日志信息}></a>
+        </div>
+        <div class="table_logInfo">
+                <div class="log_header"><{$Think.lang.日志信息}></div>
+                <el-table
+                :data="tableData"
+                border
+                style="width: 100%;margin-bottom: 20px ;">
+                    <el-table-column
+                        prop="module"
+                        :label="$lang('模块名称')"
+                        align="center">
+                        <template slot-scope="scope">
+                            <span>{{ $lang(scope.row.module) }}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column
+                        prop="field_name"
+                        :label="$lang('字段名称')"
+                        align="center" >
+                        <template slot-scope="scope">
+                            <span>{{ $lang(scope.row.field_name) }}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column
+                        prop="front_value"
+                        align="center"
+                        :label="$lang('修改前值')">
+                    </el-table-column>
+                    <el-table-column
+                        prop="later_value"
+                        :label="$lang('修改后值')"
+                        align="center">
+                    </el-table-column>
+                    <el-table-column
+                        prop="update_by"
+                        :label="$lang('修改人')"
+                        align="center">
+                    </el-table-column>
+                    <el-table-column
+                        prop="update_at"
+                        align="center"
+                        :label="$lang('修改时间')">
+                    </el-table-column>
+                </el-table>
+                <div class="use-row">
+                    <div class="col-100 text-right">
+                        <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="pages.current_page" :page-sizes="[10, 20, 50, 100, 200]" :page-size="pages.per_page" layout="sizes, prev, pager, next,jumper" :total="pages.totalCount"></el-pagination>
+                    </div>
+                </div>
+        </div>
+    </div>
+</body>
+ <!--引入js-->
+<script type="text/javascript" src="../Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="../Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="../Public/js/axios.min.js"></script>
+<script type="text/javascript" src="../Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script>
+    if (getCookie('think_language') !== "zh-cn") {
+        ELEMENT.locale(ELEMENT.lang.en)
+    }
+</script>
+<script type="text/javascript">
+    var detailOther = new Vue({
+        el: '#logInfo',
+        data: {
+            idd:'',
+            tableData:[],
+            pages:{
+                per_page:10,
+                current_page:1,
+                totalCount:0
+            }
+        },
+        created: function() {
+            this.idd = $("#detail_id").val();
+            this.getData();
+        },
+        methods: {
+            getData:function(){
+                var _this = this
+                axios.post("/index.php?m=api&a=store_getLogList",{
+                    "search": {
+                        "store_id":_this.idd
+                    },
+                    "pages": {
+                        "per_page": _this.pages.per_page,
+                        "current_page": _this.pages.current_page
+                    }
+                }).then(function(res) {
+                    console.log(res);
+                    if(res.data.code == 200){
+                        _this.tableData = res.data.data.data
+                        _this.pages.totalCount = Number(res.data.data.page.total_rows)
+                    }
+                })
+            },
+            handleSizeChange: function(val) {
+                this.pages.per_page = val;
+                this.getData();
+            },
+            handleCurrentChange: function(val) {
+                this.pages.current_page = val;
+                this.getData();
+            },
+        },
+    })
+    </script>
+</html>

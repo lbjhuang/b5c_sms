@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="../Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <title>第三方物流配置</title>
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+
+        .table-list {
+            border-collapse: collapse;
+            border-spacing: 0;
+            width: 100%;
+            background: #FFFFFF;
+            border: 1px solid #CADEE7;
+        }
+
+        .table-list tr th {
+            background: #546E7A;
+            height: 40px;
+            text-align: center;
+            font-size: .7rem;
+            color: #FFFFFF;
+            letter-spacing: 0;
+            border: 1px solid #668491;
+            white-space: nowrap;
+        }
+
+        .table-list tr td {
+            font-size: 0.68rem;
+            color: #263238;
+            letter-spacing: 0;
+            text-align: center;
+            padding: 0.5rem;
+            border: 1px solid #CADEE7;
+            font-family: "Microsoft YaHei";
+            white-space: nowrap;
+        }
+
+        .table-list tr:nth-of-type(even) {
+            background: #F7F9FB;
+            border: 1px solid #CADEE7;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="warehouse" style="padding:10px 20px 200px;" v-cloak>
+        <el-row>
+            <el-col :span="4">
+                <el-input placeholder="物流公司" v-model="logistics_company" @keyup.enter.native="search"></el-input>
+                &nbsp;&nbsp;
+            </el-col>
+            <el-col :span="4" :offset="1">
+                <el-input placeholder="物流方式" v-model="logistics_mode" @keyup.enter.native="search"></el-input>
+                &nbsp;&nbsp;
+            </el-col>
+            <el-col :span="4" :offset="1">
+                <el-input placeholder="电商平台" v-model="plat_cd" @keyup.enter.native="search"></el-input>
+                &nbsp;&nbsp;
+            </el-col>
+            <el-col :span="4" :offset="1">
+                <el-input placeholder="平台API标识" v-model="third_logistics_cd" @keyup.enter.native="search"></el-input>
+                &nbsp;&nbsp;
+            </el-col>
+            <el-col :span="4" :offset="1">
+                <el-button type="primary" @click="search">搜索</el-button>
+                <el-button @click="reset">重置</el-button>
+            </el-col>
+        </el-row>
+        <el-row>
+            <el-col :span="24" style="margin: 15px 0;text-align: right;">
+                <el-button type="success" @click="addEntry">新增</el-button>
+            </el-col>
+        </el-row>
+        <el-row>
+            <table cellpadding="0" cellspacing="0" width="100%" border="0" class="table-list">
+                <thead>
+                    <tr>
+                        <th>编号</th>
+                        <th>物流公司</th>
+                        <th>物流方式</th>
+                        <th>电商平台</th>
+                        <th>平台API标识</th>
+                        <th>物流轨迹url</th>
+                        <th>操作状态</th>
+                        <th width="180px">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(item,index) in tableData">
+                        <td>{{index  + 1 + pageSize * (currentPage - 1) }}</td>
+                        <td>{{item.b5c_logistics_cd_nm}}</td>
+                        <td>{{item.logistics_mode_id_nm}}</td>
+                        <td>{{item.plat_cd_nm}}</td>
+                        <td>{{item.third_logistics_cd}}</td>
+                        <td>{{item.logistics_trajectory_url}}</td>
+                        <td>{{item.operate_type == 0 ? '发货物流匹配' : '拉单物流匹配'}}</td>
+                        <td>
+                            <el-button size="mini" type="info" @click="delEntry(item)">删除</el-button>
+                            <el-button size="mini" type="info" @click="updateEntry(item)">修改</el-button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </el-row>
+        <el-row style="text-align: right;margin-top: 20px;">
+            <el-col>
+                <el-pagination background @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="currentPage" :page-sizes="[10, 30, 50]" :page-size="pageSize" layout="sizes,prev, pager, next, jumper" :total="totalCount"></el-pagination>
+            </el-col>
+        </el-row>
+        <el-dialog title="<{$Think.lang.新增}>" :visible.sync="dialogAdd" width="600px" :before-close="cancelAdd">
+            <el-row>
+                <el-col :span="24">
+                    <div style="margin-bottom:10px;font-weight: 600;">
+                        <{$Think.lang.选择物流}>
+                        <span style="color: red;vertical-align: middle;">*</span>
+                    </div>
+                    <div>
+                        <el-select filterable clearable @change="checkLogCom" v-model="logistics.logistics_company" placeholder="<{$Think.lang.物流公司}>" style="width:34%;">
+                            <el-option v-for="item in logisticsCompany" :key="item.cd" :label="item.cdVal" :value="item.cd"> </el-option>
+                        </el-select>
+                        <el-select filterable multiple collapse-tags clearable :disabled="!logisticsType.length" v-model="logistics.logistics_mode" placeholder="<{$Think.lang.物流方式}>" style="width:65%;">
+                            <el-option v-for="item in logisticsType" :key="item.ID" :label="item.CD_VAL" :value="item.ID"> </el-option>
+                        </el-select>
+                    </div>
+                </el-col>
+                <el-col>
+                    <div style="margin: 20px 0 10px;font-weight: 600;">
+                        <{$Think.lang.选择平台}>
+                    </div>
+                    <div>
+                        <el-select v-model="logistics.plat_cd" placeholder="请选择平台" style="width:100%;" filterable>
+                            <el-option v-for="(item,key) in platform" :key="key" :label="item" :value="key"> </el-option>
+                        </el-select>
+                    </div>
+                </el-col>
+                <el-col>
+                    <div style="margin: 20px 0 10px;font-weight: 600;">
+                        <{$Think.lang.平台API标识}>
+                    </div>
+                    <div>
+                        <el-input v-model="logistics.third_logistics_cd" placeholder="请输入内容"></el-input>
+                    </div>
+                </el-col>
+                <el-col>
+                    <div style="margin: 20px 0 10px;font-weight: 600;">
+                        <{$Think.lang.物流轨迹url}>
+                    </div>
+                    <div>
+                        <el-input v-model="logistics.logistics_trajectory_url" placeholder="请输入内容"></el-input>
+                    </div>
+                </el-col>
+                <el-col>
+                    <div style="margin: 20px 0 10px;font-weight: 600;">
+                        <span style="margin-right: 100px;">
+                            <{$Think.lang.操作状态}>
+                        </span>
+                        <el-radio v-model="logistics.operate_type" label="0">发货物流匹配</el-radio>
+                        <el-radio v-model="logistics.operate_type" label="1">拉单物流匹配</el-radio>
+                    </div>
+                </el-col>
+            </el-row>
+            <span slot="footer" class="dialog-footer">
+                <el-button @click="cancelAdd()">取 消</el-button>
+                <el-button type="primary" @click="saveAdd()">确 定</el-button>
+            </span>
+        </el-dialog>
+        <el-dialog title="<{$Think.lang.编辑}>" :visible.sync="dialogUpdate" width="600px" :before-close="cancelUpdate">
+            <el-row>
+                <el-col :span="24">
+                    <div style="margin-bottom:10px;font-weight: 600;">
+                        <{$Think.lang.选择物流}>
+                        <span style="color: red;vertical-align: middle;">*</span>
+                    </div>
+                    <div>
+                        <el-input v-model="updateLogistics.logistics_company" disabled style="width:40%;"></el-input>
+                        <el-input v-model="updateLogistics.logistics_mode" disabled style="width:40%;"></el-input>
+                    </div>
+                </el-col>
+                <el-col>
+                    <div style="margin: 20px 0 10px;font-weight: 600;">
+                        <{$Think.lang.选择平台}>
+                    </div>
+                    <div>
+                        <el-select v-model="updateLogistics.plat_cd" placeholder="请选择平台" style="width:100%;" filterable>
+                            <el-option v-for="(item,key) in platform" :key="key" :label="item" :value="key"> </el-option>
+                        </el-select>
+                    </div>
+                </el-col>
+                <el-col>
+                    <div style="margin: 20px 0 10px;font-weight: 600;">
+                        <{$Think.lang.平台API标识}>
+                    </div>
+                    <div>
+                        <el-input v-model="updateLogistics.third_logistics_cd" placeholder="请输入内容"></el-input>
+                    </div>
+                </el-col>
+                <el-col>
+                    <div style="margin: 20px 0 10px;font-weight: 600;">
+                        <{$Think.lang.物流轨迹url}>
+                    </div>
+                    <div>
+                        <el-input v-model="updateLogistics.logistics_trajectory_url" placeholder="请输入内容"></el-input>
+                    </div>
+                </el-col>
+                <el-col>
+                    <div style="margin: 20px 0 10px;font-weight: 600;">
+                        <span style="margin-right: 100px;">
+                            <{$Think.lang.操作状态}>
+                        </span>
+                        <el-radio v-model="updateLogistics.operate_type" label="0">发货物流匹配</el-radio>
+                        <el-radio v-model="updateLogistics.operate_type" label="1">拉单物流匹配</el-radio>
+                    </div>
+                </el-col>
+            </el-row>
+            <span slot="footer" class="dialog-footer">
+                <el-button @click="cancelUpdate()">取 消</el-button>
+                <el-button type="primary" @click="saveUpdate()">确 定</el-button>
+            </span>
+        </el-dialog>
+    </div>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="../Public/js/vue.2.5.13.js?<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script>
+        var lg = new Vue({
+            el: '#warehouse',
+            data: {
+                dialogAdd: false,
+                dialogUpdate: false,
+                logistics_company: '',
+                logistics_mode: '',
+                plat_cd: '',
+                third_logistics_cd: '',
+                tableData:[],
+                totalCount:10,
+                pageSize:10,
+                currentPage:1,
+                logistics: {
+                    logistics_company: '',
+                    logistics_mode: [],
+                    plat_cd: '',
+                    third_logistics_cd: '',
+                    operate_type:'0',
+                    logistics_trajectory_url:'' // 物流轨迹url
+                },
+                updateLogistics: {
+                    logistics_company: '',
+                    logistics_mode: '',
+                    plat_cd: '',
+                    third_logistics_cd: '',
+                    operate_type:'0',
+                    logistics_trajectory_url:'' // 物流轨迹url
+                },
+                logistics_id: '',
+                logisticsCompany: [],
+                logisticsType: [],
+                platform:[],
+            },
+            created: function () {
+                this.search();
+                this.baseData();
+            },
+            methods: {
+                baseData:function(){
+                  var query = {
+                        data: {
+                            query: {
+                                platform: "true",
+                            },
+                            type: "sorting"
+                        }
+                    };
+                    axios.post('/index.php?g=oms&m=CommonData&a=commonData',query).then(function (res) {
+                        var data = res.data.data;
+                        lg.platform = data.platform;
+                    })
+                },
+                addEntry: function () {
+                    this.dialogAdd = true;
+                    axios.post('/index.php?m=store&a=logisticsCompany').then(function (res) {
+                        var baseData = res.data;
+                        if (baseData.code == 2000) {
+                            lg.logisticsCompany = baseData.data;
+                        } else {
+                            lg.$message({ message: '基础数据获取失败', type: 'error' });
+                        }
+                    })
+                },
+                updateEntry: function (item){
+                    this.dialogUpdate = true;
+                    this.logistics_id = item.id;
+                    
+                    var data = {
+                        data:{
+                            logistics_id: item.id
+                        }
+                    }
+                    axios.post('/index.php?m=Store&a=logisticsConfigInfo',data).then(function (res) {
+                        var baseData = res.data;
+                        if (baseData) {
+                            lg.updateLogistics.logistics_company = baseData.b5c_logistics_cd_val;
+                            lg.updateLogistics.logistics_mode = baseData.logistics_mode_name;    
+                            lg.updateLogistics.plat_cd = baseData.plat_cd;
+                            lg.updateLogistics.third_logistics_cd = baseData.third_logistics_cd;
+                            lg.updateLogistics.logistics_trajectory_url = baseData.logistics_trajectory_url;
+                            lg.updateLogistics.operate_type = baseData.operate_type;
+
+                        } else {
+                            lg.$message({ message: '详情数据获取失败', type: 'error' });
+                        }
+                    })
+                },
+                checkLogCom: function (val) {
+                    this.logistics.logistics_mode = [];
+                    this.logisticsType = val ? this.logisticsCompany[val].LOGISTICS_MODE : [];
+                },
+                search: function () {
+                    var query = {
+                        data: {
+                            logistics_company: this.logistics_company,
+                            logistics_mode: this.logistics_mode,
+                            plat_cd: this.plat_cd,
+                            third_logistics_cd: this.third_logistics_cd,
+                        },
+                        page: {
+                            this_page: this.currentPage,
+                            page_count: this.pageSize
+                        }
+                    };
+                    axios.post('/index.php?m=Store&a=logisticsLists',query).then(function (res) {
+                        var resData = res.data;
+                        if(resData.code == 200){
+                            lg.tableData = resData.data.data;
+                            lg.totalCount = +resData.data.page.count;
+                        }else{
+                            lg.$message.error("数据查询失败...");
+                        }
+                    })
+                },
+                reset: function () {
+                    this.logistics_company = '';
+                    this.logistics_mode = '';
+                    this.plat_cd = '';
+                    this.third_logistics_cd = '';
+                    this.search();
+                },
+                handleCurrentChange: function handleCurrentChange(val) {
+                    this.currentPage = val;
+                    lg.search();
+                },
+                handleSizeChange: function handleSizeChange(val) {
+                    this.currentPage = 1;
+                    this.pageSize = val;
+                    lg.search();
+                },
+                delEntry: function (item) {
+                    this.$confirm('你确认删除这些物流匹配关系吗？', '提示', { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' })
+                        .then(function() {
+                            var param = {
+                                data: [{
+                                    mode_config_id: item.id
+                                }]
+                            };
+                            axios.post('/index.php?m=store&a=thrModeConfigDel', param).then(function (res) {
+                                if (res.data.code == 200) {
+                                    lg.$message.success("删除成功");
+                                    lg.search();
+                                } else {
+                                    lg.$message.error("删除失败");
+                                }
+                            });
+                        }).catch(() => {
+                            this.$message({
+                                type: 'info',
+                                message: '已取消删除'
+                            });
+                        });
+
+                },
+                saveAdd:function(){
+                    var param = {
+                        data: {
+                            logistics_company: this.logistics.logistics_company,
+                            logistics_mode: this.logistics.logistics_mode,
+                            plat_cd: this.logistics.plat_cd,
+                            third_logistics_cd: this.logistics.third_logistics_cd,
+                            operate_type: this.logistics.operate_type,
+                            logistics_trajectory_url: this.logistics.logistics_trajectory_url
+                        }
+                    };
+                    axios.post('/index.php?m=Store&a=logisticsConfigAdd',param).then(function(res){
+                        if(res.data.code == 200){
+                            lg.$message.success("新增成功");
+                            lg.dialogAdd = false;
+                            lg.search();
+                            lg.cancelAdd();
+                        }else if(res.data.code == 300){
+                            lg.$message.error("新增失败、请检查内容...");
+                        }else{
+                            lg.$message.error(res.data.info);
+                        }
+                    });
+                },
+                saveUpdate: function() {
+                    var param = {
+                        data: {
+                            logistics_id: this.logistics_id,
+                            plat_cd: this.updateLogistics.plat_cd,
+                            third_logistics_cd: this.updateLogistics.third_logistics_cd,
+                            operate_type: this.updateLogistics.operate_type,
+                            logistics_trajectory_url: this.updateLogistics.logistics_trajectory_url
+                        }
+                    };
+                    axios.post('/index.php?m=Store&a=logisticsConfigSave',param).then(function(res){
+                        if(res.data.code == 200){
+                            lg.$message.success("编辑成功");
+                            lg.dialogUpdate = false;
+                            lg.search();
+                            lg.cancelUpdate();
+                        }else if(res.data.code == 300){
+                            lg.$message.error("新增失败、请检查内容...");
+                        }else{
+                            lg.$message.error(res.data.info);
+                        }
+                    });
+                },
+                cancelAdd: function () {
+                    this.logisticsType.length = 0;
+                    this.dialogAdd = false;
+                    this.logistics = {
+                        logistics_company: '',
+                        logistics_mode: [],
+                        plat_cd:'',
+                        third_logistics_cd: '',
+                        operate_type: '0',
+                        logistics_trajectory_url:'',
+                    };
+                },
+                cancelUpdate: function (){
+                    this.dialogUpdate = false;
+                    this.updateLogistics = {
+                        logistics_company: '',
+                        logistics_mode: '',
+                        plat_cd:'',
+                        third_logistics_cd: '',
+                        operate_type: '0',
+                        logistics_trajectory_url:'',
+                    };
+                }
+            }
+
+        })
+    </script>
+</body>
+
+</html>

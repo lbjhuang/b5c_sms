@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    
+    <title>$lang('海关清关')</title>
+    <style>
+        [v-cloak]{
+            display: none;
+        }
+        #customsList{
+            padding: 10px 20px;
+            width: 100%;
+            height: 100%; 
+            box-sizing: border-box;
+        }
+        .header .form_span{
+            margin-right: 10px;
+        }
+        .companyManagement_pagination{
+            text-align: right;
+            margin-top: 20px;
+        }
+        .dividingLine{
+            width: 100%;
+            height: 1px;
+            background: #C9D8E0;
+            margin-top: 20px;
+        }
+        .el-table__header thead th{
+            background: #546E7A;
+            color: #fff;
+            border-bottom: 1px solid #668491;
+            border-right: 1px solid #668491;
+        }
+        .FilterCondition{
+            display:flex;
+            align-items: center;
+        }
+        .FilterCondition>div{
+            display: flex;
+            flex: 1;
+        }
+        .expand_table thead th{
+            color: #606266;
+            background: #f0f9eb;
+            border-right: 1px solid rgb(235, 238, 245);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="customsList" v-cloak style="margin-bottom:220px;"> 
+        <!-- 筛选的条件 -->
+        <div class="header">
+            <el-row type="flex" :gutter="20">
+                <el-col class="FilterCondition" :span="6">
+                        <span class="form_span">{{$lang('支付公司')}}</span>
+                        <el-select @change="company_change" v-model="form.company_cd" :placeholder="$lang('请选择支付公司')">
+                            <el-option v-for="(item,index) in company" 
+                                :key="index"
+                                :label="$lang(item.label)"
+                                :value="item.value">
+                            </el-option>
+                        </el-select>
+                </el-col>
+                <el-col class="FilterCondition" :span="6">
+                    <el-input @blur="transaction_num_blur" v-model="form.transaction_num" :placeholder="$lang('交易号')"></el-input>
+                </el-col>
+                <el-col class="FilterCondition" :span="6">
+                    <el-input @blur="order_num_num" v-model="form.order_num" :placeholder="$lang('订单号')"></el-input>
+                </el-col>
+                <el-col class="FilterCondition" :span="6">
+                    <el-date-picker
+                        v-model="form.date"
+                        type="daterange"
+                        @change="date_change"
+                        value-format="yyyy-MM-dd"
+                        :range-separator="$lang('至')"
+                        :start-placeholder="$lang('开始日期')"
+                        :end-placeholder="$lang('结束日期')">
+                    </el-date-picker>
+                </el-col>
+            </el-row>
+            
+            <el-row style="margin-top: 20px;" type="flex" :gutter="20">
+                    <el-col :span="6">
+                            <el-button @click="search()" type="primary">{{$lang('搜索')}}</el-button>
+                            <el-button @click="reset()">{{$lang('重置')}}</el-button>
+                    </el-col>
+            </el-row>
+
+        </div>
+        <div class="dividingLine"></div>
+
+        <!-- 搜索结果 -->
+        <div style="margin: 20px 0;">
+            <span>{{$lang('搜索结果')}}：{{$lang('共')}}  {{page.count}} {{$lang('条记录')}}</span>
+            <el-button @click="export_excel()" type="primary">{{$lang('导出')}}</el-button>
+        </div>
+        <!-- 重新海关弹窗 -->
+        <el-dialog :title="$lang('提示')" :visible.sync="dialogVisible" width="550px" center @close="close">
+            <div v-if="retweetData">
+                <div class="weixin" v-if="paid_channel_name == '微信'">
+                    <el-alert :title="$lang('提醒 ：微信重推为原样重新推送')" type="warning" :closable="false"></el-alert>
+                </div>
+                <div class="zhifubao" v-else>
+                    <el-alert :title="$lang('提醒 ：支付宝重推的可以允许修改以下相关参数')" type="warning" :closable="false"></el-alert>
+                    <el-form :model="retweetData" :rules="rules" ref="refFrom">
+                        <el-form-item :label="$lang('商户备案号')" label-width="100px" prop="ebc_code">
+                          <el-input v-model="retweetData.ebc_code" :placeholder="$lang('请输入商户备案号')"></el-input>
+                        </el-form-item>
+                        <el-form-item :label="$lang('商户备案名')" label-width="100px" prop="ebc_name">
+                          <el-input v-model="retweetData.ebc_name" :placeholder="$lang('请输入商户备案名')"></el-input>
+                        </el-form-item>
+                        <el-form-item :label="$lang('海关编号')" label-width="100px" prop="customs_place">
+                          <el-input v-model="retweetData.customs_place" :placeholder="$lang('请输入海关编号')"></el-input>
+                        </el-form-item>
+                        <el-form-item :label="$lang('报关金额')" label-width="100px" prop="paid_custom_amount">
+                          <el-input v-model="retweetData.paid_custom_amount" :placeholder="$lang('请输入报关金额')"></el-input>
+                        </el-form-item>
+                        <el-form-item :label="$lang('子订单号')" label-width="100px">
+                          <el-input v-model="retweetData.sub_order_id" :placeholder="$lang('请输入子订单号')"></el-input>
+                        </el-form-item>
+                      </el-form>
+                </div>
+            </div>
+            <span slot="footer" class="dialog-footer">
+                <el-button @click="dialogVisible = false" size="small">{{$lang('取消')}}</el-button>
+                <el-button type="primary" size="small" @click="queryPush">{{$lang('确认重推')}}</el-button>
+            </span>
+        </el-dialog>
+       <!-- 表单内容 -->
+       <div>
+            <el-table :data="tableData" border style="width: 100%" v-loading="tableLoading" @selection-change="handleSelectionChange">
+                <el-table-column
+                    type="selection"
+                    width="55">
+                </el-table-column>
+                <el-table-column type="expand">
+                    <template slot-scope="props">
+                        <el-table class="expand_table" v-if="props.row.paid_channel_name == '微信'" :data="props.row.chidren" border style="width: 100%">
+                            <el-table-column  width="180" align="center"  :label="$lang('状态码')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.customs_code}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="180" align="center"  :label="$lang('微信支付订单号')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.custom_declare_no}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="180" align="center"  :label="$lang('笔数')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.count}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="180" align="center"  :label="$lang('海关')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.customs_place}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="180" align="center"  :label="$lang('商户海关备案号')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.ebc_code}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="180" align="center"  :label="$lang('关税')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.duty}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="180" align="center"  :label="$lang('币种')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.custom_currency}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="180" align="center"  :label="$lang('应付金额')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.paid_custom_amount}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="180" align="center"  :label="$lang('验核机构')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.ver_dept}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="180" align="center"  :label="$lang('物流费')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.transport_fee}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="180" align="center"  :label="$lang('商品价格')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.paid_guds_amount}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="180" align="center"  :label="$lang('申报结果说明')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.return_info}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="180" align="center"  :label="$lang('最后更新时间')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.last_modified_time}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="250" align="center"  :label="$lang('订购人和支付人身份信息校验结果')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.identity_check}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="180" align="center"  :label="$lang('商户子订单号')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.sub_order_id}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="180" align="center"  :label="$lang('微信子订单号')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.winxin_order_id}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="180" align="center"  :label="$lang('验核机构交易流水号')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.pay_transaction_id}}</span>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                        <el-table class="expand_table" v-else-if="props.row.paid_channel_name == '支付宝'" :data="props.row.chidren" border style="width: 100%">
+                            <el-table-column  width="180" align="center"  :label="$lang('报关请求号')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.out_request_no}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="180" align="center"  :label="$lang('支付宝报关号')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.custom_declare_no}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="180" align="center"  :label="$lang('支付单据号')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.out_trade_no}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="180" align="center"  :label="$lang('海关编号')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.customs_place}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="180" align="center"  :label="$lang('商户备案号')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.ebc_code}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="180" align="center"  :label="$lang('是否拆单')"> 
+                                <template slot-scope="scope">
+                                    <span>{{$lang(scope.row.is_split)}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="180" align="center"  :label="$lang('报关金额')"> 
+                                <template slot-scope="scope">
+                                    <span v-if="scope.row.paid_custom_amount">CNY {{scope.row.paid_custom_amount}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="180" align="center"  :label="$lang('商户备案名')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.ebc_name}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="180" align="center"  :label="$lang('备注')"> 
+                                <template slot-scope="scope">
+                                    <span>{{$lang(scope.row.note)}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="180" align="center"  :label="$lang('当前状态')"> 
+                                <template slot-scope="scope">
+                                    <span>{{$lang(scope.row.status)}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="180" align="center"  :label="$lang('最后更新时间')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.last_modified_time}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="180" align="center"  :label="$lang('海关返回结果码')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.customs_code}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="180" align="center"  :label="$lang('海关返回结果描述')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.return_info}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="180" align="center"  :label="$lang('海关回执时间')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.return_time}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column  width="180" align="center"  :label="$lang('拆单时商户子订单号')"> 
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.sub_order_id}}</span>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('请求是否成功')"> 
+                    <template slot-scope="scope">
+                        <span>{{$lang(scope.row.return_status)}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('请求时间')"> 
+                    <template slot-scope="scope">
+                        <span>{{scope.row.req_time}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('订单号')"> 
+                    <template slot-scope="scope">
+                        <span>{{scope.row.order_id}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('海关编号')"> 
+                    <template slot-scope="scope">
+                        <span>{{scope.row.customs_place}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('商户备案号')"> 
+                    <template slot-scope="scope">
+                        <span>{{scope.row.ebc_code}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('ID身份证验证')"> 
+                    <template slot-scope="scope">
+                        <span>{{scope.row.identity_check}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('最后更新时间')"> 
+                    <template slot-scope="scope">
+                        <span>{{scope.row.last_modified_time}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('申报状态')"> 
+                    <template slot-scope="scope">
+                        <span>{{$lang(scope.row.status)}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('金额')"> 
+                    <template slot-scope="scope">
+                        <span v-if="scope.row.paid_custom_amount">CNY {{scope.row.paid_custom_amount}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('支付交易号')"> 
+                    <template slot-scope="scope">
+                        <span>{{scope.row.out_trade_no}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('支付公司')"> 
+                    <template slot-scope="scope">
+                        <span>{{$lang(scope.row.paid_channel_name)}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center"  :label="$lang('备注')"> 
+                    <template slot-scope="scope">
+                        <span>{{$lang(scope.row.note)}}</span>
+                    </template>
+                </el-table-column>
+                
+                <el-table-column align="center"  :label="$lang('操作')"> 
+                    <template slot-scope="scope">
+                        <el-button @click="relaunch_customs(scope.row)" type="primary" size="small">{{$lang('重推海关')}}</el-button>
+                    </template>
+                </el-table-column>
+                
+            </el-table>
+            <!-- 分页 -->
+            <div class="companyManagement_pagination">
+                <el-pagination
+                        background
+                        @current-change="handleCurrentChange"
+                        @size-change="handleSizeChange"
+                        :current-page.sync="page.currentPage"
+                        :page-size="page.pageSize"
+                        :page-sizes="[10, 30, 50, 100]"
+                        layout="total, sizes, prev, pager, next, jumper"
+                        :total="page.count">
+                </el-pagination>
+            </div>
+        </div>
+
+    </div>
+
+    <!--引入js-->
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.6.3.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script>
+        if (getCookie('think_language') !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en)
+        }
+        var VM = new Vue({
+            el: '#customsList',
+            data: {
+                dialogVisible: false,
+                retweetData: {
+                    orderId: '',
+                    platCd: "",
+                    paid_custom_amount: "",
+                    sub_order_id: "",
+                    customs_place: "",
+                    ebc_code: "",
+                    ebc_name: "",
+                },
+                paid_channel_name: "",
+                rules: {
+                    ebc_code: [{ required: true, message: '请输入商户备案号', trigger: 'blur' },],
+                    ebc_name: [{ required: true, message: '请输入商户备案名称', trigger: 'blur' },],
+                    customs_place: [{ required: true, message: '请输入海关编号', trigger: 'blur' },],
+                    paid_custom_amount: [{ required: true, message: '请输入报关金额', trigger: 'blur' },],
+                },
+                form:{
+                    company_cd:'',
+                    transaction_num:'',
+                    order_num:'',
+                    date:''
+                },
+                page:{
+                    currentPage:1,
+                    pageSize:10,
+                    count:0
+                },
+                company:[{
+                    value: '',
+                    label: '全部'
+                }, {
+                    value: 'Alipay',
+                    label: '支付宝'
+                }, {
+                    value: 'WechatPay',
+                    label: '微信'
+                }],
+                tableLoading:false,
+                multipleSelection: [],
+                tableData:[]
+            },
+            created() {
+                this.getTableData()
+            },
+            methods: {
+                getTableData:function(){
+                    var _this = this;
+                    var startDate = _this.form.date[0]
+                    var endDate = _this.form.date[1]
+                    if(!startDate){
+                        startDate = ''
+                        endDate = ''
+                    }
+                    var params = {
+                        "search": {
+                            "paid_channel_name":_this.form.company_cd,
+                            "order_id":_this.form.order_num,
+                            "out_trade_no":_this.form.transaction_num,
+                            "start_time":startDate,
+                            "end_time":endDate
+                        },
+                        "pages": {
+                            "per_page": _this.page.pageSize,
+                            "current_page": _this.page.currentPage
+                        }
+                    };
+                    axios.post("/index.php?g=OMS&m=Customs&a=lists", params).then(function (res) {
+                        console.log(res);
+                        if (res.data.code == 2000) {
+                            _this.tableData = res.data.data.data
+                            _this.page.count = Number(res.data.data.page.total_rows)
+                            
+                        } else {
+                            _this.$message({
+                                message: res.data.msg,
+                                type: 'error'
+                            })
+                        }
+	   				})
+                },
+                search:function(){
+                    this.getTableData()
+                },
+                reset:function(){
+                    this.form = {
+                        company_cd:'',
+                        transaction_num:'',
+                        order_num:'',
+                        date:''
+                    }
+                    this.page = {
+                        currentPage:1,
+                        pageSize:10,
+                    },
+       			    this.getTableData()
+                },
+                close() {
+                    this.$refs["refFrom"].resetFields();
+                },
+                // 重推海关
+                relaunch_customs:function(row){
+                    console.log(row);
+                    this.dialogVisible = true;
+                    // this.retweetData = JSON.parse(JSON.stringify(row));
+                    // this.retweetData.ebc_name = this.retweetData.chidren[0].ebc_name;
+                    this.retweetData = {
+                        orderId: row.order_id,
+                        platCd: row.plat_cd,
+                        paid_custom_amount: row.paid_custom_amount,
+                        sub_order_id: row.chidren[0].sub_order_id,
+                        customs_place:row.customs_place,
+                        ebc_code: row.ebc_code,
+                        ebc_name: row.chidren[0].ebc_name,
+                    }
+                    this.paid_channel_name = row.paid_channel_name;
+                },
+                querySubmit() {
+                    this.dialogVisible = false;
+                    axios.post("/index.php?g=OMS&m=customs&a=repush", this.retweetData).then( (res) => {
+                        if (res.data.code == 2000) {
+                            if(this.paid_channel_name == "支付宝") {
+                                this.$message.success(`订单号：${this.retweetData.orderId} 重推支付宝报关成功！`)
+                            } else {
+                                
+                                this.$message.success(`订单号：${this.retweetData.orderId} 重推微信报关成功！`)
+                            }
+                            this.search();
+                        } else {
+                            this.$message({
+                                message: res.data.msg,
+                                type: 'error'
+                            })
+                        }
+	   				})
+                },
+                // 确认重推
+                queryPush() {
+                    if(this.paid_channel_name == "支付宝") {
+                        this.$refs["refFrom"].validate((valid) => {
+                            console.log(valid)
+                        if (valid) {
+                            var reg = /^(?!0+(?:\.0+)?$)(?:[1-9]\d*|0)(?:\.\d{1,2})?$/;
+                            if(!reg.test(this.retweetData.paid_custom_amount)) {
+                                this.$message.warning('金额只能是正数且最多两位小数');
+                                return false;
+                            }
+                            this.querySubmit()
+
+                        } else {
+                            return false;
+                        }
+                        });
+                    } else {
+                        this.querySubmit()
+                    }
+                    
+                },
+                // 导出
+                export_excel:function(){
+                    var _this = this
+                    var startDate = _this.form.date[0]
+                    var endDate = _this.form.date[1]
+                    if(!startDate){
+                        startDate = ''
+                        endDate = ''
+                    }
+                    if(_this.form.company_cd){
+                        var param = {
+                            "search": {
+                                "paid_channel_name":_this.form.company_cd,
+                                "order_id":_this.form.order_num,
+                                "out_trade_no":_this.form.transaction_num,
+                                "start_time":startDate,
+                                "end_time":endDate
+                            },
+                            "pages": {
+                                "per_page": _this.page.pageSize,
+                                "current_page": _this.page.currentPage
+                            },
+                            "ids": []
+                        }
+                        for (var i = 0; i < _this.multipleSelection.length; i++) {
+                            param.ids.push(_this.multipleSelection[i].id);
+                        }
+                        var tmep = document.createElement('form');
+                        tmep.action = '/index.php?g=OMS&m=Customs&a=export';
+                        tmep.method = "post";
+                        tmep.style.display = "none";
+                        var opt = document.createElement("input");
+                        opt.name = 'post_data';
+                        opt.value = JSON.stringify(param);
+                        tmep.appendChild(opt);
+                        document.body.appendChild(tmep);
+                        tmep.submit();
+                        tmep.remove();
+                    }else{
+                        _this.$message({
+                            message: _this.$lang('先选择支付公司才能进行导出'),
+                            type: 'warning'
+                        })
+                    }
+                },
+                handleSelectionChange:function(val) {
+                    this.multipleSelection = val;
+                    // console.log(this.multipleSelection);
+                },
+                handleCurrentChange:function(val){
+                    this.form.currentPage = val;
+       			    this.getTableData()
+                },
+                handleSizeChange:function(val){
+                    this.form.currentPage = 1;
+                    this.form.pageSize = val;
+                    this.getTableData()
+                },
+                company_change:function(){
+                    this.getTableData()
+                },
+                transaction_num_blur:function(){
+                    this.getTableData()
+                },
+                order_num_num:function(){
+                    this.getTableData()
+                },
+                date_change:function(){
+                    this.getTableData()
+                },
+            },
+        })
+    </script>
+</body>
+</html>

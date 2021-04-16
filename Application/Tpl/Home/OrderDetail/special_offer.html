@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="../Public/utils/css/public.style.css?v=0907">
+    <link rel="stylesheet" href="../Public/css/element-ui-2.2.css?v=13">
+    <link rel="stylesheet" href="../Public/css/default.css">
+    <link rel="stylesheet" href="../Public/../Hr/hrstyle.css?v=20170922">
+    <link rel="stylesheet" href="../Public/icon/css/font-awesome.min.css">
+</head>
+
+<style>
+    [v-cloak] {
+        display: none;
+    }
+    .arrow {
+        display: inline-block;
+        vertical-align: middle;
+        width: 0;
+        height: 0;
+        margin-left: 5px;
+        opacity: 0.66;
+    }
+
+    .arrow.asc {
+        border-left: 4px solid transparent;
+        border-right: 4px solid transparent;
+        border-bottom: 4px solid #fff;
+    }
+
+    .arrow.dsc {
+        border-left: 4px solid transparent;
+        border-right: 4px solid transparent;
+        border-top: 4px solid #fff;
+    }
+
+    .arrowhand {
+        cursor: pointer;
+    }
+   /* 
+       覆盖hrstyle.css中的全局样式
+    */
+    .show-list .el-form-item__label {
+         padding: 0 !important;
+    }
+</style>
+<body>
+<div id="special" class="show-list" v-cloak style="padding-bottom: 200px;">
+    <div class="use-title">特价提案</div>
+    <el-form ref="form" :model="form" :label-position="labelPosition" label-width="85px">
+        <div class="use-row">
+            <div class="col-100">
+                <table class="search-table">
+                    <tbody>
+                    <tr>
+                        <td>
+                            <el-form-item label="供应商">
+                                <el-input v-model="form.supplier"></el-input>
+                            </el-form-item>
+                        </td>
+                        <td>
+                            <el-form-item label="采购同事">
+                                <el-input v-model="form.purchase_staff"></el-input>
+                            </el-form-item>
+                        </td>
+                        <td>
+                            <el-form-item label="采购团队">
+                                <el-select :filterable="true" placeholder="采购团队" v-model="form.purchase_team" clearable>
+                                    <el-option :key="item.CD" :label="item.CD_VAL" :value="item.CD" v-for="item in selData.purchase_team"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </td>
+                        <td>
+                            <el-form-item label="创建时间">
+                                <el-date-picker v-model="form.create_time" type="daterange" align="right" unlink-panels range-separator="至" start-placeholder="开始日期"
+                                                end-placeholder="结束日期" :picker-options="pickerOptions"> </el-date-picker>
+                            </el-form-item>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="use-row">
+            <div class="col-100 use-btn">
+                <button type="button" class="btn-pub btn-green" @click="search()">查询</button>
+                <button type="button" class="btn-pub btn-default mg-l-20" @click="reset()">重置</button>
+            </div>
+        </div>
+    </el-form>
+    <div class="baseline"></div>
+    <div class="use-row">
+        <div class="col-50 result-num">
+            搜索结果：&nbsp;&nbsp;共
+            <b>{{total_rows}}</b> 条
+        </div>
+        <div class="col-50 text-right">
+            <?php if(ButtonAction::hidden()){ ?>
+            <el-button type="primary" @click="goSpeDetail('edit','','特价商品创建页')"> 创建特价信息</el-button>
+            <?php }?>
+        </div>
+    </div>
+    <div class="use-row">
+        <div class="col-100">
+            <table class="table-list">
+                <thead>
+                <tr>
+                    <th>序号</th>
+                    <th>供应商</th>
+                    <th>采购团队 </th>
+                    <th>采购同事 </th>
+                    <th>创建时间 </th>
+                    <th>操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="(item,index) in speData.data">
+                    <td>{{item.id}}</td>
+                    <td>{{item.supplier}}</td>
+                    <td>{{item.purchase_team}}</td>
+                    <td>{{item.purchase_staff}}</td>
+                    <td>{{item.create_time}}</td>
+                    <td class="use-btn">
+                        <button class="btn-pub btn-blue" @click="goSpeDetail('view',item.id)">查看</button>
+                        <?php if(ButtonAction::hidden()){ ?>
+                        <button class="btn-pub btn-default mg-l-10" @click="goSpeDetail('edit',item.id,'特价商品修改页')">修改</button>
+                        <?php } ?>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="use-row">
+        <div class="col-100 text-right">
+            <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="form.currentPage" :page-sizes="[20, 50, 100, 200,300]" :page-size="form.list_rows" layout="sizes, prev, pager, next,jumper" :total="total_rows"></el-pagination>
+        </div>
+    </div>
+</div>
+<script type="text/javascript" src="../Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="../Public/utils/utils.js"></script>
+<script src="../Public/js/H-ui.js"></script>
+<script src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="../Public/js/vue.2.5.13.js?<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="../Public/js/axios.min.js"></script>
+<script type="text/javascript" src="../Public/js/element-ui-2.2.js"></script>
+<script src="../Public/js/queryString.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script>
+    if(getCookie('think_language') !== "zh-cn" ){
+        ELEMENT.locale(ELEMENT.lang.en)
+    }
+    var spe = new Vue({
+        el: '#special',
+        data: {
+            labelPosition: 'left',
+            labelModal: 'top',
+            total_rows: 10,
+            form: {
+                supplier: '',
+                purchase_team: '',
+                purchase_staff: '',
+                create_time: [],
+                currentPage: 1,
+                list_rows: 20,
+            },
+            pickerOptions: {
+                shortcuts: [{
+                    text: '最近一周',
+                    onClick:function(picker) {
+                        var end = new Date();
+                        var start = new Date();
+                        start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+                        picker.$emit('pick', [start, end]);
+                    }
+                }, {
+                    text: '最近一个月',
+                    onClick:function(picker) {
+                        var end = new Date();
+                        var start = new Date();
+                        start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+                        picker.$emit('pick', [start, end]);
+                    }
+                }, {
+                    text: '最近三个月',
+                    onClick:function(picker) {
+                        var end = new Date();
+                        var start = new Date();
+                        start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+                        picker.$emit('pick', [start, end]);
+                    }
+                }]
+            },
+            selData: {},
+            speData: {},
+            queryPost: function (url, param) {
+                var headers = { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+                return axios.post(url, Qs.stringify(param), headers);
+            }
+        },
+        created:function() {
+            this.search();
+            this.getDic();
+        },
+        methods: {
+            getDic: function () {
+                this.queryPost('/index.php?m=order_detail&a=getCds', { cd_type: 'currency,purchase_team' }).then(function (res) {
+                    spe.selData = res.data.info;
+                })
+            },
+            search: function () {
+                var param = {
+                    supplier: this.form.supplier,
+                    purchase_team: this.form.purchase_team,
+                    purchase_staff: this.form.purchase_staff,
+                    p: this.form.currentPage,
+                    list_rows: this.form.list_rows,
+                    start_time: utils.dateFormat(this.form.create_time[0],'yyyy-MM-dd'),
+                    end_time: utils.dateFormat(this.form.create_time[1],'yyyy-MM-dd'),
+                };
+                axios.get('/index.php?m=order_detail&a=special_offer_list&'+ Qs.stringify(param)).then(function(res){
+                    Vue.set(spe.speData, 'data', res.data.info.list)
+                    spe.total_rows = +res.data.info.page.total_rows;
+                });
+            },
+            handleSizeChange: function (size) {
+                this.form.list_rows = size;
+            },
+            handleCurrentChange: function (currentPage) {
+                this.search();
+            },
+            goSpeDetail:function(type,id,title){
+                title = title || '特价商品详情页';
+                var href = "/index.php?m=order_detail&a=special_detail&type="+ type + "&id=" + id,
+                    a = document.createElement("a");
+                a.setAttribute("style", "display: none");
+                a.setAttribute("onclick", "opennewtab(this,'" + title + "')");
+                a.setAttribute("_href", href);
+                a.onclick();
+            },
+            reset:function(){
+                this.form.supplier = '';
+                this.form.purchase_team = '';
+                this.form.purchase_staff = '';
+                this.form.create_time = [];
+            }
+        }
+    })
+</script>
+</body>
+
+</html>

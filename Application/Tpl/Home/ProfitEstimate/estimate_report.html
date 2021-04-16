@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+        <{Think.lang.盈亏预估汇报}>
+    </title>
+
+    <link href="../Public/css/H-ui-3.1.min.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="../Public/css/stock.css?v=<{$Think.const.V}>" />
+    <link rel="stylesheet" type="text/css" href="../Public/css/style.css?v=<{$Think.const.V}>" />
+    <link rel="stylesheet" type="text/css" href="../Public/css/default.css?v=<{$Think.const.V}>" />
+    <link rel="stylesheet" type="text/css" href="../Public/lib/Hui-iconfont/1.0.7/iconfont.css?v=<{$Think.const.V}>" />
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.13.0.css?v=<{$Think.const.V}>">
+
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+
+        .el-tabs__nav-wrap::after,
+        .el-tabs__active-bar {
+            height: 0;
+        }
+
+        .tabs {
+            padding-left: 20px;
+        }
+
+        .es-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .button-group {
+            margin-right: 20px;
+        }
+
+        .cell {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .cell-title {
+            flex: 1;
+            text-align: right;
+        }
+
+        .cell-data {
+            display: flex;
+            flex: 2;
+            justify-content: space-around;
+            text-align: left;
+        }
+
+        .cell-back {
+            background: rgb(226, 242, 254);
+        }
+
+        .table-list tr:nth-of-type(even) {
+            background: #fff;
+        }
+
+        .cell-reporter {
+            width: 180px !important;
+            padding: 34px 0 !important;
+            position: absolute;
+            width: 187px;
+            background: #fff;
+            margin-top: -30px;
+            height: 20px;
+        }
+
+        .reporter-none {
+            width: 180px !important;
+            padding: 0 !important;
+        }
+
+        .cell-accuracy {
+            display: flex;
+            justify-content: space-evenly;
+            align-items: center;
+            height: 17px;
+        }
+
+        .es-content {
+            min-height: 500px;
+        }
+
+        /* H.ui */
+        .popover-content {
+            padding: 9px 0px !important;
+        }
+
+        /* ele样式调整 */
+        .el-popover {
+            width: 320px !important;
+            right: 116px;
+            /* top: -13px; */
+        }
+
+        .el-icon-warning {
+            color: rgb(51, 153, 255);
+        }
+
+        .el-tabs__active-bar {
+            background: #FF5224;
+            width: 40px;
+        }
+
+        .el-tabs__nav-wrap::after {
+            display: none;
+        }
+
+        .el-tabs__item.is-top {
+            font-family: PingFangSC-Semibold;
+            font-size: 18px;
+            color: #263238;
+            letter-spacing: 0;
+            outline: none;
+            border: none;
+            box-shadow: none;
+        }
+
+        .el-tabs__item.is-active {
+            font-weight: 600;
+        }
+
+        .el-tabs__item:focus.is-active.is-focus:not(:active) {
+            box-shadow: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="estimateReport" v-cloak>
+        <el-tabs v-model="activeTab" class="tabs" @tab-click="handleChangeTab">
+            <el-tab-pane name="dataReport" :label="$lang('数据汇报')">
+                <div class="es-header">
+                    <div>
+                        <span>{{$lang('预估周期：')}}{{cycle.es_cycle_start_time}} ~ {{cycle.es_cycle_end_time}}</span>
+                        <el-button size="small" @click="handleOtherEstimate">{{$lang('其他周期')}}</el-button>
+                    </div>
+                    <div class="button-group">
+                        <?php if(checkPermissions('ProfitEstimate', 'generateReport')) { ?>
+                        <el-button @click="handleShowAddModal">{{$lang('生成新报告')}}</el-button>
+                        <el-button @click="handleShowLog">{{$lang('查看操作日志')}}</el-button>
+                        <?php }?>
+                    </div>
+                </div>
+                <div v-if="isCopyWriting">
+                    <div>{{$lang('* N/A表示对应项目无实际数据')}}</div>
+                </div>
+                <div v-if="realDataIsUpdated === 1"><i class="el-icon-warning"></i>
+                    {{$lang('表示用于计算预估准确率的实际数据出现更新，鼠标移至icon上方查看详情')}}</div>
+                <div class="es-content">
+                    <table class="table-list" v-for="(item, key) in data" :key="key">
+                        <thead>
+                            <tr>
+                                <th>{{$lang('负责人')}}</th>
+                                <th>{{$lang('数据')}}</th>
+                                <th>{{$lang('销售额（$）')}}</th>
+                                <th>{{$lang('运营成本（$）')}}</th>
+                                <th>{{$lang('公司成本（$）')}}</th>
+                                <th>{{$lang('运营利润（$）')}}</th>
+                                <th>{{$lang('净利（$）')}}</th>
+                                <th>{{$lang('预估准确率')}}</th>
+                            </tr>
+                        </thead>
+                        <thead>
+                            <tr>
+                                <td class="reporter-none"></td>
+                                <td>{{$lang('预估数据')}}</td>
+                                <td :class="{'cell-back': item.assess_index.includes('销售额')}">
+                                    {{digitFormat(item.es_sales)}}</td>
+                                <td :class="{'cell-back': item.assess_index.includes('运营成本')}">
+                                    {{digitFormat(item.es_operating_costs)}}</td>
+                                <td :class="{'cell-back': item.assess_index.includes('公司成本')}">
+                                    {{digitFormat(item.es_company_costs)}}</td>
+                                <td :class="{'cell-back': item.assess_index.includes('运营利润')}">
+                                    {{digitFormat(item.es_operating_profit)}}</td>
+                                <td :class="{'cell-back': item.assess_index.includes('净利')}">
+                                    {{digitFormat(item.es_net_profit)}}</td>
+                                <td class="cell-accuracy">
+                                    <div>{{item.es_accuracy}}</div>
+                                    <div v-if="item.realDataIsUpdated == 1">
+                                        <el-popover placement="right" width="400" trigger="hover"
+                                            v-model="item.visible">
+                                            <div class="popover-container">
+                                                <div>{{$lang('数据更新')}}</div>
+                                                <div class="popover-content">
+                                                    <div class="cell">
+                                                        <div class="cell-title">{{$lang('负责人')}}</div>
+                                                        <div class="cell-data">
+                                                            <div>{{item.reporter}}</div>
+                                                            <div></div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="cell">
+                                                        <div class="cell-title">{{$lang('数据来源')}}</div>
+                                                        <div class="cell-data">
+                                                            <div>{{item.compared_source}}</div>
+                                                            <div></div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="cell">
+                                                        <div class="cell-title">{{$lang('更新时间')}}</div>
+                                                        <div class="cell-data">
+                                                            <div>{{dateFormat(item.update_time)}}</div>
+                                                            <div></div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="cell">
+                                                        <div class="cell-title">{{$lang('指标')}}</div>
+                                                        <div class="cell-data">
+                                                            <div>{{$lang('变更前')}}</div>
+                                                            <div>{{$lang('变更后')}}</div>
+                                                        </div>
+                                                        <!-- <div> -->
+                                                        <!-- </div> -->
+                                                    </div>
+                                                    <div class="cell">
+                                                        <div class="cell-title">{{$lang('预估准确率')}}</div>
+                                                        <div class="cell-data">
+                                                            <div>{{item.updateBefore_es_accuracy}}</div>
+                                                            <div>{{item.updateAfter_es_accuracy}}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="cell">
+                                                        <div class="cell-title">{{$lang('销售额')}}</div>
+                                                        <div class="cell-data">
+                                                            <div>{{digitFormat(item.updateBefore_sales)}}</div>
+                                                            <div>{{digitFormat(item.updateAfter_sales)}}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="cell">
+                                                        <div class="cell-title">{{$lang('运营成本')}}</div>
+                                                        <div class="cell-data">
+                                                            <div>{{digitFormat(item.updateBefore_operating_costs)}}
+                                                            </div>
+                                                            <div>{{digitFormat(item.updateAfter_operating_cost)}}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="cell">
+                                                        <div class="cell-title">{{$lang('公司成本')}}</div>
+                                                        <div class="cell-data">
+                                                            <div>{{digitFormat(item.updateBefore_company_costs)}}</div>
+                                                            <div>{{digitFormat(item.updateAfter_company_cost)}}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </el-popover>
+                                        <i v-if="item.realDataIsUpdated == 1" class="el-icon-warning"
+                                            @mouseover="handlePopoverMouseOver(item)"
+                                            @mouseleave="handlePopoverMouseLeave(item)" slot="reference"></i>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="cell-reporter">{{item.reporter}}</td>
+                                <td>{{$lang('实际数据')}}</td>
+                                <td :class="{'cell-back': item.assess_index.includes('销售额')}">
+                                    {{digitFormat(item.real_sales)}}</td>
+                                <td :class="{'cell-back': item.assess_index.includes('运营成本')}">
+                                    {{digitFormat(item.real_operating_costs)}}</td>
+                                <td :class="{'cell-back': item.assess_index.includes('公司成本')}">
+                                    {{digitFormat(item.real_company_costs)}}</td>
+                                <td :class="{'cell-back': item.assess_index.includes('运营利润')}">
+                                    {{digitFormat(item.real_operating_profit)}}</td>
+                                <td :class="{'cell-back': item.assess_index.includes('净利')}">
+                                    {{digitFormat(item.real_net_profit)}}</td>
+                                <td class="cell-accuracy">
+                                    <div>{{item.real_accuracy}}</div>
+                                    <div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="reporter-none"></td>
+                                <td>{{$lang('差异')}}</td>
+                                <td :class="{'cell-back': item.assess_index.includes('销售额')}">
+                                    {{digitFormat(item.di_sales)}}</td>
+                                <td :class="{'cell-back': item.assess_index.includes('运营成本')}">
+                                    {{digitFormat(item.di_operating_costs)}}</td>
+                                <td :class="{'cell-back': item.assess_index.includes('公司成本')}">
+                                    {{digitFormat(item.di_company_costs)}}</td>
+                                <td :class="{'cell-back': item.assess_index.includes('运营利润')}">
+                                    {{digitFormat(item.di_operating_profit)}}</td>
+                                <td :class="{'cell-back': item.assess_index.includes('净利')}">
+                                    {{digitFormat(item.di_net_profit)}}</td>
+                                <td class="cell-accuracy">
+                                    <div>{{item.di_accuracy}}</div>
+                                </td>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+                <el-dialog :title="$lang('选择预估周期')" :visible.sync="estimate" @close="handleCloseCycleModal">
+                    <el-form :model="form" :rules="cycleRule" ref="cycleForm" label-width="100px">
+                        <el-form-item :label="$lang('时间范围')">
+                            <el-date-picker v-model="form.date" type="daterange" value-format="yyyy-MM-dd"
+                                range-separator="至" :start-placeholder="$lang('开始时间')" :end-placeholder="$lang('结束日期')">
+                            </el-date-picker>
+                        </el-form-item>
+                        <el-form-item :label="$lang('预估周期')" prop="cycle">
+                            <el-select v-model="form.cycle" style="width: 350px;">
+                                <el-option v-for="(cycle, key) in cycles" :key="key" :label="cycle" :value="cycle">
+                                </el-option>
+                            </el-select>
+                        </el-form-item>
+                        <el-form-item>
+                            <el-button @click="handleFilterCycle">{{$lang('确认')}}</el-button>
+                            <el-button @click="handleOtherEstimate">{{$lang('取消')}}</el-button>
+                        </el-form-item>
+                    </el-form>
+                </el-dialog>
+                <!-- 生成新报告 -->
+                <el-dialog :title="$lang('生成新报告')" :visible.sync="isGenerate" @close="handleCloseReportModal">
+                    <el-form :model="generateForm" label-width="130px" :rules="generateRule" ref="generateForm">
+                        <el-form-item :label="$lang('预估周期')" prop="cycle">
+                            <el-select v-model="generateForm.cycle" style="width: 220px;" @change="handleReportChange">
+                                <el-option v-for="(cycle, key) in cycles" :key="key" :label="cycle" :value="cycle">
+                                </el-option>
+                            </el-select>
+                        </el-form-item>
+                        <el-form-item :label="$lang('insight取数时间')" prop="insightTime">
+                            <el-date-picker v-model="generateForm.insightTime" value-format="yyyy-MM-dd" type="date"
+                                :placeholder="$lang('选择日期')">
+                            </el-date-picker>
+                        </el-form-item>
+                        <el-form-item :label="$lang('录入数据时间')" prop="importDate">
+                            <el-select v-model="generateForm.importDate" style="width: 220px;">
+                                <el-option v-for="(date, key) in importDate" :key="key"
+                                    :label="date.start_time + '~' + date.end_time"
+                                    :value="date.start_time + '~' + date.end_time">
+                                </el-option>
+                            </el-select>
+                        </el-form-item>
+                        <el-form-item>
+                            <el-button @click="previewReport">{{$lang('预览')}}</el-button>
+                            <el-button @click="handleShowAddModal">{{$lang('取消')}}</el-button>
+                        </el-form-item>
+                    </el-form>
+                </el-dialog>
+
+                <!-- 操作日志dialog -->
+                <el-dialog :title="$lang('操作日志')" :visible.sync="showLog" class-name="log-table-title">
+                    <el-table :data="logs" border align="center" :header-cell-style="getRowClass">
+                        <el-table-column :label="$lang('操作日志')">
+                            <el-table-column prop="operating_time" :label="$lang('操作时间')"></el-table-column>
+                            <el-table-column prop="operator" :label="$lang('操作人')"></el-table-column>
+                            <el-table-column prop="message" :label="$lang('详细信息')"></el-table-column>
+                        </el-table-column>
+                    </el-table>
+                    <div slot="footer" class="dialog-footer">
+                        <div class="col-100 text-right">
+                            <el-pagination background @size-change="handleLogSize" @current-change="handleLogCurrent"
+                                layout="sizes, prev, pager, next" :page-sizes="[10, 50, 100]" :total="logTotal">
+                            </el-pagination>
+                        </div>
+                    </div>
+                </el-dialog>
+            </el-tab-pane>
+            <el-tab-pane name="history" :label="$lang('历史报告')">
+                <div class="h-header">
+                    <el-form :model="historySearch">
+                        <el-row>
+                            <el-col :span="6">
+                                <el-form-item prop="person" :label="$lang('负责人')">
+                                    <el-select v-model="historySearch.person" style="width: 335px;" multiple filterable
+                                        @change="getHistory">
+                                        <el-option v-for="user in users" :key="user.id" :label="user.name"
+                                            :value="user.name"></el-option>
+                                    </el-select>
+                                </el-form-item>
+                            </el-col>
+                            <el-col :span="6">
+                                <el-form-item prop="cycle" :label="$lang('预估周期')">
+                                    <el-date-picker v-model="historySearch.date" type="daterange"
+                                        value-format="yyyy-MM-dd" @change="getHistory" :range-separator="$lang('至')"
+                                        :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')">
+                                    </el-date-picker>
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+                    </el-form>
+                </div>
+                <div v-if="isHistoryCopyWriting">
+                    <div>{{$lang('* N/A表示对应项目无实际数据')}}</div>
+                </div>
+                <div v-if="historyRealDataIsUpdated === 1"><i class="el-icon-warning"></i>
+                    {{$lang('表示用于计算预估准确率的实际数据出现更新，鼠标移至icon上方查看详情')}}</div>
+                <div class="h-content">
+                    <el-table :data="history" v-loading="loading" class="table-list" :cell-style="tableCellStyle">
+                        <el-table-column :label="$lang('负责人')" prop="reporter"></el-table-column>
+                        <el-table-column :label="$lang('预估周期')">
+                            <template slot-scope="scope">
+                                <div>{{scope.row.es_cycle_start_time}} ~ {{scope.row.es_cycle_end_time}}</div>
+                            </template>
+                        </el-table-column>
+                        <el-table-column :label="$lang('销售额（$）')">
+                            <template slot-scope="scope">
+                                <div>{{digitFormat(scope.row.es_sales)}}</div>
+                            </template>
+                        </el-table-column>
+                        <el-table-column :label="$lang('运营成本（$）')">
+                            <template slot-scope="scope">
+                                <div>{{(digitFormat(scope.row.es_operating_costs))}}</div>
+                            </template>
+                        </el-table-column>
+                        <el-table-column :label="$lang('公司成本（$）')" prop="es_company_costs">
+                            <template slot-scope="scope">
+                                <div>{{digitFormat(scope.row.es_company_costs)}}</div>
+                            </template>
+                        </el-table-column>
+                        <el-table-column :label="$lang('运营利润（$）')" prop="es_operating_profit">
+                            <template slot-scope="scope">
+                                <div>{{digitFormat(scope.row.es_operating_profit)}}</div>
+                            </template>
+                        </el-table-column>
+                        <el-table-column :label="$lang('净利（$）')" prop="es_net_profit">
+                            <template slot-scope="scope">
+                                <div>{{digitFormat(scope.row.es_net_profit)}}</div>
+                            </template>
+                        </el-table-column>
+                        <el-table-column :label="$lang('预估准确率')">
+                            <template slot-scope="scope">
+                                <span>{{scope.row.es_accuracy}}</span>
+                                <el-popover v-if="scope.row.realDataIsUpdated == 1" ref="popover" placement="right"
+                                    width="400" trigger="hover">
+                                    <!-- <template slot-scope="scope"> -->
+                                    <div class="popover-container">
+                                        <div>{{$lang('数据更新')}}</div>
+                                        <div class="popover-content">
+                                            <div class="cell">
+                                                <div class="cell-title">{{$lang('负责人')}}</div>
+                                                <div class="cell-data">
+                                                    <div>{{scope.row.reporter}}</div>
+                                                    <div></div>
+                                                </div>
+                                            </div>
+                                            <div class="cell">
+                                                <div class="cell-title">{{$lang('数据来源')}}</div>
+                                                <div class="cell-data">
+                                                    <div>{{scope.row.compared_source}}</div>
+                                                    <div></div>
+                                                </div>
+                                            </div>
+                                            <div class="cell">
+                                                <div class="cell-title">{{$lang('更新时间')}}</div>
+                                                <div class="cell-data">
+                                                    <div>{{dateFormat(scope.row.update_time)}}</div>
+                                                    <div></div>
+                                                </div>
+                                            </div>
+                                            <div class="cell">
+                                                <div class="cell-title">{{$lang('指标')}}</div>
+                                                <div class="cell-data">
+                                                    <div>{{$lang('变更前')}}</div>
+                                                    <div>{{$lang('变更后')}}</div>
+                                                </div>
+                                                <!-- <div> -->
+                                                <!-- </div> -->
+                                            </div>
+                                            <div class="cell">
+                                                <div class="cell-title">{{$lang('预估准确率')}}</div>
+                                                <div class="cell-data">
+                                                    <div>{{scope.row.updateBefore_es_accuracy}}</div>
+                                                    <div>{{scope.row.updateAfter_es_accuracy}}</div>
+                                                </div>
+                                            </div>
+                                            <div class="cell">
+                                                <div class="cell-title">{{$lang('销售额')}}</div>
+                                                <div class="cell-data">
+                                                    <div>{{digitFormat(scope.row.updateBefore_sales)}}</div>
+                                                    <div>{{digitFormat(scope.row.updateAfter_sales)}}</div>
+                                                </div>
+                                            </div>
+                                            <div class="cell">
+                                                <div class="cell-title">{{$lang('运营成本')}}</div>
+                                                <div class="cell-data">
+                                                    <div>{{digitFormat(scope.row.updateBefore_operating_costs)}}
+                                                    </div>
+                                                    <div>{{digitFormat(scope.row.updateAfter_operating_cost)}}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="cell">
+                                                <div class="cell-title">{{$lang('公司成本')}}</div>
+                                                <div class="cell-data">
+                                                    <div>{{digitFormat(scope.row.updateBefore_company_costs)}}</div>
+                                                    <div>{{digitFormat(scope.row.updateAfter_company_cost)}}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- </template> -->
+                                </el-popover>
+                                <!-- <el-tooltip class="item" effect="dark" content="Left Top 提示文字" placement="left-start"> -->
+                                <i v-if="scope.row.realDataIsUpdated == 1" class="el-icon-warning"
+                                    v-popover:popover></i>
+                                <!-- </el-tooltip> -->
+                            </template>
+                        </el-table-column>
+                    </el-table>
+
+                    <div class="use-row pagination">
+                        <div class="col-100 text-right">
+                            <el-pagination background layout="sizes, prev, pager, next" :page-sizes="[10, 50, 100]"
+                                @size-change="handleEsPageSize" @current-change="handleEsPage" :total="historyTotal">
+                            </el-pagination>
+                        </div>
+                    </div>
+                </div>
+            </el-tab-pane>
+        </el-tabs>
+    </div>
+</body>
+<script src="../Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script type="text/javascript" src="../Public/js/request.js?v=<{$Think.const.V}>"></script>
+<script>
+    if (getCookie("think_language") !== "zh-cn") {
+        ELEMENT.locale(ELEMENT.lang.en);
+    }
+    var app = new Vue({
+        name: "estimate_report",
+        el: "#estimateReport",
+        data() {
+            return {
+                activeTab: 'dataReport',
+                loading: false,
+                data: {},
+                date: [],
+                estimate: false,
+                cycles: [],
+                cycle: {},
+                form: {
+                    date: [],
+                    cycle: ''
+                },
+                importDate: [],
+                isGenerate: false,
+                generateForm: {
+                    cycle: '',
+                    insightTime: '',
+                    importDate: '',
+                },
+                generateRule: {
+                    cycle: [
+                        { required: true, message: this.$lang('请选择预估周期'), trigger: 'blur' }
+                    ],
+                    insightTime: [
+                        { required: true, message: this.$lang('请选择insight取数时间'), trigger: 'blur' }
+                    ],
+                    importDate: [
+                        { required: true, message: this.$lang('请选择录入数据时间'), trigger: 'blur' }
+                    ]
+                },
+                cycleRule: {
+                    cycle: [
+                        { required: true, message: this.$lang('请选择预估周期'), trigger: 'blur' }
+                    ]
+                },
+                showLog: false,
+                logs: [],
+                logTotal: 0,
+                logParams: {
+                    page: 1,
+                    pageSize: 10,
+                    log_type: 'report',
+                },
+                historySearch: {
+                    person: [],
+                    date: [],
+                    page: 1,
+                    pageSize: 10
+                },
+                history: [],
+                users: [],
+                historyTotal: 0,
+                loading: false,
+                realDataIsUpdated: 0,
+                historyRealDataIsUpdated: 0,
+                isCopyWriting: false, //是否显示文案：* N/A表示对应项目无实际数据
+                isHistoryCopyWriting: false, // 历史报告 是否显示文案：* N/A表示对应项目无实际数据
+            }
+        },
+        watch: {
+            'form.date'(newValue) {
+                this.cycles = [];
+                if (newValue && newValue.length !== 0) {
+                    this.getCycleByDateRange(1);
+                } else {
+                    let form = new FormData();
+                    form.append('startTime', '');
+                    form.append('endTime', '');
+                    form.append('esCyscleStatus', status)
+                    request('report/queryEsCycle', form, 'insight').then(res => {
+                        if (res.success) {
+                            this.cycles = res.datas || [];
+                            if (this.cycles.length > 0) {
+                                this.form.cycle = this.cycles[0];
+                            }
+                        }
+                    })
+                }
+            }
+        },
+        created() {
+            this.getData();
+        },
+        methods: {
+            getData() {
+                this.loading = true;
+                let form = new FormData();
+                form.append('es_start_time', '')
+                form.append('es_end_time', '')
+                request('report/queryReport', form, 'insight').then(res => {
+                    if (res.success) {
+                        this.loading = false
+                        this.realDataIsUpdated = 0;
+                        this.isCopyWriting = false;
+                        this.data = res.datas.map(item => {
+                            item.visible = false;
+                            if (item.es_accuracy === 'N/A') {
+                                this.isCopyWriting = true;
+                            }
+                            if (item.real_data_updated == 1) {
+                                this.realDataIsUpdated = 1;
+                            }
+                            return item;
+                        });
+                        const { es_cycle_start_time = '', es_cycle_end_time = '' } = res.datas[0] || {};
+                        this.cycle = {
+                            es_cycle_start_time: es_cycle_start_time,
+                            es_cycle_end_time: es_cycle_end_time
+                        }
+                    }
+                })
+            },
+            handleReportChange(date) {
+                if (date) {
+                    const endDate = date.split('~')[1];
+                    this.generateForm.insightTime = endDate;
+                }
+            },
+            // 负责人
+            getUsers() {
+                request('index.php?m=admin&a=admin_options', {}).then(res => {
+                    this.users = res.data;
+                })
+            },
+            handleChangeTab() {
+                if (this.activeTab === 'history') {
+                    this.getHistory();
+                    this.getUsers();
+                }
+            },
+            getHistory() {
+                let form = new FormData();
+                const [es_cycle_start_time, es_cycle_end_time] = this.historySearch.date || [];
+                form.append('person', this.historySearch.person.join(','));
+                form.append('es_cycle_start_time', es_cycle_start_time);
+                form.append('es_cycle_end_time', es_cycle_end_time);
+                form.append('page', this.historySearch.page);
+                form.append('pageSize', this.historySearch.pageSize);
+                this.loading = true;
+                request('report/historicalReport', form, 'insight').then(res => {
+                    if (res.success) {
+                        this.loading = false;
+                        this.history = res.datas;
+                        this.historyTotal = res.totalCount;
+                        this.historyRealDataIsUpdated = 0;
+                        this.isHistoryCopyWriting = false;
+                        this.history.forEach(item => {
+                            if (item.es_accuracy === 'N/A') {
+                                this.isHistoryCopyWriting = true;
+                            }
+                            if (item.real_data_updated == 1) {
+                                this.historyRealDataIsUpdated = 1;
+                            }
+                        });
+                    }
+                })
+            },
+            getImportDate() {
+                request('report/queryImportTime', {}, 'insight').then(res => {
+                    if (res.success) {
+                        this.importDate = res.datas;
+                    }
+                })
+            },
+            handleOtherEstimate() {
+                this.estimate = !this.estimate;
+                if (this.estimate) {
+                    this.form.cycle = this.cycle.es_cycle_start_time ? this.cycle.es_cycle_start_time + ' ~ ' + this.cycle.es_cycle_end_time : '';
+                    let form = new FormData();
+                    form.append('startTime', '');
+                    form.append('endTime', '');
+                    form.append('esCyscleStatus', 1)
+                    request('report/queryEsCycle', form, 'insight').then(res => {
+                        if (res.success) {
+                            this.cycles = res.datas || [];
+                        }
+                    })
+                }
+            },
+            handleCloseCycleModal() {
+                this.form = {
+                    date: [],
+                    cycle: ''
+                }
+                this.$refs.cycleForm.resetFields()
+            },
+            columnMethod({ row, column, rowIndex, columnIndex }) {
+                if (columnIndex === 0) {
+                    if (rowIndex % this.data.length === 0) {
+                        return {
+                            rowspan: this.data.length,
+                            colspan: 1
+                        };
+                    } else {
+                        return {
+                            rowspan: 0,
+                            colspan: 0
+                        };
+                    }
+                }
+            },
+            getCycleByDateRange(status = 1) {
+                if (this.form.date.length === 0) {
+                    this.cycles = [];
+                }
+                const [startTime, endTime] = this.form.date;
+                let form = new FormData();
+                form.append('startTime', startTime || '')
+                form.append('endTime', endTime || '')
+                form.append('esCyscleStatus', status)
+                request('report/queryEsCycle', form, 'insight').then(res => {
+                    if (res.success) {
+                        this.cycles = res.datas || [];
+                        if (this.cycles.length > 0) {
+                            this.form.cycle = this.cycles[0];
+                            this.generateForm.cycle = this.cycles[0];
+                            this.generateForm.insightTime = this.generateForm.cycle.split('~')[1] || '';
+                            this.generateForm.importDate = this.generateForm.cycle;
+                        } else {
+                            this.form.cycle = '';
+                        }
+                    }
+                })
+            },
+            handleFilterCycle() {
+                this.$refs.cycleForm.validate(valid => {
+                    if (!valid) return;
+                    let form = new FormData();
+                    const [es_start_time, es_end_time] = this.form.cycle.split('~');
+                    this.cycle.es_cycle_start_time = es_start_time;
+                    this.cycle.es_cycle_end_time = es_end_time;
+                    form.append('es_start_time', es_start_time || '');
+                    form.append('es_end_time', es_end_time || '');
+                    request('report/queryReport', form, 'insight').then(res => {
+                        if (res.success) {
+                            this.realDataIsUpdated = 0;
+                            this.isCopyWriting = false;
+                            this.realDataIsUpdated = 0;
+                            this.data = res.datas.map(item => {
+                                if (item.es_accuracy === 'N/A') {
+                                    this.isCopyWriting = true;
+                                }
+                                if (item.real_data_updated == 1) {
+                                    this.realDataIsUpdated = 1;
+                                }
+                                return item;
+                            })
+                            this.$message.success(this.$lang(res.msg));
+                            setTimeout(() => {
+                                this.handleOtherEstimate();
+                            }, 1000)
+                        }
+                    })
+
+                })
+            },
+            handleShowAddModal(type) {
+                this.isGenerate = !this.isGenerate;
+                if (this.isGenerate) {
+                    this.getCycleByDateRange(0);
+                    this.getImportDate();
+                }
+
+            },
+            handleCloseReportModal() {
+                this.generateForm = {
+                    cycle: '',
+                    insightTime: '',
+                    importDate: '',
+                };
+                this.$refs.generateForm.resetFields();
+            },
+            previewReport() {
+                this.$refs.generateForm.validate(valid => {
+                    if (!valid) return;
+                    const [esCycleStartTime, esCycleEndTime] = this.generateForm.cycle.split('~');
+                    const [esImportTtartTime, esImportEndTime] = this.generateForm.importDate.split('~');
+                    let form = new FormData();
+                    form.append('es_cycle_start_time', esCycleStartTime);
+                    form.append('es_cycle_end_time', esCycleEndTime);
+                    form.append('es_import_start_time', esImportTtartTime);
+                    form.append('es_import_end_time', esImportEndTime);
+                    form.append('insight_time', this.generateForm.insightTime);
+                    request('report/previewReport', form, 'insight').then(res => {
+                        if (res.success) {
+                            setTimeout(() => {
+                                const data = Object.assign({}, this.generateForm, {
+                                    plfReportList: res.datas
+                                });
+                                data.es_cycle_start_time = this.data.es_cycle_start_time;
+                                data.es_cycle_end_time = this.data.es_cycle_end_time;
+                                data.es_deadline = res.datas[0].es_deadLine;
+                                this.handleShowAddModal();
+                                // 预先清空缓存
+                                window.localStorage.removeItem('gp-erp-estimate-report-generate');
+                                window.localStorage.setItem('gp-erp-estimate-report-generate', JSON.stringify(data));
+                                newTab('index.php?m=profitEstimate&a=report_preview', this.$lang('报告预览'))
+                            }, 1 * 1000);
+                        }
+                    })
+                })
+            },
+            handleShowLog() {
+                this.showLog = !this.showLog;
+                if (this.showLog) {
+                    this.getLogs();
+                }
+            },
+            getLogs() {
+                const params = Object.assign({}, this.logParams);
+                request('profitAndLossEstimateLog/queryLog', params, 'insight').then(res => {
+                    if (res.success) {
+                        this.logs = res.datas;
+                        this.logTotal = res.totalCount
+                    }
+                })
+            },
+            handleLogCurrent(current) {
+                this.logParams.page = current;
+                this.getLogs();
+            },
+            handleLogSize(size) {
+                this.logParams.pageSize = size;
+                this.getLogs();
+            },
+            getRowClass({ row, column, rowIndex, columnIndex }) {
+                if (rowIndex === 0) {
+                    return 'background: #546e7a;color: #fff;'
+                }
+            },
+            handleEsPageSize(size) {
+                this.historySearch.pageSize = size;
+                this.getHistory();
+            },
+            handleEsPage(current) {
+                this.historySearch.page = current;
+                this.getHistory();
+            },
+            digitFormat(num) {
+                num = parseFloat(num).toFixed(2);
+                if (isNaN(num)) return;
+                var num1 = num.split('.')[0] + '';//数字转字符串  
+                var str = "";//字符串累加  
+                for (var i = num1.length - 1, j = 1; i >= 0; i--, j++) {
+                    if (j % 3 == 0 && i != 0 && num1[i - 1] != '-') {//每隔三位加逗号，过滤正好在第一个数字的情况 过滤负数情况 
+                        str += num1[i] + ",";//加千分位逗号  
+                        continue;
+                    }
+                    str += num1[i];//倒着累加数字
+                }
+                return str.split('').reverse().join("") + '.' + num.split('.')[1];
+            },
+            handlePopoverMouseOver(item) {
+                const index = this.data.findIndex(es => es.reporter === item.reporter);
+                item.visible = true;
+                this.data.splice(index, 1, item);
+            },
+            handlePopoverMouseLeave(item) {
+                const index = this.data.findIndex(es => es.reporter === item.reporter);
+                item.visible = false;
+                this.data.splice(index, 1, item);
+            },
+            dateFormat(timestamp) {
+                if (!timestamp) return;
+                return new Date(timestamp - new Date().getTimezoneOffset() * 60 * 1000).toJSON().substring(0, 19).replace('T', ' ');
+            },
+            tableCellStyle({ row, column, rowIndex, columnIndex }) {
+                // 背景色样式
+                if (row.assess_index.includes('销售额') && columnIndex === 2) {
+                    return 'background: rgb(226, 242, 254);';
+                }
+                if (row.assess_index.includes('运营成本') && columnIndex === 3) {
+                    return 'background: rgb(226, 242, 254);';
+                }
+                if (row.assess_index.includes('公司成本') && columnIndex === 4) {
+                    return 'background: rgb(226, 242, 254);';
+                }
+                if (row.assess_index.includes('运营利润') && columnIndex === 5) {
+                    return 'background: rgb(226, 242, 254);';
+                }
+                if (row.assess_index.includes('净利') && columnIndex === 6) {
+                    return 'background: rgb(226, 242, 254);';
+                }
+            }
+            // calculaDate(date) {
+            //     // 计算日期是否一个月最后一天
+            //     let nowDate = new Date();
+            //     const year = nowDate.getFullYear();
+            //     const month = nowDate.getMonth();
+            //     const lastDay = new Date(year, month + 1, 0);
+            //     return lastDay.toLocaleDateString().split('/')[2] === date.split('-')[2];
+            // }
+
+        }
+    });
+</script>
+
+</html>

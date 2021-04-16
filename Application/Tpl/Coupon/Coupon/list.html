@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title><{:L('优惠券列表')}></title>
+    <link rel="stylesheet" type="text/css" href="/Application/Tpl/Home/Public/utils/css/public.style.css?v=20170306" />
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <style>
+        .layui-layer-content{width:500px;background:white !important;border:1px solid #cccccc;border-right:2px solid #cccccc}
+    </style>
+</head>
+<style>
+    .use-row+.use-row{margin:30px 0;}
+    div{box-sizing:border-box;}
+</style>
+<body>
+<div id="CouponList">
+    <form action="<{:U('coupon/coupon/index')}>" method="POST">
+        <div class="use-row use-form">
+            <div class="col-5">
+                <label class="label-name"><{:L('优惠券ID')}></label>
+            </div>
+            <div class="col-20 pd-r-70">
+                <input class="use-input" type="text" name="couponId" value="<{$couponId}>">
+            </div>
+            <div class="col-5">
+                <label class="label-name"><{:L('优惠券名称')}></label>
+            </div>
+            <div class="col-20 pd-r-70">
+                <input class="use-input" type="text" name="title" value="<{$title}>">
+            </div>
+            <div class="col-5">
+                <label class="label-name"><{:L('优惠类别')}></label>
+            </div>
+            <div class="col-20 pd-r-70">
+                <select class="use-input" name="type">
+                    <option value="" <if condition="$type eq ''"> selected </if>><{:L('请选择')}></option>
+                    <volist name="typeArr" id="vo">
+                        <option value="<{$vo.CD}>" <if condition="$type eq $vo['CD']"> selected </if>><{:L($vo['CD_VAL'])}></option>
+                    </volist>
+                </select>
+            </div>
+            <div class="col-5">
+                <label class="label-name"><{:L('状态')}></label>
+            </div>
+            <div class="col-20 pd-r-70">
+                <select class="use-input" name="status">
+                    <option value="" <php>if($status =='-1') {echo 'selected';}</php> ><{:L('请选择')}></option>
+                    <volist name="commData['status']" id="vo">
+                        <option value="<{$vo.CD}>" <php>if($status == $vo['CD']) {echo 'selected';}</php>><{:L($vo['CD_VAL'])}></option>
+                    </volist>
+                </select>
+            </div>
+        </div>
+        <div class="use-row use-form">
+            <div class="col-5">
+                <label class="label-name"><{:L('创建人')}></label>
+            </div>
+            <div class="col-20 pd-r-70">
+                <input class="use-input" type="text" name="name" value="<{$name}>">
+            </div>
+            <div class="col-5">
+                <label class="label-name"><{:L('发放方式')}></label>
+            </div>
+            <div class="col-20 pd-r-70">
+                <select class="use-input" name="sendWay">
+                    <option value="" <if condition="$type eq ''"> selected </if>><{:L('请选择')}></option>
+                    <volist name="commData['sendWay']" id="vo">
+                        <option value="<{$vo.CD}>" <if condition="$sendWay eq $vo['CD']"> selected </if>><{:L($vo['CD_VAL'])}></option>
+                    </volist>
+                </select>
+            </div>
+        </div>
+        <div class="use-row use-btn">
+            <div class="col-50">
+                <button class="btn-green" type="submit"><{:L('搜索')}></button>
+                <button type="reset" class="btn-default mg-l-10 btn-reset-clear"><{:L('重置')}></button>
+            </div>
+        </div>
+    </form>
+    <div class="baseline"></div>
+    <div class="use-row">
+        <div class="col-50">
+            <div class="result-num">
+                <span onclick="appp()"><{:L('搜索结果')}>：&nbsp;&nbsp;<{:L('共')}></span>
+                <b><{$total}></b>
+                <span><{:L('条记录')}>&nbsp;&nbsp;&nbsp;&nbsp;</span>
+            </div>
+        </div>
+        <div class="col-50 text-right use-btn">
+            <a onclick="opennewtab(this,'<{$Think.lang.创建优惠券}>')" _href="<{:U('Coupon/Coupon/addPage')}>" class="btn-pub btn-blue"><{:L('创建优惠券')}></a>
+        </div>
+    </div>
+    <div class="use-row">
+        <div class="col-100">
+            <table class="b2b-table" cellspacing="0" cellpadding="0" border="0">
+                <thead class="use-head">
+                <tr class="text-c no-wrap">
+                    <th><{:L('优惠券ID')}></th>
+                    <th><{:L('优惠券名称')}></th>
+                    <th><{:L('优惠类别')}></th>
+                    <th><{:L('创建人')}></th>
+                    <th><{:L('发放方式')}></th>
+                    <th><{:L('当前发放数量')}></th>
+                    <th><{:L('当前使用数量')}></th>
+                    <th><{:L('状态')}></th>
+                    <th><{:L('操作')}></th>
+                </tr>
+                </thead>
+                <tbody class="use-body">
+                <!--供应商数据-->
+                <volist name="couponData" id="vo">
+                    <tr>
+                        <td><{$vo.id}></td>
+                        <td><{$vo.title}></td>
+                        <td><{:L($typeArr[$vo['coupon_type']]['CD_VAL'])}></td>
+                        <td><{$vo.creator_name}></td>
+                        <td><{:L($commData['sendWay'][$vo['send_way']]['CD_VAL'])}></td>
+                        <td><{:intval($vo['sendedNum'])}></td>
+                        <td><{:intval($vo['usedNum'])}></td>
+                        <td><{:L($commData['status'][$vo['status']]['CD_VAL'])}></td>
+                        <td class="no-wrap use-btn" id="CouponList_operation">
+                            <if condition="$vo['status'] eq 0 ">
+                                <button class="btn-start" data-href="<{:U('coupon/coupon/operateCoupon','type=start&id=')}><{$vo['id']}>"> <{:L('启用')}></button>
+                                <elseif condition="$vo['send_way'] eq 1" />
+                                <else />
+                                    <button class="btn-stop" data-href="<{:U('coupon/coupon/operateCoupon','type=stop&id=')}><{$vo['id']}>"> <{:L('停用')}></button>
+                            </if>
+                            <!--<a class="btn-check" onclick="opennewtab(this,'优惠券详情页')" _href="<{:U('coupon/coupon/detail','id=')}><{$vo['id']}>"><{:L('查看')}></a>-->
+                            <a class="btn-check" onclick="opennewtab(this,'<{$Think.lang.优惠券详情页}>')" _href="<{:U('coupon/coupon/detail','id=')}><{$vo['id']}>"><{:L('查看')}></a>
+                        </td>
+                    </tr>
+                </volist>
+                </tbody>
+            </table>
+            <ul class="pagination" style="margin: 0;">
+                <{$page}>
+            </ul>
+        </div>
+    </div>
+</div>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script src="/Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script src="/Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/lib/layer-v3.0.3/layer/layer.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public//utils/utils.js"></script>
+<script>
+    $(function () {
+        $("#CouponList_operation button").click(function () {
+            $.ajax({
+                type: "get",
+                url: $(this).attr('data-href'),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (message) {
+                    location.reload()
+                },
+                error: function (message) {
+                    layer.msg("<span class='invoice_detail_bomb_tip'><i style='color:red;'>x</i>"+message+"</span>");
+                }
+           })
+        })
+        localStorage.setItem('page',"优惠券列表")
+    })
+</script>
+</body>
+</html>

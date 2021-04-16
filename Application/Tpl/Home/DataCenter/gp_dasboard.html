@@ -1,0 +1,4031 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="UTF-8" />
+	<meta http-equiv="content-type" content="text/html;charset=utf-8" />
+	<meta name="renderer" content="webkit|ie-comp|ie-stand" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<meta name="renderer" content="webkit|ie-comp|ie-stand" />
+	<link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.13.0.css?v=<{$Think.config.VER_NUM}>" />
+	<link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>" />
+	<link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>" />
+	<link rel="stylesheet"
+		href="./Application/Tpl/Home/DataCenter/css/element-ui-custom.css?v=<{$Think.config.VER_NUM}>" />
+	<link rel="stylesheet" href="./Application/Tpl/Home/DataCenter/css/gp_dasboard.css?v=<{$Think.config.VER_NUM}>" />
+</head>
+
+<body>
+	<div id="list" v-cloak>
+		<section class="total">
+			<section class="total-item">
+				<div class="total-item-title">{{$lang('累计订单')}}</div>
+				<div class="itemNum">{{orderStatis.sofar_orderct | formatNum}}</div>
+			</section>
+			<section class="total-item">
+				<div class="total-item-title">{{$lang('累计销售额')}}</div>
+				<div class="itemNum">
+					$ {{orderStatis.sofar_totalsales | toMillion(false)}}
+				</div>
+			</section>
+			<section class="total-item">
+				<!-- <div class="total-item-title">{{$lang('昨日订单')}} -->
+				<div class="total-item-title">{{$lang('累计毛利')}}</div>
+				<div class="itemNum">
+					$ {{orderStatis.total_gross_margin | toMillion(false)}}
+				</div>
+			</section>
+			<section class="total-item">
+				<!-- <div class="total-item-title">{{$lang('昨日销售额')}} -->
+				<div class="total-item-title">{{$lang('累计毛利率')}}</div>
+				<div class="itemNum">{{orderStatis.total_gross_rate}}%</div>
+			</section>
+		</section>
+
+		<section class="query" :class="{'query-fixed': scrollTop > 100}">
+			<section class="query__row">
+				<section class="query__item">
+					<div class="query__title">{{$lang('周期')}}</div>
+					<el-select v-model="in_date_type" @change="periodChange" class="erp-el-select2 width96">
+						<el-option v-for="(item,index) in changes" :key="item.id" :label="$lang(item.value)" :value="item.id">
+						</el-option>
+					</el-select>
+					<el-date-picker v-model="rangeDate" :editable="false" value-format="yyyyMMdd" type="daterange" range-separator="-"
+						:start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')" @change="rangeDateChange"
+						:picker-options="pickerOptions" class="erp-el-range-editor">
+					</el-date-picker>
+					<el-select v-model="dateType" @change="getAllChartDataDebounced" :disabled="dataSizeDisabled"
+						:placeholder="$lang('请选择')" class="erp-el-select2 width96" style="margin-left: 8px">
+						<el-option v-for="item in dateTypeOptions" :key="item.value" :label="$lang(item.label)" :value="item.value">
+						</el-option>
+					</el-select>
+					<el-popover placement="top-start" trigger="hover" style="align-self: flex-start">
+						<div>
+							<p>{{$lang('1.默认按天展示')}}:</p>
+							<p>
+								{{$lang('2.选择按周展示时，会以选择日期按自然周自动补齐')}}
+							</p>
+							<p>{{$lang('3.选择按月展示，以自然月展示')}}</p>
+						</div>
+						<i slot="reference" class="el-icon-question"></i>
+					</el-popover>
+				</section>
+				<section class="query__item">
+					<div class="query__title">{{$lang('来源')}}</div>
+					<el-select v-model="sources" filterable multiple collapse-tags @change="sourcesChange"
+						class="erp-el-select2 erp-el-select2--multi width132">
+						<el-option v-for="(item,index) in model" :key="item.value" :label="item.label" :value="item.value"
+							:disabled="item.disabled">
+						</el-option>
+					</el-select>
+				</section>
+				<section class="query__item">
+					<div class="query__title">{{$lang('收货国家(地区)')}}</div>
+					<el-select v-model="siteChecked" class="erp-el-select2 erp-el-select2--multi width132" filterable multiple
+						collapse-tags @change="siteCheckedChange">
+						<el-option v-for="(site,index) in siteData" :key="site.id" :label="site.name" :disabled="site.disabled"
+							:value="site.id">
+						</el-option>
+					</el-select>
+				</section>
+				<section class="query__item">
+					<div class="query__title">{{$lang('店铺')}}</div>
+					<el-select v-model="storeChecked" class="erp-el-select2 erp-el-select2--multi width132" filterable multiple
+						collapse-tags @change="storeCheckedChange">
+						<el-option v-for="(item,index) in storeData" :key="item.shop_id" :label="item.store_name" :value="item.shop_id"
+							:disabled="item.disabled">
+						</el-option>
+					</el-select>
+				</section>
+			</section>
+					<el-button @click="reset" class="erp-button">{{$lang('重置')}}</el-button>
+		</section>
+
+		<el-collapse accordion class="explain">
+			<el-collapse-item>
+				<template slot="title">
+					<span class="title">{{$lang('说明')}} </span>
+					<span class="remark">{{$lang('这里提供页面的订单范围等说明，查看详细说明请点击右侧按钮')}}</span>
+				</template>
+				<div>
+					<p class="title">
+						1.{{$lang('订单范围')}}
+					</p>
+					<p>
+						{{$lang('满足以下条件的订单纳入统计')}}
+					</p>
+					<ul>
+						<li>{{$lang('订单状态')}}：{{$lang('待发货')}}/{{$lang('待收货')}}/{{$lang('已收货')}}/{{$lang('交易成功')}}/{{$lang('处理中')}}</li>
+						<li>{{$lang('派单状态')}}：{{$lang('不为订单取消')}}</li>
+					</ul>
+					<p>
+						{{$lang('按订单支付时间统计')}}
+					</p>
+				</div>
+				<div>
+					<p class="title">
+						2.{{$lang('订单销售额')}}
+					</p>
+					<p>
+						{{$lang('订单支付总额')}}+{{$lang('平台优惠')}}+{{$lang('平台活动补贴')}}
+					</p>
+					<p>
+						{{$lang('以上字段为空时，记为0')}}
+					</p>
+				</div>
+				<div>
+					<p class="title">
+						3.{{$lang('毛利')}}
+					</p>
+					<p>
+						{{$lang('订单支付总额')}}+{{$lang('平台优惠')}}+{{$lang('平台活动补贴')}}-{{$lang('商品成本')}}+{{$lang('采购返佣金')}}-{{$lang('运费试算')}}-{{$lang('尾程物流派送关税')}}-VAT{{$lang('费用')}}-{{$lang('支付手续费')}}-{{$lang('流量活动费用')}}-{{$lang('平台佣金')}}
+					</p>
+					<p>
+						{{$lang('以上字段为空时，记为0')}}
+					</p>
+				</div>
+				<div>
+					<p class="title">
+						4.{{$lang('商品销售额')}}、{{$lang('商品毛利')}}
+					</p>
+					<p>
+						{{$lang('一个订单中，某SKU的销售额(毛利)，按该SKU销售额在订单销售额中的占比分摊订单销售额(毛利)')}}
+					</p>
+				</div>
+			</el-collapse-item>
+		</el-collapse>
+		<section class="chart-wrapper">
+			<chart-wrapper :title="$lang('国家(地区)销售趋势')" v-loading="siteOrderTrendLoading" chart-height="270px"
+				ref="siteOrderTrendChart" :chart-data="siteOrderTrendData">
+				<template v-slot:header-right>
+					<el-select v-model="siteOrderTrendType" @change="siteOrderTrendTypeChange" class="erp-el-select2">
+						<el-option :label="$lang('按订单')" value="goods"> </el-option>
+						<el-option :label="$lang('按销售额')" value="sales"> </el-option>
+						<el-option :label="$lang('按毛利')" value="margin"> </el-option>
+						<el-option :label="$lang('按毛利率')" value="marginRate">
+						</el-option>
+					</el-select>
+					<el-button plain @click="siteOrderTrendExport" :title="$lang('导出明细')" class="erp-button"
+						style="margin-left: 12px">
+						{{ $lang('导出明细') }}</el-button>
+					<!-- <el-button plain @click="siteOrderTrendDialogOpen" class="erp-button" style="margin-left: 12px">{{
+											$lang('汇总查看') }}</el-button> -->
+				</template>
+			</chart-wrapper>
+			<el-dialog class="site-sales-dialog" :visible.sync="siteOrderTrendDialogVisible" :title="$lang('站点销售汇总数据明细')" center>
+				<section>
+					<section style="
+								display: flex;
+								align-items: center;
+								justify-content: flex-end;
+							">
+						<!-- <div>
+							{{ $lang('周期') }} {{ siteOrderTrendData.dateTime }} | {{
+							rangeDateInfo }}
+						</div> -->
+						<el-button plain @click="siteOrderTrendTableExport" style="padding: 0; width: 68px; height: 32px">{{
+							$lang('导出') }}</el-button>
+					</section>
+				</section>
+				<el-table :data="siteOrderTrendTableData.datas" v-loading="siteOrderTrendTableLoading" stripe
+					:default-sort="{prop: 'order_num', order: 'descending'}" @sort-change="sortTableSummary" class="erp-el-table"
+					style="margin-top: 20px">
+					<el-table-column :label="$lang('站点')" prop="name" width="120">
+					</el-table-column>
+					<el-table-column :label="$lang('订单数')" align="right" sortable="custom" prop="order_num" width="100">
+						<template slot-scope="scope">
+							{{scope.row.order_num | formatNum}}
+						</template>
+					</el-table-column>
+					<el-table-column :label="$lang('订单数均值')" align="right" sortable="custom" prop="order_average" width="130">
+						<template slot-scope="scope">
+							{{scope.row.order_average | formatNum(false, true)}}
+						</template>
+					</el-table-column>
+					<el-table-column :label="$lang('订单数环比')" align="right" sortable="custom" prop="order_ratio" width="130">
+						<template slot-scope="scope">
+							{{scope.row.order_ratio | formatNum(true, true)}}
+						</template>
+					</el-table-column>
+					<el-table-column :label="$lang('销售额') + '($)'" align="right" sortable="custom" prop="total_sales" width="130">
+						<template slot-scope="scope">
+							{{scope.row.total_sales | formatNum(false, true)}}
+						</template>
+					</el-table-column>
+					<el-table-column :label="$lang('销售额均值') + '($)'" align="right" sortable="custom" prop="sales_average"
+						width="150">
+						<template slot-scope="scope">
+							{{scope.row.sales_average | formatNum(false, true)}}
+						</template>
+					</el-table-column>
+					<el-table-column :label="$lang('销售额环比')" align="right" sortable="custom" prop="sales_ratio" width="120">
+						<template slot-scope="scope">
+							{{scope.row.sales_ratio | formatNum(true, true)}}
+						</template>
+					</el-table-column>
+
+					<el-table-column :label="$lang('毛利') + '($)'" align="right" sortable="custom" prop="total_gross_margin"
+						width="130">
+						<template slot-scope="scope">
+							{{scope.row.total_gross_margin | formatNum}}
+						</template>
+					</el-table-column>
+					<el-table-column :label="$lang('毛利均值') + '($)'" align="right" sortable="custom" prop="total_gross_margin_average"
+						width="150">
+						<template slot-scope="scope">
+							{{scope.row.total_gross_margin_average | formatNum}}
+						</template>
+					</el-table-column>
+					<el-table-column :label="$lang('毛利环比')" align="right" sortable="custom" prop="total_gross_margin_ratio"
+						width="100">
+						<template slot-scope="scope">
+							{{scope.row.total_gross_margin_ratio | formatNum(true, false)}}
+						</template>
+					</el-table-column>
+					<el-table-column :label="$lang('毛利率')" align="right" sortable="custom" prop="total_gross_rate" width="100">
+						<template slot-scope="scope">
+							{{scope.row.total_gross_rate | formatNum(true, false)}}
+						</template>
+					</el-table-column>
+					<el-table-column :label="$lang('毛利率均值')" align="right" sortable="custom" prop="total_gross_rate_average"
+						width="130">
+						<template slot-scope="scope">
+							{{scope.row.total_gross_rate_average | formatNum(true, true)}}
+						</template>
+					</el-table-column>
+					<el-table-column :label="$lang('毛利率环比')" align="right" sortable="custom" prop="total_gross_rate_ratio"
+						width="180">
+						<template slot-scope="scope">
+							{{scope.row.total_gross_rate_ratio | formatNum(true, true)}}
+						</template>
+					</el-table-column>
+				</el-table>
+				<el-pagination background :current-page="siteOrderTrendTablePage"
+					@current-change="siteOrderTrendTablePageChange" layout="prev, pager, next" class="erp-el-pagination"
+					:total="siteOrderTrendTableData.totalCount" style="margin-top: 20px">
+				</el-pagination>
+			</el-dialog>
+
+			<section class="column2">
+				<chart-wrapper :title="$lang('订单数及销售额')" v-loading="orderNumAndSalesLoading" chart-height="270px" ref="orderNum"
+					class="order-num-sales" :chart-data="orderNumAndSalesData">
+					<template #footer>
+						<section class="info-table">
+							<div class="column-title text-left">{{$lang('指标')}}</div>
+							<div class="column-title">{{$lang('合计')}}</div>
+							<div class="column-title">{{$lang('环比')}}</div>
+							<div class="column-title">{{$lang('均值')}}</div>
+
+							<div class="row-title">{{$lang('订单数')}}</div>
+							<div>{{orderNumAndSealGather.order_sum | formatNum}}</div>
+							<div>
+								<span class="num">
+									{{orderNumAndSealGather.order_ratio | formatNum(true,
+									true)}}</span>
+								<i class="el-icon-caret-bottom" v-if="orderNumAndSealGather.order_ratio < 0"></i>
+								<i class="el-icon-caret-top" v-else-if="orderNumAndSealGather.order_ratio > 0"></i>
+							</div>
+							<div>
+								{{orderNumAndSealGather.order_mean | formatNum(false, true)}}
+							</div>
+
+							<div class="row-title no-border">{{$lang('销售额')}}</div>
+							<div class="no-border">
+								${{orderNumAndSealGather.sale_sum | toMillion}}
+							</div>
+							<div class="no-border">
+								<span class="num">
+									{{orderNumAndSealGather.sale_ratio | formatNum(true,
+									true)}}</span>
+								<i class="el-icon-caret-bottom" v-if="orderNumAndSealGather.sale_ratio < 0"></i>
+								<i class="el-icon-caret-top" v-else-if="orderNumAndSealGather.sale_ratio > 0"></i>
+							</div>
+							<div class="no-border">
+								${{orderNumAndSealGather.sale_mean | toMillion}}
+							</div>
+						</section>
+					</template>
+				</chart-wrapper>
+				<chart-wrapper :title="$lang('毛利及毛利率')" v-loading="orderNumAndSalesLoading" chart-height="270px" ref="grossNum"
+					class="gross-margin-profit" :chart-data="orderNumAndSalesData">
+					<template #footer>
+						<section class="info-table">
+							<div class="column-title text-left">{{$lang('指标')}}</div>
+							<div class="column-title">{{$lang('合计')}}</div>
+							<div class="column-title">{{$lang('环比')}}</div>
+							<div class="column-title">{{$lang('均值')}}</div>
+
+							<div class="row-title">{{$lang('毛利')}}</div>
+							<div>
+								$ {{orderNumAndSealGather.gross_margin_sum | toMillion}}
+							</div>
+							<div>
+								<span class="num">
+									{{orderNumAndSealGather.gross_margin_ratio | formatNum(true,
+									true)}}</span>
+								<i class="el-icon-caret-bottom" v-if="orderNumAndSealGather.gross_margin_ratio < 0"></i>
+								<i class="el-icon-caret-top" v-else-if="orderNumAndSealGather.gross_margin_ratio > 0"></i>
+							</div>
+							<div>
+								$ {{orderNumAndSealGather.gross_margin_mean | toMillion}}
+							</div>
+
+							<div class="row-title no-border">{{$lang('毛利率')}}</div>
+							<div class="no-border">
+								{{orderNumAndSealGather.gross_margin_rate_sum |
+								formatNum(true, true)}}
+							</div>
+							<div class="no-border">
+								<span class="num">
+									{{orderNumAndSealGather.gross_margin_rate_ratio |
+									formatNum(true, true)}}</span>
+								<i class="el-icon-caret-bottom" v-if="orderNumAndSealGather.gross_margin_rate_ratio < 0"></i>
+								<i class="el-icon-caret-top" v-else-if="orderNumAndSealGather.gross_margin_rate_ratio > 0"></i>
+							</div>
+							<div class="no-border">
+								{{orderNumAndSealGather.gross_margin_rate_mean |
+								formatNum(true, true)}}
+							</div>
+						</section>
+					</template>
+				</chart-wrapper>
+			</section>
+			<section class="column2">
+				<chart-wrapper :title="$lang('订单均价')" v-loading="orderAveragePriceLoading" chart-height="300px"
+					ref="orderAveragePrice" class="order-average-price" :chart-data="orderAveragePriceData">
+					<template #footer>
+						<section class="info-table grid-column3">
+							<div class="column-title text-left">{{$lang('指标')}}</div>
+							<div class="column-title">{{$lang('环比')}}</div>
+							<div class="column-title">{{$lang('均值')}}</div>
+
+							<div class="row-title no-border">{{$lang('订单均价')}}</div>
+							<div class="no-border">
+								<span class="num">
+									{{orderAverageRateGather.order_avg_ratio | formatNum(true,
+									true)}}</span>
+								<i class="el-icon-caret-bottom" v-if="orderAverageRateGather.order_avg_ratio < 0"></i>
+								<i class="el-icon-caret-top" v-else-if="orderAverageRateGather.order_avg_ratio > 0"></i>
+							</div>
+							<div class="no-border">
+								${{orderAverageRateGather.order_avg_mean | toMillion}}
+							</div>
+						</section>
+					</template>
+				</chart-wrapper>
+				<chart-wrapper class="first-purchase-repurchase" :title="$lang('订单首购/复购占比')"
+					chart-height="270px"
+					ref="purchase" :chart-data="firstPurchChartData" v-loading="firstPurchaseRepurchaseLoading">
+					<template #footer>
+						<section class="info-table grid-column5">
+							<div class="column-title text-left">{{$lang('指标')}}</div>
+							<div class="column-title">{{$lang('合计')}}</div>
+							<div class="column-title">{{$lang('环比')}}</div>
+							<div class="column-title">{{$lang('均值')}}</div>
+							<div class="column-title">{{$lang('占订单总数')}}</div>
+
+							<div class="row-title">{{$lang('首购订单')}}</div>
+							<div>
+								{{orderFirstPurchaseGather.first_purchase_sum | formatNum}}
+							</div>
+							<div>
+								<span class="num">{{orderFirstPurchaseGather.first_purchase_ratio |
+									formatNum(true, true)}}</span>
+								<i class="el-icon-caret-bottom" v-if="orderFirstPurchaseGather.first_purchase_ratio < 0"></i>
+								<i class="el-icon-caret-top" v-else-if="orderFirstPurchaseGather.first_purchase_ratio > 0"></i>
+							</div>
+							<div>
+								{{orderFirstPurchaseGather.first_purchase_avg | formatNum}}
+							</div>
+							<div>
+								{{orderFirstPurchaseGather.first_percent | formatNum(true,
+								true)}}
+							</div>
+
+							<div class="row-title no-border">{{$lang('复购订单')}}</div>
+							<div class="no-border">
+								{{orderFirstPurchaseGather.repeat_purchase_sum | formatNum}}
+							</div>
+							<div class="no-border">
+								<span class="num">{{orderFirstPurchaseGather.repeat_purchase_ratio |
+									formatNum(true)}}</span>
+								<i class="el-icon-caret-bottom" v-if="orderFirstPurchaseGather.repeat_purchase_ratio < 0"></i>
+								<i class="el-icon-caret-top" v-else-if="orderFirstPurchaseGather.repeat_purchase_ratio > 0"></i>
+							</div>
+							<div class="no-border">
+								{{orderFirstPurchaseGather.repeat_purchase_avg | formatNum}}
+							</div>
+							<div class="no-border">
+								{{orderFirstPurchaseGather.repeat_percent | formatNum(true,
+								true)}}
+							</div>
+						</section>
+					</template>
+				</chart-wrapper>
+			</section>
+			<section class="column2">
+				<chart-wrapper :title="$lang('订单来源分布')" v-loading="orderSourceDistributionLoading" chart-height="370px"
+					ref="source" class="order-source-distribution" :chart-data="orderSourceDistributionData"
+					:show-chart="orderSourceTableHidden">
+					<template #header-right>
+						<el-button @click="orderSourceTableHidden = !orderSourceTableHidden" class="erp-button">
+							<div v-if="orderSourceTableHidden">
+								{{$lang('更多')}}
+							</div>
+							<div v-else>{{$lang('返回')}}</div>
+						</el-button>
+					</template>
+					<section class="table-wrapper" v-show="!orderSourceTableHidden">
+						<el-table :data="orderDistributeSourceGather" class="erp-el-table" stripe>
+							<el-table-column width="100" prop="name" :label="$lang('来源')">
+							</el-table-column>
+							<el-table-column prop="sum" align="right" :label="$lang('合计')">
+								<template slot-scope="scope">
+									{{scope.row.sum | formatNum}}
+								</template>
+							</el-table-column>
+							<el-table-column prop="proportion" align="right" :label="$lang('环比')">
+								<template slot-scope="scope">
+									{{scope.row.proportion | formatNum(true, true)}}
+									<i class="el-icon-caret-bottom" v-if="scope.row.proportion < 0"></i>
+									<i class="el-icon-caret-top" v-else-if="scope.row.proportion > 0"></i>
+								</template>
+							</el-table-column>
+							<el-table-column prop="avg_num" align="right" :label="$lang('均值')">
+								<template slot-scope="scope">
+									{{scope.row.avg_num | formatNum(false, true)}}
+								</template>
+							</el-table-column>
+							<el-table-column prop="total_percent" align="right" :label="$lang('占订单总数')">
+								<template slot-scope="scope">
+									{{scope.row.total_percent | formatNum(true, true)}}
+								</template>
+							</el-table-column>
+						</el-table>
+					</section>
+				</chart-wrapper>
+				<chart-wrapper :title="$lang('收货国家分布')"
+					:show-chart="deliveryCountryTableHidden" v-loading="orderSourceDistributionLoading"
+					chart-height="370px" ref="orderSourceDistribution"
+					class="delivery-country-distribution" :chart-data="deliveryCountryChartData">
+					<template #header-right>
+						<el-button v-if="deliveryCountryTableHidden && detailCountryHidden"
+							@click="deliveryCountryTableHidden = false" class="erp-button">
+							{{$lang('更多')}}</el-button>
+						<el-button @click="deliveryCountryTableHidden = true" v-if="!deliveryCountryTableHidden" class="erp-button">
+							{{$lang('返回')}}</el-button>
+						<el-button @click="resetDeliveryCountry" v-if="!detailCountryHidden" class="erp-button">{{$lang('返回')}}
+						</el-button>
+						<el-select class="erp-el-select2" style="margin-left: 12px;" v-model="deliveryCountrySort"
+							@change="deliveryCountrySortChange" v-if="deliveryCountryTableHidden && detailCountryHidden">
+							<el-option :label="$lang('按订单')" value="orders"></el-option>
+							<el-option :label="$lang('按销售额')" value="sales"></el-option>
+						</el-select>
+					</template>
+					<section class="table-wrapper" v-show="!deliveryCountryTableHidden">
+						<el-table style="overflow: initial" :data="deliveryCountryTableData.datas" class="erp-el-table"
+							:default-sort="{prop: 'order_num', order: 'descending'}" @sort-change="sortDeliveryCountryTable" stripe>
+							<el-table-column width="100" prop="name" :label="$lang('收货国家')">
+							</el-table-column>
+							<el-table-column prop="order_num" sortable="custom" align="right" width="100" :label="$lang('订单数')">
+								<template slot-scope="scope">
+									{{scope.row.order_num | formatNum}}
+								</template>
+							</el-table-column>
+							<el-table-column prop="sales_total_ratio" sortable="custom" align="right" width="120"
+								:label="$lang('订单数环比')">
+								<template slot-scope="scope">
+									{{scope.row.sales_total_ratio | formatNum(true, true)}}
+									<i class="el-icon-caret-bottom" v-if="scope.row.sales_total_ratio < 0"></i>
+									<i class="el-icon-caret-top" v-else-if="scope.row.sales_total_ratio > 0"></i>
+								</template>
+							</el-table-column>
+							<el-table-column prop="total_sales" sortable="custom" align="right" width="130" :label="$lang('销售额') + '($)'">
+								<template slot-scope="scope">
+									{{scope.row.total_sales | formatNum(false, true)}}
+								</template>
+							</el-table-column>
+							<el-table-column prop="sales_ratio" sortable="custom" align="right" width="150" :label="$lang('销售额环比')">
+								<template slot-scope="scope">
+									{{scope.row.sales_ratio | formatNum(true, true)}}
+									<i class="el-icon-caret-bottom" v-if="scope.row.sales_ratio < 0"></i>
+									<i class="el-icon-caret-top" v-else-if="scope.row.sales_ratio > 0"></i>
+								</template>
+							</el-table-column>
+
+							<el-table-column prop="total_gross_margin" sortable="custom" align="right" width="120"
+								:label="$lang('毛利') + '($)'">
+								<template slot-scope="scope">
+									{{scope.row.total_gross_margin | formatNum(false, true)}}
+								</template>
+							</el-table-column>
+							<el-table-column prop="total_gross_margin_ratio" sortable="custom" align="right" width="130"
+								:label="$lang('毛利环比')">
+								<template slot-scope="scope">
+									<i class="el-icon-caret-bottom" v-if="scope.row.total_gross_margin_ratio < 0"></i>
+									<i class="el-icon-caret-top" v-else-if="scope.row.total_gross_margin_ratio > 0"></i>
+									{{scope.row.total_gross_margin_ratio | formatNum(true,
+									true)}}
+								</template>
+							</el-table-column>
+							<el-table-column prop="total_gross_rate" sortable="custom" align="right" width="100"
+								:label="$lang('毛利率')">
+								<template slot-scope="scope">
+									{{scope.row.total_gross_rate | formatNum(true, true)}}
+								</template>
+							</el-table-column>
+							<el-table-column prop="total_gross_rate_ratio" sortable="custom" align="right" width="180"
+								:label="$lang('毛利率环比')">
+								<template slot-scope="scope">
+									<i class="el-icon-caret-bottom" v-if="scope.row.total_gross_rate_ratio < 0"></i>
+									<i class="el-icon-caret-top" v-else-if="scope.row.total_gross_rate_ratio > 0"></i>
+									{{scope.row.total_gross_rate_ratio | formatNum(true, true)}}
+								</template>
+							</el-table-column>
+						</el-table>
+						<el-pagination background @current-change="deliveryCountryTableCurrentChange"
+							:current-page="deliveryCountryTablePage" layout="prev, pager, next"
+							:total="deliveryCountryTableData.totalCount" :page-size="6" class="erp-el-pagination">
+						</el-pagination>
+					</section>
+				</chart-wrapper>
+			</section>
+			<chart-wrapper :title="$lang('店铺销售分布')" v-loading="storeSalesLoading" chart-height="370px" ref="storeSales"
+				:show-chart="storeSalesTableHidden"
+				:chart-data="storeSalesData.metricItems">
+				<template v-slot:header-right>
+					<el-button @click="storeSalesTableVisibleChange" class="erp-button">
+						<span v-if="storeSalesTableHidden" @click="storeSalesTableDataGet">{{$lang('更多')}}</span>
+						<span v-else @click="storeSalesDataGet">{{$lang('返回')}}</span>
+					</el-button>
+					<el-select v-model="storeSalesType" @change="storeSalesDataGet" class="erp-el-select2"
+						style="margin-left: 12px;">
+						<el-option :label="$lang('按订单')" value="1"> </el-option>
+						<el-option :label="$lang('按销售额')" value="2"> </el-option>
+					</el-select>
+
+				</template>
+				<section class="table-wrapper" v-show="!storeSalesTableHidden">
+					<el-table :data="storeSalesTableData.datas" class="erp-el-table"
+						:default-sort="{prop: 'goods_num', order: 'descending'}" @sort-change="storeSalesTableSort"
+						ref="storeSalesTable">
+						<el-table-column prop="store_name" show-overflow-tooltip :label="$lang('店铺')">
+						</el-table-column>
+						<el-table-column prop="goods_num" sortable="custom" align="right" :label="$lang('订单数')">
+							<template slot-scope="scope">
+								{{scope.row.goods_num | formatNum}}
+							</template>
+						</el-table-column>
+						<el-table-column prop="goods_link_relative" sortable="custom" align="right"
+							:label="$lang('订单环比')">
+							<template slot-scope="scope">
+								{{scope.row.goods_link_relative | formatNum(true)}}
+								<i class="el-icon-caret-bottom" v-if="scope.row.goods_link_relative < 0"></i>
+								<i class="el-icon-caret-top" v-else-if="scope.row.goods_link_relative > 0"></i>
+							</template>
+						</el-table-column>
+						<el-table-column prop="total_sales" sortable="custom" align="right" :label="$lang('销售额') + '($)'">
+							<template slot-scope="scope">
+								{{scope.row.total_sales | formatNum}}
+							</template>
+						</el-table-column>
+						<el-table-column prop="sales_link_relative" sortable="custom" align="right"
+							:label="$lang('销售额环比')">
+							<template slot-scope="scope">
+								{{scope.row.sales_link_relative | formatNum(true)}}
+								<i class="el-icon-caret-bottom" v-if="scope.row.sales_link_relative < 0"></i>
+								<i class="el-icon-caret-top" v-else-if="scope.row.sales_link_relative > 0"></i>
+							</template>
+						</el-table-column>
+						<el-table-column prop="total_gross_margin" sortable="custom" align="right"
+							:label="$lang('毛利') + '($)'">
+							<template slot-scope="scope">
+								{{scope.row.total_gross_margin | formatNum}}
+							</template>
+						</el-table-column>
+						<el-table-column prop="gross_margin_link_relative" sortable="custom" align="right"
+							:label="$lang('毛利环比')">
+							<template slot-scope="scope">
+								{{scope.row.gross_margin_link_relative | formatNum(true,
+								true)}}
+								<i class="el-icon-caret-bottom" v-if="scope.row.gross_margin_link_relative < 0"></i>
+								<i class="el-icon-caret-top" v-else-if="scope.row.gross_margin_link_relative > 0"></i>
+							</template>
+						</el-table-column>
+						<el-table-column prop="total_gross_rate" sortable="custom" align="right" :label="$lang('毛利率')">
+							<template slot-scope="scope">
+								{{scope.row.total_gross_rate | formatNum(true, true)}}
+							</template>
+						</el-table-column>
+						<el-table-column prop="gross_rate_link_relative" sortable="custom" align="right"
+							:label="$lang('毛利率环比')">
+							<template slot-scope="scope">
+								{{scope.row.gross_rate_link_relative | formatNum(true, true)}}
+								<i class="el-icon-caret-bottom" v-if="scope.row.gross_rate_link_relative < 0"></i>
+								<i class="el-icon-caret-top" v-else-if="scope.row.gross_rate_link_relative > 0"></i>
+							</template>
+						</el-table-column>
+					</el-table>
+					<el-pagination background @current-change="storeSalesTableDataGet" :current-page.sync="storeSalesTablePage"
+						layout="prev, pager, next" :total="storeSalesTableData.totalCount" :page-size="6" class="erp-el-pagination">
+					</el-pagination>
+				</section>
+			</chart-wrapper>
+			<chart-wrapper :title="$lang('ODM商品销售趋势')" chart-height="271px" ref="odmSalesTrend" :chart-data="odmSalesTrendData"
+				v-loading="odmSalesTrendLoading">
+				<template v-slot:header-right>
+					<el-select v-model="odmSalesTrendType" @change="getODMSalesTrendChartData" class="erp-el-select2">
+						<el-option :label="$lang('按销量')" :value="1"> </el-option>
+						<el-option :label="$lang('按销售额')" :value="2"> </el-option>
+						<el-option :label="$lang('按毛利')" :value="3"> </el-option>
+						<el-option :label="$lang('按毛利率')" :value="4"> </el-option>
+					</el-select>
+				</template>
+				<section class="odm-sales-trend-info">
+					<section class="odm-sales-trend-info__item">
+						<div class="odm-sales-trend-info__title">{{$lang('销量')}}</div>
+						<section class="odm-sales-trend-info__detail">
+							<div class="odm-sales-trend-info__subtitle">
+								{{$lang('本期')}}
+							</div>
+							<div class="odm-sales-trend-info__subtitle">
+								{{$lang('上期')}}
+							</div>
+							<div class="odm-sales-trend-info__subtitle">
+								{{$lang('环比')}}
+							</div>
+							<div class="odm-sales-trend-info__num">
+								{{odmSalesTrendCardData.goods_num | formatNum}}
+							</div>
+							<div class="odm-sales-trend-info__num">
+								{{odmSalesTrendCardData.pre_goods_num | formatNum}}
+							</div>
+							<div class="odm-sales-trend-info__num">
+								{{odmSalesTrendCardData.goods_link_relative | formatNum(true,
+								true, false)}}
+							</div>
+						</section>
+					</section>
+					<section class="odm-sales-trend-info__item">
+						<div class="odm-sales-trend-info__title">{{$lang('销售额')}}</div>
+						<section class="odm-sales-trend-info__detail">
+							<div class="odm-sales-trend-info__subtitle">
+								{{$lang('本期')}}
+							</div>
+							<div class="odm-sales-trend-info__subtitle">
+								{{$lang('上期')}}
+							</div>
+							<div class="odm-sales-trend-info__subtitle">
+								{{$lang('环比')}}
+							</div>
+							<div class="odm-sales-trend-info__num">
+								${{odmSalesTrendCardData.total_sales | formatNum}}
+							</div>
+							<div class="odm-sales-trend-info__num">
+								${{odmSalesTrendCardData.pre_total_sales | formatNum}}
+							</div>
+							<div class="odm-sales-trend-info__num">
+								{{odmSalesTrendCardData.sales_link_relative | formatNum(true,
+								true, false)}}
+							</div>
+						</section>
+					</section>
+					<section class="odm-sales-trend-info__item">
+						<div class="odm-sales-trend-info__title">{{$lang('毛利')}}</div>
+						<section class="odm-sales-trend-info__detail">
+							<div class="odm-sales-trend-info__subtitle">
+								{{$lang('本期')}}
+							</div>
+							<div class="odm-sales-trend-info__subtitle">
+								{{$lang('上期')}}
+							</div>
+							<div class="odm-sales-trend-info__subtitle">
+								{{$lang('环比')}}
+							</div>
+							<div class="odm-sales-trend-info__num">
+								${{odmSalesTrendCardData.total_gross_margin | formatNum}}
+							</div>
+							<div class="odm-sales-trend-info__num">
+								${{odmSalesTrendCardData.pre_total_gross_margin | formatNum}}
+							</div>
+							<div class="odm-sales-trend-info__num">
+								{{odmSalesTrendCardData.gross_margin_link_relative |
+								formatNum(true, true, false)}}
+							</div>
+						</section>
+					</section>
+					<section class="odm-sales-trend-info__item">
+						<div class="odm-sales-trend-info__title">{{$lang('毛利率')}}</div>
+						<section class="odm-sales-trend-info__detail">
+							<div class="odm-sales-trend-info__subtitle">
+								{{$lang('本期')}}
+							</div>
+							<div class="odm-sales-trend-info__subtitle">
+								{{$lang('上期')}}
+							</div>
+							<div class="odm-sales-trend-info__subtitle">
+								{{$lang('环比')}}
+							</div>
+							<div class="odm-sales-trend-info__num">
+								{{odmSalesTrendCardData.total_gross_rate | formatNum(true,
+								true, false)}}
+							</div>
+							<div class="odm-sales-trend-info__num">
+								{{odmSalesTrendCardData.pre_total_gross_rate | formatNum}}%
+							</div>
+							<div class="odm-sales-trend-info__num">
+								{{odmSalesTrendCardData.gross_rate_link_relative |
+								formatNum(true, true, false)}}
+							</div>
+						</section>
+					</section>
+				</section>
+			</chart-wrapper>
+			<chart-wrapper :title="$lang(changeTitle)" chart-height="322px" ref="fenxi" class="products-sales-top"
+				:chart-data="productsBySaleTopChartData" v-loading="productsBySaleTopLoading">
+				<template v-slot:header-right>
+					<section>
+						<el-button @click="orderSalesVolumeTopTypeChange" class="erp-button">
+							<div v-if="orderSalesVolumeTopType === '-1'">{{$lang('ODM商品')}}</div>
+							<div v-else-if="orderSalesVolumeTopType === '1'">{{$lang('返回')}}</div>
+						</el-button>
+						<el-select v-model="changeValue" @change="changeValues" class="erp-el-select2" style="margin-left: 12px;">
+							<el-option :label="$lang('按销量')" value="1"> </el-option>
+							<el-option :label="$lang('按销售额')" value="2"> </el-option>
+							<el-option :label="$lang('按毛利')" value="3"> </el-option>
+							<el-option :label="$lang('按毛利率')" value="4"> </el-option>
+						</el-select>
+					</section>
+				</template>
+				<template #footer>
+					<section class="info">
+						<div v-if="changeValue != '4'" class="title">
+							{{$lang(changeInfo)}}
+						</div>
+						<section v-if="changeValue === '1' || changeValue === '2'">
+							<div class="subtitle">{{$lang(changeTip)}}</div>
+							<div>
+								{{saleRankGather.total_percent | formatNum(true, true)}}
+							</div>
+						</section>
+						<section v-if="changeValue != '4'">
+							<div class="subtitle">{{$lang('合计')}}</div>
+							<div>
+								<span v-if="changeValue === '1'">{{saleRankGather.sum | formatNum}}</span>
+								<span v-else>${{saleRankGather.sum | toMillion}}</span>
+							</div>
+						</section>
+					</section>
+				</template>
+			</chart-wrapper>
+			<section class="column2">
+				<chart-wrapper :title="categorySalesVolumeDistributionTitle"
+					:show-chart="categoryTableHidden" v-loading="categorySalesVolumeDistributionLoading"
+					chart-height="370px" ref="categorySalesVolumeDistribution"
+					class="category-sales-volume-distribution" :chart-data="categorySalesVolumeDistributionData">
+					<template #header-right>
+						<el-button @click="categoryTableHidden = !categoryTableHidden" class="erp-button">
+							<span v-if="categoryTableHidden">{{$lang('更多')}}</span>
+							<span v-else>{{$lang('返回')}}</span>
+						</el-button>
+
+						<el-select v-model="changeValue_1" placeholder="请选择" @change="changeValues_1" v-if="categoryTableHidden"
+							class="erp-el-select2" style="margin-left: 12px;">
+							<el-option v-for="item in options" :key="item.label" :label="$lang(item.label)" :value="item.label">
+							</el-option>
+						</el-select>
+					</template>
+					<section class="table-wrapper" v-show="!categoryTableHidden">
+						<el-table :data="categoryTableData.datas" class="erp-el-table" ref="category_sales" stripe
+							:default-sort="{prop: 'goods_num', order: 'descending'}" @sort-change="sortCategoryTable">
+							<el-table-column prop="cat_name" :label="$lang('类目')" show-overflow-tooltip>
+							</el-table-column>
+							<el-table-column prop="goods_num" sortable="custom" align="right" width="100" :label="$lang('销量')">
+								<template slot-scope="scope">
+									{{scope.row.goods_num | formatNum}}
+								</template>
+							</el-table-column>
+							<el-table-column prop="sales_total_ratio" sortable="custom" align="right" width="130"
+								:label="$lang('销量环比')">
+								<template slot-scope="scope">
+									{{scope.row.sales_total_ratio | formatNum(true, true)}}
+									<i class="el-icon-caret-bottom" v-if="scope.row.sales_total_ratio < 0"></i>
+									<i class="el-icon-caret-top" v-else-if="scope.row.sales_total_ratio > 0"></i>
+								</template>
+							</el-table-column>
+							<el-table-column prop="total_sales" sortable="custom" align="right" width="120" :label="$lang('销售额($)')">
+								<template slot-scope="scope">
+									{{scope.row.total_sales | formatNum(false, true)}}
+								</template>
+							</el-table-column>
+							<el-table-column prop="sales_ratio" sortable="custom" align="right" width="150" :label="$lang('销售额环比')">
+								<template slot-scope="scope">
+									{{scope.row.sales_ratio | formatNum(true, true)}}
+									<i class="el-icon-caret-bottom" v-if="scope.row.sales_ratio < 0"></i>
+									<i class="el-icon-caret-top" v-else-if="scope.row.sales_ratio > 0"></i>
+								</template>
+							</el-table-column>
+
+							<el-table-column prop="total_gross_margin" sortable="custom" align="right" width="150"
+								:label="$lang('毛利') + '($)'">
+								<template slot-scope="scope">
+									{{scope.row.total_gross_margin | formatNum(false, true)}}
+								</template>
+							</el-table-column>
+							<el-table-column prop="total_gross_margin_ratio" sortable="custom" align="right" width="130"
+								:label="$lang('毛利环比')">
+								<template slot-scope="scope">
+									{{scope.row.total_gross_margin_ratio | formatNum(true,
+									true)}}
+									<i class="el-icon-caret-bottom" v-if="scope.row.total_gross_margin_ratio < 0"></i>
+									<i class="el-icon-caret-top" v-else-if="scope.row.total_gross_margin_ratio > 0"></i>
+								</template>
+							</el-table-column>
+							<el-table-column prop="total_gross_rate" sortable="custom" align="right" width="100"
+								:label="$lang('毛利率')">
+								<template slot-scope="scope">
+									{{scope.row.total_gross_rate | formatNum(true, true)}}
+								</template>
+							</el-table-column>
+							<el-table-column prop="total_gross_rate_ratio" sortable="custom" align="right" width="180"
+								:label="$lang('毛利率环比')">
+								<template slot-scope="scope">
+									{{scope.row.total_gross_rate_ratio | formatNum(true, true)}}
+									<i class="el-icon-caret-bottom" v-if="scope.row.total_gross_rate_ratio < 0"></i>
+									<i class="el-icon-caret-top" v-else-if="scope.row.total_gross_rate_ratio > 0"></i>
+								</template>
+							</el-table-column>
+						</el-table>
+						<el-pagination background @current-change="categoryTableCurrentChange" class="erp-el-pagination"
+							:current-page="categoryTablePage" layout="prev, pager, next" :total="categoryTableData.totalCount"
+							:page-size="6">
+						</el-pagination>
+					</section>
+				</chart-wrapper>
+				<chart-wrapper :title="brandSalesVolumeDistributionTitle"
+					:show-chart="brandTableHidden" v-loading="brandSalesVolumeDistributionLoading"
+					chart-height="370px" ref="brandSalesVolumeDistribution"
+					class="brand-sales-volume-distribution" :chart-data="brandSalesVolumeDistributionData">
+					<template #header-right>
+						<el-button @click="brandTableHidden = !brandTableHidden" class="erp-button">
+							<span v-if="brandTableHidden">{{$lang('更多')}}</span>
+							<span v-else>{{$lang('返回')}}</span>
+						</el-button>
+						<el-select v-model="changeValue_2" placeholder="请选择" @change="changeValues_2" v-if="brandTableHidden"
+							class="erp-el-select2" style="margin-left: 12px;">
+							<el-option v-for="item in options" :key="item.label" :label="$lang(item.label)" :value="item.label">
+							</el-option>
+						</el-select>
+					</template>
+					<section class="table-wrapper" v-show="!brandTableHidden">
+						<el-table :data="brandTableData.datas" class="erp-el-table" ref="brand_sales" stripe
+							:default-sort="{prop: 'goods_num', order: 'descending'}" @sort-change="sortBrandTable"
+							style="width: 100%">
+							<el-table-column prop="brand_name" :label="$lang('品牌')" show-overflow-tooltip>
+							</el-table-column>
+							<el-table-column prop="goods_num" sortable="custom" align="right" width="100" :label="$lang('销量')">
+								<template slot-scope="scope">
+									{{scope.row.goods_num | formatNum}}
+								</template>
+							</el-table-column>
+							<el-table-column prop="sales_total_ratio" sortable="custom" align="right" width="130"
+								:label="$lang('销量环比')">
+								<template slot-scope="scope">
+									{{scope.row.sales_total_ratio | formatNum(true, true)}}
+									<i class="el-icon-caret-bottom" v-if="scope.row.sales_total_ratio < 0"></i>
+									<i class="el-icon-caret-top" v-else-if="scope.row.sales_total_ratio > 0"></i>
+								</template>
+							</el-table-column>
+							<el-table-column prop="total_sales" sortable="custom" align="right" width="120" :label="$lang('销售额($)')">
+								<template slot-scope="scope">
+									{{scope.row.total_sales | formatNum(false, true)}}
+								</template>
+							</el-table-column>
+							<el-table-column prop="sales_ratio" sortable="custom" align="right" width="150" :label="$lang('销售额环比')">
+								<template slot-scope="scope">
+									{{scope.row.sales_ratio | formatNum(true, true)}}
+									<i class="el-icon-caret-bottom" v-if="scope.row.sales_ratio < 0"></i>
+									<i class="el-icon-caret-top" v-else-if="scope.row.sales_ratio > 0"></i>
+								</template>
+							</el-table-column>
+
+							<el-table-column prop="total_gross_margin" sortable="custom" align="right" width="120"
+								:label="$lang('毛利') + '($)'">
+								<template slot-scope="scope">
+									{{scope.row.total_gross_margin | formatNum(false, true)}}
+								</template>
+							</el-table-column>
+							<el-table-column prop="total_gross_margin_ratio" sortable="custom" align="right" width="130"
+								:label="$lang('毛利环比')">
+								<template slot-scope="scope">
+									{{scope.row.total_gross_margin_ratio | formatNum(true,
+									true)}}
+									<i class="el-icon-caret-bottom" v-if="scope.row.total_gross_margin_ratio < 0"></i>
+									<i class="el-icon-caret-top" v-else-if="scope.row.total_gross_margin_ratio > 0"></i>
+								</template>
+							</el-table-column>
+							<el-table-column prop="total_gross_rate" sortable="custom" align="right" width="100"
+								:label="$lang('毛利率')">
+								<template slot-scope="scope">
+									{{scope.row.total_gross_rate | formatNum(true, true)}}
+								</template>
+							</el-table-column>
+							<el-table-column prop="total_gross_rate_ratio" sortable="custom" align="right" width="180"
+								:label="$lang('毛利率环比')">
+								<template slot-scope="scope">
+									{{scope.row.total_gross_rate_ratio | formatNum(true, true)}}
+									<i class="el-icon-caret-bottom" v-if="scope.row.total_gross_rate_ratio < 0"></i>
+									<i class="el-icon-caret-top" v-else-if="scope.row.total_gross_rate_ratio > 0"></i>
+								</template>
+							</el-table-column>
+						</el-table>
+						<el-pagination background @current-change="brandTableCurrentChange" class="erp-el-pagination"
+							:current-page="brandTablePage" layout="prev, pager, next" :total="brandTableData.totalCount"
+							:page-size="6">
+						</el-pagination>
+					</section>
+				</chart-wrapper>
+			</section>
+			<chart-wrapper :title="$lang('订单商品列表')" v-loading="tableLoading" :show-chart="false">
+				<template #header-right>
+					<el-button @click="goodsListExport" class="erp-button">
+						{{$lang('导出')}}
+					</el-button>
+				</template>
+				<section class="table-wrapper">
+					<el-table :data="tableData" class="erp-el-table order-list" stripe
+						:default-sort="{prop: 'goods_num', order: 'descending'}" @sort-change="sortTable" ref="order_goods_list">
+						<el-table-column :label="$lang('商品')" :render-header="renderTableHeader" width="500">
+							<template slot-scope="scope">
+								<section class="goods">
+									<el-image :src="scope.row.picture" class="img"></el-image>
+									<section class="info">
+										<div v-if="scope.row.is_odm === '是'" class="odm">{{$lang('ODM商品')}}</div>
+										<div style="display: flex;">
+											<div class="simple">
+												<div :title="scope.row.brand_name" class="overflow-hiddlen1">{{scope.row.brand_name}}</div>
+												<div :title="scope.row.cat_name" class="overflow-hiddlen1">{{scope.row.cat_name}}</div>
+											</div>
+											<div class="detail ">
+												<div class="overflow-hiddlen1">{{scope.row.guds_name}}</div>
+												<div class="overflow-hiddlen1">SKU ID:{{scope.row.sku_id}}</div>
+											</div>
+										</div>
+									</section>
+								</section>
+							</template>
+						</el-table-column>
+						<el-table-column :label="$lang('销量')" sortable="custom" prop="goods_num" align="right"
+							:render-header="renderTableHeader">
+							<template slot-scope="scope">
+								{{scope.row.goods_num | formatNum}}
+							</template>
+						</el-table-column>
+						<el-table-column :label="$lang('销量环比')" sortable="custom" prop="sales_total_ratio" align="right"
+							 :render-header="renderTableHeader">
+							<template slot-scope="scope">
+								{{scope.row.sales_total_ratio | formatNum(true, true)}}
+								<i class="el-icon-caret-bottom" v-if="scope.row.sales_total_ratio < 0"></i>
+								<i class="el-icon-caret-top" v-else-if="scope.row.sales_total_ratio > 0"></i>
+							</template>
+						</el-table-column>
+						<el-table-column :label="$lang('销售额($)')" sortable="custom" prop="total_sales" align="right"
+							:render-header="renderTableHeader">
+							<template slot-scope="scope">
+								{{scope.row.total_sales | toMillion}}
+							</template>
+						</el-table-column>
+						<el-table-column :label="$lang('销售额环比')" sortable="custom" prop="sales_ratio" align="right"
+							:render-header="renderTableHeader">
+							<template slot-scope="scope">
+								{{scope.row.sales_ratio | formatNum(true, true)}}
+								<i class="el-icon-caret-bottom" v-if="scope.row.sales_ratio < 0"></i>
+								<i class="el-icon-caret-top" v-else-if="scope.row.sales_ratio > 0"></i>
+							</template>
+						</el-table-column>
+
+						<el-table-column :label="$lang('毛利' + '($)')" sortable="custom" prop="total_gross_margin" align="right"
+							 :render-header="renderTableHeader">
+							<template slot-scope="scope">
+								{{scope.row.total_gross_margin | formatNum(false, true)}}
+							</template>
+						</el-table-column>
+						<el-table-column :label="$lang('毛利环比')" sortable="custom" prop="total_gross_margin_ratio" align="right"
+							 :render-header="renderTableHeader">
+							<template slot-scope="scope">
+								{{scope.row.total_gross_margin_ratio | formatNum(true, true)}}
+								<i class="el-icon-caret-bottom" v-if="scope.row.total_gross_margin_ratio < 0"></i>
+								<i class="el-icon-caret-top" v-else-if="scope.row.total_gross_margin_ratio > 0"></i>
+							</template>
+						</el-table-column>
+						<el-table-column :label="$lang('毛利率')" sortable="custom" prop="total_gross_rate" :render-header="renderTableHeader"
+							align="right" width="100">
+							<template slot-scope="scope">
+								{{scope.row.total_gross_rate | formatNum(true, true)}}
+							</template>
+						</el-table-column>
+						<el-table-column :label="$lang('毛利率环比')" sortable="custom" prop="total_gross_rate_ratio" align="right"
+							width="180" :render-header="(h, obj) => renderTableHeader(h, obj, true)">
+							<template slot-scope="scope">
+								{{scope.row.total_gross_rate_ratio | formatNum(true, true)}}
+								<i class="el-icon-caret-bottom" v-if="scope.row.total_gross_rate_ratio < 0"></i>
+								<i class="el-icon-caret-top" v-else-if="scope.row.total_gross_rate_ratio > 0"></i>
+							</template>
+						</el-table-column>
+					</el-table>
+					<el-pagination class="erp-el-pagination" background @current-change="currentChange" :current-page="page"
+						layout="total, prev, pager, next, jumper" :total="total">
+					</el-pagination>
+				</section>
+			</chart-wrapper>
+		</section>
+	</div>
+	<script src="./Application/Tpl/Home/Public/js/vue-2.6.10.js"></script>
+	<script src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+	<script src="./Application/Tpl/Home/Public/js/element-ui-2.13.0.js"></script>
+	<script src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+	<script src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+	<script src="./Application/Tpl/Home/Public/js/queryString.js"></script>
+	<script src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+	<script src="./Application/Tpl/Home/Public/js/echarts-5.0.2.js"></script>
+	<script src="./Application/Tpl/Home/DataCenter/utils/globalConstAndFunc.js?v=<{$Think.config.VER_NUM}>"></script>
+	<script src="./Application/Tpl/Home/DataCenter/components/ChartWrapper.js?v=<{$Think.config.VER_NUM}>"></script>
+	<script src="./Application/Tpl/Home/Public/js/lodash.js"></script>
+	<script>
+		function formats(num) {
+			return (num + '').replace(/\d{1,3}(?=(\d{3})+(\.\d*)?$)/g, '$&,')
+		}
+		if (getCookie('think_language') !== 'zh-cn') {
+			ELEMENT.locale(ELEMENT.lang.en)
+		}
+		var vm = new Vue({
+			el: '#list',
+			components: {
+				'chart-wrapper': ChartWrapper,
+			},
+			filters: {
+				/**
+				 * 数值千分位表示，考虑小数情况
+				 *
+				 * @param number 数值(Number或者String)
+				 * @param {boolean} addSymbol 返回的结果是否加上%(boolean)
+				 * @param {boolean} dot2 返回的结果中，小数是否统一保留两位
+				 * *@param showZeroDecimals 小数为0时是否展示(boolean)
+				 * @return 金额格式的字符串,如'1,234,567.45'
+				 */
+				formatNum(
+					number,
+					addSymbol = false,
+					dot2 = false,
+					showZeroDecimals = true
+				) {
+					let hasMinus = false
+					if (number === '-' || number === '') {
+						return number
+					} else if (number != null) {
+						let numStr = dot2
+							? parseFloat(number).toFixed(2)
+							: number.toString()
+						if (numStr.startsWith('-')) {
+							hasMinus = true
+							numStr = numStr.slice(1)
+						}
+						const numArr = numStr.split('.')
+						let [num, dotNum] = numArr
+						let result = []
+						const operateNum = num.split('').reverse()
+						const length = operateNum.length
+						for (let i = 0; i < length; i++) {
+							result.push(operateNum[i])
+							if ((i + 1) % 3 === 0 && i !== length - 1) {
+								result.push(',')
+							}
+						}
+						if (dotNum) {
+							if (!showZeroDecimals && dotNum === '00') {
+								result.reverse()
+							} else {
+								result.reverse().push('.', ...dotNum)
+							}
+						} else {
+							result.reverse()
+						}
+
+						if (addSymbol) {
+							result = result.join('').concat('%')
+						} else {
+							result = result.join('')
+						}
+
+						if (hasMinus) {
+							result = '-' + result
+						}
+
+						return result
+					}
+				},
+				/**
+				 * 数值>=百万时，返回以M为单位的数
+				 * 数值<百万时,不加单位
+				 * 返回结果保留两位小数,带有千分位分隔符
+				 *
+				 * @param number 数值(Number或者String)
+				 * @param showZeroDecimals 小数为0时是否展示(boolean)
+				 * @return 金额格式的字符串,如'1,234,567.45'
+				 */
+				toMillion(value, showZeroDecimals = true) {
+					// 是否添加单位M
+					let addUnit = false
+
+					// 是否是负数
+					let hasMinus = false
+
+					if (value === '-' || value == null) {
+						return value
+					}
+					if (typeof value === 'string') {
+						value = parseFloat(value)
+					}
+					if (value >= 1000000) {
+						addUnit = true
+						value = value / 1000000
+					}
+					value = value.toFixed(2)
+
+					// 添加千分位
+					if (value.startsWith('-')) {
+						hasMinus = true
+						value = value.slice(1)
+					}
+					const numArr = value.split('.')
+					let [num, dotNum] = numArr
+					let result = []
+					const operateNum = num.split('').reverse()
+					const length = operateNum.length
+					for (let i = 0; i < length; i++) {
+						result.push(operateNum[i])
+						if ((i + 1) % 3 === 0 && i !== length - 1) {
+							result.push(',')
+						}
+					}
+					if (dotNum) {
+						if (!showZeroDecimals && dotNum === '00') {
+							result.reverse()
+						} else {
+							result.reverse().push('.', ...dotNum)
+						}
+					} else {
+						result.reverse()
+					}
+					result = result.join('')
+					if (hasMinus) {
+						result = '-' + result
+					}
+					return addUnit ? result + ' M' : result
+				},
+			},
+			data: {
+				locationOrigin: location.origin,
+				apiHost: GlobalConstAndFunc.api(),
+				scrollTop: 0,
+				orderStatis: {},
+				in_date_type: 'D',
+				model: [
+					{
+						value: 'iOS',
+						label: 'iOS',
+						disabled: false,
+					},
+					{
+						value: 'Android',
+						label: 'Android',
+						disabled: false,
+					},
+					{
+						value: 'WEB',
+						label: 'WEB',
+						disabled: false,
+					},
+					{
+						value: 'WAP',
+						label: 'WAP',
+						disabled: false,
+					},
+					{
+						value: 'WXAPP',
+						label: 'WXAPP',
+						disabled: false,
+					},
+				],
+				sources: ['0'],
+				in_order_origin: '0',
+				siteData: [],
+				in_country_id: "0",
+				siteChecked: ['0'],
+				storeData: [],
+				storeChecked: ['0'],
+				shopIds: '0',
+				siteOrderTrendData: {},
+				siteOrderTrendType: 'goods',
+				siteOrderTrendDialogVisible: false,
+				siteOrderTrendTableData: {},
+				siteOrderTrendTableLoading: false,
+				siteOrderTrendTablePage: 1,
+				siteOrderTrendChart: null,
+				siteOrderTrendLoading: true,
+				orderNumAndSalesData: null,
+				orderNumAndSalesLoading: true,
+				orderAveragePriceLoading: true,
+				orderAveragePriceData: null,
+				firstPurchChartData: null,
+				firstPurchaseRepurchaseLoading: true,
+				orderSalesVolumeTopType: '-1',
+				storeSalesType: '1',
+				storeSalesData: {},
+				storeSalesTableData: [],
+				storeSalesTablePage: 1,
+				storeSalesChart: null,
+				storeSalesLoading: false,
+				storeSalesTableHidden: true,
+				storeSalesTableSortBy: 'goods_num',
+				storeSalesTableSortOrder: 'desc',
+				odmSalesTrendCardData: {},
+				odmSalesTrendType: 1,
+				odmSalesTrendChart: null,
+				productsBySaleTopChartData: null,
+				productsBySaleTopLoading: true,
+				categoryTableHidden: true,
+				categorySalesVolumeDistributionChart: null,
+				categorySalesVolumeDistributionData: null,
+				categorySalesVolumeDistributionLoading: true,
+				categoryTableData: {
+					totalCount: 0,
+					datas: [],
+				},
+				categoryTablePage: 1,
+				categoryTableSortBy: 'goods_num',
+				categoryTableSortOrder: 'desc',
+				brandSalesVolumeDistributionLoading: true,
+				brandSalesVolumeDistributionData: null,
+				brandSalesVolumeDistributionChart: null,
+				brandTableHidden: true,
+				brandTableData: {
+					totalCount: 0,
+					datas: [],
+				},
+				brandTablePage: 1,
+				brandTableSortBy: 'goods_num',
+				brandTableSortOrder: 'desc',
+				pickerMinDate: '',
+				pickerOptions: {
+					onPick: ({ maxDate, minDate }) => {
+						vm.pickerMinDate = minDate.getTime()
+						if (maxDate) {
+							vm.pickerMinDate = ''
+						}
+					},
+
+					disabledDate: (time) => {
+						const dayTime = 24 * 3600 * 1000
+						const yearTime = 366 * dayTime
+						const maxTime = Date.now() - dayTime
+						if (vm.pickerMinDate !== '') {
+							let pickerMaxDate = vm.pickerMinDate + yearTime
+							let pickerMinDate = vm.pickerMinDate - yearTime
+							if (pickerMaxDate > maxTime) {
+								pickerMaxDate = maxTime
+							}
+							return (
+								time.getTime() > pickerMaxDate ||
+								time.getTime() < pickerMinDate
+							)
+						}
+						return time.getTime() > maxTime
+					},
+
+					// disabledDate(time) {
+					//     const yearTime = 365 * 24 * 60 * 60 * 1000
+					//     const dayTime = 24 * 60 * 60 * 1000
+					//     const curTime = Date.now()
+					//     return time.getTime() < curTime - yearTime || time.getTime() > curTime - dayTime
+					// }
+				},
+				sortTableByProp: 'goods_num',
+				sortTableByOreder: 'desc',
+				saleRankGather: {},
+				orderSourceDistributionData: null,
+				orderSourceDistributionLoading: true,
+				orderSourceTableHidden: true,
+				orderDistributeSourceGather: [],
+				orderFirstPurchaseGather: {},
+				orderAverageRateGather: {},
+				orderNumAndSealGather: {},
+
+				orderChart: null, //定单数及其销售额
+				grossChart: null, //定单数及其销售额
+				averageChart: null, // 定单均价
+				purchaseChart: null, // 定单首购/复购
+				sourceChart: null, // 定单来源分布
+				brandChart: null, // 销售品牌
+				volumeChart: null, // 商品销售额Top 20
+				fenxiChart: null, // 订单商品分析
+				deliveryCountryChart: null,
+				deliveryCountryTableHidden: true,
+				deliveryCountrySort: 'orders',
+				deliveryCountryChartData: null,
+				orderSourceDistributionLoading: false,
+				deliveryCountryTableData: {
+					totalCount: 0,
+					datas: [],
+				},
+				deliveryCountryTablePage: 1,
+				deliveryCountryTableSortBy: 'order_num',
+				deliveryCountryTableSortOrder: 'desc',
+				odmSalesTrendLoading: true,
+				odmSalesTrendData: null,
+				summaryTableSortBy: 'order_num',
+				summaryTableSortOrder: 'desc',
+				detailCountryHidden: true,
+
+				options: [
+					{
+						label: '按销量',
+					},
+					{
+						label: '按销售额',
+					},
+				],
+				changes: [
+					{
+						id: 'D',
+						value: '近7日',
+					},
+					{
+						id: 'W',
+						value: '上周',
+					},
+					{
+						id: 'M',
+						value: '上月',
+					},
+					{
+						id: 'Y',
+						value: '近12月',
+					},
+					{
+						id: 'Q',
+						value: '近4季度',
+					},
+				],
+				rangeDate: '',
+				dateTypeOptions: [
+					{
+						label: '按天',
+						value: 'D',
+					},
+					{
+						label: '按周',
+						value: 'W',
+					},
+					{
+						label: '按月',
+						value: 'M',
+					},
+				],
+				dateType: '',
+				dataSizeDisabled: true,
+				changeValue: '1',
+				changeValue_1: '按销量',
+				changeValue_2: '按销量',
+				changeTitle: '订单商品销量Top 10',
+				changeInfo: '前10商品销量',
+				changeTip: '占总销量',
+				homePage: '站点分布',
+				unit: '件',
+				queryType: 'goods',
+				queryType_1: 'goods',
+				queryType_2: 'goods',
+				page: 1,
+				pageSize: 10,
+				tableData: [],
+				tableLoading: false,
+				total: 0,
+				language: getCookie('think_language'),
+				shop_address_id: '0',
+				totals: 0, //总页数
+			},
+			computed: {
+				// 各图表模块中展示的日期范围说明
+				rangeDateInfo() {
+					let str
+					switch (this.in_date_type) {
+						case 'D':
+							str = '近7天'
+							break
+						case 'W':
+							str = '上周'
+							break
+						case 'M':
+							str = '上月'
+							break
+						case 'Y':
+							str = '近12月'
+							break
+						case 'Q':
+							str = '近4季度'
+							break
+						default:
+							str = ''
+							break
+					}
+					return `${this.$lang(str)}`
+				},
+				//类目销量分布，模块标题动态修改
+				categorySalesVolumeDistributionTitle() {
+					let str = ''
+					if (this.categoryTableHidden) {
+						if (this.changeValue_1 === '按销售额') {
+							str = '类目销售额分布'
+						} else if (this.changeValue_1 === '按销量') {
+							str = '类目销量分布'
+						}
+					} else {
+						str = '类目销量与销售额'
+					}
+					return this.$lang(str)
+				},
+				//品牌销量分布，模块标题动态修改
+				brandSalesVolumeDistributionTitle() {
+					let str = ''
+					if (this.brandTableHidden) {
+						if (this.changeValue_2 === '按销售额') {
+							str = '品牌销售额分布'
+						} else if (this.changeValue_2 === '按销量') {
+							str = '品牌销量分布'
+						}
+					} else {
+						str = '品牌销量与销售额'
+					}
+					return this.$lang(str)
+				},
+			},
+			watch: {},
+			created() {
+				this.model.unshift({
+					value: '0',
+					label: this.$lang('全部'),
+					disabled: true,
+				})
+				this.getAllChartDataDebounced = _.debounce(this.getAllChartData, 700)
+			},
+			mounted: function () {
+				window.addEventListener("scroll", _.throttle(() => {
+					this.scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop;
+				}, 500))
+				this.getBaseData()
+				this.getSites()
+				this.getStores()
+				this.getAllChartDataDebounced()
+			},
+			methods: {
+				// axios请求封装
+				queryPost(url, param, isPgsqlApi = false) {
+					let config
+					if (isPgsqlApi) {
+						config = {
+							headers: {
+								'erp-req': true,
+								'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+							},
+						}
+					} else {
+						config = {
+							headers: {
+								'erp-req': true,
+								'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+								'Content-Type':
+									'application/x-www-form-urlencoded;charset=UTF-8',
+							},
+						}
+					}
+					// 初始化时间展示
+					return axios.post(
+						this.apiHost + '/gpDashboard' + url,
+						isPgsqlApi ? param : Qs.stringify(param),
+						config
+					)
+				},
+
+				//  来源筛选条件改变
+				sourcesChange(val) {
+					var len = val.length
+					if (len > 1) {
+						if (val[0] === '0') {
+							this['sources'].shift()
+							for (const item of this['model']) {
+								if (item.value === '0') {
+									item.disabled = false
+								}
+							}
+						} else if (val[len - 1] === '0') {
+							this['sources'] = ['0']
+							for (const item of this['model']) {
+								if (item.value === '0') {
+									item.disabled = true
+								}
+							}
+						}
+					} else if (len === 0) {
+						this['sources'] = ['0']
+						for (const item of this['model']) {
+							if (item.value === '0') {
+								item.disabled = true
+							}
+						}
+					}
+					this.in_order_origin = this.sources.join()
+					this.getAllChartDataDebounced()
+				},
+
+				// 获取所有收货国家（地区）数据
+				getSites() {
+					let postData = {
+						'erp-req': true,
+						'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+						languageName: this.language,
+					}
+					this.queryPost('/queryCountryName', postData)
+						.then((res) => {
+							if (res.data.success) {
+								res.data.datas.unshift({
+									name: this.$lang('全部'),
+									id: '0'
+								})
+								this.siteData = res.data.datas.map((item) => {
+									item.disabled = item.id === '0' ? true : false
+									return item
+								})
+							} else {
+								this.$message.error(res.data.msg)
+							}
+						})
+						.catch((err) => {
+							console.log(err)
+						})
+				},
+				//  收货国家（地区）筛选条件改变
+				siteCheckedChange(val) {
+					var len = val.length
+					if (len > 1) {
+						if (val[0] === '0') {
+							this['siteChecked'].shift()
+							for (const item of this['siteData']) {
+								if (item.id === '0') {
+									item.disabled = false
+								}
+							}
+						} else if (val[len - 1] === '0') {
+							this['siteChecked'] = ['0']
+							for (const item of this['siteData']) {
+								if (item.id === '0') {
+									item.disabled = true
+								}
+							}
+						}
+					} else if (len === 0) {
+						this['siteChecked'] = ['0']
+						for (const item of this['siteData']) {
+							if (item.id === '0') {
+								item.disabled = true
+							}
+						}
+					}
+					this.in_country_id = this.siteChecked.join()
+					// shop_address_id用于收货国家分布饼图，该饼图点击要和收货国家（地区）筛选条件一致。由于历史原因，产生了两个不同的字段代表相同的含义，后期迭代再修改
+					this.shop_address_id = this.siteChecked.join()
+					this.getAllChartDataDebounced()
+				},
+
+				// 获取店铺
+				getStores() {
+					let postData = {
+						'erp-req': true,
+						'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+						languageName: this.language,
+						// in_country_id: this.in_country_id,
+					}
+					this.queryPost('/querySiteShop', postData)
+						.then((res) => {
+							if (res.data.success) {
+								res.data.datas.unshift({
+									shop_id: '0',
+									store_name: this.$lang('全部')
+								})
+								// 给数据的每一项添加一个checked属性，用以控制复选框
+								this.storeData = res.data.datas.map((item) => {
+									item.disabled = item.shop_id === '0' ? true : false
+									return item
+								})
+							} else {
+								this.$message.error(res.data.msg)
+							}
+						})
+						.catch((err) => {
+							console.log(err)
+						})
+				},
+				//  店铺筛选条件改变
+				storeCheckedChange(val) {
+					var len = val.length
+					if (len > 1) {
+						if (val[0] === '0') {
+							this['storeChecked'].shift()
+							for (const item of this['storeData']) {
+								if (item.shop_id === '0') {
+									item.disabled = false
+								}
+							}
+						} else if (val[len - 1] === '0') {
+							this['storeChecked'] = ['0']
+							for (const item of this['storeData']) {
+								if (item.shop_id === '0') {
+									item.disabled = true
+								}
+							}
+						}
+					} else if (len === 0) {
+						this['storeChecked'] = ['0']
+						for (const item of this['storeData']) {
+							if (item.shop_id === '0') {
+								item.disabled = true
+							}
+						}
+					}
+					this.shopIds = this.storeChecked.join()
+					this.getAllChartDataDebounced()
+				},
+
+				// 重置筛选条件
+				reset() {
+					// 周期
+					this.in_date_type = 'D'
+					this.rangeDate = ''
+					this.dateType = 'D'
+					this.dataSizeDisabled = true
+
+					// 来源
+					this.sources = ['0']
+					this.in_order_origin = '0'
+
+					// 收货国家（地区）
+					this.siteChecked = ['0']
+					this.in_country_id = '0'
+
+					// 店铺
+					this.storeChecked = ['0']
+					this.shopIds = '0'
+
+					// 历史遗留字段，每个接口都需传改参数
+					this.shop_address_id = '0'
+					this.getAllChartDataDebounced()
+				},
+
+				// 所有图表数据获取
+				getAllChartData() {
+					this.changeValue = '1'
+					this.changeValues('1')
+
+					this.siteOrderTrendType = 'goods'
+					this.siteOrderTrendTablePage = 1
+					this.getSiteOrderTrendData()
+
+					this.getOrdernum() // 订单数以及销售额
+					this.getOrderNumAndSealGather()
+					this.orderAverage() // 订单均价
+					this.getOrderAverageRateGather()
+					this.firstPurch() //首购复购比
+					this.getOrderFirstPurchaseGather()
+					// this.orderDistribute() // 定单来源分布
+					this.getOrderDistributeSourceGather()
+					this.getFenxiDate() //订单商品销量排行
+
+					this.categoryTablePage = 1
+					this.categoryTableSortBy = 'goods_num'
+					this.categoryTableSortOrder = 'desc'
+					this.$refs.category_sales.sort('goods_num', 'descending')
+					this.category() ///类目
+
+					this.brandTablePage = 1
+					this.brandTableSortBy = 'goods_num'
+					this.brandTableSortOrder = 'desc'
+					this.$refs.brand_sales.sort('goods_num', 'descending')
+					this.spuData() // 品牌占比
+
+					this.sortTableByProp = 'goods_num'
+					this.sortTableByOreder = 'desc'
+					this.$refs.order_goods_list.sort('goods_num', 'descending')
+					this.page = 1
+					this.pageSize = 10
+
+					this.getDeliveryCountryChartData()
+					this.getDeliveryCountryTableData()
+
+					this.storeSalesTableHidden = true
+					this.storeSalesDataGet()
+
+					this.odmSalesTrendType = 1
+					this.getODMSalesTrendCardData()
+					this.getODMSalesTrendChartData()
+				},
+
+				// 根据接口要求的格式，返回日期范围的值。type为1返回开始日期，为2则是结束日期
+				formatRangeDate(type) {
+					if (Array.isArray(this.rangeDate)) {
+						return type === 1 ? this.rangeDate[0] : this.rangeDate[1]
+					} else {
+						return ''
+					}
+				},
+				rangeDateChange(value) {
+					if (value) {
+						this.in_date_type = ''
+						this.dataSizeDisabled = false
+						this.dateType = 'D'
+					} else {
+						this.in_date_type = 'D'
+						this.dateType = ''
+						this.dataSizeDisabled = true
+					}
+					this.getAllChartDataDebounced()
+				},
+				// 订单分析选择
+				changeValues: function changeValues(value) {
+					if (value === '2') {
+						this.changeTitle = '订单商品销售额Top 10'
+						this.changeInfo = '前10商品销售额'
+						this.changeTip = '占总销售额'
+
+						this.queryType = 'sales'
+						this.unit = '元'
+					} else if (value === '1') {
+						this.changeTitle = '订单商品销量Top 10'
+						this.changeInfo = '前10商品销量'
+						this.changeTip = '占总销量'
+						this.queryType = 'goods'
+						this.unit = '件'
+					} else if (value === '3') {
+						this.changeTitle = '订单商品毛利TOP 10'
+						this.changeInfo = '前10商品毛利'
+						// this.changeTip = '占总销量'
+						this.queryType = 'margin'
+						this.unit = '件'
+					} else if (value === '4') {
+						this.changeTitle = '订单商品毛利率TOP 10'
+						// this.changeInfo = '前10商品销量'
+						// this.changeTip = '占总销量'
+						this.queryType = 'marginRate'
+						this.unit = '件'
+					}
+					this.getFenxiDate()
+				},
+
+				// 站点订单趋势,数据获取
+				getSiteOrderTrendData() {
+					this.siteOrderTrendLoading = true
+					var param = {
+						'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+						'erp-req': true,
+						in_date_type: this.in_date_type || this.dateType, // 日期
+						in_order_origin: this.in_order_origin,
+						in_country_id: this.in_country_id,
+						languageName: this.language,
+						in_begin_date: this.formatRangeDate(1),
+						in_end_date: this.formatRangeDate(2),
+						shop_address_id: this.shop_address_id,
+						shop_id: this.shopIds,
+						queryType: this.siteOrderTrendType,
+					}
+					this.queryPost('/siteOrderTrend', param)
+						.then((res) => {
+							if (res.data.success === true) {
+									this.siteOrderTrendData = res.data.datas
+
+									this.$nextTick(function () {
+										res.data.datas && this.initSiteOrderTrendChart(res.data.datas)
+									})
+
+								this.siteOrderTrendLoading = false
+							} else {
+								this.$message.error(res.data.msg)
+							}
+						})
+						.catch((err) => {
+							console.log(err)
+						})
+					// }
+				},
+				// 站点订单趋势,图表配置
+				initSiteOrderTrendChart(data) {
+					!this.siteOrderTrendChart &&
+						(this.siteOrderTrendChart = echarts.init(
+							this.$refs.siteOrderTrendChart.$refs.chart
+						))
+
+					let yName, series
+					const siteNum = data.dateInfo.length - 1
+
+					switch (this.siteOrderTrendType) {
+						case 'goods':
+							yName = this.$lang('订单数')
+							series = new Array(siteNum).fill({
+								type: 'line',
+								stack: 'sum',
+								lineStyle: {
+									opacity: 0,
+								},
+								// symbol: 'none',
+								areaStyle: {},
+								seriesLayoutBy: 'row',
+							})
+							break
+						case 'sales':
+							yName = this.$lang('销售额')
+							series = new Array(siteNum).fill({
+								type: 'line',
+								stack: 'sum',
+								lineStyle: {
+									opacity: 0,
+								},
+								// symbol: 'none',
+								areaStyle: {},
+								seriesLayoutBy: 'row',
+							})
+							break
+						case 'margin':
+							yName = this.$lang('毛利')
+							series = new Array(siteNum).fill({
+								type: 'line',
+								lineStyle: {
+									opacity: 0,
+								},
+								// symbol: 'none',
+								areaStyle: {},
+								seriesLayoutBy: 'row',
+							})
+							break
+						case 'marginRate':
+							yName = this.$lang('毛利率')
+							series = new Array(siteNum).fill({
+								type: 'line',
+								lineStyle: {
+									opacity: 0,
+								},
+								// symbol: 'none',
+								areaStyle: {},
+								seriesLayoutBy: 'row',
+							})
+							break
+
+						default:
+							break
+					}
+					let option = {
+						color: GlobalConstAndFunc.UI.colors9To16,
+						tooltip: {
+							...GlobalConstAndFunc.Echarts.tooltipStyle,
+							trigger: 'axis',
+							formatter: (params) => {
+								const length = params.length
+								if (!length) return
+								for (let i = 0; i < length; i++) {
+									let data = params[i]
+									data.actualValue = data.value[data.encode.y[0]]
+									data.formatValue = this.$options.filters['formatNum'](
+										data.actualValue
+									)
+								}
+								const newParams = []
+
+								let name = params[0].name
+								for (let i = 0; i < length; i++) {
+									let data = params[i]
+									let obj = {}
+									obj.marker = data.marker
+									obj.seriesName = data.seriesName
+									obj.formatValue = Number(data.actualValue)
+									newParams.push(obj)
+								}
+								let newParams2 = _.orderBy(
+									newParams,
+									['formatValue', 'seriesName'],
+									['desc', 'asc']
+								)
+
+								// 对“按毛利”和“按毛利率”的情况下的数据处理
+								if (
+									this.siteOrderTrendType == 'margin' ||
+									this.siteOrderTrendType == 'marginRate'
+								) {
+									const moveNull = (arr) => {
+										let y = 0
+										for (let i = 0; y < arr.length; y++) {
+											if (isNaN(arr[i].formatValue)) {
+												arr[i].formatValue = '-'
+												arr.push(arr.splice(i, 1)[0])
+											} else i++
+										}
+										return arr
+									}
+									newParams2 = moveNull(newParams2)
+								}
+
+								let contentArr = []
+								for (let i = 0; i < newParams2.length; i++) {
+									switch (this.siteOrderTrendType) {
+										case 'goods':
+											contentArr.push(
+												`<div class="item">${newParams2[i].marker}${newParams2[i].seriesName
+												} ${this.$options.filters['formatNum'](
+													newParams2[i].formatValue
+												)}</div>`
+											)
+											break
+										case 'sales':
+										case 'margin':
+											contentArr.push(
+												`<div class="item">${newParams2[i].marker}${newParams2[i].seriesName
+												} $${this.$options.filters['formatNum'](
+													newParams2[i].formatValue
+												)}</div>`
+											)
+											break
+										case 'marginRate':
+											if (newParams2[i].formatValue == '-') {
+												contentArr.push(
+													`<div class="item">${newParams2[i].marker}${newParams2[i].seriesName
+													} ${this.$options.filters['formatNum'](
+														newParams2[i].formatValue
+													)}</div>`
+												)
+											} else {
+												contentArr.push(
+													`<div class="item">${newParams2[i].marker}${newParams2[i].seriesName
+													} ${this.$options.filters['formatNum'](
+														newParams2[i].formatValue
+													)}%</div>`
+												)
+											}
+											break
+										default:
+											break
+									}
+								}
+								if (contentArr.length < 8) {
+									return `
+                                                <section class="echarts-tooltip">
+                                                    <div class="title">${name}</div>
+                                                    <section class="content-lt8">
+                                                        ${contentArr.join('')}
+                                                    </section>
+                                                </section>
+                                            `
+								} else {
+									return `
+                                                <section class="echarts-tooltip">
+                                                    <div class="title">${name}</div>
+                                                    <section class="content-gt8">
+                                                    ${contentArr.join('')}
+                                                    </section>
+                                                </section>
+                                            `
+								}
+							},
+						},
+						legend: {
+							...GlobalConstAndFunc.Echarts.legendStyle,
+							icon: 'rect',
+						},
+						grid: {
+							...GlobalConstAndFunc.Echarts.gridSetStyle,
+							left: 10,
+							top: 45,
+						},
+						dataset: {
+							source: data.dateInfo,
+						},
+						xAxis: {
+							type: 'category',
+							axisLabel: {
+								showMaxLabel: true,
+							},
+							axisTick: {
+								show: false,
+							},
+						},
+						yAxis: {
+							type: 'value',
+							name: '  ' + yName,
+							axisLine: {
+								show: false,
+							},
+							axisTick: {
+								show: false,
+							},
+							splitLine: {
+								lineStyle: {
+									type: 'dotted',
+								},
+							},
+						},
+						series,
+					}
+
+					this.siteOrderTrendChart.setOption(option, true)
+				},
+
+				// 站点订单趋势,数据类型改变
+				siteOrderTrendTypeChange(val) {
+					this.siteOrderTrendTablePage = 1
+					this.getSiteOrderTrendData()
+				},
+				// 站点订单趋势,导出明细
+				siteOrderTrendExport() {
+					var param = {
+						'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+						'erp-req': true,
+						in_date_type: this.in_date_type || this.dateType, // 日期
+						in_order_origin: this.in_order_origin,
+						in_country_id: this.in_country_id,
+						languageName: this.language,
+						in_begin_date: this.formatRangeDate(1),
+						in_end_date: this.formatRangeDate(2),
+						shop_address_id: this.shop_address_id,
+						shop_id: this.shopIds,
+						queryType: this.siteOrderTrendType,
+					}
+					axios
+						.post(
+							this.apiHost + '/gpDashboard/siteOrderTrendImport',
+							Qs.stringify(param),
+							{
+								headers: {
+									'erp-req': true,
+									'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+									'Content-Type':
+										'application/x-www-form-urlencoded;charset=UTF-8',
+								},
+								responseType: 'blob',
+							}
+						)
+						.then((res) => {
+							let blob = res.data
+							let reader = new FileReader()
+							reader.readAsDataURL(blob)
+							reader.onload = (e) => {
+								let a = document.createElement('a')
+								let fileName = `${this.$lang('国家(地区)订单趋势')}.xlsx`
+								a.download = fileName
+								a.href = e.target.result
+								document.body.appendChild(a)
+								a.click()
+								document.body.removeChild(a)
+							}
+						})
+						.catch((err) => {
+							console.log(err)
+						})
+				},
+				siteOrderTrendDialogOpen() {
+					this.siteOrderTrendDialogVisible = true
+					this.getSiteOrderTrendTableData()
+				},
+				// 汇总查看表格数据排序
+				sortTableSummary({ column, prop, order }) {
+					if (prop) {
+						this.summaryTableSortBy = prop
+						this.summaryTableSortOrder =
+							order === 'ascending' ? 'asc' : 'desc'
+						this.getSiteOrderTrendTableData()
+					}
+				},
+				// 站点订单趋势,站点销售汇总数据明细表格，数据获取
+				getSiteOrderTrendTableData() {
+					// console.log(this.siteOrderTrendType);
+
+					this.siteOrderTrendTableLoading = true
+					var param = {
+						'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+						'erp-req': true,
+						in_date_type: this.in_date_type || this.dateType, // 日期
+						in_order_origin: this.in_order_origin,
+						in_country_id: this.in_country_id,
+						languageName: this.language,
+						in_begin_date: this.formatRangeDate(1),
+						in_end_date: this.formatRangeDate(2),
+						shop_address_id: this.shop_address_id,
+						shop_id: this.shopIds,
+						page: this.siteOrderTrendTablePage,
+						pageSize: 10,
+						sort_field: this.summaryTableSortBy,
+						sort: this.summaryTableSortOrder,
+					}
+					this.queryPost('/siteAndOrderNum', param)
+						.then((res) => {
+							if (res.data.success === true) {
+								this.siteOrderTrendTableData = res.data
+							} else {
+								this.$message.error(res.data.msg)
+							}
+							this.siteOrderTrendTableLoading = false
+						})
+						.catch((err) => {
+							console.log(err)
+						})
+				},
+				// 站点订单趋势,站点销售汇总数据明细表格,翻页
+				siteOrderTrendTablePageChange(page) {
+					this.siteOrderTrendTablePage = page
+					this.getSiteOrderTrendTableData()
+				},
+				// 站点订单趋势,站点销售汇总数据明细表格,导出
+				siteOrderTrendTableExport() {
+					var param = {
+						'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+						'erp-req': true,
+						in_date_type: this.in_date_type || this.dateType, // 日期
+						in_order_origin: this.in_order_origin,
+						in_country_id: this.in_country_id,
+						languageName: this.language,
+						in_begin_date: this.formatRangeDate(1),
+						in_end_date: this.formatRangeDate(2),
+						shop_address_id: this.shop_address_id,
+						shop_id: this.shopIds,
+						queryType: this.siteOrderTrendType,
+						sort_field: this.summaryTableSortBy,
+						sort: this.summaryTableSortOrder,
+					}
+					axios
+						.post(
+							this.apiHost + '/gpDashboard/siteAndOrderNumImport',
+							Qs.stringify(param),
+							{
+								headers: {
+									'erp-req': true,
+									'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+									'Content-Type':
+										'application/x-www-form-urlencoded;charset=UTF-8',
+								},
+								responseType: 'blob',
+							}
+						)
+						.then((res) => {
+							let blob = res.data
+							let reader = new FileReader()
+							reader.readAsDataURL(blob)
+							reader.onload = (e) => {
+								let a = document.createElement('a')
+								let fileName = `站点销售汇总数据明细.xlsx`
+								if (this.language !== 'zh-cn') {
+									fileName = `Summary of orders and sales for each site.xlsx`
+								}
+								a.download = fileName
+								a.href = e.target.result
+								document.body.appendChild(a)
+								a.click()
+								document.body.removeChild(a)
+							}
+						})
+						.catch((err) => {
+							console.log(err)
+						})
+				},
+				// 获取订单统计信息
+				getBaseData() {
+					var param = {
+						//  namespace: 'B2cOrderRevenueSplitMapper.queryParamBusyType',
+						'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+						'erp-req': true,
+					}
+					this.queryPost('/queryOrderInfo', param).then((res) => {
+						if (res.data.success === true) {
+							this.orderStatis = res.data.datas[0]
+						} else {
+							this.$message.error(res.data.msg)
+						}
+					})
+				},
+				// 订单数及其销售额,毛利及毛利率,数据获取
+				getOrdernum: function getOrdernum() {
+					this.orderNumAndSalesLoading = true
+					var _that = this
+					var param = {
+						'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+						'erp-req': true,
+						in_date_type: this.in_date_type || this.dateType, // 日期
+						in_order_origin: this.in_order_origin,
+						in_country_id: this.in_country_id,
+						in_begin_date: this.formatRangeDate(1),
+						in_end_date: this.formatRangeDate(2),
+						in_label: 0,
+						shop_id: this.shopIds,
+						shop_address_id: this.shop_address_id,
+					}
+					this.queryPost('/queryOrderNumAndSeal', param).then((res) => {
+						if (res.data.success === true) {
+							this.orderNumAndSalesData = res.data.datas
+							if (res.data.datas) {
+								var xDate1 = [] //日期
+								var arrOrders = res.data.datas
+								arrOrders.forEach(function (i) {
+									xDate1.push(i.date_str)
+								})
+								var orderNums = arrOrders.map(function (i, k) {
+									if (i.order_ct == null) {
+										return (i.order_ct = 0)
+									}
+									return i.order_ct
+								})
+								var salePirce = arrOrders.map(function (i, k) {
+									if (i.total_sales == null) {
+										return (i.total_sales = 0)
+									}
+									return i.total_sales
+								})
+								var totalGross = arrOrders.map(function (i, k) {
+									if (i.total_gross_margin == null) {
+										return (i.total_gross_margin = 0)
+									}
+									return i.total_gross_margin
+								})
+								var totalGrossRate = arrOrders.map(function (i, k) {
+									if (i.total_gross_rate == null) {
+										return (i.total_gross_rate = 0)
+									}
+									return i.total_gross_rate
+								})
+								this.$nextTick(function () {
+									_that.setOrderOtions(orderNums, salePirce, xDate1)
+									_that.getGrossNum(totalGross, totalGrossRate, xDate1)
+								})
+							}
+							this.orderNumAndSalesLoading = false
+						} else {
+							this.$message.error(res.data.msg)
+						}
+					})
+				},
+				// 订单数及销售额，图表渲染
+				setOrderOtions: function setOrderOtions(
+					orderNums,
+					salePirce,
+					xDate1
+				) {
+					!this.orderChart &&
+						(this.orderChart = echarts.init(this.$refs.orderNum.$refs.chart))
+					let name1 = this.$lang('销售额')
+					let name2 = this.$lang('订单数')
+					let lang = [name1, name2]
+
+					this.orderChart.setOption({
+						tooltip: {
+							...GlobalConstAndFunc.Echarts.tooltipStyle,
+							trigger: 'axis',
+							formatter: (params) => {
+								if (params[0] && params[1]) {
+									let saleValue = this.$options.filters['toMillion'](
+										params[0].value,
+										false,
+										true
+									)
+									let orderValue = this.$options.filters['formatNum'](
+										params[1].value
+									)
+									return `${params[0].name}<br/>${params[1].seriesName}：${orderValue}&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp${params[0].seriesName}：$${saleValue}`
+								} else if (params[0].seriesName == name1) {
+									let saleValue = this.$options.filters['toMillion'](
+										params[0].value,
+										false,
+										true
+									)
+									return `${params[0].name}<br/>${params[0].seriesName}：$${saleValue}`
+								} else if (params[0].seriesName == name2) {
+									let orderValue = this.$options.filters['formatNum'](
+										params[0].value
+									)
+									return `${params[0].name}<br/>${params[0].seriesName}：${orderValue}`
+								}
+							},
+						},
+						legend: {
+							...GlobalConstAndFunc.Echarts.legendStyle,
+							icon: 'rect',
+							data: lang,
+						},
+						grid: {
+							...GlobalConstAndFunc.Echarts.gridSetStyle,
+							top: 45,
+						},
+						// y轴
+						yAxis: [
+							{
+								type: 'value',
+								name: name1,
+								min: 0,
+								axisLine: {
+									show: false,
+								},
+								axisTick: {
+									show: false,
+								},
+								splitLine: {
+									lineStyle: {
+										type: 'dotted',
+										color: '#F0F0F0',
+									},
+								},
+							},
+							{
+								type: 'value',
+								name: name2,
+								min: 0,
+								axisLine: {
+									show: false,
+								},
+								axisTick: {
+									show: false,
+								},
+								splitLine: {
+									lineStyle: {
+										type: 'dotted',
+										color: '#F0F0F0',
+									},
+								},
+							},
+						],
+						// x 轴
+						xAxis: [
+							{
+								type: 'category',
+								axisLabel: {
+									showMaxLabel: true,
+								},
+								data: xDate1,
+							},
+						],
+						color: ['#0375DE', '#FFC30F'],
+						series: [
+							{
+								name: lang[0],
+								type: 'bar',
+								barWidth: '66.66%',
+								barCategoryGap: '16.66%',
+								data: salePirce,
+							},
+							{
+								name: lang[1],
+								type: 'line',
+								yAxisIndex: 1,
+								data: orderNums,
+							},
+						],
+					})
+				},
+				// 毛利及毛利率，图表渲染
+				getGrossNum: function (totalGross, totalGrossRate, xDate1) {
+					!this.grossChart &&
+						(this.grossChart = echarts.init(this.$refs.grossNum.$refs.chart))
+					let name1 = this.$lang('毛利')
+					let name2 = this.$lang('毛利率')
+					let lang = [name1, name2]
+
+					this.grossChart.setOption({
+						tooltip: {
+							...GlobalConstAndFunc.Echarts.tooltipStyle,
+							trigger: 'axis',
+							formatter: (params) => {
+								if (params[0] && params[1]) {
+									let saleValue = this.$options.filters['toMillion'](
+										params[0].value,
+										false,
+										true
+									)
+									let orderValue = this.$options.filters['formatNum'](
+										params[1].value
+									)
+									return `${params[0].name}<br/>${params[1].seriesName}：${orderValue}% &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp${params[0].seriesName}：$${saleValue}`
+								} else if (params[0].seriesName == name1) {
+									let saleValue = this.$options.filters['toMillion'](
+										params[0].value,
+										false,
+										true
+									)
+									return `${params[0].name}<br/>${params[0].seriesName}：$${saleValue}`
+								} else if (params[0].seriesName == name2) {
+									let orderValue = this.$options.filters['formatNum'](
+										params[0].value
+									)
+									return `${params[0].name}<br/>${params[0].seriesName}：${orderValue}%`
+								}
+							},
+						},
+						legend: {
+							...GlobalConstAndFunc.Echarts.legendStyle,
+							icon: 'rect',
+							data: lang,
+						},
+						grid: {
+							...GlobalConstAndFunc.Echarts.gridSetStyle,
+							top: 45,
+						},
+						// y轴
+						yAxis: [
+							{
+								type: 'value',
+								name: name1,
+								// min: 0,
+								axisLine: {
+									show: false,
+								},
+								axisTick: {
+									show: false,
+								},
+								splitLine: {
+									lineStyle: {
+										type: 'dotted',
+										color: '#F0F0F0',
+									},
+								},
+							},
+							{
+								type: 'value',
+								name: name2,
+								axisLabel: {
+									formatter: '{value}%',
+								},
+								// min: 0,
+								axisLine: {
+									show: false,
+								},
+								axisTick: {
+									show: false,
+								},
+								splitLine: {
+									lineStyle: {
+										type: 'dotted',
+										color: '#F0F0F0',
+									},
+								},
+							},
+						],
+						// x 轴
+						xAxis: [
+							{
+								type: 'category',
+								axisLabel: {
+									showMaxLabel: true,
+								},
+								data: xDate1,
+							},
+						],
+						color: ['#0375DE', '#FFC30F'],
+						series: [
+							{
+								name: lang[0],
+								type: 'bar',
+								barWidth: '66.66%',
+								barCategoryGap: '16.66%',
+								data: totalGross,
+							},
+							{
+								name: lang[1],
+								type: 'line',
+								yAxisIndex: 1,
+								data: totalGrossRate,
+							},
+						],
+					})
+				},
+				// 订单数及销售额汇总信息
+				getOrderNumAndSealGather() {
+					let param = {
+						'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+						'erp-req': true,
+						in_date_type: this.in_date_type || this.dateType, // 日期
+						in_order_origin: this.in_order_origin,
+						in_country_id: this.in_country_id,
+						in_begin_date: this.formatRangeDate(1),
+						in_end_date: this.formatRangeDate(2),
+						in_label: 1,
+						shop_id: this.shopIds,
+						shop_address_id: this.shop_address_id,
+					}
+					this.queryPost('/queryOrderNumAndSealGather', param).then((res) => {
+						if (res.data.success === true) {
+							this.orderNumAndSealGather = res.data.datas[0]
+						} else {
+							this.$message.error(res.data.msg)
+						}
+					})
+				},
+				// 订单均价
+				orderAverage: function orderAverage() {
+					this.orderAveragePriceLoading = true
+					var param = {
+						'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+						'erp-req': true,
+						in_date_type: this.in_date_type || this.dateType, // 日期
+						in_order_origin: this.in_order_origin,
+						in_country_id: this.in_country_id,
+						in_begin_date: this.formatRangeDate(1),
+						in_end_date: this.formatRangeDate(2),
+						in_label: 0,
+						shop_id: this.shopIds,
+						shop_address_id: this.shop_address_id,
+					}
+					this.queryPost('/queryOrderAverageRate', param).then((res) => {
+						if (res.data.success === true) {
+							this.orderAveragePriceData = res.data.datas
+							if (res.data.datas) {
+								var averageDate = []
+								var data = res.data.datas
+								data.forEach(function (i, k) {
+									averageDate.push(i.date_str)
+								})
+								var aerageData = data.map(function (i, k) {
+									if (i.avg_ordersales == null) {
+										return (i.avg_ordersales = 0)
+									}
+									return i.avg_ordersales
+								})
+								this.$nextTick(() => {
+									this.setAverageOtions(averageDate, aerageData)
+								})
+							}
+
+							this.orderAveragePriceLoading = false
+						} else {
+							this.$message.error(res.data.msg)
+						}
+					})
+				},
+				// 订单均价,图表渲染
+				setAverageOtions: function setAverageOtions(averageDate, aerageData) {
+					!this.averageChart &&
+						(this.averageChart = echarts.init(
+							this.$refs.orderAveragePrice.$refs.chart
+						))
+					var name1, lang
+					if (this.language === 'zh-cn') {
+						//英语
+						name1 = '单位：元'
+						lang = '订单均价'
+					} else {
+						name1 = 'Unit:RMB'
+						lang = 'Average price of orders'
+					}
+					this.averageChart.setOption({
+						tooltip: {
+							...GlobalConstAndFunc.Echarts.tooltipStyle,
+							trigger: 'axis',
+							formatter: (params) => {
+								let saleValue = this.$options.filters['toMillion'](
+									params[0].value,
+									false,
+									true
+								)
+								return `${params[0].name}<br/>${params[0].seriesName}：$${saleValue}`
+							},
+						},
+						legend: {
+							...GlobalConstAndFunc.Echarts.legendStyle,
+							icon: 'rect',
+						},
+						grid: {
+							...GlobalConstAndFunc.Echarts.gridSetStyle,
+							left: 40,
+							top: 45,
+						},
+						xAxis: {
+							type: 'category',
+							axisLabel: {
+								showMaxLabel: true,
+							},
+							data: averageDate,
+						},
+						yAxis: [
+							{
+								type: 'value',
+								name: lang,
+								min: 0,
+								axisLine: {
+									show: false,
+								},
+								axisTick: {
+									show: false,
+								},
+								splitLine: {
+									lineStyle: {
+										type: 'dotted',
+										color: '#F0F0F0',
+									},
+								},
+							},
+						],
+						color: GlobalConstAndFunc.Echarts.colorList(1),
+						series: [
+							{
+								name: lang,
+								data: aerageData,
+								type: 'line',
+							},
+						],
+					})
+				},
+
+				// 订单均价汇总信息
+				getOrderAverageRateGather() {
+					let param = {
+						'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+						'erp-req': true,
+						in_date_type: this.in_date_type || this.dateType, // 日期
+						in_order_origin: this.in_order_origin,
+						in_country_id: this.in_country_id,
+						in_begin_date: this.formatRangeDate(1),
+						in_end_date: this.formatRangeDate(2),
+						in_label: 1,
+						shop_id: this.shopIds,
+						shop_address_id: this.shop_address_id,
+					}
+					this.queryPost('/queryOrderAverageRateGather', param).then(
+						(res) => {
+							if (res.data.success === true) {
+								this.orderAverageRateGather = res.data.datas[0]
+							} else {
+								this.$message.error(res.data.msg)
+							}
+						}
+					)
+				},
+
+				// 订单首购/复购占比图表数据获取
+				firstPurch: function firstPurch() {
+					this.firstPurchaseRepurchaseLoading = true
+					var param = {
+						'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+						'erp-req': true,
+						in_date_type: this.in_date_type || this.dateType, // 日期
+						in_order_origin: this.in_order_origin,
+						in_country_id: this.in_country_id,
+						in_begin_date: this.formatRangeDate(1),
+						in_end_date: this.formatRangeDate(2),
+						in_order_team: '-1',
+						in_label: 0,
+						shop_id: this.shopIds,
+						shop_address_id: this.shop_address_id,
+					}
+					this.queryPost('/queryOrderFirstPurchase', param).then((res) => {
+						if (res.data.success === true) {
+							this.firstPurchChartData = res.data.datas
+							if (res.data.datas) {
+								let seriesName = ['首购', '复购']
+
+								if (this.language !== 'zh-cn') {
+									//英语
+									seriesName = ['first purchase', 'repurchase']
+								}
+								let dataSource = [
+									['category'],
+									[seriesName[0]],
+									[seriesName[1]],
+									['firstNum'],
+									['repeatNum'],
+								]
+								res.data.datas.forEach(function (i) {
+									dataSource[0].push(i.date_str)
+									dataSource[1].push(i.first_purchase_ratio)
+									dataSource[2].push(i.repeat_purchase_ratio)
+									dataSource[3].push(i.first_purchase)
+									dataSource[4].push(i.repeat_purchase)
+								})
+								this.$nextTick(() => {
+									this.setPrchaseOtions(dataSource)
+								})
+							}
+							this.firstPurchaseRepurchaseLoading = false
+						} else {
+							this.$message.error(res.data.msg)
+						}
+					})
+				},
+				// 订单首购/复购占比图表渲染
+				setPrchaseOtions: function setPrchaseOtions(dataSource) {
+					!this.purchaseChart &&
+						(this.purchaseChart = echarts.init(
+							this.$refs.purchase.$refs.chart
+						))
+					this.purchaseChart.setOption({
+						tooltip: {
+							...GlobalConstAndFunc.Echarts.tooltipStyle,
+							trigger: 'axis',
+							formatter: (params) => {
+								let str = `${params[0].name}<br/>`
+								let firstNum = this.$options.filters['formatNum'](
+									params[0].value[3]
+								)
+								let repeatNum = this.$options.filters['formatNum'](
+									params[0].value[4]
+								)
+								let firstRatio =
+									params[0].value[1] === '-'
+										? params[0].value[1]
+										: `${params[0].value[1]}%`
+								let repeatRatio =
+									params[0].value[2] === '-'
+										? params[0].value[2]
+										: `${params[0].value[2]}%`
+								let dataStr = `首购订单： ${firstNum}&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp首购率：${firstRatio}<br/>复购订单： ${repeatNum}&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp复购率：${repeatRatio}`
+								if (this.language !== 'zh-cn') {
+									//英语
+									dataStr = `First-time order： ${firstNum}&nbsp&nbsp&nbsp&nbsp&nbsp&nbspProportion of first purchase：${firstRatio}<br/>Non first-time order： ${repeatNum}&nbsp&nbsp&nbsp&nbsp&nbsp&nbspProportion of repurchase：${repeatRatio}`
+								}
+								str += dataStr
+								return str
+							},
+						},
+						dataset: {
+							sourceHeader: true,
+							source: dataSource,
+						},
+						legend: {
+							...GlobalConstAndFunc.Echarts.legendStyle,
+							icon: 'rect',
+						},
+						grid: {
+							...GlobalConstAndFunc.Echarts.gridSetStyle,
+							top: 45,
+						},
+						xAxis: {
+							type: 'category',
+							axisLabel: {
+								showMaxLabel: true,
+							},
+						},
+						yAxis: [
+							{
+								type: 'value',
+								name: this.$lang('百分比'),
+								axisLine: {
+									show: false,
+								},
+								axisTick: {
+									show: false,
+								},
+								splitLine: {
+									lineStyle: {
+										type: 'dotted',
+										color: '#F0F0F0',
+									},
+								},
+								axisLabel: {
+									formatter: '{value}%',
+								},
+								min: 0,
+								max: 100,
+							},
+						],
+						color: GlobalConstAndFunc.UI.colors2To8,
+						series: [
+							{
+								type: 'bar',
+								seriesLayoutBy: 'row',
+								stack: 'sum',
+								encode: {
+									x: 0,
+									y: 1,
+									seriesName: 1,
+								},
+							},
+							{
+								type: 'bar',
+								stack: 'sum',
+								seriesLayoutBy: 'row',
+								encode: {
+									x: 0,
+									y: 2,
+									seriesName: 2,
+								},
+								barWidth: '66.66%',
+								barCategoryGap: '16.66%',
+							},
+						],
+					})
+				},
+
+				// 订单首购/复购占比汇总信息
+				getOrderFirstPurchaseGather() {
+					let param = {
+						'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+						'erp-req': true,
+						in_date_type: this.in_date_type || this.dateType, // 日期
+						in_order_origin: this.in_order_origin,
+						in_country_id: this.in_country_id,
+						in_begin_date: this.formatRangeDate(1),
+						in_end_date: this.formatRangeDate(2),
+						in_label: 1,
+						shop_id: this.shopIds,
+						shop_address_id: this.shop_address_id,
+					}
+					this.queryPost('/queryOrderFirstPurchaseGather', param)
+						.then((res) => {
+							if (res.data.success === true && res.data.datas) {
+								this.orderFirstPurchaseGather = res.data.datas[0]
+								// 周期筛选条件粒度切换时，自定义日期选择框显示的日期要改动
+								if (!this.dataSizeDisabled) {
+									this.rangeDate = res.data.datas[0].dateTime
+										.replace(/\//g, '')
+										.split('-')
+								}
+							} else {
+								this.$message.error(res.data.msg)
+							}
+						})
+						.catch((err) => {
+							console.log(err)
+						})
+				},
+
+				// 订单来源分布,图表数据、汇总信息 获取
+				getOrderDistributeSourceGather() {
+					this.orderSourceDistributionLoading = true
+					let param = {
+						'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+						'erp-req': true,
+						in_date_type: this.in_date_type || this.dateType, // 日期
+						in_order_origin: this.in_order_origin,
+						in_country_id: this.in_country_id,
+						in_begin_date: this.formatRangeDate(1),
+						in_end_date: this.formatRangeDate(2),
+						in_label: 1,
+						shop_id: this.shopIds,
+						shop_address_id: this.shop_address_id,
+					}
+					this.queryPost('/queryOrderDistributeSourceGather', param).then(
+						(res) => {
+							if (res.data.success === true) {
+								const arr = []
+								for (const key of Object.keys(res.data.datas || {})) {
+									const obj = res.data.datas[key]
+									obj.name = key
+									obj.value = obj.sum
+									arr.push(obj)
+								}
+								arr.sort((a, b) => {
+									a.sortVal = a.value === '-' ? 0 : parseInt(a.value, 10)
+									b.sortVal = b.value === '-' ? 0 : parseInt(b.value, 10)
+									return b.sortVal - a.sortVal
+								})
+								this.orderSourceDistributionData = this.orderDistributeSourceGather = arr
+								this.$nextTick(() => {
+									this.orderSourceDistributeChartInit(arr)
+								})
+								this.orderSourceDistributionLoading = false
+							} else {
+								this.$message.error(res.data.msg)
+							}
+						}
+					)
+				},
+
+				// 订单来源分布饼图,图表渲染
+				orderSourceDistributeChartInit(chartData) {
+					!this.sourceChart &&
+						(this.sourceChart = echarts.init(this.$refs.source.$refs.chart))
+					
+					const option = {
+						tooltip: {
+							...GlobalConstAndFunc.Echarts.tooltipStyle,
+							formatter: (params) => {
+								var { marker, name, value, percent } = params
+								var formatVal = this.$options.filters['formatNum'](value)
+								return `${chartData[0].dateTime}<br>${marker} ${name} ${formatVal} (${percent}%)`
+							},
+						},
+						color: GlobalConstAndFunc.Echarts.colorList(chartData.length),
+						series: [
+							{
+								type: 'pie',
+								radius: '65%',
+								label: {
+									formatter: (params) => {
+										let showVal = this.$options.filters.formatNum(params.value)
+										return `${params.name}{a||}${showVal}{a||}${params.percent}%
+                  `
+									},
+									position: 'outer',
+									alignTo: 'labelLine',
+									rich: {
+										a: {
+											color: '#E5E5E5',
+											padding: [0, 4]
+										}
+									}
+
+								},
+								data: chartData,
+							},
+						],
+					}
+					this.sourceChart.setOption(option, true)
+				},
+
+				// 收货国家分布饼图数据获取
+				getDeliveryCountryChartData: function () {
+					this.deliveryCountryDistributionLoading = true
+					var param = {
+						'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+						'erp-req': true,
+						in_date_type: this.in_date_type || this.dateType, // 日期
+						in_order_origin: this.in_order_origin,
+						in_country_id: this.in_country_id,
+						languageName: this.language,
+						queryType: this.deliveryCountrySort,
+						in_begin_date: this.formatRangeDate(1),
+						in_end_date: this.formatRangeDate(2),
+						in_label: 0,
+						shop_id: this.shopIds,
+						shop_address_id: this.shop_address_id,
+					}
+					this.queryPost('/queryReceivingCountries', param).then((res) => {
+						if (res.data.success === true) {
+							this.deliveryCountryChartData = res.data.datas
+							if (res.data.datas) {
+								this.$nextTick(() => {
+									this.setDeliveryCountryChart(res.data.datas)
+								})
+							}
+
+							this.deliveryCountryDistributionLoading = false
+						} else {
+							this.$message.error(res.data.msg)
+						}
+					})
+				},
+
+				// 收货国家分布饼图,图表渲染
+				setDeliveryCountryChart(chartData) {
+					!this.deliveryCountryChart &&
+						(this.deliveryCountryChart = echarts.init(
+							this.$refs.orderSourceDistribution.$refs.chart
+						))
+					this.deliveryCountryChart.on('click', (event) => {
+						for (let item of this.deliveryCountryChartData) {
+							if (item.name === event.name) {
+								if (event.name !== '其他' && event.name !== 'Other') {
+									this.in_country_id = item.shop_address_id
+									this.siteChecked = item.shop_address_id.split(',').map(item => parseInt(item, 10))
+									this.shop_address_id = item.shop_address_id
+									this.getAllChartDataDebounced()
+									this.detailCountryHidden = false
+								}
+							}
+						}
+					})
+					let salesVolumeText = '订单数'
+					let renvenueText = '销售额'
+					if (this.language !== 'zh-cn') {
+						salesVolumeText = 'Quantity'
+						renvenueText = 'Renvenue'
+					}
+					this.deliveryCountryChart.setOption({
+						tooltip: {
+							...GlobalConstAndFunc.Echarts.tooltipStyle,
+							formatter: (params) => {
+								let showVal = this.$options.filters.formatNum(params.value)
+
+								if (this.deliveryCountrySort === 'sales') {
+									return `${chartData[0].dateTime}<br>${params.name} ${renvenueText}：$${showVal} (${params.percent}%)`
+								} else if (this.deliveryCountrySort === 'orders') {
+									return `${chartData[0].dateTime}<br>${params.name} ${salesVolumeText}：${showVal} (${params.percent}%)`
+								}
+							},
+						},
+						color: GlobalConstAndFunc.Echarts.colorList(chartData.length),
+						series: [
+							{
+								type: 'pie',
+								radius: '65%',
+								label: {
+									formatter: (params) => {
+										let currency = ''
+										if (this.deliveryCountrySort === 'sales') currency = '$'
+										let showVal = this.$options.filters.formatNum(params.value)
+										return `${params.name}{a||}${currency}${showVal}{a||}${params.percent}%
+                  `
+									},
+									position: 'outer',
+									alignTo: 'labelLine',
+									rich: {
+										a: {
+											color: '#E5E5E5',
+											padding: [0, 4]
+										}
+									}
+
+								},
+								data: chartData,
+							},
+						],
+					})
+				},
+				// 收货国家分类方式改变
+				deliveryCountrySortChange() {
+					this.shop_address_id = '0'
+					this.getDeliveryCountryChartData()
+				},
+				// 收货国家表格数据获取
+				getDeliveryCountryTableData() {
+					this.orderSourceDistributionLoading = true
+					var param = {
+						'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+						'erp-req': true,
+						in_date_type: this.in_date_type || this.dateType, // 日期
+						in_order_origin: this.in_order_origin,
+						in_country_id: this.in_country_id,
+						languageName: this.language,
+						in_begin_date: this.formatRangeDate(1),
+						in_end_date: this.formatRangeDate(2),
+						page: this.deliveryCountryTablePage,
+						pageSize: 6,
+						shop_id: this.shopIds,
+						sort: this.deliveryCountryTableSortOrder,
+						sort_field: this.deliveryCountryTableSortBy,
+						shop_address_id: this.shop_address_id,
+					}
+					this.queryPost('/queryReceivingCountriesTable', param).then(
+						(res) => {
+							if (res.data.success === true) {
+								this.deliveryCountryTableData = res.data
+							} else {
+								this.$message.error(res.data.msg)
+							}
+							this.orderSourceDistributionLoading = false
+						}
+					)
+				},
+				// 收货国家表格数据排序
+				sortDeliveryCountryTable({ column, prop, order }) {
+					if (prop) {
+						this.deliveryCountryTableSortBy = prop
+						this.deliveryCountryTableSortOrder =
+							order === 'ascending' ? 'asc' : 'desc'
+						this.getDeliveryCountryTableData()
+					}
+				},
+				// 收货国家表格翻页
+				deliveryCountryTableCurrentChange(page) {
+					this.deliveryCountryTablePage = page
+					this.getDeliveryCountryTableData()
+				},
+
+				// 重置收货国家
+				resetDeliveryCountry() {
+					this.shop_address_id = '0'
+					this.in_country_id = '0'
+					this.siteChecked = ['0']
+					this.getAllChartDataDebounced()
+					this.detailCountryHidden = true
+				},
+
+				// 店铺销售分布饼图数据获取
+				storeSalesDataGet() {
+					this.storeSalesLoading = true
+					var param = {
+						'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+						'erp-req': true,
+						in_date_type: this.in_date_type || this.dateType, // 日期
+						in_order_origin: this.in_order_origin,
+						in_country_id: this.in_country_id,
+						languageName: this.language,
+						type: this.storeSalesType,
+						in_begin_date: this.formatRangeDate(1),
+						in_end_date: this.formatRangeDate(2),
+						in_label: 0,
+						shop_id: this.shopIds,
+						shop_address_id: this.shop_address_id,
+					}
+					this.queryPost('/queryStoreGraphPie', param).then((res) => {
+						if (res.data.success === true) {
+							this.storeSalesData = res.data.datas
+							if (res.data.datas.metricItems) {
+								this.$nextTick(() => {
+									this.storeSalesChartInit(res.data.datas.metricItems)
+								})
+							}
+							this.storeSalesLoading = false
+						} else {
+							this.$message.error(res.data.msg)
+						}
+					})
+				},
+				// 店铺销售分布饼图,图表渲染
+				storeSalesChartInit(chartData) {
+					!this.storeSalesChart &&
+						(this.storeSalesChart = echarts.init(
+							this.$refs.storeSales.$refs.chart
+						))
+					this.storeSalesChart.setOption({
+						tooltip: {
+							...GlobalConstAndFunc.Echarts.tooltipStyle,
+							formatter: (params) => {
+								var { marker, name, value, percent } = params
+								let showVal = this.$options.filters.formatNum(value)
+
+								if (this.storeSalesType === '1') {
+									return `${this.storeSalesData.datetime}<br>${name
+										} ${this.$lang('订单数')}：${showVal} (${percent}%)`
+								} else if (this.storeSalesType === '2') {
+									return `${this.storeSalesData.datetime}<br>${name
+										} ${this.$lang('销售额')}：$${showVal} (${percent}%)`
+								}
+							},
+						},
+						color: GlobalConstAndFunc.Echarts.colorList(chartData.length),
+						series: [
+							{
+								type: 'pie',
+								radius: '65%',
+								label: {
+									formatter: (params) => {
+										let currency = ''
+										if (this.storeSalesType === '2') currency = '$'
+										let showVal = this.$options.filters.formatNum(params.value)
+										return `${params.name}{a||}${currency}${showVal}{a||}${params.percent}%
+                  `
+									},
+									position: 'outer',
+									alignTo: 'labelLine',
+									rich: {
+										a: {
+											color: '#E5E5E5',
+											padding: [0, 4]
+										}
+									}
+
+								},
+								data: chartData,
+							},
+						],
+					})
+				},
+				// 店铺销售表格数据获取
+				storeSalesTableDataGet() {
+					this.storeSalesLoading = true
+					var param = {
+						'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+						'erp-req': true,
+						in_date_type: this.in_date_type || this.dateType, // 日期
+						in_order_origin: this.in_order_origin,
+						in_country_id: this.in_country_id,
+						languageName: this.language,
+						in_begin_date: this.formatRangeDate(1),
+						in_end_date: this.formatRangeDate(2),
+						page: this.storeSalesTablePage,
+						pageSize: 6,
+						shop_id: this.shopIds,
+						sort: this.storeSalesTableSortOrder,
+						sort_field: this.storeSalesTableSortBy,
+						shop_address_id: this.shop_address_id,
+					}
+					this.queryPost('/queryStoreGraphTable', param).then((res) => {
+						if (res.data.success === true) {
+							this.storeSalesTableData = res.data
+						} else {
+							this.$message.error(res.data.msg)
+						}
+						this.storeSalesLoading = false
+					})
+				},
+				// 店铺销售表格数据排序
+				storeSalesTableSort({ column, prop, order }) {
+					if (prop) {
+						this.storeSalesTableSortBy = prop
+						this.storeSalesTableSortOrder =
+							order === 'ascending' ? 'asc' : 'desc'
+						this.storeSalesTableDataGet()
+					}
+				},
+				// 店铺销售表格展示、隐藏
+				storeSalesTableVisibleChange() {
+					if (this.storeSalesTableHidden) {
+						this.storeSalesTablePage = 1
+						this.storeSalesTableSortBy = 'goods_num'
+						this.storeSalesTableSortOrder = 'desc'
+						this.$refs.storeSalesTable.sort('goods_num', 'descending')
+					} else {
+						this.storeSalesDataGet()
+					}
+					this.storeSalesTableHidden = !this.storeSalesTableHidden
+				},
+
+				// ODM商品销售趋势，指标卡片数据获取
+				getODMSalesTrendCardData() {
+					var param = {
+						content: 'dw_rpt',
+						prefer: 'count=exact',
+						table: 'fun_rpt_gpdash_gporder_odm_card',
+						function: 'rpc',
+						param: {
+							in_date_type: this.in_date_type || this.dateType, // 日期
+							in_order_origin: this.in_order_origin,
+							in_country_id: this.in_country_id,
+							languageName: this.language,
+							in_begin_date: this.formatRangeDate(1),
+							in_end_date: this.formatRangeDate(2),
+							in_address_id: this.shop_address_id,
+							in_order_team: '-1',
+							in_store_id: this.shopIds,
+							in_is_odm: 1,
+						},
+					}
+					this.queryPost('/queryOdmOrder', param, true)
+						.then((res) => {
+							this.odmSalesTrendCardData = res.data[0]
+						})
+						.catch((err) => {
+							if (err.response) {
+								this.$message.error(err.response.data.message)
+							}
+							console.log(err)
+						})
+				},
+
+				// ODM商品销售趋势，折线图数据获取
+				getODMSalesTrendChartData() {
+					this.odmSalesTrendLoading = true
+					var param = {
+						content: 'dw_rpt',
+						prefer: 'count=exact',
+						table: 'fun_gpdash_gporder_odm_line_chart',
+						function: 'rpc',
+						param: {
+							in_date_type: this.in_date_type || this.dateType, // 日期
+							in_order_origin: this.in_order_origin,
+							in_country_id: this.in_country_id,
+							languageName: this.language,
+							in_begin_date: this.formatRangeDate(1),
+							in_end_date: this.formatRangeDate(2),
+							in_address_id: this.shop_address_id,
+							in_order_team: '-1',
+							in_is_odm: 1,
+							in_store_id: this.shopIds,
+							type: this.odmSalesTrendType,
+						},
+					}
+					this.queryPost('/queryOdmOrder', param, true)
+						.then((res) => {
+							this.odmSalesTrendData = res.data
+							if (res.data) {
+								this.$nextTick(function () {
+									this.initODMSalesTrendChart(res.data)
+								})
+							}
+							this.odmSalesTrendLoading = false
+						})
+						.catch((err) => {
+							if (err.response) {
+								this.$message.error(err.response.data.message)
+							}
+							console.log(err)
+						})
+				},
+
+				// ODM商品销售趋势，折线图配置
+				initODMSalesTrendChart(chartData) {
+					!this.odmSalesTrendChart &&
+						(this.odmSalesTrendChart = echarts.init(
+							this.$refs.odmSalesTrend.$refs.chart
+						))
+
+					let seriesName = ''
+					switch (this.odmSalesTrendType) {
+						case 1:
+							seriesName = this.$lang('销量')
+							break
+						case 2:
+							seriesName = this.$lang('销售额')
+							break
+						case 3:
+							seriesName = this.$lang('毛利')
+							break
+						case 4:
+							seriesName = this.$lang('毛利率')
+							break
+						default:
+							break
+					}
+					const option = {
+						dataset: {
+							source: chartData,
+						},
+						tooltip: {
+							...GlobalConstAndFunc.Echarts.tooltipStyle,
+							trigger: 'axis',
+							formatter: (params) => {
+								params = params[0]
+								let formatNum = this.$options.filters['formatNum'](
+									params.value.value
+								)
+								switch (this.odmSalesTrendType) {
+									case 2:
+									case 3:
+										formatNum =
+											formatNum === '-' ? formatNum : '$' + formatNum
+										break
+									case 4:
+										formatNum =
+											formatNum === '-' ? formatNum : formatNum + '%'
+										break
+									default:
+										break
+								}
+								return `${params.name}<br/>${params.marker} ${params.seriesName}：${formatNum}`
+							},
+						},
+						legend: {
+							...GlobalConstAndFunc.Echarts.legendStyle,
+						},
+						grid: {
+							...GlobalConstAndFunc.Echarts.gridSetStyle,
+							left: 20,
+							top: 45,
+						},
+						xAxis: {
+							...GlobalConstAndFunc.Echarts.xAxisStyle,
+							type: 'category',
+						},
+						yAxis: [
+							{
+								...GlobalConstAndFunc.Echarts.yAxisStyle,
+								type: 'value',
+								name: seriesName,
+							},
+						],
+						color: GlobalConstAndFunc.Echarts.colorList(1),
+						series: [
+							{
+								type: 'line',
+								name: seriesName,
+							},
+						],
+					}
+					this.odmSalesTrendChart.setOption(option, true)
+				},
+
+				// 订单商品销量/销售额Top10,"ODM产品"按钮点击
+				orderSalesVolumeTopTypeChange() {
+					this.orderSalesVolumeTopType =
+						this.orderSalesVolumeTopType === '-1' ? '1' : '-1'
+					this.getFenxiDate()
+				},
+				// 订单商品销量/销售额Top10数据获取
+				getFenxiDate: function getFenxiDate() {
+					this.productsBySaleTopLoading = true
+					var param = {
+						'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+						'erp-req': true,
+						in_date_type: this.in_date_type || this.dateType, // 日期
+						in_order_origin: this.in_order_origin,
+						in_country_id: this.in_country_id,
+						languageName: this.language,
+						queryType: this.queryType,
+						in_begin_date: this.formatRangeDate(1),
+						in_end_date: this.formatRangeDate(2),
+						in_label: 0,
+						shop_id: this.shopIds,
+						shop_address_id: this.shop_address_id,
+						is_odm: this.orderSalesVolumeTopType,
+					}
+					this.queryPost('/querySaleRankings', param).then((res) => {
+						if (res.data.success === true) {
+							if (res.data.datas) {
+								this.saleRankGather = res.data.datas.collectValue
+								this.productsBySaleTopChartData = res.data.datas.goodsInfo
+								var data = {
+									goodsName: [],
+									fadeName: [],
+									goodsData: [],
+									goodsPic: {},
+								}
+
+								res.data.datas.goodsInfo.forEach(function (i, k) {
+									data.goodsName.push(i.guds_name)
+									data.fadeName.push(k)
+									data.goodsData.push(i.value)
+									data.goodsPic[k] = {
+										height: 60,
+										align: 'center',
+										backgroundColor: {
+											image: i.picture || './Application/Tpl/Home/DataCenter/img/place.png',
+										},
+									}
+								})
+
+								this.$nextTick(function () {
+									this.setFenxiOtions(this.changeTitle, this.unit, data)
+								})
+							} else {
+								this.saleRankGather = {}
+								this.productsBySaleTopChartData = null
+							}
+							this.productsBySaleTopLoading = false
+						} else {
+							this.$message.error(res.data.msg)
+						}
+					})
+				},
+				// 订单商品销量/销售额Top10图表渲染
+				setFenxiOtions: function setFenxiOtions(title, unit, chartData) {
+					this.fenxiChart = this.fenxiChart
+						? this.fenxiChart
+						: echarts.init(this.$refs.fenxi.$refs.chart)
+					var name
+					if (this.language === 'zh-cn') {
+						//英语
+						if (this.changeValue === '1') {
+							name = '销量'
+						} else if (this.changeValue === '2') {
+							name = '销售额'
+						} else if (this.changeValue === '3') {
+							name = '毛利'
+						} else if (this.changeValue === '4') {
+							name = '毛利率'
+						}
+					} else {
+						if (this.changeValue === '1') {
+							name = 'sales volume'
+						} else if (this.changeValue === '2') {
+							name = 'revenue'
+						} else if (this.changeValue === '3') {
+							name = this.$lang('毛利')
+						} else if (this.changeValue === '4') {
+							name = this.$lang('毛利率')
+						}
+					}
+					this.fenxiChart.setOption({
+						color: GlobalConstAndFunc.Echarts.colorList(1),
+						tooltip: {
+							...GlobalConstAndFunc.Echarts.tooltipStyle,
+							trigger: 'axis',
+							formatter: (params) => {
+								var index = parseInt(params[0].name, 10)
+								var relVal = chartData.goodsName[index]
+								var value = params[0].value
+								var vauefliter = formats(value)
+								if (this.changeValue == '2' || this.changeValue == '3') {
+									vauefliter = '$' + vauefliter
+								} else if (this.changeValue == '4') {
+									vauefliter = vauefliter + (vauefliter == '-' ? '' : '%')
+								}
+								relVal += ':' + vauefliter
+								return relVal
+							},
+						},
+						grid: {
+							...GlobalConstAndFunc.Echarts.gridSetStyle,
+							left: 20,
+							top: 45,
+							bottom: 75,
+						},
+						xAxis: [
+							{
+								type: 'category',
+								data: chartData.fadeName,
+								axisTick: {
+									alignWithLabel: true,
+								},
+								axisLabel: {
+									interval: 0,
+									formatter: function (value) {
+										var titles = '',
+											index = parseInt(value, 10),
+											name = chartData.goodsName[index]
+										if (name.length > 7) {
+											titles = name.substring(0, 10) + '...'
+										} else {
+											titles = name
+										}
+										return (
+											'{' + value + '| }\n' + '{textValue|' + titles + '}'
+										)
+									},
+									rich: {
+										...chartData.goodsPic,
+										textValue: {
+											padding: [0, 0, 10, 0],
+										},
+									},
+								},
+							},
+						],
+						yAxis: [
+							{
+								type: 'value',
+								name: name,
+								axisLine: {
+									show: false,
+								},
+								axisTick: {
+									show: false,
+								},
+								splitLine: {
+									lineStyle: {
+										type: 'dotted',
+										color: '#F0F0F0',
+									},
+								},
+								axisLabel: {
+									formatter:
+										this.changeValue == '4' ? '{value} %' : '{value}',
+								},
+								// min: 0,
+							},
+						],
+						series: [
+							{
+								type: 'bar',
+								data: chartData.goodsData,
+								barWidth: '66.66%',
+								barCategoryGap: '16.66%',
+							},
+						],
+					})
+				},
+
+				// 类目销量分布饼图数据获取
+				category: function category() {
+					this.categorySalesVolumeDistributionLoading = true
+					var param = {
+						'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+						'erp-req': true,
+						in_date_type: this.in_date_type || this.dateType, // 日期
+						in_order_origin: this.in_order_origin,
+						in_country_id: this.in_country_id,
+						languageName: this.language,
+						queryType: this.queryType_1,
+						in_begin_date: this.formatRangeDate(1),
+						in_end_date: this.formatRangeDate(2),
+						shop_id: this.shopIds,
+						shop_address_id: this.shop_address_id,
+					}
+					this.queryPost('/querySpeciesSale', param).then((res) => {
+						if (res.data.success === true) {
+							this.categorySalesVolumeDistributionData = res.data.datas
+							if (res.data.datas) {
+								var data = res.data.datas
+								var goodsName = data.map(function (i, k) {
+									return i.cat_name
+								})
+
+								var goodsData = data.map(function (i, k) {
+									return {
+										name: i.cat_name,
+										value: i.value,
+									}
+								})
+								this.$nextTick(() => {
+									this.setCategoryOtions(goodsName, goodsData, data)
+								})
+							}
+							this.categorySalesVolumeDistributionLoading = false
+						} else {
+							this.$message.error(res.data.msg)
+						}
+					})
+				},
+				// 类目销量分布图表渲染
+				setCategoryOtions: function setCategoryOtions(
+					goodsName,
+					goodsData,
+					data
+				) {
+					!this.categorySalesVolumeDistributionChart &&
+						(this.categorySalesVolumeDistributionChart = echarts.init(
+							this.$refs.categorySalesVolumeDistribution.$refs.chart
+						))
+					let salesVolumeText = '销量'
+					let renvenueText = '销售额'
+					if (this.language !== 'zh-cn') {
+						salesVolumeText = 'Sales Volume'
+						renvenueText = 'Renvenue'
+					}
+					this.categorySalesVolumeDistributionChart.setOption({
+						tooltip: {
+							...GlobalConstAndFunc.Echarts.tooltipStyle,
+							formatter: (params) => {
+								let showVal = this.$options.filters.formatNum(params.value)
+
+								if (this.changeValue_1 === '按销售额') {
+									return `${data[0].dateTime}<br>${params.name} ${renvenueText}：$${showVal} (${params.percent}%)`
+								} else if (this.changeValue_1 === '按销量') {
+									return `${data[0].dateTime}<br>${params.name} ${salesVolumeText}：${showVal} (${params.percent}%)`
+								}
+							},
+						},
+						color: GlobalConstAndFunc.Echarts.colorList(goodsData.length),
+						series: [
+							{
+								type: 'pie',
+								radius: '65%',
+								label: {
+									formatter: (params) => {
+										let currency = ''
+										if (this.changeValue_1 === '按销售额') currency = '$'
+										let showVal = this.$options.filters.formatNum(params.value)
+										return `${params.name}{a||}${currency}${showVal}{a||}${params.percent}%
+                  `
+									},
+									position: 'outer',
+									alignTo: 'labelLine',
+									rich: {
+										a: {
+											color: '#E5E5E5',
+											padding: [0, 4]
+										}
+									}
+
+								},
+								data: goodsData,
+							},
+						],
+					})
+				},
+
+				//类目销量分布,类型更改
+				changeValues_1: function changeValues_1(value) {
+					if (value === '按销售额') {
+						this.queryType_1 = 'sales'
+					} else if (value === '按销量') {
+						this.queryType_1 = 'goods'
+					}
+					this.category()
+				},
+				// 类目销量与销售额,表格数据获取
+				getCategoryTableData() {
+					this.categorySalesVolumeDistributionLoading = true
+					var param = {
+						'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+						'erp-req': true,
+						in_date_type: this.in_date_type || this.dateType, // 日期
+						in_order_origin: this.in_order_origin,
+						in_country_id: this.in_country_id,
+						languageName: this.language,
+						queryType: this.queryType_1,
+						in_begin_date: this.formatRangeDate(1),
+						in_end_date: this.formatRangeDate(2),
+						page: this.categoryTablePage,
+						pageSize: 6,
+						shop_id: this.shopIds,
+						sort: this.categoryTableSortOrder,
+						sort_field: this.categoryTableSortBy,
+						shop_address_id: this.shop_address_id,
+					}
+					this.queryPost('/querySpeciesSaleTable', param).then((res) => {
+						if (res.data.success === true) {
+							this.categoryTableData = res.data
+						} else {
+							this.$message.error(res.data.msg)
+						}
+						this.categorySalesVolumeDistributionLoading = false
+					})
+				},
+				// 类目销量与销售额表格数据排序
+				sortCategoryTable({ column, prop, order }) {
+					if (prop) {
+						this.categoryTableSortBy = prop
+						this.categoryTableSortOrder =
+							order === 'ascending' ? 'asc' : 'desc'
+						this.getCategoryTableData()
+					}
+				},
+				// 类目销量与销售额表格翻页
+				categoryTableCurrentChange(page) {
+					this.categoryTablePage = page
+					this.getCategoryTableData()
+				},
+
+				//品牌销量分布,类型更改
+				changeValues_2: function changeValues_2(value) {
+					if (value === '按销售额') {
+						this.queryType_2 = 'sales'
+					} else if (value === '按销量') {
+						this.queryType_2 = 'goods'
+					}
+					this.spuData()
+				},
+				// 品牌销量分布饼图数据获取
+				spuData: function spuData() {
+					this.brandSalesVolumeDistributionLoading = true
+					var param = {
+						'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+						'erp-req': true,
+						in_date_type: this.in_date_type || this.dateType, // 日期
+						in_order_origin: this.in_order_origin,
+						in_country_id: this.in_country_id,
+						languageName: this.language,
+						queryType: this.queryType_2,
+						in_begin_date: this.formatRangeDate(1),
+						in_end_date: this.formatRangeDate(2),
+						in_label: 0,
+						shop_id: this.shopIds,
+						shop_address_id: this.shop_address_id,
+					}
+					this.queryPost('/queryBrandSaleProportion', param).then((res) => {
+						if (res.data.success === true) {
+							this.brandSalesVolumeDistributionData = res.data.datas
+							if (res.data.datas) {
+								var data = res.data.datas
+								var goodsName = data.map(function (i, k) {
+									return i.brand_name
+								})
+
+								var goodsData = data.map(function (i, k) {
+									return {
+										name: i.brand_name,
+										value: i.value,
+									}
+								})
+								this.$nextTick(() => {
+									this.setSpuOtions(goodsName, goodsData, data)
+								})
+							}
+							this.brandSalesVolumeDistributionLoading = false
+						} else {
+							this.$message.error(res.data.msg)
+						}
+					})
+				},
+				// 品牌销量分布图表渲染
+				setSpuOtions: function setSpuOtions(goodsName, goodsData, data) {
+					this.brandSalesVolumeDistributionChart = echarts.init(
+						this.$refs.brandSalesVolumeDistribution.$refs.chart
+					)
+					let salesVolumeText = '销量'
+					let renvenueText = '销售额'
+					if (this.language !== 'zh-cn') {
+						salesVolumeText = 'Sales Volume'
+						renvenueText = 'Renvenue'
+					}
+					this.brandSalesVolumeDistributionChart.setOption({
+						tooltip: {
+							...GlobalConstAndFunc.Echarts.tooltipStyle,
+							formatter: (params) => {
+								let showVal = this.$options.filters.formatNum(params.value)
+
+								if (this.changeValue_2 === '按销售额') {
+									return `${data[0].dateTime}<br>${params.name} ${renvenueText}：$${showVal} (${params.percent}%)`
+								} else if (this.changeValue_2 === '按销量') {
+									return `${data[0].dateTime}<br>${params.name} ${salesVolumeText}：${showVal} (${params.percent}%)`
+								}
+							},
+						},
+						color: GlobalConstAndFunc.Echarts.colorList(goodsData.length),
+						series: [
+							{
+								type: 'pie',
+								radius: '65%',
+								label: {
+									formatter: (params) => {
+										let currency = ''
+										if (this.changeValue_2 === '按销售额') currency = '$'
+										let showVal = this.$options.filters.formatNum(params.value)
+										return `${params.name}{a||}${currency}${showVal}{a||}${params.percent}%
+                  `
+									},
+									position: 'outer',
+									alignTo: 'labelLine',
+									rich: {
+										a: {
+											color: '#E5E5E5',
+											padding: [0, 4]
+										}
+									}
+
+								},
+								data: goodsData,
+								minAngle: 5,
+								avoidLabelOverlap: true,
+							},
+						],
+					})
+				},
+
+				// 品牌销量销售额表格数据获取
+				getBrandTableData() {
+					this.brandSalesVolumeDistributionLoading = true
+					var param = {
+						'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+						'erp-req': true,
+						in_date_type: this.in_date_type || this.dateType, // 日期
+						in_order_origin: this.in_order_origin,
+						in_country_id: this.in_country_id,
+						languageName: this.language,
+						queryType: this.queryType_1,
+						in_begin_date: this.formatRangeDate(1),
+						in_end_date: this.formatRangeDate(2),
+						page: this.brandTablePage,
+						pageSize: 6,
+						sort: this.brandTableSortOrder,
+						sort_field: this.brandTableSortBy,
+						shop_id: this.shopIds,
+						shop_address_id: this.shop_address_id,
+					}
+					this.queryPost('/queryBrandSaleProportionTable', param).then(
+						(res) => {
+							if (res.data.success === true) {
+								this.brandTableData = res.data
+							} else {
+								this.$message.error(res.data.msg)
+							}
+							this.brandSalesVolumeDistributionLoading = false
+						}
+					)
+				},
+				// 品牌销量销售额表格数据排序
+				sortBrandTable({ column, prop, order }) {
+					if (prop) {
+						this.brandTableSortBy = prop
+						this.brandTableSortOrder = order === 'ascending' ? 'asc' : 'desc'
+						this.getBrandTableData()
+					}
+				},
+				// 品牌销量销售额表格翻页
+				brandTableCurrentChange(page) {
+					this.brandTablePage = page
+					this.getBrandTableData()
+				},
+
+				currentChange: function currentChange(value) {
+					var _that = this
+					this.page = value
+					_that.getTableData()
+				},
+				// 订单商品列表表格数据获取
+				getTableData: function getTableData() {
+					this.tableLoading = true
+					var param = {
+						'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+						'erp-req': true,
+						in_date_type: this.in_date_type || this.dateType, // 日期
+						in_order_origin: this.in_order_origin,
+						in_country_id: this.in_country_id,
+						page: this.page,
+						pageSize: this.pageSize,
+						languageName: this.language,
+						in_begin_date: this.formatRangeDate(1),
+						in_end_date: this.formatRangeDate(2),
+						sort: this.sortTableByOreder,
+						sort_field: this.sortTableByProp,
+						shop_id: this.shopIds,
+						shop_address_id: this.shop_address_id,
+					}
+					this.queryPost('/queryOrderGoods', param).then((res) => {
+						if (res.data.success === true) {
+							this.tableData = res.data.datas
+
+							function isInteger(n) {
+								return parseInt(n) == parseFloat(n)
+							}
+							var num = res.data.totalCount / this.pageSize
+
+							if (isInteger(num)) {
+								this.total = res.data.totalCount
+
+								if (Math.round(num) == 0) {
+									this.totals = 1
+								} else {
+									if (Math.round(num) < num) {
+										this.totals = Math.round(num) + 1
+									} else {
+										this.totals = Math.round(num)
+									}
+								}
+							} else {
+								if (Math.round(num) == 0) {
+									this.totals = 1
+								} else {
+									if (Math.round(num) < num) {
+										this.totals = Math.round(num) + 1
+									} else {
+										this.totals = Math.round(num)
+									}
+								}
+								this.total = res.data.totalCount
+							}
+						} else {
+							this.$message.error(res.data.msg)
+						}
+						this.tableLoading = false
+					})
+				},
+				// 订单商品列表表格数据排序
+				sortTable({ column, prop, order }) {
+					if (prop) {
+						this.sortTableByProp = prop
+						this.sortTableByOreder = order === 'ascending' ? 'asc' : 'desc'
+						this.getTableData()
+					}
+				},
+				// 表格表头不换行,溢出则隐藏，鼠标悬浮显示完整文本
+				renderTableHeader(h, { column, $index }, isLastHeader, hasTooltip) {
+					return GlobalConstAndFunc.Element.renderTableHeader(h, { column, $index }, isLastHeader, hasTooltip)
+				},
+				// 订单商品列表,导出
+				goodsListExport() {
+					var source_name = []
+					this.model.forEach(item => {
+						if (this.sources.includes(item.value)) {
+							source_name.push(item.label)
+						}
+					})
+					var country_name = []
+					this.siteData.forEach(item => {
+						if (this.siteChecked.includes(item.id)) {
+							country_name.push(item.name)
+						}
+					})
+					var store_name = []
+					this.storeData.forEach(item => {
+						if (this.storeChecked.includes(item.shop_id)) {
+							store_name.push(item.store_name)
+						}
+					})
+					var param = {
+						'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+						'erp-req': true,
+						in_date_type: this.in_date_type || this.dateType, // 日期
+						in_order_origin: this.in_order_origin,
+						in_country_id: this.in_country_id,
+						languageName: this.language,
+						in_begin_date: this.formatRangeDate(1),
+						in_end_date: this.formatRangeDate(2),
+						shop_address_id: this.shop_address_id,
+						shop_id: this.shopIds,
+						source_name: source_name.join(),
+						country_name: country_name.join(),
+						store_name: store_name.join()
+					}
+					axios
+						.post(
+							this.apiHost + '/gpDashboard/exportOrderGoods',
+							Qs.stringify(param),
+							{
+								headers: {
+									'erp-req': true,
+									'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+									'Content-Type':
+										'application/x-www-form-urlencoded;charset=UTF-8',
+								},
+								responseType: 'blob',
+							}
+						)
+						.then((res) => {
+							if (res.data.type === 'application/json') {
+								this.$message.error(`${this.$lang('导出订单商品列表失败')}`)
+								return
+							}
+							let blob = res.data
+							let reader = new FileReader()
+							reader.readAsDataURL(blob)
+							reader.onload = (e) => {
+								let a = document.createElement('a')
+								let fileName = `${this.orderNumAndSealGather.dateTime.replace(/\//g, '')} 订单商品列表.xlsx`
+								if (this.language !== 'zh-cn') {
+									fileName = `${this.orderNumAndSealGather.dateTime.replace(/\//g, '')} Product List.xlsx`
+								}
+								a.download = fileName
+								a.href = e.target.result
+								document.body.appendChild(a)
+								a.click()
+								document.body.removeChild(a)
+							}
+						})
+						.catch((err) => {
+							console.log(err)
+						})
+								
+				},
+
+				// 选择统计周期
+				periodChange(val) {
+					this.rangeDate = ''
+					this.dateType = ''
+					this.dataSizeDisabled = true
+					this.getAllChartDataDebounced()
+				},
+			},
+		})
+	</script>
+</body>
+
+</html>

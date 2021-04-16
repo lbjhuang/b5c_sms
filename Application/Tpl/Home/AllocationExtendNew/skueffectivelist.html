@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>调拨时效报表</title>
+    <link rel="stylesheet"
+        href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>" />
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>" />
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>" />
+</head>
+
+<style>
+    [v-cloak] {
+        display: none;
+    }
+
+    .table-list {
+        margin-top: 20px;
+        border-collapse: collapse;
+        border-spacing: 0;
+        width: 100%;
+        background: #ffffff;
+        border: 1px solid #cadee7;
+    }
+
+    .table-list tr th {
+        background: #546e7a;
+        height: 40px;
+        text-align: center;
+        font-size: 0.7rem;
+        color: #ffffff;
+        letter-spacing: 0;
+        border: 1px solid #668491;
+        white-space: nowrap;
+    }
+
+    .table-list tr td {
+        font-size: 0.68rem;
+        color: #263238;
+        letter-spacing: 0;
+        text-align: center;
+        padding: 0.5rem;
+        border: 1px solid #cadee7;
+        font-family: "Microsoft YaHei";
+    }
+
+    .table-list tr td p {
+        font-size: 0.68rem;
+        text-align: center;
+        padding: 0;
+        margin: 0;
+        font-family: "Microsoft YaHei";
+    }
+
+    .table-list tr:nth-of-type(even) {
+        background: #f7f9fb;
+        border: 1px solid #cadee7;
+    }
+
+    .app-container {
+        padding: 20px;
+    }
+
+    body .el-table th.gutter {
+        display: table-cell !important;
+    }
+
+    body .el-table colgroup.gutter {
+        display: table-cell !important;
+    }
+</style>
+
+<body>
+    <div id="app" v-cloak class="wrap">
+        <el-form :model="search" label-width="120px">
+            <el-row>
+                <el-col :span="5">
+                    <el-form-item :label="$lang('调拨单号')">
+                        <!-- <el-select v-model="search.allo_no" multiple filterable remote
+                            :remote-method="handleAlloNoSearch" :loading="searchLoading" style="width: 260px">
+                            <el-option v-for="order in orders" :key="order.id" :label="$lang(order.name)"
+                                :value="order.id"></el-option> -->
+                        <el-input v-model="search.allo_no"></el-input>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="5">
+                    <el-form-item :label="$lang('运输渠道')">
+                        <el-select v-model="search.transport_type" multiple filterable style="width: 260px">
+                            <el-option v-for="channel in queryParams.logistics_way" :key="channel.CD"
+                                :label="$lang(channel.CD_VAL)" :value="channel.CD"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="7">
+                    <el-form-item :label="$lang('销售小团队')">
+                        <el-select v-model="search.small_sale_team_code" multiple filterable style="width: 350px">
+                            <el-option v-for="team in queryParams.sell_small_team" :key="team.CD"
+                                :label="$lang(team.CD_VAL)" :value="team.CD"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="7">
+                    <el-form-item :label="$lang('出仓库')">
+                        <el-select v-model="search.allo_out_warehouse" multiple filterable style="width: 350px">
+                            <el-option v-for="warehouse in queryParams.out_warehouse" :key="warehouse.CD"
+                                :label="$lang(warehouse.CD_VAL)" :value="warehouse.CD"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="5">
+                    <el-form-item :label="$lang('入仓库')">
+                        <el-select v-model="search.allo_in_warehouse" multiple filterable style="width: 260px">
+                            <el-option v-for="warehouse in queryParams.in_warehouse" :key="warehouse.CD"
+                                :label="$lang(warehouse.CD_VAL)" :value="warehouse.CD"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="5">
+                    <el-form-item :label="$lang('运输公司')">
+                        <el-select v-model="search.transport_company" multiple filterable style="width: 260px">
+                            <el-option v-for="company in queryParams.logistics_company" :key="company.ID"
+                                :label="$lang(company.SP_NAME)" :value="company.ID"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="7">
+                    <el-form-item :label="$lang('调拨发起时间')">
+                        <el-date-picker v-model="search.lunch_time" style="width: 350px" type="daterange"
+                            :range-separator="$lang('至')" value-format="yyyy-MM-dd" :start-placeholder="$lang('开始日期')"
+                            :end-placeholder="$lang('结束日期')">
+                        </el-date-picker>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="7">
+                    <el-form-item :label="$lang('调拨完成时间')">
+                        <el-date-picker v-model="search.finish_time" style="width: 350px" type="daterange"
+                            :range-separator="$lang('至')" value-format="yyyy-MM-dd" :start-placeholder="$lang('开始日期')"
+                            :end-placeholder="$lang('结束日期')">
+                        </el-date-picker>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="6">
+                    <el-button @click="getData">{{$lang('查询')}}</el-button>
+                    <el-button @click="reset">{{$lang('重置')}}</el-button>
+                </el-col>
+            </el-row>
+        </el-form>
+        <div class="baseline"></div>
+        <div class="use-row export-wrap">
+            <div class="col-50 result-num occupy">
+                {{ $lang("搜索结果") }}：&nbsp;&nbsp;{{ $lang("共") }}
+                <b>{{ totalCount }}</b> {{ $lang("条") }}
+            </div>
+            <div class="col-50" style="text-align: right;">
+                <el-button type="primary" @click="handleExport">{{$lang("全部导出")}}</el-button>
+            </div>
+        </div>
+        <el-table :data="list" class="table-list" v-loading="loading">
+            <el-table-column :label="$lang('调拨单号')" prop="allo_no"></el-table-column>
+            <el-table-column :label="$lang('销售团队')" prop="sale_team_name"></el-table-column>
+            <el-table-column :label="$lang('出仓库')" prop="allo_out_warehouse_name"></el-table-column>
+            <el-table-column :label="$lang('入仓库')" prop="allo_in_warehouse_name"></el-table-column>
+            <el-table-column :label="$lang('调拨发起人')" prop="create_user"></el-table-column>
+            <el-table-column :label="$lang('所属小团队')" prop="small_sale_team_name"></el-table-column>
+            <el-table-column :label="$lang('SKU')" prop="sku_id"></el-table-column>
+            <el-table-column :label="$lang('商品名称')" prop="goods_name"></el-table-column>
+            <el-table-column :label="$lang('批次号')" prop="batch_code"></el-table-column>
+            <el-table-column :label="$lang('数量')" prop="amount"></el-table-column>
+            <el-table-column :label="$lang('体积（立方米）')" prop="volume"></el-table-column>
+            <el-table-column :label="$lang('重量（KG）')" prop="weight"></el-table-column>
+            <el-table-column :label="$lang('调拨发起时间')" prop="allo_create_time"></el-table-column>
+            <el-table-column :label="$lang('调拨出库时间')" prop="allo_out_time"></el-table-column>
+            <el-table-column :label="$lang('运输公司')" prop="transport_company_name"></el-table-column>
+            <el-table-column :label="$lang('运输渠道')" prop="transport_type_name"></el-table-column>
+            <el-table-column :label="$lang('调拨入库时间')" prop="allo_in_time"></el-table-column>
+            <el-table-column :label="$lang('采购入库时间')" prop="purchase_in_time"></el-table-column>
+            <el-table-column :label="$lang('在库时间段(天)')" prop="in_warehouse_days"></el-table-column>
+            <el-table-column :label="$lang('运输时间段（天）')" prop="transport_days"></el-table-column>
+            <el-table-column :label="$lang('总时间段（天）')" prop="all_days"></el-table-column>
+        </el-table>
+        <div class="use-row">
+            <div class="col-100 text-right">
+                <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange"
+                    :current-page.sync="search.page" :page-sizes="[10, 20, 50]" :page-size="search.page_size"
+                    layout="sizes, prev, pager, next" :total="totalCount">
+                </el-pagination>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript"
+        src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script>
+        if (getCookie("think_language") !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en);
+        }
+        var vm = new Vue({
+            el: "#app",
+            data() {
+                return {
+                    search: {
+                        allo_no: '',
+                        transport_type: [],
+                        finish_time: '', // 调拨完成时间
+                        lunch_time: '', // 调拨发起时间
+                        small_sale_team_code: [],
+                        transport_company: [],
+                        allo_in_warehouse: [],
+                        allo_out_warehouse: [],
+                        page: 0,
+                        page_size: 10,
+                    },
+                    queryParams: {
+                        in_warehouse: [],
+                        logistics_way: [],
+                        logistics_company: [],
+                        out_warehouse: [],
+                        sell_small_team: [],
+                    },
+                    totalCount: 0,
+                    smallTeams: [],
+                    warehouses: [],
+                    orders: [],
+                    transCompany: [],
+                    list: [],
+                    loading: false,
+                    searchLoading: false
+                }
+            },
+            created() {
+                this.getData();
+                this.getQueryParams();
+            },
+            methods: {
+                getQueryParams() {
+                    axios.post('/index.php?m=allocationExtendNew&a=getEffectiveListCondition', {}).then(res => {
+                        this.queryParams = res.data.data;
+                    })
+                },
+                getData() {
+                    const { allo_no, small_sale_team_code, transport_type, transport_company, allo_in_warehouse, allo_out_warehouse, page, page_size } = this.search;
+                    const [finish_start_time, finish_end_time] = this.search.finish_time || [];
+                    const [lunch_start_time, lunch_end_time] = this.search.lunch_time || [];
+                    const params = {
+                        allo_no: allo_no ? allo_no.trim().split(',') : [],
+                        small_sale_team_code,
+                        transport_type,
+                        transport_company,
+                        allo_in_warehouse,
+                        allo_out_warehouse,
+                        lunch_start_time,
+                        lunch_end_time,
+                        finish_start_time,
+                        finish_end_time,
+                        page,
+                        page_size,
+                    };
+                    this.loading = true;
+                    axios.post('/index.php?m=AllocationExtendNew&a=effectiveListData', params).then(res => {
+                        this.loading = false;
+                        const { list, total } = res.data.data;
+                        if (res.data.code === 2000) {
+                            this.list = list || [];
+                            this.totalCount = parseFloat(total) || 0;
+                        }
+                    })
+                },
+                reset() {
+                    this.search = {
+                        allo_no: '',
+                        transport_type: [],
+                        finish_time: [], // 调拨完成时间
+                        lunch_time: [], // 调拨发起时间
+                        small_sale_team_code: [],
+                        transport_company: [],
+                        allo_in_warehouse: [],
+                        allo_out_warehouse: [],
+                        page: 0,
+                        page_size: 10,
+                    };
+                    this.getData();
+                },
+                handleExport() {
+                    const { allo_no, transport_type, small_sale_team_code, transport_company, allo_in_warehouse, allo_out_warehouse, page, page_size } = this.search;
+                    const [finish_start_time, finish_end_time] = this.search.finish_time;
+                    const [lunch_start_time, lunch_end_time] = this.search.lunch_time;
+                    const params = {
+                        allo_no: allo_no ? allo_no.trim().split(',') : [],
+                        small_sale_team_code,
+                        transport_type,
+                        transport_company,
+                        allo_in_warehouse,
+                        allo_out_warehouse,
+                        lunch_start_time,
+                        lunch_end_time,
+                        finish_start_time,
+                        finish_end_time,
+                        page,
+                        page_size,
+                    };
+                    let form = new FormData();
+                    form.append('export_params', JSON.stringify(params));
+                    axios.post('/index.php?m=AllocationExtendNew&a=effectiveListExport', form).then(res => {
+                        if (res.data && res.headers['content-type'].includes('application/json') && res.data.code !== 2000) {
+                            return this.$message.error(this.$lang(res.data.msg));
+                        }
+                        let downloadUrl = URL.createObjectURL(new Blob([res.data]));
+                        let a = document.createElement('a')
+                        let fileName = this.$lang('调拨时效报表') + '.csv';
+                        a.download = fileName
+                        a.href = downloadUrl;
+                        document.body.appendChild(a)
+                        a.click()
+                        document.body.removeChild(a)
+                    })
+                },
+                handleAlloNoSearch(alloNo) {
+                    const params = {
+                        alloNo
+                    };
+                    this.searchLoading = true;
+                    axios.post('/index.php?m=AllocationExtendNew').then(res => {
+                        this.searchLoading = false;
+                    })
+                },
+                handleSizeChange(size) {
+                    this.search.page_size = size;
+                    this.getData();
+                },
+                handleCurrentChange(current) {
+                    this.search.page = current;
+                    this.getData();
+                }
+            }
+
+        });
+    </script>
+</body>
+
+</html>

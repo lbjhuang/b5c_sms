@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+        href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.config.VER_NUM}>">
+    <title>会计科目管理</title>
+</head>
+<style>
+    [v-cloak] {
+        display: none;
+    }
+
+    .el-tabs>.el-tabs__header {
+        width: 30%;
+        border: 1px solid #e4e7ed;
+    }
+
+    .el-tabs--border-card>.el-tabs__content {
+        padding: 0;
+    }
+
+    .el-message-box__message,
+    .el-message-box__btns {
+        text-align: center;
+    }
+
+    .confirm-button-class {
+        margin-left: -66px !important;
+    }
+
+    .el-message-box__btns {
+        position: relative !important;
+    }
+
+    .cancel-button-class {
+        position: absolute !important;
+        left: 220px !important;
+    }
+</style>
+
+<body class="orderList">
+    <div id="account" class="list-common" v-cloak style="margin-bottom:220px">
+
+        <!-- 会计科目管理 start-->
+        <div class="orderList-Main list-common-main" style="position:relative">
+            <header>
+                <el-row>
+                    <el-col>
+                        <el-tabs v-model="activeName" type="border-card" @tab-click="handleClick">
+                            <el-tab-pane name="first">
+                                <span slot="label">{{$lang('科目列表')}}</span>
+                                <!-- 科目列表模块 -->
+                                <el-table border v-if="switchActive" :data="accountData" tooltip-effect="dark"
+                                    style="width: 100%" class="order-list-table table-common" v-loading="tableLoading">
+                                    <el-table-column :label="$lang('类型')">
+                                        <template slot-scope="scope">
+                                            {{$lang(scope.row.subject_type)}}
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column prop="level" :label="$lang('级次')"></el-table-column>
+                                    <el-table-column prop="subject_code" :label="$lang('科目编码')">
+                                    </el-table-column>
+                                    <el-table-column :label="$lang('科目名称')">
+                                        <template slot-scope="scope">
+                                            {{$lang(scope.row.subject_name)}}
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column :label="$lang('操作')">
+                                        <template slot-scope="scope">
+                                            <el-button type="primary" size="small" @click="edit(scope.row)">
+                                                {{$lang('编辑')}}
+                                            </el-button>
+                                            <el-button type="danger" size="small" @click="deleteSub(scope.row)">
+                                                {{$lang('删除')}}</el-button>
+                                        </template>
+                                    </el-table-column>
+                                </el-table>
+
+                                <el-pagination v-if="switchActive" background @size-change="handleAccountSizeChange"
+                                    @current-change="handleAccountCurrentChange" :current-page.sync="accountForm.page"
+                                    :page-sizes="[10, 30, 50, 100]" :page-size="accountForm.size"
+                                    layout="sizes,prev, pager, next, jumper" :total="accountTotalCount">
+                                </el-pagination>
+                            </el-tab-pane>
+                            <el-tab-pane name="second">
+                                <span slot="label">{{$lang('操作日志')}}</span>
+                                <!-- 操作日志模块 -->
+                                <el-table border v-if="!switchActive" :data="logData" tooltip-effect="dark"
+                                    style="width: 100%" class="order-list-table table-common" v-loading="tableLoading">
+                                    <el-table-column prop="updated_at" :label="$lang('时间')"></el-table-column>
+                                    <el-table-column :label="$lang('操作人')">
+                                        <template slot-scope="scope">
+                                            {{scope.row.updated_by}}
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column :label="$lang('操作内容')">
+                                        <template slot-scope="scope">
+                                            {{scope.row.content | changeContent}}
+                                        </template>
+                                    </el-table-column>
+                                </el-table>
+                                <el-pagination background v-if="!switchActive" @current-change="handleLogCurrentChange"
+                                    :page-size="handleLogForm.size" layout="prev, pager, next" :total="logTotalCount">
+                                </el-pagination>
+                            </el-tab-pane>
+                        </el-tabs>
+                    </el-col>
+                    <el-col :span="24" class="text-right" style="position: absolute">
+                        <el-button type="primary" @click="add()">
+                            {{$lang('新增科目')}}
+                        </el-button>
+                    </el-col>
+                </el-row>
+            </header>
+        </div>
+        <!-- 会计科目管理 end-->
+
+        <!-- 新增科目弹框 -->
+        <el-dialog title="提示" :visible.sync="isAddSubject" width="50%" @close="close()">
+            <div style="padding: 20px 20px">
+                <div style="font-size: 16px;margin-bottom: 50px">
+                    {{$lang('新增科目')}}
+                    <i class="el-icon-close" style="position: absolute; right: 25px; cursor: pointer;"
+                        @click="exit()"></i>
+                </div>
+                <el-form ref="form" :model="addForm" label-width="180px" :label-position="labelPosition"
+                    v-if="!isTrueAddSubject">
+                    <el-row>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('类型')">
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="12">
+                            <el-select :filterable="true" v-model="addForm.type" style="width:100%;padding:0;"
+                                @change="changeType()">
+                                <el-option v-for="item in baseData.account_subject_type" :label="$lang(item.CD_VAL)"
+                                    :value="item.CD" :key="item.CD"></el-option>
+                            </el-select>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('级次')">
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="12">
+                            <el-select :filterable="true" v-model="addForm.level" @change="changeLevel()"
+                                style="width:100%;padding:0;">
+                                <el-option v-for="item in baseData.account_subject_level" :label="item.CD_VAL"
+                                    :value="item.CD" :key="item.CD">
+                                </el-option>
+                            </el-select>
+                        </el-col>
+                    </el-row>
+                    <!-- 上级科目 -->
+                    <el-row v-if="isShowUpSub">
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('上级科目')">
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="12">
+                            <el-select :filterable="true" :placeholder="$lang('All')" v-model="addForm.up_subject"
+                                @change="changeUpLevel()" style="width:100%;padding:0;">
+                                <el-option v-for="item in up_subject" :label="item.subject_code+'-'+item.subject_name"
+                                    :value="item.subject_code" :key="item.subject_code">
+                                </el-option>
+                            </el-select>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('科目编码')">
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="12">
+                            <el-input v-model="addForm.subject_code" placeholder="请输入内容"></el-input>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('科目名称')">
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="12">
+                            <el-input v-model="addForm.subject_name" placeholder="请输入内容"></el-input>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="12" style="margin-left: 280px;">
+                            <el-button type="primary" @click="saveSub()">{{$lang('确定')}}</el-button>
+                            <el-button @click="exit()">{{$lang('取消')}}</el-button>
+                        </el-col>
+                    </el-row>
+                </el-form>
+                <el-form ref="form" :model="addForm" label-width="180px" :label-position="labelPosition"
+                    v-if="isTrueAddSubject">
+                    <el-row style="text-align: center;margin-bottom: 25px">
+                        {{$lang('科目新增后，除科目名称，其他信息无法编辑。请确认以下信息：')}}
+                    </el-row>
+                    <el-row>
+                        <el-col :span="6" style="margin-left: 130px">
+                            <el-form-item :label="$lang('科目编码')">
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="12" style="height: 40px;line-height:40px">
+                            {{addForm.subject_code}}
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="6" style="margin-left: 130px">
+                            <el-form-item :label="$lang('类型')">
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="12" style="height: 40px;line-height:40px">
+                            {{addForm.type_name}}
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="6" style="margin-left: 130px">
+                            <el-form-item :label="$lang('级次')">
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="12" style="height: 40px;line-height:40px">
+                            {{addForm.level_id}}
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="6" style="margin-left: 130px">
+                            <el-form-item :label="$lang('科目名称')">
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="12" style="height: 40px;line-height:40px">
+                            {{addForm.subject_name}}
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="12" style="margin-left: 280px;">
+                            <el-button type="primary" @click="saveTrueSub()">{{$lang('确定')}}</el-button>
+                            <el-button @click="exitTrue()">{{$lang('返回')}}</el-button>
+                        </el-col>
+                    </el-row>
+                </el-form>
+            </div>
+        </el-dialog>
+
+        <!-- 编辑科目弹框 -->
+        <el-dialog title="提示" :visible.sync="isEditSubject" width="50%">
+            <div style="padding: 20px 20px">
+                <div style="font-size: 16px;margin-bottom: 50px">
+                    {{$lang('编辑科目')}}
+                    <i class="el-icon-close" style="position: absolute; right: 25px; cursor: pointer;"
+                        @click="exitEdit()"></i>
+                </div>
+                <el-form ref="form" :model="exitForm" label-width="180px" :label-position="labelPosition">
+                    <el-row>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('科目编码')">
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="12" style="height: 40px;line-height:40px">
+                            {{exitForm.subject_code}}
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('类型')">
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="12" style="height: 40px;line-height:40px">
+                            {{exitForm.subject_type}}
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('级次')">
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="12" style="height: 40px;line-height:40px">
+                            {{exitForm.level}}
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('科目名称')">
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="12" style="height: 40px;line-height:40px">
+                            <el-input v-model="exitForm.subject_name" placeholder="请输入内容"></el-input>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="12" style="margin-left: 280px;">
+                            <el-button type="primary" @click="saveExitSub()">{{$lang('确定')}}</el-button>
+                            <el-button @click="exitEdit()">{{$lang('取消')}}</el-button>
+                        </el-col>
+                    </el-row>
+                </el-form>
+            </div>
+        </el-dialog>
+
+    </div>
+    <script type="text/javascript"
+        src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js?v=<{$Think.config.VER_NUM}>">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js">
+    </script>
+    <script>
+        if (getCookie('think_language') !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en)
+        }
+        var account = new Vue({
+            el: '#account',
+            data: {
+                tableLoading: true,
+                labelPosition: 'right',
+                activeName: 'first',
+                switchActive: true,
+                accountData: [], //  科目列表数据
+                accountTotalCount: 10,
+                logData: [], // 操作日志
+                logTotalCount: 10,
+                isAddSubject: false,
+                isEditSubject: false,
+                isTrueAddSubject: false,
+                isShowUpSub: false,
+                baseData: {},
+                up_subject: [],
+                // form: {},
+                addForm: {
+                    type: 'N002890001', // 类型
+                    level: 'N002900001', // 级次
+                    subject_code: '', // 科目编码
+                    subject_name: '', // 科目名称
+                    up_subject: '', // 上级科目
+                    type_name: '',
+                    level_id: ''
+                },
+                exitForm: {
+                    type: '', // 类型
+                    level: '', // 级次
+                    subject_code: '', // 科目编码
+                    subject_name: '', // 科目名称
+                },
+                // 科目列表
+                accountForm: {
+                    page: 1,
+                    size: 10
+                },
+                // 操作列表
+                handleLogForm: {
+                    page: 1,
+                    size: 10
+                }
+            },
+            created: function () {
+                this.getListData()
+            },
+            methods: {
+
+                // tab栏切换
+                handleClick() {
+                    this.switchActive = this.activeName === 'first' ? true : false;
+                    if (this.switchActive) {
+                        this.accountForm.page = 1;
+                        this.accountForm.size = 10;
+                        this.getListData();
+
+                    } else {
+                        this.handleLogForm.page = 1;
+                        this.handleLogForm.size = 10;
+                        this.getBaseData();
+
+                    }
+                },
+
+                // 科目列表接口
+                getListData: function () {
+                    this.tableLoading = true;
+                    var param = {
+                        search: {
+                            subject_name: '',
+                        },
+                        pages: {
+                            per_page: this.accountForm.size,
+                            current_page: this.accountForm.page
+                        }
+                    };
+                    var _this = this;
+                    axios.post("/index.php?m=AccountingSubject&a=index", param)
+                        .then(function (res) {
+                            var res = res.data;
+                            if (res.code == 200) {
+                                _this.tableLoading = false;
+                                _this.accountData = res.data.data;
+                                _this.accountTotalCount = Number(res.data.pages.total);
+                            } else {
+                                _this.$message.warning(result.data.msg);
+                            }
+                        });
+                },
+
+                // 操作日志接口
+                getBaseData: function () {
+                    this.tableLoading = true;
+                    var param = {
+                        pages: {
+                            per_page: this.handleLogForm.size,
+                            current_page: this.handleLogForm.page
+                        },
+                        table_map: "accounting_subject"
+                    };
+                    var _this = this;
+                    axios.post("/index.php?g=common&m=index&a=getLogs", param)
+                        .then(function (res) {
+                            var _res = res.data;
+                            if (_res.code == 200) {
+                                _this.tableLoading = false;
+                                _this.logData = _res.data.data;
+                                _this.logTotalCount = Number(_res.data.pages.total);
+                            } else {
+                                _this.$message.warning(_res.msg);
+                            }
+                        });
+                },
+                add: function () {
+                    this.isAddSubject = true;
+                    this.isTrueAddSubject = false;
+                    var param = {};
+                    var _this = this;
+                    axios.post("/index.php?m=AccountingSubject&a=getSubjectConf", param)
+                        .then(function (res) {
+                            var _res = res.data;
+                            if (_res.code == 200) {
+                                _this.baseData = _res.data;
+                            } else {
+                                _this.$message.warning(_res.data.msg);
+                            }
+                        });
+                },
+                close: function () {
+                    this.isAddSubject = false;
+                    this.isShowUpSub = false;
+                    this.addForm.type = 'N002890001';
+                    this.addForm.level = 'N002900001';
+                    this.addForm.subject_code = '';
+                    this.addForm.subject_name = '';
+                },
+                exit: function () {
+                    this.isAddSubject = false;
+
+                },
+                exitEdit: function () {
+                    this.isEditSubject = false;
+                    this.getListData();
+                },
+                // 切换类型 
+                changeType: function () {
+                    if (this.addForm.level !== 'N002900001') {
+                        this.changeLevel()
+                    }
+                },
+                // 切换级次
+                changeLevel: function () {
+                    if (this.addForm.level !== 'N002900001') {
+                        this.isShowUpSub = true;
+                        var param = {
+                            search: {
+                                level: this.addForm.level,
+                                subject_type_cd: this.addForm.type
+                            },
+                        };
+                        var _this = this;
+                        axios.post("/index.php?m=AccountingSubject&a=getList", param)
+                            .then(function (res) {
+                                var _res = res.data;
+                                if (_res.code == 200) {
+                                    _this.up_subject = _res.data.data;
+                                    _this.addForm.up_subject = _res.data.data.length ? _res.data.data[0]
+                                        .subject_code : '';
+                                    _this.changeUpLevel()
+                                } else {
+                                    _this.$message.warning(_res.data.msg);
+                                }
+                            });
+                    } else {
+                        this.isShowUpSub = false;
+                        this.addForm.subject_code = '';
+                        this.addForm.subject_name = '';
+                        this.addForm.up_subject = '';
+                    }
+                },
+                // 切换上级科目
+                changeUpLevel: function () {
+                    var param = {
+                        search: {
+                            p_subject_code: this.addForm.up_subject
+                        },
+                    };
+                    var _this = this;
+                    axios.post("/index.php?m=AccountingSubject&a=getDetail", param)
+                        .then(function (res) {
+                            var _res = res.data;
+                            if (_res.code == 200) {
+                                _this.addForm.subject_code = _res.data ? _res.data.subject_code_diff :
+                                    _this.addForm.up_subject + '01';
+                                _this.addForm.subject_code_diff = _res.data ?
+                                    _res.data.subject_code : '01';
+                            } else {
+                                _this.$message.warning(_res.msg);
+                            }
+                        });
+                },
+                // 新增确定
+                saveSub: function () {
+                    if (this.addForm.level == 'N002900001' || (this.addForm.level != 'N002900001' && this
+                            .addForm.up_subject)) {
+                        this.isTrueAddSubject = true;
+                        for (var i = 0, len = this.baseData.account_subject_type.length; i < len; i++) {
+                            if (this.addForm.type == this.baseData.account_subject_type[i].CD) {
+                                this.addForm.type_name = this.baseData.account_subject_type[i].CD_VAL
+                            }
+                        }
+                        for (var i = 0, len = this.baseData.account_subject_level.length; i < len; i++) {
+                            if (this.addForm.level == this.baseData.account_subject_level[i].CD) {
+                                this.addForm.level_id = this.baseData.account_subject_level[i].CD_VAL
+                            }
+                        }
+                    } else if (this.addForm.level != 'N002900001' && utils.isEmpty(this.addForm.up_subject)) {
+                        this.$message({
+                            showClose: true,
+                            message: this.$lang('请添加上级科目'),
+                            type: 'warning'
+                        });
+                    }
+                    if (!utils.isEmpty(this.addForm.subject_code_diff) || !utils.isEmpty(this.addForm.subject_code)) {
+                        if(this.addForm.subject_code_diff == this.addForm.subject_code) {
+                            this.$message({
+                            showClose: true,
+                            message: this.$lang('已存在相同的科目编码'),
+                            type: 'warning'
+                            });
+                            this.isTrueAddSubject = false;
+                        }
+                    }
+                },
+                saveTrueSub: function () {
+                    var param = {
+                        subject_name: this.addForm.subject_name,
+                        subject_code: this.addForm.subject_code,
+                        p_subject_code: this.addForm.up_subject,
+                        level: this.addForm.level,
+                        subject_type_cd: this.addForm.type,
+                    };
+                    var _this = this;
+                    axios.post("/index.php?m=AccountingSubject&a=create", param)
+                        .then(function (res) {
+                            var _res = res.data;
+                            if (_res.code == 200) {
+                                _this.isAddSubject = false;
+                                _this.isTrueAddSubject = false;
+                                _this.$message({
+                                    showClose: true,
+                                    message: _this.$lang('新增科目成功'),
+                                    type: 'success'
+                                });
+                                _this.getListData();
+                            } else {
+                                _this.$message.warning(_res.msg);
+                            }
+                        });
+                },
+                exitTrue: function () {
+                    this.isTrueAddSubject = false;
+                },
+                // 编辑
+                edit: function (item) {
+                    this.exitForm = item;
+                    this.isEditSubject = true;
+                },
+                // 编辑确定
+                saveExitSub: function () {
+                    var param = {
+                        id: this.exitForm.id,
+                        subject_name: this.exitForm.subject_name
+                    };
+                    var _this = this;
+                    axios.post("/index.php?m=AccountingSubject&a=update", param)
+                        .then(function (res) {
+                            var _res = res.data;
+                            if (_res.code == 200) {
+                                _this.isEditSubject = false;
+                                _this.$message({
+                                    showClose: true,
+                                    message: _this.$lang('编辑成功'),
+                                    type: 'success'
+                                });
+                                _this.getListData()
+                            } else {
+                                _this.$message.warning(_res.msg);
+                            }
+                        });
+                },
+                // 删除
+                deleteSub: function (item) {
+                    this.$confirm(this.$lang('确认删除该科目吗？'), '提示', {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        cancelButtonClass: 'cancel-button-class',
+                        confirmButtonClass: 'confirm-button-class',
+                        showClose: true,
+                        showCancelButton: true
+                    }).then(() => {
+                        var param = {
+                            id: item.id
+                        };
+                        var _this = this;
+                        axios.post("/index.php?m=AccountingSubject&a=remove", param)
+                            .then(function (res) {
+                                var _res = res.data;
+                                if (_res.code == 200) {
+                                    _this.$message({
+                                        showClose: true,
+                                        message: _this.$lang('删除成功'),
+                                        type: 'success'
+                                    });
+                                    _this.getListData()
+                                } else {
+                                    _this.$confirm(_res.msg, '提示', {
+                                        confirmButtonText: '确定',
+                                        showCancelButton: false,
+                                        showClose: false
+                                    }).then(() => {}).catch(action => {});
+                                }
+                            });
+                    }).catch(action => {});
+                },
+                // 分页
+                handleAccountSizeChange: function (val) {
+                    this.accountForm.size = val;
+                },
+                handleAccountCurrentChange: function (val) {
+                    this.accountForm.page = val;
+                },
+                handleLogCurrentChange: function (val) {
+                    this.handleLogForm.page = val;
+                }
+            },
+            //监听数据
+            watch: {
+                accountForm: {
+                    handler(newValue, oldValue) {
+                        this.getListData(newValue)
+                    },
+                    deep: true
+                },
+                handleLogForm: {
+                    handler(newValue, oldValue) {
+                        this.getBaseData(newValue)
+                    },
+                    deep: true
+                }
+            },
+            //过滤器
+            filters: {
+                changeContent: function (value) { //转换JSON
+                    var arr = JSON.parse(value);
+                    var str = "";
+                    for (var i = 0, len = arr.length; i < len; i++) {
+                        str += arr[i].content + ','
+                    }
+                    return str;
+                },
+            }
+        });
+    </script>
+</body>
+
+</html>

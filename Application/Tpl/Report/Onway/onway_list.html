@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>在途库存报表</title>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/../Hr/hrstyle.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+</head>
+
+<style>
+    [v-cloak] {
+        display: none;
+    }
+
+    .el-row+.el-row {
+        margin-top: 15px;
+    }
+
+    .el-pagination {
+        margin-bottom: 180px;
+    }
+    .normal{
+        white-space: normal !important;
+        word-wrap: break-word;
+        word-break: break-all;
+    }
+    .create-wrap{
+        white-space: nowrap;
+    }
+
+    .create-wrap .occupy{
+        display: inline-block;
+        width: 49.5%;
+    }
+
+    .show-list .el-form-item__label {
+        padding:0px 10px 0px 0px;
+    }
+    .col-100{
+        overflow: auto;
+    }
+    .show-list .table-list tr th{
+        padding:0px 6px;
+    }
+    .show-list .table-list tr td{
+        white-space: normal;
+    }
+
+</style>
+
+<body>
+    <div id="onway" class="show-list" v-cloak>
+        <el-form ref="form" :model="form" :label-position="labelPosition" label-width="130px">
+            <div class="use-row">
+                <div class="col-100">
+                    <table class="search-table">
+                        <tbody>
+                            <tr>
+                                <td style="width:33%">
+                                    <el-form-item :label="$lang('在途计算日期范围')">
+                                        <el-date-picker style="width:100%;height: 40px;" v-model="form.onway_date"
+                                            :clearable="clearDate" value-format="yyyy-MM-dd" size="small" type="daterange"
+                                            align="right" unlink-panels :range-separator="$lang('至')"
+                                            :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')"
+                                            :picker-options="pickerOptions">
+                                        </el-date-picker>
+                                    </el-form-item>
+                                </td>
+                                <td style="width:33%">
+                                    <el-form-item :label="$lang('采购po日期范围')">
+                                        <el-date-picker style="width:100%;height: 40px;" v-model="form.po_date"
+                                            :picker-options="pickerOptions" value-format="yyyy-MM-dd" size="small" type="daterange"
+                                            align="right" unlink-panels :range-separator="$lang('至')"
+                                            :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')">
+                                        </el-date-picker>
+                                    </el-form-item>
+                                </td>
+                                <td style="width:33%">
+                                    <el-form-item :label="$lang('所属公司')">
+                                        <el-select :filterable="true" multiple collapse-tags :placeholder="$lang('请选择公司')"
+                                            v-model="form.our_company" clearable>
+                                            <el-option :key="item.CD" :label="item.CD_VAL" :value="item.CD" v-for="item in baseData.our_company"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <el-form-item :label="$lang('供应商')">
+                                        <el-input v-model="form.supplier" :placeholder='$lang("请输入供应商")'>
+                                        </el-input>
+                                    </el-form-item>
+                                </td>
+                                <td>
+                                    <el-form-item :label="$lang('采购团队')">
+                                        <el-select :filterable="true" collapse-tags multiple :placeholder="$lang('请选择团队')"
+                                            v-model="form.purchase_team" clearable>
+                                            <el-option :key="item.CD" :label="item.CD_VAL" :value="item.CD" v-for="item in baseData.purchase_team"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                </td>
+                                <td>
+                                    <el-form-item :label="$lang('采购同事')">
+                                        <el-select v-model="form.purchaser" collapse-tags multiple filterable remote
+                                            default-first-option :placeholder='$lang("请输入拼音花名")' :remote-method="remoteMethod">
+                                            <el-option v-for="item in pucahseColleagues" :key="item.id" :label="item.name"
+                                                :value="item.name"> </el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                </td>
+
+                            </tr>
+                            <tr>
+                                <td>
+                                    <el-form-item :label="$lang('销售团队')">
+                                        <el-select v-model="form.sale_team" collapse-tags multiple filterable
+                                            :placeholder='$lang("请选择销售团队")'>
+                                            <el-option v-for="item in baseData.sell_team" :key="item.CD" :label="item.CD_VAL"
+                                                :value="item.CD"> </el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                </td>
+                                <td>
+                                    <el-form-item :label="$lang('采购单号')">
+                                        <el-input v-model="form.procurement_number" :placeholder='$lang("请输入采购单号")'>
+                                        </el-input>
+                                    </el-form-item>
+                                </td>
+                                <td>
+                                    <el-form-item :label="$lang('当前状态')">
+                                        <el-select :popper-append-to-body="false" v-model="form.status" clearable
+                                            :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                            <el-option v-for="item in baseData.nowStatus" :label="$lang(item.CD_VAL)" :value="item.CD"
+                                                :key="item.CD"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                </td>
+
+                            </tr>
+                            <tr>
+                                <td>
+                                    <el-form-item :label="$lang('在途库存金额')">
+                                        <el-select v-model="form.onway_amount_type" :placeholder='$lang("全部")'>
+                                            <el-option v-for="item in onWayType" :key="item.CD" :label="$lang(item.CD_VAL)"
+                                                :value="item.CD"> </el-option>
+                                    </el-form-item>
+                                </td>
+                                <td>
+                                    <el-form-item :label="$lang('在途发票金额')">
+                                        <el-select v-model="form.onway_invoice_type" :placeholder='$lang("全部")'>
+                                            <el-option v-for="item in onWayInvoiceType" :key="item.CD" :label="$lang(item.CD_VAL)"
+                                                :value="item.CD"> </el-option>
+                                    </el-form-item>
+                                </td>
+                                <td>
+                                    <el-form-item :label="$lang('在途库存金额(计算抵扣金)')">
+                                        <el-select v-model="form.inventory_type" :placeholder='$lang("全部")' clearable multiple>
+                                            <el-option v-for="item in inventoryType" :key="item.CD" :label="item.CD_VAL"
+                                                :value="item.CD"> </el-option>
+                                    </el-form-item>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="col-100 use-btn">
+                                        <button type="button" class="btn-pub btn-green" @click="search">
+                                            {{$lang('查询')}}</button>
+                                        <button type="button" class="btn-pub btn-default mg-l-20" @click="reset()">{{$lang('重置')}}</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </el-form>
+        <div class="baseline"></div>
+        <div class="use-row create-wrap">
+            <div class="col-50 result-num occupy">
+                <!-- {{$lang('搜索结果')}}：&nbsp;&nbsp;{{$lang('共')}}
+                <b>{{totalCount}}</b> {{$lang('条')}} -->
+                <span>
+                    {{$lang('在途总金额')}}： <b>CNY {{onwayAmount}}</b>
+                </span>
+            </div>
+            <div class="col-50 text-right occupy" style="width: 50%">
+                <?php if(ButtonAction::hidden()){ ?>
+                <el-button type="primary" @click="exportList()">{{$lang('导出')}}</el-button>
+                <?php }?>
+            </div>
+        </div>
+        <div class="use-row">
+            <div class="col-100">
+                <table class="table-list" v-loading="tableLoading">
+                    <thead>
+                        <tr>
+                            <th>{{$lang('采购单号')}}</th>
+                            <th>{{$lang('当前状态')}}</th>
+                            <th>{{$lang('采购PO时间')}}</th>
+                            <th>{{$lang('所属公司')}} </th>
+                            <th>{{$lang('供应商')}} </th>
+                            <th>{{$lang('采购团队')}} </th>
+                            <th>{{$lang('采购人员')}}</th>
+                            <th>{{$lang('销售团队')}}</th>
+                            <th>{{$lang('币种')}}</th>
+                            <th title="综合付款金额 = 付款金额 - 退款金额">
+                                {{$lang('综合付款金额')}}
+                                <i style="cursor: pointer" class="el-icon-info"></i>
+                            </th>
+                            <!-- <th>{{$lang('入库成本币种')}}</th> -->
+                            <th title="综合入库金额 = 入库金额-退货金额">
+                                {{$lang('综合入库金额')}}&nbsp;&nbsp;
+                                <i style="cursor: pointer" class="el-icon-info"></i>
+                            </th>
+                            <th>{{$lang('已收发票金额')}}</th>
+                            <th>{{$lang('在途库存金额')}}</th>
+                            <th>{{$lang('在途发票金额')}}</th>
+                            <th>{{$lang('产生抵扣金')}}</th>
+                            <th>{{$lang('使用抵扣金')}}</th>
+                            <th>{{$lang('在途库存金额(计算抵扣金)')}}</th>
+                            <th>{{$lang('PO日期兑换人民币汇率')}}</th>
+                            <th>{{$lang('对账备注')}}</th>
+                        </tr>
+                    </thead>
+                    <tbody v-if="dataList && dataList.length > 0">
+                        <tr v-for="(item,index) in dataList">
+                            <td>{{item.procurement_number}}</td>
+                            <td>{{item.status}}</td>
+                            <td>{{item.prepared_time}}</td>
+                            <td>{{$lang(item.our_company)}}</td>
+                            <td>{{$lang(item.supplier)}}</td>
+                            <td>{{item.purchase_team}}</td>
+                            <td>{{item.purchaser}}</td>
+                            <td>{{item.sale_team}}</td>
+                            <td>{{item.amount_currency}}</td>
+                            <td>{{item.amount_currency}} {{item.amount_paid}}</td>
+                            <!-- <td>{{item.amount_in_warehouse_currency}}</td> -->
+                            <td>{{item.amount_currency}} {{item.amount_in_warehouse}}</td>
+                            <td>{{item.amount_currency}} {{item.invoice_accepted}}</td>
+                            <td>{{item.amount_currency}} {{item.amount_onway}}</td>
+                            <td>{{item.amount_currency}} {{item.invoice_onway}}</td>
+                            <td>{{item.amount_currency}} {{item.sum_come_deduction}}</td>
+                            <td>{{item.amount_currency}} {{item.sum_use_deduction}}</td>
+                            <td>{{item.amount_currency}} {{item.sum_inventory_deduction}}</td>
+                            <td>{{item.po_date_rate}}</td>
+                            <td>{{item.reconciliation_remark}}</td>
+                        </tr>
+                    </tbody>
+                    <tbody v-else>
+                        <tr>
+                            <td colspan="19">{{$lang('暂无数据')}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="use-row">
+            <div class="col-100 text-right">
+                <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="form.page"
+                    :page-sizes="[20, 50, 100, 200,300]" :page-size="form.page_size" layout="sizes, prev, pager, next,jumper"
+                    :total="totalCount"></el-pagination>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+    <script src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script>
+        if (getCookie('think_language') !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en)
+        }
+        //获取url参数
+        function getQueryVariable(variable) {
+            var query = decodeURI(window.location.search).substring(1);
+            var vars = query.split("&");
+            for (var i = 0; i < vars.length; i++) {
+                var pair = vars[i].split("=");
+                if (pair[0] == variable) {
+                    return pair[1];
+                }
+            }
+            return false;
+        }
+        var way = new Vue({
+            el: '#onway',
+            data: {
+                clearDate: false,
+                labelPosition: 'left',
+                totalCount: 10,
+                dialogFormVisible: false,
+                formLabelWidth: 80,
+                tableLoading: false,
+                onwayAmount: 0,
+                form: {
+                    supplier:'',
+                    onway_date: [],
+                    po_date: [],
+                    our_company: [],
+                    purchase_team: [],
+                    purchaser: [],
+                    page: 1,
+                    page_size: 20,
+                    onway_amount_type: '',
+                    onway_invoice_type: '',
+                    inventory_type: [],
+                    status: '',
+                    sale_team: [],
+                    procurement_number: '',
+                },
+                onWayType: [{
+                        CD: '1',
+                        CD_VAL: '正'
+                    }, {
+                        CD: '-1',
+                        CD_VAL: '负'
+                    }, {
+                        CD: '0',
+                        CD_VAL: '0'
+                    }
+
+                ],
+                onWayInvoiceType: [{
+                        CD: '1',
+                        CD_VAL: '正'
+                    }, {
+                        CD: '-1',
+                        CD_VAL: '负'
+                    }, {
+                        CD: '0',
+                        CD_VAL: '0'
+                    }
+
+                ],
+                inventoryType: [{
+                        CD: 'positive',
+                        CD_VAL: '正'
+                    }, {
+                        CD: 'minus',
+                        CD_VAL: '负'
+                    }, {
+                        CD: 'zero',
+                        CD_VAL: '0'
+                    }
+
+                ],
+                baseData: {},
+                dataList: [],
+                pucahseColleagues: [],
+                pickerOptions: {},
+                dateNow: utils.dateFormat(new Date(), 'yyyy-MM-dd'),
+            },
+            created: function () {
+                
+                if(getQueryVariable("onway_date")){
+                    this.form.onway_date = getQueryVariable("onway_date").split(",");
+                }else{
+                    this.form.onway_date = ['2018-08-01', this.dateNow]
+                }
+
+                if(getQueryVariable("po_date")){
+                    this.form.po_date = getQueryVariable("po_date").split(",");
+                }else{
+                    this.form.po_date = ['2018-08-01', this.dateNow]
+                }
+
+                if(getQueryVariable("our_company")){
+                    console.log(getQueryVariable("our_company").split(","))
+                    this.form.our_company = getQueryVariable("our_company").split(",");
+                }else{
+                    this.form.our_company = []
+                }
+
+                if(getQueryVariable("supplier")){
+                    this.form.supplier = getQueryVariable("supplier");
+                }else{
+                    this.form.supplier = ''
+                }
+                // 如果是从团队库存汇总报表进入该页面，搜索参数取传入参数
+                var query = window.location.search.substring(1);
+                var vars = query.split("&");
+                if (vars[3] && vars[3].split("=")[0] === 'team') {
+                    var team = vars[3].split("=")[1];
+                    this.form.sale_team = [team]; // 销售团队取传入参数
+                    // this.form.onway_amount_type = '1'; // 在途库存金额设置为正 对应code 1
+                }
+                
+                
+                this.pickerOptions = {
+                    disabledDate(time) {
+                        return time.getTime() < new Date('2018-07-31');
+                    },
+                    shortcuts: [{
+                        text: this.$lang("最近一周"),
+                        onClick: function (picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: this.$lang("最近一个月"),
+                        onClick: function (picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: this.$lang("最近三个月"),
+                        onClick: function (picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }]
+                }
+
+                this.getBaseData();
+                this.search();
+            },
+            methods: {
+                getBaseData: function () {
+                    var _this = this;
+                    var param = {
+                        cd_type: {
+                            purchase_team: false,
+                            our_company: false,
+                            sell_team: false,
+                        }
+                    }
+                    axios.post("/index.php?g=common&m=index&a=get_cd", param).then(function (res) {
+                        if (res.data.code == 2000) {
+                            var nowStatus = [{
+                                    'CD': "1",
+                                    'CD_VAL': "未完结"
+                                },
+                                {
+                                    'CD': "2",
+                                    'CD_VAL': "已完结"
+                                },
+                            ];
+                            res.data.data['nowStatus'] = nowStatus;
+                            console.log(res.data.data);
+                            _this.baseData = res.data.data;
+                        }
+                    })
+                },
+                search: function () {
+                    var _this = this;
+                    var param = this.form;
+                    this.tableLoading = true;
+                    console.log(param)
+                    axios.post("/index.php?g=report&m=onway&a=list_data", param).then(function (res) {
+                        var data = res.data;
+                        _this.tableLoading = false;
+                        if (data.code == 2000) {
+                            _this.dataList = data.data.list;
+                            _this.totalCount = +data.data.total;
+                            _this.onwayAmount = data.data.onway_amount;
+                        } else {
+                            _this.$message({
+                                message: _this.$lang('获取数据失败'),
+                                type: 'warning'
+                            });
+                        }
+                    })
+                },
+                handleSizeChange: function (size) {
+                    this.form.page_size = size;
+                    this.search();
+                },
+                handleCurrentChange: function (currentPage) {
+                    this.form.page = currentPage;
+                    this.search();
+                },
+                remoteMethod(query) {
+                    var _this = this;
+                    if (query !== '') {
+                        axios.post('/index.php?g=common&m=user&a=search_user', Qs.stringify({
+                                name: query
+                            }))
+                            .then(function (res) {
+                                _this.pucahseColleagues = res.data.data || [];
+                            })
+                    } else {
+                        this.pucahseColleagues = [];
+                    }
+                },
+                reset: function () {
+                    this.form = {
+                        onway_date: ['2018-08-01', this.dateNow],
+                        po_date: ['2018-08-01', this.dateNow],
+                        our_company: [],
+                        purchase_team: [],
+                        purchaser: [],
+                        page: 1,
+                        page_size: 20,
+                        status: '',
+                        sale_team: [],
+                        procurement_number: '',
+                        onway_amount_type: '',
+                        onway_invoice_type: '',
+                        inventory_type: [],
+                        supplier:''
+                    }
+                },
+                exportList: function () {
+                    var param = this.form;
+                    var tmep = document.createElement('form');
+                    tmep.action = '/index.php?g=report&m=onway&a=export';
+                    tmep.method = "post";
+                    tmep.style.display = "none";
+                    var opt = document.createElement("input");
+                    opt.name = 'export_params';
+                    opt.value = JSON.stringify(param);
+                    tmep.appendChild(opt);
+                    document.body.appendChild(tmep);
+                    tmep.submit();
+                    $(tmep).remove();
+                },
+            },
+            filters: {
+                numberFormat: function (val) {
+                    if (val) {
+                        var num = parseFloat(val).toLocaleString();
+                        return num.indexOf('.') > 0 ? num : num + ".00";
+                    }
+                }
+            },
+            watch: {
+                form: {
+                    handler: function handler(newValue, oldValue) {
+                        this.search();
+                    },
+
+                    deep: true
+                }
+            },
+        })
+    </script>
+</body>
+
+</html>

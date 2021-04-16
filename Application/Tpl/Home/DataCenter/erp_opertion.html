@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERP操作检测</title>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.8.2.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/DataCenter/css/erp_opertion.css?v=<{$Think.config.VER_NUM}>">
+    <style>
+        div{
+            box-sizing: border-box;
+        }
+        .erp-opertion-box{
+            background: #f4f4f4;
+        }
+        .search-date-box{
+            margin-bottom: 20px;
+            background: #fff;
+            padding: 15px 20px;
+            border-radius: 0px 0px 8px 8px;
+        }
+        .charts-box{
+            margin-bottom: 20px;
+        }
+        .charts-box-one .charts-box-item{
+            background: #fff;
+            border-radius: 8px;
+            height: 320px;
+            padding: 20px;
+        }
+        .charts-box-one .text-box .text-box-item{
+            
+            height: 95px;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            padding-left: 40px;
+            padding-top: 18px;
+        }
+        .charts-box-one .text-box .text-box-item:last-child{
+            border-bottom: none;
+        }
+        .charts-box-one .text-box .text-box-item .title-item{
+            font-size: 12px;
+            color: rgba(0,0,0,0.65);
+            margin-bottom: 8px;
+        }
+        .charts-box-one .text-box .text-box-item .dicrive-item{
+            font-size: 36px;
+            font-weight: 600;
+        }
+        .charts-box-one .charts-box-right{
+            position: relative;
+        }
+        .charts-box-one .charts-box-right .select-box{
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+        }
+        .el-select{
+            width: 120px;
+        }
+        .charts-box-tow{
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .charts-box-tow .describe-txt{
+            position: relative;
+        }
+        .charts-box-tow .describe-txt .spantext{
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 32px;
+        }
+        .charts-box-tow .more-btn{
+            position: absolute;
+            right: 0;
+            top: 0;
+            padding: 9px 25px;
+        }
+        .charts-box-tow .histogram-box{
+            
+            height: 320px;
+            position: relative;
+            margin-top: 30px;
+        }
+        .charts-box-tow .histogram-box .title-txt{
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .charts-box-tow .histogram-box .title-txt .subTitle {
+            font-size: 12px;
+            color:rgba(0,0,0,0.65);
+            margin-left: 20px;
+            font-weight: normal;
+        }
+        .charts-box-tow .histogram-box .back-btn{
+            position: absolute;
+            z-index: 10;
+            top: 0px;
+            right: 0px;
+            padding: 9px 25px;
+        }
+        .not-point>div>canvas:hover{
+            cursor: default;
+        }
+    </style>
+</head>
+<body>
+    <div id="erp-opertion" class="erp-opertion-box" v-cloak>
+        <div class="search-date-box">
+            <span>{{$lang('时间')}}：</span>
+            <el-date-picker
+                v-model="dateMonthRange"
+                type="monthrange"
+                :range-separator="$lang('至')"
+                :start-placeholder="$lang('选择月份')"
+                :end-placeholder="$lang('选择月份')"
+                value-format="yyyy-MM"
+                :clearable="false"
+                size="small"
+                :picker-options="pickerOptions"
+                @change="dateChange">
+            </el-date-picker>
+        </div>
+        <div class="charts-box charts-box-one">
+            <el-row  :gutter="20">
+                <el-col :span="8" v-loading="totalDataLoading">
+                    
+                    <div class="text-box charts-box-item">
+                        <div class="text-box-item">
+                            <div class="title-item">{{$lang('收入')}}</div>
+                            <div class="dicrive-item">
+                                <span v-if="totalData.revenue !='-'">$</span>
+                                {{totalData.revenue | format}}
+                            </div>
+                        </div>
+                        <div class="text-box-item">
+                            <div class="title-item">{{$lang('操作次数')}}</div>
+                            <div class="dicrive-item">{{totalData.operation_num | format}}</div>
+                        </div>
+                        
+                        <div class="text-box-item">
+                            <div class="title-item">{{$lang('ERP使用效益')}}（{{$lang('收入')}}/{{$lang('操作次数')}}）</div>
+                            <div class="dicrive-item">
+                                <span v-if="totalData.benefit !='-'">$</span>
+                                {{totalData.benefit | format}}
+                            </div>
+                        </div>
+                    </div>
+                </el-col>
+                <el-col :span="16" v-loading="TotalLineDataLoading">
+                    
+                    <div class="charts-box-item charts-box-right">
+                        <div class="select-box">
+                            <el-select v-model="selectValue" placeholder="请选择" size="mini" @change="getTotalLineData">
+                                <el-option :label="$lang('月度')" value="M"></el-option>
+                                <el-option :label="$lang('季度')" value="Q"></el-option>
+                                <el-option :label="$lang('年度')" value="Y"></el-option>
+                            </el-select>
+                        </div>
+                        <div id="charts-center" ref="refcharts" style="width: 100%;height:100%;">
+                        </div>
+                    </div>
+                </el-col>
+            </el-row>
+        </div>
+        
+        <div class="charts-box charts-box-tow">
+            <div class="describe-txt">
+                <span class="spantext">{{$lang('系统使用情况')}}</span>
+                <el-button type="button" size="small" @click="toMore" class="more-btn">{{$lang('更多')}}</el-button>
+            </div>
+            <div class="histogram-box" v-show="!ailyBtnShow" v-loading="AilyTimesLoading">
+                <div class="title-txt">
+                    <span>{{$lang('日均操作次数')}}</span>
+                </div>
+                <div ref="ailyTimesCharts" style="width: 100%;height:100%;"></div>
+            </div>
+            <div class="histogram-box" v-show="ailyBtnShow" v-loading="AilyTimesLoading">
+                
+                <div class="title-txt">
+                    <span>{{$lang('日均操作次数')}}</span>
+                    <span class="subTitle">{{departmentName}}</span>
+                </div>
+                <el-button type="button" class="back-btn" @click="ailyBtnShow=false" size="small">{{$lang('返回')}}</el-button>
+                <div class="not-point" ref="departmentTimesCharts" style="width: 100%;height:100%;"></div>
+            </div>
+            <div class="histogram-box">
+                <div class="title-txt">
+                    <span>{{$lang('页面操作次数')}}</span>
+                </div>
+                <div class="not-point" ref="pageTimesCharts"  style="width: 100%;height:100%;"></div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
+<script type="text/javascript" src="/Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/axios.min.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.8.2.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="\Application\Tpl\Home\Public\js\H-ui.admin.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/echarts-4.2.1.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script src="./Application/Tpl/Home/DataCenter/utils/globalConstAndFunc.js?v=<{$Think.config.VER_NUM}>"></script>
+<script>
+    if (getCookie('think_language') !== "zh-cn") {
+        ELEMENT.locale(ELEMENT.lang.en)
+    }
+    var VM = new Vue({
+        el: "#erp-opertion",
+        data() {
+            return {
+                apiHost: GlobalConstAndFunc.api(),
+                pickerOptions:{
+                    disabledDate(time) {
+                        return time.getTime() > Date.now() - 86400000 || time.getTime() < new Date('2016-12-31').getTime(); // 当前时间减一天的毫秒数
+                    },
+                },
+                dateMonthRange: '',
+                selectValue: 'Q',
+                totalChart: null, // 统计全部的图表
+                totalChartOption: null, // 统计全部的图表配置项
+                TotalLineDataLoading: true,
+                ailyTimesChart: null, // 日均操作次数图表
+                ailyTimesChartOption: null, // 日均操作次数图表配置项
+                departmentTimesChart: null, // 日均操作次数部门员工图表
+                departmentTimesChartOption: null, // 日均操作次数部门员工图表配置项
+                AilyTimesLoading: true,
+                ailyBtnShow: false,
+                departmentName: '',
+                pageTimesChart: null, // 页面操作次数图表
+                pageTimesChartOption: null, // 页面操作次数图表配置项
+                pageTimesLoading: true,
+                totalData: {
+                    revenue: 0,
+                    operation_num: 0,
+                    benefit: 0
+                },
+                totalDataLoading: true
+            }
+        },
+        created() {
+            this.initDateMonth();
+        },
+        mounted () {
+            
+            this.totalChart = echarts.init(this.$refs.refcharts);
+            this.ailyTimesChart = echarts.init(this.$refs.ailyTimesCharts);
+            this.pageTimesChart = echarts.init(this.$refs.pageTimesCharts);
+            this.initCharts();
+            // 监听日均操作次数图表点击事件
+            this.ailyTimesChart.on('click',(param)=>{
+                this.ailyBtnShow = true;
+                this.departmentName = param.data.name;
+                this.getAilyTimesData('staff',param.data.department_id).then(datas => {
+                    
+                    this.setDepartmentTimesOpt(datas);
+                });
+              
+            })
+        },
+        filters: {
+            // 数字加上千分位
+            format :function format(num) {
+                if(num == '-') {
+                    return '-'
+                } else {
+                    num = Number(num).toFixed(2)
+                    var num1=num.split('.')[0]+'';//数字转字符串  
+                    var str="";//字符串累加  
+                    for(var i=num1.length- 1,j=1;i>=0;i--,j++){  
+                        if(j%3==0 && i!=0 && num1[i-1] != '-'){//每隔三位加逗号，过滤正好在第一个数字的情况 过滤负数情况 
+                            str+=num1[i]+",";//加千分位逗号  
+                            continue;  
+                        }  
+                        str+=num1[i];//倒着累加数字
+                    }
+                    return `${str.split('').reverse().join("")}${num.split('.')[1] == '00' ? '' : '.' + num.split('.')[1]}`;
+                }
+                
+            },
+        },
+        methods: {
+            dateChange() {
+                this.selectValue = 'Q';
+                this.initCharts();
+            },
+            queryPost(url, param) {
+                var headers = {
+                    headers: {
+                    'erp-req': true,
+                    'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+                    }
+                }
+                
+                return axios.post(this.apiHost + url, Qs.stringify(param), headers);
+            },
+            // 获取汇总数据
+            getTotalData() {
+                var param = {
+                    'erp-req': true,
+                    'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                    beginDate: this.dateMonthRange[0] + '-01',
+                    endDate: this.dateMonthRange[1] + '-31',
+                }
+                this.totalDataLoading = true;
+                this.queryPost('/erpSystemUse/erpOperationDetectionTotal',param).then(res=>{
+                    this.totalDataLoading = false;
+                    if(res.data.success) {
+                        this.totalData = res.data.datas[0];
+                    } else {
+                        this.$message.error(res.data.msg);
+                    }
+                })
+            },
+            // 获取数据汇总折线图数据
+            getTotalLineData() {
+                var param = {
+                    'erp-req': true,
+                    'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                    beginDate: this.dateMonthRange[0] + '-01',
+                    endDate: this.dateMonthRange[1] + '-31',
+                    dateLabel: this.selectValue,
+                }
+                this.TotalLineDataLoading = true;
+                this.queryPost('/erpSystemUse/erpOperationDetectionLineChar',param).then(res=>{
+                    this.TotalLineDataLoading = false;
+                    if(res.data.success) {
+                        
+                        this.setTotalOpt(res.data.datas);
+                    } else {
+                        this.$message.error(res.data.msg)
+                    }
+                })
+            },
+            // 获取日均操作次数图表数据
+            getAilyTimesData(flag,department_id,table) {
+                var param = {
+                    'erp-req': true,
+                    'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                    beginDate: this.dateMonthRange[0] + '-01',
+                    endDate: this.dateMonthRange[1] + '-31',
+                    namespace: '',
+                    // module: '',
+                    // page_code: '',
+                    table: table,
+                    department_id: department_id,
+                    flag: flag,
+                    // user_id: ''
+                }
+                this.AilyTimesLoading = true;
+                return new Promise((resolve,reject)=>{
+                    this.queryPost('/erpSystemUse/erpAverageDailyOperationNum',param).then(res=>{
+                        this.AilyTimesLoading = false;
+                        if(res.status == 200 && res.data){
+                            let datas = res.data.datas.map(item=>{
+                                return {
+                                    name: item.name,
+                                    value: item.value,
+                                    department_id: item.department_id
+                                }
+                            });
+                            resolve(datas)
+                        } else {
+                            this.$message.error(res.data.msg);
+                        }
+                    })
+                })
+                
+            },
+            // 获取页面操作次数图表数据
+            getPageTimesData() {
+                var param = {
+                    'erp-req': true,
+                    'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                    beginDate: this.dateMonthRange[0] + '-01',
+                    endDate: this.dateMonthRange[1] + '-31',
+                    namespace: '',
+                }
+                this.pageTimesLoading = true;
+                this.queryPost('/erpSystemUse/erpPageAndRequest',param).then(res=>{
+                    this.pageTimesLoading = false;
+                    if (res.status == 200 && res.data.success) {
+                        let datas = res.data.datas.map(item=>{
+                            return {
+                                name: this.$lang(item.first_menu) + '\n' + this.$lang(item.second_menu),
+                                value: item.operation_num
+                            }
+                        })
+                        this.pageTimesChart.clear();
+                        this.setPageTimesOpt(datas);
+                    } else {
+                        this.$message.error(res.data.msg);
+                    }
+                })
+            },
+            // 汇总数据图表配置
+            setTotalOpt(data) {
+                this.totalChartOption = {
+                    tooltip: {
+                        trigger: 'axis',
+                        formatter: (param) => {
+                            var name = param[0].name;
+                            var str = `${name}<br/><br/>`
+                            for (let i = 0; i < param.length; i++) {
+                                var value = '';
+                                if(param[i].seriesName == this.$lang('收入')) {
+                                    value = this.$options.filters['format'](param[i].value[1]) == '-' ? '-': '$' + this.$options.filters['format'](param[i].value[1])
+                                } else if(param[i].seriesName == this.$lang('操作次数')){
+                                    value = this.$options.filters['format'](param[i].value[2])
+                                } else if(param[i].seriesName == this.$lang('ERP使用效益')){
+                                    value = this.$options.filters['format'](param[i].value[3]) == '-' ? '-' : '$' + this.$options.filters['format'](param[i].value[3])
+                                }
+                                str += `${param[i].marker} ${param[i].seriesName} ：${value}<br/>`
+                            }
+                            return str
+                        }
+                    },
+                    legend: {
+                        icon: 'rect',
+                        bottom: 0,
+                        itemWidth: 10,
+                        itemHeight: 10,
+                        // data: ['收入','操作次数','ERP使用效益']
+                    },
+                    xAxis: {
+                        type: 'category',
+                        axisTick: {
+                            show: false
+                        },
+                    },
+                    yAxis: {
+                        type: 'value',
+                        splitLine: {
+                            lineStyle: {
+                                type: 'dotted',
+                                color: '#F0F0F0'
+                            }
+                        },
+                        splitNumber:4,
+                        axisLine: {
+                            show: false
+                        },
+                        axisTick: {
+                            show: false
+                        },
+                    },
+                    grid: {
+                        right: 60,
+                        left: 90,
+                    },
+                    dataset: {
+                        sourceHeader: true,
+                        source: data,
+                    },
+                    series: [
+                        {
+                            name: this.$lang('收入'),
+                            type: 'line',
+                            color: '#03315B',
+                            seriesLayoutBy: 'row',
+                        },
+                        {
+                            name: this.$lang('操作次数'),
+                            type: 'line',
+                            color: '#0375DE',
+                            seriesLayoutBy: 'row',
+                        },
+                        {
+                            name: this.$lang('ERP使用效益'),
+                            type: 'line',
+                            color: '#13C2C2',
+                            seriesLayoutBy: 'row',
+                        }
+                    ]
+                };
+                this.totalChart.setOption(this.totalChartOption);
+            },
+            // 全部日均操作次数图表配置
+            setAilyTimesOpt(data) {
+                this.ailyTimesChartOption = {
+                    
+                    tooltip: {
+                        trigger: 'axis',
+                        formatter: (param) => {
+                            var name = param[0].name;
+                            var str = `${name}<br/>`
+                            var value = this.$options.filters['format'](param[0].value.value);
+                            str += `${param[0].marker} ${this.$lang('日均操作次数')} ：${value}<br/>`;
+                            return str
+                        }
+                    },
+                    xAxis: {
+                        type: 'category',
+                        // data: ['部门1', '部门2', '部门3', '部门4','部门5', '部门6', '部门7', '部门8','部门9', '部门10',],
+                        axisTick: {
+                            show: false
+                        },
+                        axisLabel: {
+                            interval: 0, 
+                            formatter: value => {
+                                let name = value.replace(/ -/g,'-').replace(/ &/g,'&');
+                                return  name.replace(/ /g,'\n')
+                            },
+                            showMaxLabel: true
+                        },
+                    },
+                    yAxis: {
+                        name: this.$lang('次'),
+                        type: 'value',
+                        splitLine: {
+                            lineStyle: {
+                                type: 'dotted',
+                                color: '#F0F0F0'
+                            }
+                        },
+                        splitNumber:4,
+                        axisLine: {
+                            show: false
+                        },
+                        axisTick: {
+                            show: false
+                        },
+                    },
+                    grid: {
+                        left: 60,
+                        right: 60,
+                    },
+                    dataset: {
+                        sourceHeader: true,
+                        source: data,
+                        // [
+                        //     {department: 'Warehouse',value: '1020'},
+                        //     {department: 'QA',value: '932'},
+                        //     {department: 'Overseas',value: '801'},
+                        //     {department: 'R&D',value: '734'},
+                        //     {department: 'China - Bryan',value: '734'},
+                        //     {department: 'Strategy',value: '620'},
+                        //     {department: 'Legal',value: '520'},
+                        //     {department: 'Product Development',value: '420'},
+                        //     {department: 'IT',value: '320'},
+                        //     {department: 'Marketing',value: '120'},
+                        // ],
+                    },
+                    series: [
+                        {
+                            // data: [1020, 932, 801, 734, 620, 532, 401, 334, 201, 121],
+                            type: 'bar',
+                            color: '#0375DE',
+                            barWidth: '30%',
+                            seriesLayoutBy: 'column',
+                        },
+                    ]
+                };
+                this.ailyTimesChart.setOption(this.ailyTimesChartOption);
+                
+            },
+            // 部门日均操作次数图表配置
+            setDepartmentTimesOpt(data) {
+                this.departmentTimesChart = echarts.init(this.$refs.departmentTimesCharts);
+                this.departmentTimesChartOption = {
+                    tooltip: {
+                        trigger: 'axis',
+                        formatter: (param) => {
+                            var name = param[0].name;
+                            var str = `${name}<br/>`;
+                            var value = this.$options.filters['format'](param[0].value.value)
+                            str += `${param[0].marker} ${this.$lang('日均操作次数')} ：${value}<br/>`;
+                            return str
+                        }
+                    },
+                    xAxis: {
+                        type: 'category',
+                        // data: ['员工1','员工2','员工3','员工4','员工5','员工6','员工7','员工8','员工9','员工10'],
+                        axisTick: {
+                            show: false
+                        },
+                        axisLabel: {
+                            interval: 0, 
+                            
+                        }
+                    },
+                    yAxis: {
+                        name: this.$lang('次'),
+                        type: 'value',
+                        splitLine: {
+                            lineStyle: {
+                                type: 'dotted',
+                                color: '#F0F0F0'
+                            }
+                        },
+                        splitNumber:4,
+                        axisLine: {
+                            show: false
+                        },
+                        axisTick: {
+                            show: false
+                        },
+                    },
+                    grid: {
+                        left: 60,
+                        right: 60,
+                    },
+                    dataset: {
+                        sourceHeader: true,
+                        source: data,
+                    },
+                    series: [
+                        {
+                            // data: [1220, 832, 701, 634, 620, 532, 401, 334, 201, 121],
+                            type: 'bar',
+                            color: '#0375DE',
+                            barWidth: '30%',
+                            seriesLayoutBy: 'column',
+                        },
+                    ]
+                };
+                this.departmentTimesChart.setOption(this.departmentTimesChartOption);
+                
+            },
+            // 页面操作次数图表配置
+            setPageTimesOpt(data) {
+                this.pageTimesChartOption = {
+                    tooltip: {
+                        trigger: 'axis',
+                        formatter: (param) => {
+                            var name = param[0].name;
+                            name = name.replace(/\n/g,'<br/>');
+                            var str = `${name}<br/><br/>`;
+                            var value = this.$options.filters['format'](param[0].value.value)
+                            str += `${param[0].marker} ${this.$lang('操作次数')} ：${value}<br/>`;
+                            return str
+                        }
+                    },
+                    xAxis: {
+                        type: 'category',
+                        // data: ['订单中心\n订单列表', '供应链管理\n需求列表', '模块3\n页面3', '模块4\n页面4','模块5\n页面5', '模块6\n页面6', '模块7\n页面7', '模块8\n页面8','模块9\n页面9', '模块10\n页面10',],
+                        axisTick: {
+                            show: false
+                        },
+                        axisLabel: {
+                            interval: 0,
+                            formatter: value => {
+                                let name = value.replace(/&amp;/g,'&');
+                                return name;
+                            },
+                        }
+                    },
+                    yAxis: {
+                        name: this.$lang('次'),
+                        type: 'value',
+                        splitLine: {
+                            lineStyle: {
+                                type: 'dotted',
+                                color: '#F0F0F0'
+                            }
+                        },
+                        splitNumber:4,
+                        axisLine: {
+                            show: false
+                        },
+                        axisTick: {
+                            show: false
+                        },
+                    },
+                    grid: {
+                        right: 60,
+                        left: 60,
+                    },
+                    dataset: {
+                        sourceHeader: true,
+                        source: data,
+                    },
+                    series: [
+                        {
+                            // data: [1320, 1132, 1001, 834, 720, 532, 401, 334, 201, 91],
+                            type: 'bar',
+                            color: '#0375DE',
+                            barWidth: '30%',
+                            seriesLayoutBy: 'column',
+                        },
+                    ]
+                };
+                this.pageTimesChart.setOption(this.pageTimesChartOption);
+                
+            },
+            // 初始化e-charts图表
+            initCharts() {
+                this.ailyBtnShow = false;
+                this.getTotalData();
+                this.getTotalLineData();
+                this.getAilyTimesData('department','','yes').then(datas => {
+                    this.setAilyTimesOpt(datas);
+                });
+                this.getPageTimesData();
+            },
+            // 初始化搜索时间月份
+            initDateMonth() {
+                var date = new Date();
+                var endyear = date.getFullYear();
+                var endmonth = date.getMonth() + 1;
+                var endday = date.getDate();
+                var endDate = '';
+                var startDate = '';
+                if (endday == 1) {
+                    endmonth = endmonth -1;
+                    if(endmonth == 0) {
+                        endmonth = '12'
+                        endDate = `${endyear - 1}-${this.setNum(endmonth)}`;
+                        startDate = `${endyear - 1}-${this.setNum(endmonth-11)}`;
+                    } else {
+                        endDate = `${endyear}-${this.setNum(endmonth)}`;
+                        startDate = `${endmonth-11 > 0 ? endyear : endyear - 1}-${endmonth-11 > 0 ? this.setNum(endmonth-11) : this.setNum(12+(endmonth-11))}`;
+                    }
+                    
+                } else {
+                    endDate = `${endyear}-${this.setNum(endmonth)}`;
+                    startDate = `${endmonth-11 > 0 ? endyear : endyear - 1}-${endmonth-11 > 0 ? this.setNum(endmonth-11) : this.setNum(12+(endmonth-11))}`; 
+                }
+                this.dateMonthRange = [startDate,endDate]
+            },
+            // 月份补0
+            setNum(month) {
+                let str = month;
+                if(month<10){
+                    str = "0"+month
+                }
+                return str;
+            },
+            // 点击更多
+            toMore() {
+                newTab("/index.php?m=data_center&a=erp_opertion_more", this.$lang('系统使用详情'));
+            },
+        },
+    })
+</script>

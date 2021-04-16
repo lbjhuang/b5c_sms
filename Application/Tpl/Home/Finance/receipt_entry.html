@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <title>Document</title>
+</head>
+<style> 
+    [v-cloak]{
+        display: none;
+    }
+    h4{
+        margin: 0;
+        line-height: 40px;
+    }
+    .entry-info{
+        width: 100%;
+        text-align: center;
+        border-left: 1px solid #E0E0E0;
+        border-bottom: 1px solid #E0E0E0;
+        font-size: 15px;
+        margin-bottom:20px;
+    }
+    .entry-info caption{
+        height: 40px;
+        background-color: #546E7A;
+        color: white;
+        text-align: left;
+        font-size: 15px;
+        line-height: 40px;
+        padding-left: 20px;
+    }
+    .entry-info tr td{
+        border-right: 1px solid #E0E0E0;
+        border-top: 1px solid #E0E0E0;
+        padding: 5px 15px;
+    }
+    .entry-info tr td:nth-child(odd){
+        width: 20%;
+        background: #f5fafe;
+    }
+    .entry-info tr td .el-input__inner{
+        height: 35px;
+    }
+    .input-with-select .el-input-group__prepend {
+        background-color: #fff;
+    }
+    .currency{
+        width: 90px;
+    }
+   .el-select .el-input__inner{
+        width: 100%;
+    }
+    .width-100{
+        width: 100% !important;
+    }
+    .required::after{
+        content: "*";
+        color:red;
+        margin-left: 5px;
+    }
+</style>
+<body>
+    <div id="receipt" v-cloak>
+        <el-container>
+            <el-header>
+                <el-row>
+                    <el-col :span="12"> 
+                        <h4>{{$lang('收款流水录入')}}</h4> 
+                    </el-col>
+                    <el-col :span="12" class="text-right">
+                        <el-button @click="downTmep">{{$lang('批量导入模板下载')}}</el-button>
+                        <el-button type="text">
+                            <el-upload class="upload-demo" action="/index.php?m=finance&a=importRecipt" :show-file-list=false :on-success="importRecipt">
+                                <el-button type="primary">{{$lang('批量导入')}}</el-button>
+                            </el-upload>
+                        </el-button>
+                    </el-col>
+            </el-row>
+            </el-header>
+            <el-main>
+                <table class="entry-info" border="0" cellpadding="0" cellspacing="0">
+                    <caption>{{$lang('基本信息')}}</caption>
+                    <tbody>
+                        <tr>
+                            <td><span class="required">{{$lang('付款账户名')}}</span></td>
+                            <td>
+                                <el-autocomplete class="width-100" v-model="form.opp_company_name" clearable :fetch-suggestions="querySearchAsync" :placeholder="$lang('请输入内容')"></el-autocomplete>
+                            </td>
+                            <td><span class="required">{{$lang('收款账户名')}}</span></td>
+                            <td>
+                                <el-select class="width-100" @change="pickCompany" v-model="form.company_code" filterable default-first-option clearable :placeholder="$lang('请输入内容')">
+                                    <el-option v-for="item in baseData.company" :key="item.cd" :label="item.cdVal" :value="item.cd"> </el-option>
+                                </el-select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="required">{{$lang('收款银行')}}</span></td>
+                            <td>
+                                <el-select class="width-100" @change="pickBank" v-model="form.open_bank" :placeholder="$lang('请选择')" clearable>
+                                    <el-option v-for="item in baseData.receiptbank" :key="item.id" :label="item.open_bank" :value="item.open_bank"> </el-option>
+                                </el-select>
+                            </td>
+                            <td><span class="required">{{$lang('收款银行账号')}}</span></td>
+                            <td>
+                                <el-select class="width-100" v-model="form.account_bank" :placeholder="$lang('请选择')">
+                                    <el-option v-for="(item,index) in baseData.account" :key="item" :label="item" :value="item"> </el-option>
+                                </el-select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="required">{{$lang('收款凭证')}}</span></td>
+                            <td>
+                                <el-upload class="upload-demo" action="/index.php?m=order_detail&a=file_upload" :before-upload="handleBeforeUpload" :on-remove="handleRemove" :on-success="handleSuccess" multiple :file-list="fileList">
+                                    <el-button size="small" type="primary">{{$lang('点击上传')}}</el-button>
+                                </el-upload>
+                            </td>
+                            <td><span class="required">{{$lang('收款日期')}}</span></td>
+                            <td>
+                                <el-date-picker class="width-100"  :picker-options="pickerOptions" value-format="yyyy-MM-dd" v-model="form.transfer_time" type="date" :placeholder="$lang('选择日期')"> </el-date-picker>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="required">{{$lang('收款类型')}}</span></td>
+                            <td>
+                                <el-select class="width-100" v-model="form.collection_type" :placeholder="$lang('请选择')">
+                                    <el-option v-for="item in baseData.receiptType" :key="item.cd" :label="item.cdVal" :value="item.cd"> </el-option>
+                                </el-select>
+                            </td>
+                            <td>{{$lang('备注')}}</td>
+                            <td><el-input v-model="form.remark" :placeholder="$lang('请输入备注')"></el-input></td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <table class="entry-info" border="0" cellpadding="0" cellspacing="0">
+                    <caption>{{$lang('金额信息')}}</caption>
+                    <tbody>
+                        <tr>
+                            <td><span class="required">{{$lang('我方实收金额')}}</td>
+                            <td>
+                                 <el-input :placeholder="$lang('请输入内容')" v-model="form.amount_money" class="input-with-select" @blur="checkAmount('amount_money',true)">
+                                    <el-select class="currency" v-model="form.currency_code" slot="prepend" :placeholder="$lang('请选择')">
+                                        <el-option v-for="item in baseData.currency" :key="item.cd" :label="item.cdVal" :value="item.cd"> </el-option>
+                                    </el-select>
+                                </el-input>
+                            </td>
+                            <td><span class="required">{{$lang('原始金额')}}</td>
+                            <td>
+                                 <el-input :placeholder="$lang('请输入内容')" v-model="form.original_amount" class="input-with-select"  @blur="checkAmount('original_amount',true)">
+                                    <el-select class="currency" v-model="form.original_currency" slot="prepend" :placeholder="$lang('请选择')">
+                                            <el-option v-for="item in baseData.currency" :key="item.cd" :label="item.cdVal" :value="item.cd"> </el-option>
+                                    </el-select>
+                                </el-input>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="required">{{$lang('其他费用')}}</td>
+                            <td>
+                                 <el-input :placeholder="$lang('请输入内容')" v-model="form.other_cost" class="input-with-select" @blur="checkAmount('other_cost')">
+                                    <el-select class="currency" v-model="form.other_currency" slot="prepend" :placeholder="$lang('请选择')">
+                                            <el-option v-for="item in baseData.currency" :key="item.cd" :label="item.cdVal" :value="item.cd"> </el-option>
+                                    </el-select>
+                                </el-input>
+                            </td>
+                            <td><span class="required">{{$lang('汇款人费用')}}</td>
+                            <td>
+                                <el-input :placeholder="$lang('请输入内容')" v-model="form.remitter_cost" class="input-with-select" @blur="checkAmount('remitter_cost')">
+                                    <el-select class="currency" v-model="form.remitter_currency" slot="prepend" :placeholder="$lang('请选择')">
+                                            <el-option v-for="item in baseData.currency" :key="item.cd" :label="item.cdVal" :value="item.cd"> </el-option>
+                                    </el-select>
+                                </el-input>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="text-center">
+                    <el-button type="primary" @click="submit" :disabled="submitStatus">{{$lang('提交')}}</el-button>
+                </div>
+            </el-main>
+        </el-container>
+        <el-dialog :title="$lang('提示')" :visible.sync="dialog.visible" width="50%" :before-close="closeDialog">
+            <span v-html="$lang(dialog.text)"></span>
+            <span slot="footer" class="dialog-footer">
+                <el-button type="primary" @click="continueEntry">{{$lang('继续录入')}}</el-button>
+            </span>
+        </el-dialog>
+    </div>
+    
+<!--引入js-->
+<script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+<script>
+    if (getCookie('think_language') !== "zh-cn") {
+        ELEMENT.locale(ELEMENT.lang.en)
+    }
+
+    var  vm = new Vue({
+        el:'#receipt',
+        data:{
+            submitStatus:false,
+            form:{
+                opp_company_name:'',
+                company_name:'',
+                company_code:'',
+                open_bank:'',
+                account_bank:'',
+                transfer_voucher:'',
+                transfer_time:'',
+                collection_type:'',
+                remark:'',
+                currency_code:'',
+                amount_money:'',
+                original_currency:'',
+                original_amount:'',
+                other_currency:'',
+                other_cost:'',
+                remitter_currency:'',
+                remitter_cost:'',
+            },
+            baseData:{},
+            bankData:{},
+            receiptbank:{},
+            fileList: [],
+            dialog:{
+                visible:false,
+                text:'',
+                status:true
+            },
+            pickerOptions: {
+                disabledDate(time) {
+                    return time.getTime() > Date.now();
+                }
+            }
+        },
+        created:function(){
+            this.getBaseData();
+        },
+        methods:{
+            getBaseData: function () {
+                var _this = this;
+                axios.post('/index.php?m=finance&a=commonData', {
+                    data: {
+                        query: {
+                            receiptType: "true",
+                            currency: "true",
+                            company: "true",
+                        },
+                        type: "sorting"
+                    }
+                }).then(function (res) {
+                    _this.baseData = res.data.data;
+                });
+            },
+            pickCompany: function () {
+                var _this = this;
+                this.form.open_bank = '';
+                this.form.account_bank = '';
+                if (!this.form.company_code) {
+                    this.baseData.account = [];
+                    this.baseData.receiptbank = [];
+                    return false;
+                }
+                _this.form.company_name = this.baseData.company.filter(function (item) {
+                    return item.cd == _this.form.company_code
+                })[0].cdVal;
+
+                axios.post('/index.php?&m=finance&a=getReceiptBank', {
+                    company_code: _this.form.company_code,
+                    open_bank: _this.form.open_bank,
+                }).then(function (res) {
+                    _this.$set(_this.baseData, 'receiptbank', res.data.data)
+                });
+
+            },
+            pickBank: function () {
+                var _this = this;
+                this.form.account_bank = '';
+                if (!this.form.open_bank) {
+                    this.baseData.account = [];
+                    return false;
+                }
+
+                var data = this.baseData.receiptbank.filter(function (item) {
+                    return item.open_bank == _this.form.open_bank
+                });
+                this.baseData.account = data[0].account;
+            },
+            checkAmount: function (val, type) {
+                if (this.form[val] < 0) {
+                    this.$message.error($lang('金额不能小于0'));
+                    this.form[val] = '';
+                    return false;
+                }
+
+                if (type && this.form[val] <= 0) {
+                    this.$message.error($lang('金额必须大于0'));
+                    this.form[val] = '';
+                }
+            },
+            querySearchAsync: function (queryString, callback) {
+                if (queryString) {
+                    axios.post('/index.php?&m=finance&a=getB2bCustomer', { name: queryString })
+                        .then(function (res) {
+                            var tmep = [];
+                            if (res.data.data) {
+                                res.data.data.forEach(function (item) {
+                                    tmep.push({ value: item.SP_NAME })
+                                })
+                            }
+                            callback(tmep);
+                        })
+                }else{
+                    callback([]);
+                }
+            },
+            handleRemove:function(file, fileList) {
+                this.fileList = fileList;
+            },
+            handleBeforeUpload:function(file) {
+                var has = this.fileList.some(function (item) {
+                    return item.name == file.name;
+                })
+                if(has){
+                    this.$message.warning(this.$lang("文件已经上传"));
+                    return false;
+                }
+            },
+            handleSuccess:function(response, file, fileList) {
+                if(response.status){
+                    this.fileList = fileList;
+                    this.$message.success(this.$lang("文件上传成功"));
+                }else{
+                    this.$message.error(this.$lang("文件上传失败"));
+                }
+            },
+            submit:function(){
+                var _this = this;
+                var temp = [];
+                this.fileList.forEach(function(item){
+                    temp.push({ 
+                        name: item.response.info.name, 
+                        savename: item.response.info.savename,
+                        savepath: item.response.info.savepath 
+                    })
+                })
+                this.form.transfer_voucher = temp;
+                for (var key in this.form) {
+                    switch (key) {
+                        case 'transfer_voucher':
+                            if (!this.form[key].length) {
+                                this.$message.warning(this.$lang("收款凭证必须上传"));
+                                return false;
+                            }
+                        case 'other_cost':
+                            if (this.form[key] == '') {
+                                this.$message.warning(this.$lang("其他费用为必填"));
+                                return false;
+                            }
+                        case 'remitter_cost':
+                            if (this.form[key] == '') {
+                                this.$message.warning(this.$lang("汇款人费用为必填"));
+                                return false;
+                            }
+                        case 'remark':
+                            break;
+                        default:
+                            if (!this.form[key]) {
+                                this.$message.warning(this.$lang("*号标注的都为必填，请填写"));
+                                return false;
+                            }
+                    }
+                }
+                this.submitStatus = true;
+
+                axios.post('/index.php?&m=finance&a=receiptEntry',JSON.stringify(this.form))
+                .then(function(res){
+                    _this.dialog.visible = true;
+                    _this.submitStatus = false;
+                    if(res.data.code == 2000){
+                        _this.dialog.text = "<span style='color:#4CAF50;font-size:15px;font-weight:600;'>" +  _this.$lang('提交成功') + "。</span>"
+                        _this.dialog.status = true;
+                    }else{
+                        var msg = res.data.msg,
+                            text = "<span style='color:#F44336;font-size:15px;font-weight:600;'>" +  _this.$lang("提交失败,失败原因") + "：</span><br><br>"
+                        if (typeof msg == "object") {
+                            for (var key in msg) {
+                                text += "&nbsp;&nbsp;&nbsp;&nbsp;" + msg[key] + "<br>"
+                            }
+                        } else {
+                            text += "&nbsp;&nbsp;&nbsp;&nbsp;" + msg + "<br>"
+                        }
+                        _this.dialog.text = text;
+                        _this.dialog.status = false;
+                    }
+                })
+            },
+            continueEntry: function () {
+                this.dialog.visible = false;
+                if (this.dialog.status) {
+                    this.fileList = [];
+                    for (var key in this.form) {
+                        this.form[key] = ''
+                    }
+                }
+            },
+            closeDialog:function(){
+                this.continueEntry();
+            },
+            downTmep:function(){
+                location.href = '/index.php?m=finance&a=downloadPackage&name=in.zip';
+            },
+            importOrder: function importOrder() {
+                document.getElementById('activeImport').click();
+            },
+            importRecipt: function (res, file, fileList) {
+                var _this = this;
+                _this.dialog.visible = true;
+                if (res.code == 2000) {
+                    _this.dialog.text = "<span style='color:#4CAF50;font-size:15px;font-weight:600;'>" +  _this.$lang('提交成功') + "。</span>"
+                } else {
+                    var msg = res.msg,
+                        text = "<span style='color:#F44336;font-size:15px;font-weight:600;'>" +  _this.$lang("提交失败,失败原因") + "：</span><br><br>"
+                    if (typeof msg == "object") {
+                        for (var key in msg) {
+                            text += "&nbsp;&nbsp;&nbsp;&nbsp;" + msg[key] + "<br>"
+                        }
+                    } else {
+                        text += "&nbsp;&nbsp;&nbsp;&nbsp;" + msg + "<br>"
+                    }
+                    _this.dialog.text = text;
+                }
+            }
+        },
+    })
+</script>
+</body>
+</html>
+
+ 

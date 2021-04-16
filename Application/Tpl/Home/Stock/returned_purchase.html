@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <!-- <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css"> -->
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.const.V}>">
+    <!--[if IE 9]> <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/style.css"/><![endif]-->
+
+    <title>订单列表</title>
+</head>
+<style>
+    [v-cloak] {
+        visibility: hidden;
+    }
+    
+    .el-select {
+        width: 100%;
+        padding: 0;
+    }
+</style>
+
+<body class="orderList">
+    <div id="goods" class="list-common" style="margin-bottom:220px" v-cloak>
+        <el-form ref="search" :model="search" label-width="100px">
+            <el-row>
+                <el-col :span="24">
+                    <el-form-item :label="$lang('出库状态')">
+                        <el-radio-group v-model="search.outbound_status" size="medium">
+                            <el-radio-button label="0">{{$lang('待出库')}}</el-radio-button>
+                            <el-radio-button label="1">{{$lang('已出库')}}</el-radio-button>
+                        </el-radio-group>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('采购退货单号')">
+                        <el-input v-model="search.return_no" clearable></el-input>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('仓库')">
+                        <el-select v-model="search.warehouse_cd_arr" :placeholder="$lang('请选择仓库')" clearable filterable multiple collapse-tags>
+                            <el-option :label="$lang(e.CD_VAL)" :value="e.CD" :key="e.CD" v-for="e in baseData.warehouses"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="5">
+                    <el-form-item :label="$lang('供应商')">
+                        <el-input v-model="search.supplier" clearable></el-input>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="7">
+                    <el-form-item :label="$lang('我方公司')">
+                        <el-select v-model="search.our_company_cd_arr" :placeholder="$lang('请选择公司')" clearable filterable multiple collapse-tags>
+                            <el-option :label="e.cdVal" :value="e.cd" :key="e.cd" v-for="e in baseData.company"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('采购团队')">
+                        <el-select v-model="search.purchase_team_cd_arr" :placeholder="$lang('请选择团队')" clearable filterable multiple collapse-tags>
+                            <el-option :label="e.cdVal" :value="e.cd" :key="e.cd" v-for="e in baseData.purchasingTeam"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('发起人')">
+                        <el-input v-model="search.created_by" clearable></el-input>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('出库负责人')">
+                        <el-input v-model="search.prchasing_return_by" clearable></el-input>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('SKU/条形码')">
+                        <el-input v-model="search.sku_or_barcode" clearable></el-input>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="6">
+                    <el-button style="margin-left: 100px" type="primary" @click="getListData">{{$lang("查询")}}</el-button>
+                    <el-button @click="reset">{{$lang("重置")}}</el-button>
+                </el-col>
+            </el-row>
+
+        </el-form>
+        <p>{{$lang('搜索结果')}}：{{$lang('共')}} <b>{{total}}</b> {{$lang('条')}}</p>
+        <el-table border show-header ref="multipleTable" :data="listData" tooltip-effect="dark" style="width: 100%" v-loading="tableLoading" class="order-list-table table-common">
+            <el-table-column :label="$lang('采购退货单号')" prop="return_no"> </el-table-column>
+            <el-table-column :label="$lang('出库状态')">
+                <template slot-scope="scope">
+                    {{$lang(scope.row.outbound_status_val)}}
+                </template>
+            </el-table-column>
+            <el-table-column :label="$lang('仓库')">
+                <template slot-scope="scope">
+                    {{$lang(scope.row.warehouse_cd_val)}}
+                </template>
+            </el-table-column>
+            <el-table-column :label="$lang('采购团队')" prop="purchase_team_cd_val"> </el-table-column>
+            <el-table-column :label="$lang('发起人')" prop="created_by"> </el-table-column>
+            <el-table-column :label="$lang('供应商')">
+                <template slot-scope="scope">
+                    {{$lang(scope.row.supplier)}}
+                </template> 
+            </el-table-column>
+            <el-table-column :label="$lang('我方公司')">
+                <template slot-scope="scope">
+                    {{$lang(scope.row.our_company_cd_val)}}
+                </template>    
+            </el-table-column>
+            <el-table-column :label="$lang('收货城市')">
+                <template slot-scope="scope">
+                    {{$lang(scope.row.receive_address_country_val)}} -
+                    {{$lang(scope.row.receive_address_province_val)}} -
+                    {{$lang(scope.row.receive_address_area_val)}}
+                </template>
+            </el-table-column>
+            <el-table-column :label="$lang('操作')">
+                <template slot-scope="scope">
+                <el-button size="mini" type="primary" @click="view(scope.row.id,'view')">{{$lang("查看")}}</el-button>
+                <el-button size="mini" @click="view(scope.row.id)" v-if="scope.row.outbound_status == 0">{{$lang("出库")}}</el-button>
+            </template>
+            </el-table-column>
+        </el-table>
+        <div class="block">
+            <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="current_page" :page-sizes="[10, 20, 30, 50]" :page-size="per_page" layout="sizes, prev, pager, next" :total="total">
+            </el-pagination>
+        </div>
+
+    </div>
+    <!--引入js-->
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js?<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script>
+        if (getCookie('think_language') !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en)
+        }
+        var lists = new Vue({
+            el: '#goods',
+            data: {
+                search: {
+                    outbound_status: '0',
+                    return_no: '',
+                    warehouse_cd_arr: [],
+                    create_user: '',
+                    supplier: '',
+                    purchase_team_cd_arr: [],
+                    our_company_cd_arr: [],
+                    prchasing_return_by: '',
+                    sku_or_barcode: ''
+                },
+                per_page: 20,
+                current_page: 1,
+                baseData: {},
+                listData: [{}],
+                total: 0,
+                tableLoading: false,
+            },
+            created: function() {
+                this.getBaseData();
+                this.getListData();
+            },
+            methods: {
+                getBaseData: function() {
+                    var _this = this;
+                    var param = {
+                        data: {
+                            query: {
+                                warehouses: true,
+                                company: true,
+                                purchasingTeam: true,
+                            }
+                        }
+                    }
+                    axios.post('/index.php?g=oms&m=CommonData&a=commonData', param).then(function(res) {
+                        _this.baseData = res.data.data;
+                    });
+
+                },
+                getListData: function() {
+                    var _this = this;
+                    var param = {
+                        search: this.search,
+                        page: {
+                            per_page: this.per_page,
+                            current_page: this.current_page
+                        }
+                    }
+                    axios.post('/index.php?m=Warehousing&a=returnOutList', param)
+                        .then(function(res) {
+                            result = res.data.data;
+                            _this.listData = result.data || [];
+                            _this.total = +(result.page.total || 0);
+                        })
+                },
+                reset: function() {
+                    this.search = {
+                        outbound_status: '',
+                        return_no: '',
+                        warehouse_cd_arr: [],
+                        create_user: '',
+                        supplier: '',
+                        purchase_team_cd_arr: [],
+                        our_company_cd_arr: [],
+                        prchasing_return_by: '',
+                        sku_or_barcode: ''
+                    }
+                    this.per_page = 20;
+                    this.current_page = 1;
+                },
+                view: function(id, type) {
+                    newTab('/index.php?m=stock&a=returned_detail&id=' + id + '&type=' + type, this.$lang('采购退货详情'));
+                },
+                outStock: function() {
+
+                },
+                handleSizeChange(val) {
+                    console.log(`每页 ${val} 条`);
+                },
+                handleCurrentChange(val) {
+                    console.log(`当前页: ${val}`);
+                }
+            },
+            watch: {
+                search: {
+                    handler: function(newValue, oldValue) {
+                        this.getListData();
+                    },
+                    deep: true
+                }
+            },
+        });
+    </script>
+
+</body>
+
+</html>

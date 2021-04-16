@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>调拨库存</title>
+    <link rel="stylesheet" type="text/css" href="../Public/css/H-ui-3.1.min.css"/>
+    <link rel="stylesheet" type="text/css" href="../Public/css/style.css" />
+    <link rel="stylesheet" href="../Public/css/default.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../Public/lib/layer-v3.0.3/layer/skin/default/layer.css"/>
+    <link rel="stylesheet" type="text/css" href="../Public/icon/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="../Public/utils/css/public.style.css">
+    <link rel="stylesheet" type="text/css" href="../Public/css/allocation.css?v=125">
+</head>
+<style>
+</style>
+<body>
+<div class="wrap" id="app" v-cloak>
+    <div class="select-line">
+        <form action="" method="post" id="thisform">
+            <div class="row b2b-form" style="height:32px;">
+                <div class="col-sm-3">
+                    <{$Think.lang.展示范围}>
+                    <select name="view_range_show" v-model="view_range_show" v-cloak>
+                        <option value=""><{$Think.lang.请选择展示范围}></option>
+                        <option v-for="(i, v) in view_range" :value="v">{{i}}</option>
+                    </select>
+                </div>
+                <div class="col-sm-3">
+                    <{$Think.lang.仓库}>
+                    <select name="list_warehouse_show" v-model="list_warehouse_show" v-cloak>
+                        <option value=""><{$Think.lang.请选择仓库}></option>
+                        <option v-for="(i, v) in list_warehouse" :value="v">{{i}}</option>
+                    </select>
+                </div>
+                <div class="col-sm-3">
+                    <{$Think.lang.销售团队}>
+                    <select name="sales_team_show" v-model="sales_team_show" v-cloak>
+                        <option value=""><{$Think.lang.请选择销售团队}></option>
+                        <option v-for="(i, v) in sales_team" :value="i.CD">{{i.CD_VAL}}</option>
+                    </select>
+                </div>
+                <div class="col-sm-3">
+                    <{$Think.lang.SKU编码}>
+                    <input type="text" name="sku_id" v-model="sku_id" :value="sku_id" placeholder="<{$Think.lang.SKU编码}>">
+                </div>
+            </div>
+            <div class="use-row">
+                <div class="col-100 use-btn">
+                    <button @click="submit" type="button" name="query" class="btn-pub btn-green"><{$Think.lang.查询}></button>
+                    <button type="button" @click="reset_conditions" name="reset" class="btn-pub btn-default mg-l-10"><{$Think.lang.重置}></button>
+                    <a onclick="opennewtab(this, '调拨记录')" href="javascript:void(0);" _href="<{:U('Allocation/allo_history')}>" name="reset" class="btn-pub btn-default mg-l-10"><{$Think.lang.调拨记录}></a>
+                </div>
+            </div>
+            <div class="baseline"></div>
+        </form>
+    </div>
+    <div id="xcl-table" style="margin-top: 15px">
+        <table class="b2b-table">
+            <thead>
+            <tr class="use-head">
+                <th width="30"><{$Think.lang.序号}></th>
+                <th><{$Think.lang.仓库}></th>
+                <th><{$Think.lang.SKU编码}></th>
+                <th><{$Think.lang.商品名称}></th>
+                <th><{$Think.lang.销售团队}></th>
+                <th><{$Think.lang.可售}></th>
+                <th><{$Think.lang.超卖}></th>
+                <th><{$Think.lang.操作}></th>
+            </tr>
+            </thead>
+            <tbody class="use-body">
+            <tr v-for="(list,index) in data_ret" v-cloak class="td-wrap">
+                <td>{{index+1}}</td>
+                <td><span v-if="list.warehouse in list_warehouse">{{ list_warehouse[list.warehouse] }}</span><span v-else>-</span></td><!--仓库-->
+                <td>{{list.SKU_ID}}</td><!--SKU编码-->
+                <td>{{list.GUDS_NM}}</td><!--商品名称-->
+                <td><span v-if="list.sale_team_code in sales_team">{{sales_team[list.sale_team_code].CD_VAL}}</span><span v-else>-</span></td><!--销售团队-->
+                <td>{{list.all_available_for_sale_nums}}</td><!--可售-->
+                <td class="box-parent" :class="{ showbg:list.show_bg }" style="cursor: pointer;text-decoration: underline;" ><!--超卖-->
+                    <span @click="show(list)">{{list.oversize}}</span>
+                    <div class="xcl-box" v-show="list.is_show" style="width: 455px;">
+                        <div class="search-row">
+                            <input type="text" v-model="search_order" >
+                            <i class="Hui-iconfont Hui-iconfont-search" @click="search"></i>
+                            <button type="button" @click="reset"><{$Think.lang.重置}></button>
+                            <i class="Hui-iconfont  btn-close"  @click="close(list)">&#xe6dd;</i>
+                            <table>
+                                <colgroup>
+                                    <col style="width: 80px;" />
+                                    <col style="width: 120px;" />
+                                    <col style="width: 174px;" />
+                                    <col />
+                                </colgroup>
+                                <thead>
+                                <tr>
+                                    <th ><{$Think.lang.序号}></th>
+                                    <th ><{$Think.lang.B5C订单}></th>
+                                    <th ><{$Think.lang.第三方订单}></th>
+                                    <th ><{$Think.lang.数量}></th>
+                                </tr>
+                                </thead>
+                            </table>
+                        </div>
+                        <div style="overflow-y:scroll; height: 280px;">
+                            <table class="tabel table table-border table-bordered table-bg">
+                                <colgroup>
+                                    <col style="width: 80px;" />
+                                    <col style="width: 120px;" />
+                                    <col style="width: 174px;" />
+                                    <col />
+                                </colgroup>
+                                <tbody>
+                                <tr v-for="(s,index) in show_table">
+                                    <td>{{index+1}}</td>
+                                    <td class="td-linknum">
+                                        <span>{{s.order_id}}</span>
+                                    </td>
+                                    <td class="td-linknum">
+                                        <a onclick="opennewtab(this,'第三方订单')" :_href="other_url+s.ORDER_ID" target="_blank" href="javascript:void(0);" > <span>{{s.ORDER_ID}}</span></a>
+                                    </td>
+                                    <td>{{s.change_num}}</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                            <div class=" padding10-0">
+                                <ul class="pagination" v-html="ajax_page">
+                                    <!--<li v-for="(l,index) in show_list.sum"><a href="javascript:void(0);" @click="show_page(index)">{{index+1}}</a></li>-->
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                     <?php if(ButtonAction::hidden()){ ?>
+                    <button class="btn btn-sm-cus btn-co-delete" @click="launch_allo(list)"><{$Think.lang.发起调拨}></button>
+                     <?php } ?>
+                </td><!--操作-->
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    <!--发起调拨-->
+    <div id="modal-demo" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog" style="min-width: 693px;">
+            <div class="modal-content radius">
+                <div class="modal-header">
+                    <center><h3 class="modal-title"></h3></center>
+                    <a class="close" data-dismiss="modal" aria-hidden="true" href="javascript:void();">×</a>
+                </div>
+                <div class="modal-body">
+                    <table class="table table-border table-bordered table-striped">
+                        <thead>
+                        <tr>
+                            <th width="20%" style="text-align: center;"><{$Think.lang.商品名称}></th>
+                            <th width="20%" style="text-align: center;"><{$Think.lang.销售团队}></th>
+                            <th width="20%" style="text-align: center;"><{$Think.lang.可调拨数量}></th>
+                            <th width="20%" style="text-align: center;"><{$Think.lang.输入调拨数量}></th>
+                            <th width="20%" style="text-align: center;"><{$Think.lang.总调拨数}></th>
+                        </tr>
+                        </thead>
+                    </table>
+                    <div class="row" style="margin-left: 0px;display: flex;" >
+                        <div style="width: 132px; padding: 0; float: left;  height: 182px; line-height: 200px; text-align: center;">
+                            <table class="table table-border table-bordered table-striped">
+                                <tbody>
+                                <tr >
+                                    <td colspan="" style="text-align: center; width: 115px; height: 182px;">{{guds_name}}</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div style="width:396px;padding: 0; float: left; height: 200px;overflow-x: hidden;overflow-y: scroll; border-bottom: 1px solid #ddd;">
+                            <table class="table table-border table-bordered table-striped">
+                                <tbody>
+                                <tr v-for="(e, i) in batchs">
+                                    <td style="text-align: center; width: 115px;"><span v-if="e.sale_team_code in sales_team">{{sales_team[e.sale_team_code].CD_VAL}}</span><span v-else>-</span></td>
+                                    <td style="text-align: center; width: 115px;">{{e.all_available_for_sale_nums}}</td>
+                                    <td><input type="text" class="input-text" v-model="e.launch_num" placeholder="<{$Think.lang.输入调拨数量}>" @keyup="addition(e, i)"></td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div style="width: 132px; padding: 0; float: left;  height: 182px; line-height: 200px; text-align: center;">
+                            <table class="table table-border table-bordered table-striped">
+                                <tbody>
+                                <tr >
+                                    <td colspan="2" style="text-align: center; width: 115px; height: 182px">{{launch_total}}</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <!--<a class="btn btn-primary" onclick="opennewtab(this,'库存批次详情')" target="_blank" :_href="'/index.php?m=stock&a=batch_lock&channel=' + plat_code + '&channel_sku_id=' + channel_sku_id + '&store_id=' + store_id + '&sku=' + current_sku" href="javascript:void(0);">确定</a>-->
+                    <button class="btn-primary btn" @click="confirm_launch()"><{$Think.lang.确认}></button>
+                    <a class="btn" data-dismiss="modal" aria-hidden="true">关闭</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="use-row">
+        <div class="col-100 text-right">
+            <ul class="pagination" v-html="show"></ul>
+        </div>
+    </div>
+</div>
+<script src="../Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="../Public/js/jquery-ui.min.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="../Public/js/H-ui-3.1.min.js"></script>
+<script src="../Public/js/stock/alert.js"></script>
+<script src="../Public/js/vue.js"></script>
+<script src="../Public/lib/layer-v3.0.3/layer/layer.js"></script>
+<script type="text/javascript" src="../Public/js/element-ui.js"></script>
+<script>
+    Vue.filter('timeZone', function (time, self_time) {
+        var self_time = parseInt(self_time);
+        var pdate = new Date(time);
+        var str = '';
+        pdate.setDate(pdate.getDate()+self_time);
+        if (pdate != 'Invalid Date') {
+            year = pdate.getFullYear();
+            month = pdate.getMonth()+1;
+            day = pdate.getDate();
+            str = year + "-" + month + "-" + day;
+        } else {
+            str = "-";
+        }
+        return str;
+    });
+
+    var vm = new Vue({
+        el: '#app',
+        data: {
+            // 搜索栏
+            view_range: <{$view_range}>,
+        list_warehouse: <{$list_warehouse}>,
+        sales_team: <{$sales_team}>,
+    sku_id: '',
+        plat_code: '',
+        channel_sku_id: '',
+        store_id: '',
+        current_sku: '',
+        param: <{$param}>,
+    // 结果集
+    data_ret: <{$data_ret}>,
+    // 超售数据
+    show_table: [],
+        show_list: '',
+        show_sku: '',
+        ajax_page: '',
+        search_order: '',
+        other_url:"<{$go_url}>",
+        // 调拨总数
+        launch_total: 0,
+        batchs: [],
+        guds_name: '',
+        launch_save_input_num: [],
+        new_sale_team: '',
+        warehouse: '',
+        view_range_show: '',
+        list_warehouse_show: '',
+        sales_team_show: '',
+        show: <{$show}>
+    },
+    methods: {
+        reset: function() {
+            this.search_order = '';
+            this.view_range_show = '';
+            this.list_warehouse_show = '';
+            this.sales_team_show = '';
+            this.data_ret.splice(1, 0);
+        },
+        submit: function (index) {
+            var p = index + 1;
+            var pindex;
+            $.ajax({
+                type:"POST",
+                async:false,
+                url:"/index.php?m=allocation&a=index",
+                data:{
+                    view_range_show:vm.view_range_show,
+                    list_warehouse_show:vm.list_warehouse_show,
+                    sales_team_show:vm.sales_team_show,
+                    sku_id:vm.sku_id,
+                    p:p,
+                },
+                beforeSend: function () {
+                    pindex = layer.load(2, {
+                        shade: [0.5,'#ddd'] //0.1透明度的白色背景
+                    });
+                },
+                success:function(res){
+                    if(res.status == 1) {
+                        vm.data_ret = res.data_ret;
+                        vm.show = res.show;
+                    } else {
+                        vm.show_msg(res.info);
+                    }
+                    layer.close(pindex);
+                },
+                error:function(){
+                    vm.show_msg('请求异常');
+                }
+            });
+        },
+        reset_conditions: function() {
+            this.search_order = '';
+            this.view_range_show = '';
+            this.list_warehouse_show = '';
+            this.sales_team_show = '';
+            this.sku_id = '';
+            this.data_ret.splice(1, 0);
+        },
+        show: function(e){
+            var sale_num = e.all_available_for_sale_num;
+            if (sale_num == 0) {
+                vm.show_msg("无超售数据");
+                return;
+            }
+            e.show_bg = 1;
+            var sku_id = this.sku_id = e.SKU_ID;
+            var index = 0;
+            $.ajax({
+                type:"POST",
+                async:false,
+                url:"/index.php?m=stock&a=take_up",
+                data:{
+                    SKU_ID:sku_id,
+                },
+                before_send: function () {
+                    index = layer.load(2, {
+                        shade: [0.1,'#fff'] //0.1透明度的白色背景
+                    });
+                },
+                success:function(res){
+                    if(JSON.parse(res)['status'] == 'y') {
+                        vm.show_table = JSON.parse(res)['data'];
+                        vm.show_list = JSON.parse(res)['show'];
+                        vm.show_sku = JSON.parse(res)['show']['sku'];
+                        vm.ajax_page = JSON.parse(res)['show']['ajax'];
+                        e.is_show = 1;
+                    } else {
+                        vm.show_msg(JSON.parse(res)['info']);
+                        e.show_bg = 0;
+                    }
+                    layer.close(index);
+                },
+                error:function(){
+                    vm.show_msg('请求异常');
+                }
+            });
+            this.data_ret.splice(1,0);
+        },
+        search: function() {
+            var order_id = this.search_order;
+            if (order_id == '') {
+                vm.show_msg('请输入订单号');
+                return;
+            }
+            $.ajax({
+                type:"POST",
+                async:false,
+                url:"/index.php?m=stock&a=search_up",
+                data:{
+                    order_id:order_id,
+                },
+                success:function(res){
+                    if(JSON.parse(res)['status'] == 'y'){
+                        vm.show_table = JSON.parse(res)['data']
+
+                    }else{
+                        vm.show_msg(JSON.parse(res)['info']);
+                    }
+
+                },
+                error:function(){
+                    vm.show_msg('请求异常');
+                }
+            });
+            this.stream_arr.splice(1,0)
+        },
+        close: function(e) {
+            e.show_bg = 0;
+            e.is_show = 0;
+            this.search_order = '';
+            this.data_ret.splice(1, 0);
+        },
+        search_order: function() {
+
+        },
+        show_page:function(index){
+            var SKU_ID = this.SKU_ID = this.show_sku;
+            var p = index + 1;
+            $.ajax({
+                type:"POST",
+                async:false,
+                url:"/index.php?m=stock&a=take_up",
+                data:{
+                    SKU_ID:SKU_ID,
+                    p:p
+                },
+                success:function(res){
+                    if(JSON.parse(res)['status'] == 'y'){
+                        vm.show_table = JSON.parse(res)['data']
+                        vm.ajax_page = JSON.parse(res)['show']['ajax']
+                    }else{
+                        vm.show_msg(JSON.parse(res)['info']);
+                    }
+
+                },
+                error:function(){
+                    vm.show_msg('请求异常');
+                }
+            });
+            this.data_ret.splice(1,0)
+        },
+        // 发起调拨，获取调拨数据
+        launch_allo: function(e) {
+            vm.new_sale_team = '';
+            vm.warehouse = '';
+            vm.launch_save_input_num = [];
+            vm.launch_total = 0;
+            //e.show_launch = 1;
+            var warehouse = e.warehouse;
+            vm.warehouse = e.warehouse;
+            var sale_team = e.sale_team_code;
+            var loadIndex = 0;
+            var sku = e.SKU_ID;
+            vm.new_sale_team = e.sale_team_code;
+            vm.guds_name = $.trim(e.GUDS_NM);
+            $.ajax({
+                type:"POST",
+                async:false,
+                url:"/index.php?m=allocation&a=launch_allo",
+                data:{
+                    warehouse: warehouse,
+                    sale_team: sale_team,
+                    sku_id: sku,
+                },
+                beforeSend: function () {
+                    loadIndex = layer.msg('<{$Think.lang.处理中}>', {icon: 16, shade: 0.3, time: 0});
+                },
+                success:function(res){
+                    layer.close(loadIndex);
+                    if (res.status == 1) {
+                        vm.batchs = res.data;
+                        vm.data_ret.splice(1, 0);
+                        $("#modal-demo").modal("show");
+                    } else {
+                        vm.show_msg(res.info);
+                    }
+                },
+                error:function(){
+                    layer.close(loadIndex);
+                    vm.show_msg('请求异常');
+                }
+            });
+            layer.close(loadIndex);
+            return;
+        },
+        // 确认调拨
+        confirm_launch: function() {
+            var index = layer.confirm('<{$Think.lang.是否发起调拨?}>', {
+                btn: ['<{$Think.lang.确认}>','<{$Think.lang.取消}>'], //按钮
+                title: '<{$Think.lang.提示}>'
+            }, function(){
+                $.ajax({
+                    type:"POST",
+                    async:false,
+                    url:"/index.php?m=allocation&a=confirm_launch",
+                    data:{
+                        batchs: vm.batchs,
+                        sale_team_code: vm.new_sale_team,
+                        warehouse: vm.warehouse
+                    },
+                    beforeSend: function () {
+                        loadIndex = layer.msg('<{$Think.lang.处理中}>', {icon: 16, shade: 0.3, time: 0});
+                    },
+                    success:function(res){
+                        layer.close(loadIndex);
+                        if (res.status == 1) {
+                            vm.data_ret.splice(1, 0);
+                            $("#modal-demo").modal("show");
+                            vm.show_msg(res.data);
+                        } else {
+                            vm.show_msg(res.info);
+                        }
+                        //                            setTimeout(function () {
+                        //                                window.location.reload();
+                        //                            }, 2000);
+                    },
+                    error:function(){
+                        layer.close(loadIndex);
+                        vm.show_msg('请求异常');
+                    }
+                });
+            }, function(){
+                layer.close(index);
+            });
+            return;
+        },
+        close_launch: function(e) {
+            e.show_launch = 0;
+            this.data_ret.splice(1, 0);
+        },
+        addition: function(e, idx) {
+            var launch_num = parseInt(e.launch_num);
+            var max = parseInt(e.all_available_for_sale_nums);
+            if (launch_num > max) {
+                $.Huimodalalert('调拨超出最大可售范围', 2000);
+                e.launch_num = max;
+                vm.launch_total += launch_num;
+            } else {
+                if (launch_num >= 0) {
+                    e.launch_num = launch_num;
+                } else {
+                    e.launch_num = 0;
+                }
+            }
+            vm.launch_save_input_num[idx] = e.launch_num;
+            vm.calculation_launch();
+            vm.batchs.splice(1, 0);
+            return;
+        },
+        calculation_launch: function () {
+            var sum = 0;
+            for (var i in vm.launch_save_input_num) {
+                if (parseInt(vm.launch_save_input_num [i]) > 0) sum += parseInt(vm.launch_save_input_num [i]);
+            }
+            vm.launch_total = sum;
+        },
+        show_msg: function(msg) {
+            $.Huimodalalert(msg, 2000);
+        }
+    }
+    });
+    function show_page(e){
+        vm.show_page(e-1);
+    }
+    function submit(e) {
+        vm.submit(e-1);
+    }
+    (function(){
+        console.log(vm.param);
+        if(0 != vm.param){
+            vm.view_range_show = vm.param.view_range_show;
+            vm.list_warehouse_show = vm.param.list_warehouse_show;
+            vm.sales_team_show = vm.param.sales_team_show;
+            vm.sku_id = vm.param.sku_id;
+        }
+    })();
+</script>
+<script src="../Public/js/common_allo.js?v=123"></script>
+</body>
+
+</html>

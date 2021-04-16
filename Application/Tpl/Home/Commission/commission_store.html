@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.config.VER_NUM}>">
+    <title>店铺列表</title>
+</head>
+<style>
+    [v-cloak] {
+        display: none;
+    }
+    .head_title {
+        font-size: 24px;
+        font-weight: 600;
+    }
+</style>
+
+<body class="orderList">
+    <div id="store" class="list-common" v-cloak style="margin-bottom:220px">
+        <div class="head_title">
+            {{ $lang("店铺列表") }}
+        </div>
+        <!-- 搜索查询 start-->
+        <div class="orderList-search search-common">
+            <div class="search-toggle">
+                <el-form ref="form" label-width="120px" :label-position="labelPosition">
+                    <el-row>
+                        <el-col :span="4" class="title-info-container">
+                            <el-form-item :label="$lang('平台')">
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="20" class="search-item-i" style="margin-left: 34px;">
+                            <span :class="{active:!form.plat_cds.length}" @click="selectOrderSource()">{{$lang('全部')}}</span>
+                            <span :class="{active:item.checked}" v-for="item in baseData.platform" @click="selectOrderSource(item)">{{item.cdVal}}</span>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('店铺')">
+                                <el-select :popper-append-to-body="false" multiple v-model="form.store_ids" clearable
+                                    :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                    <el-option v-for="item in baseData.stores" :label="item.cdVal" :value="item.cd"
+                                        :key="item.cd"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('运营状态')">
+                                <el-select :filterable="true" :placeholder="$lang('All')" v-model="form.store_status"
+                                    clearable style="width:100%;padding:0;">
+                                    <el-option label="All" value=""></el-option>
+                                    <el-option :label="$lang('运营中')" value="0"></el-option>
+                                    <el-option :label="$lang('未运营')" value="1"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('佣金规则状态')">
+                                <el-select :filterable="true" :placeholder="$lang('All')" v-model="form.is_enable"
+                                    clearable style="width:100%;padding:0;">
+                                    <el-option label="All" value=""></el-option>
+                                    <el-option :label="$lang('启用')" value="1"></el-option>
+                                    <el-option :label="$lang('未启用')" value="0"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                </el-form>
+            </div>
+            <!-- 搜索查询 end-->
+        </div>
+        <!-- 分割线 start-->
+        <div class="orderList-line line-split" style="height: 2px;margin-bottom: 20px"></div>
+        <!-- 分割线 end-->
+
+        <!-- 店铺表格主体 start-->
+        <div style="margin-top: 24px;font-size: 14px">
+            {{$lang('共')}}
+            <b>{{totalCount}}</b>
+            {{ $lang("条记录") }}
+        </div>
+        <div class="orderList-Main list-common-main" style="margin-top: 20px">
+            <el-table border :data="storeData" tooltip-effect="dark" style="width: 100%" class="order-list-table table-common"
+                v-loading="tableLoading">
+                <el-table-column prop="plat_name" :label="$lang('平台')"></el-table-column>
+                <el-table-column prop="store_name" :label="$lang('店铺名称')"></el-table-column>
+                <el-table-column prop="store_status_name" :label="$lang('运营状态')"></el-table-column>
+                <el-table-column prop="is_enable_name" :label="$lang('佣金规则状态')"></el-table-column>
+                <el-table-column :label="$lang('操作')">
+                    <template slot-scope="scope">
+                        <el-button type="success" size="small" @click="viewRule(scope.row.store_id)">
+                            {{$lang('查看佣金规则')}}
+                        </el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+
+            <el-pagination background @size-change="handleSizeChange" @current-change="handleCurrentChange"
+                :current-page.sync="form.page" :page-sizes="[10, 30, 50, 100]" :page-size="form.pageSize" layout="sizes,prev, pager, next, jumper"
+                :total="totalCount">
+            </el-pagination>
+
+        </div>
+        <!-- 店铺表格主体 end-->
+    </div>
+    </div>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script>
+        if (getCookie('think_language') !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en)
+        }
+
+        var store = new Vue({
+            el: '#store',
+            data: {
+                tableLoading: true,
+                labelPosition: 'center',
+                storeData: [],
+                totalCount: 10,
+                baseData: {
+                    stores: ['']
+                },
+                form: {
+                    plat_cds: [], // 平台
+                    store_ids: [], // 店铺
+                    store_status: "", // 运营状态
+                    is_enable: "", // 佣金规则状态
+                    page: 1,
+                    pageSize: 10
+                },
+                pickerOptions: {}
+            },
+            created: function () {
+                this.pickerOptions = {
+                        shortcuts: [{
+                            text: this.$lang("最近一周"),
+                            onClick: function (picker) {
+                                const end = new Date();
+                                const start = new Date();
+                                start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+                                picker.$emit('pick', [start, end]);
+                            }
+                        }, {
+                            text: this.$lang("最近一个月"),
+                            onClick: function (picker) {
+                                const end = new Date();
+                                const start = new Date();
+                                start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+                                picker.$emit('pick', [start, end]);
+                            }
+                        }, {
+                            text: this.$lang("最近三个月"),
+                            onClick: function (picker) {
+                                const end = new Date();
+                                const start = new Date();
+                                start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+                                picker.$emit('pick', [start, end]);
+                            }
+                        }],
+                        disabledDate(time) {
+                            return time.getTime() > Date.now();
+                        }
+                    },
+                    this.search();
+                // this.search1();
+                this.getData();
+            },
+            methods: {
+                // 筛选条件
+                search: function () {
+                    var param = {
+                        data: {
+                            query: {
+                                platform: "true",
+                                stores: "true"
+                            }
+                        }
+                    };
+                    axios.post("/index.php?&m=commission&a=commonData", param)
+                        .then(function (res) {
+                            if (res.data.code == 2000) {
+                                store.baseData = res.data.data;
+                                store.getStores()
+                            } else {
+                                this.$message({
+                                    message: this.$lang("数据查询失败"),
+                                    type: "warning"
+                                });
+                            }
+                        });
+                },
+                getStores: function () {
+                    var param = {
+                        data: {
+                            query: {}
+                        }
+                    };
+                    param.data.query.plat_cds = this.form.plat_cds;
+                    axios.post("/index.php?&m=commission&a=getStores", param)
+                        .then(function (res) {
+                            if (res.data.code == 2000) {
+                                store.baseData.stores = res.data.data;
+                            } else {
+                                this.$message({
+                                    message: this.$lang("数据查询失败"),
+                                    type: "warning"
+                                });
+                            }
+                        });
+                },
+                // 店铺列表
+                getData: function () {
+                    this.tableLoading = true;
+                    var param = {
+                        data: {}
+                    };
+                    param.data.query = this.form;
+                    axios.post("/index.php?&m=commission&a=getStoreList", param)
+                        .then(function (res) {
+                            var result = res.data;
+                            if (result.code == 2000) {
+                                store.tableLoading = false;
+                                store.storeData = result.data.pageData;
+                                store.totalCount = Number(result.data.totalCount);
+                            } else {
+                                store.$message.warning(result.data.msg);
+                            }
+                        });
+                },
+                // 复选功能
+                selectOrderSource: function (item) {
+                    var _this = this;
+                    if (!item) {
+                        _this.form.plat_cds = [];
+                        for (var i = 0; i < _this.baseData.platform.length; i++) {
+                            _this.baseData.platform[i].checked = false;
+                        }
+                    } else {
+                        item.checked = !item.checked;
+                        if (item.checked) {
+                            _this.form.plat_cds.push(item.cd);
+                        } else {
+                            _this.form.plat_cds.forEach(function (val, index) {
+                                if (val == item.cd) {
+                                    _this.form.plat_cds.splice(index, 1);
+                                }
+                            });
+                        }
+                    }
+                    this.getStores()
+                },
+                // 查看佣金规则
+                viewRule: function (id) {
+                    var route = document.createElement("a");
+                    route.setAttribute("style", "display: none");
+                    route.setAttribute("onclick", "opennewtab(this,'" + this.$lang('佣金配置规则详情') + "')");
+                    route.setAttribute("_href", '/index.php?m=commission&a=commission_rule&store_id=' + id);
+                    route.onclick();
+                },
+                handleSizeChange: function (val) {
+                    this.form.pageSize = val;
+                },
+                handleCurrentChange: function (val) {
+                    this.form.page = val;
+                }
+            },
+            //监听数据
+            watch: {
+                form: {
+                    handler(newValue, oldValue) {
+                        this.getData(newValue)
+                    },
+                    deep: true
+                }
+            }
+        });
+
+        function formatDate(date) {
+            var y = date.getFullYear();
+            var m = date.getMonth() + 1;
+            m = m < 10 ? ('0' + m) : m;
+            var d = date.getDate();
+            d = d < 10 ? ('0' + d) : d;
+            var h = date.getHours();
+            var minute = date.getMinutes();
+            minute = minute < 10 ? ('0' + minute) : minute;
+            var second = date.getSeconds();
+            second = minute < 10 ? ('0' + second) : second;
+            return y + '' + m + '' + d;
+        };
+    </script>
+</body>
+
+</html>

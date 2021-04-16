@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html lang="en">
+
+<head>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.8.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/lib/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <title>
+        <{$Think.lang.推广任务列表}>
+    </title>
+    <style>
+        [v-cloak]{
+            display: none;
+        }
+        #promotionTaskList{
+            box-sizing: border-box;
+            padding: 20px;
+            margin: 0;
+        }
+        .el-button--mini {
+            width: 8%;
+            height: 30px;
+        }
+
+        .el-button-group {
+            display: inline-block;
+            vertical-align: middle;
+            width: 100%;
+            margin-bottom: 30px;
+        }
+        .active_btn {
+            color: #fff;
+            background-color: #409eff;
+            border-color: #409eff;
+        }
+        .el-select,.el-date-editor--daterange.el-input__inner{
+            width: 100%;
+            display: flex;
+        }
+        .el-select .el-tag{
+            display: table;
+        }
+        .el-select .el-tag .el-select__tags-text{
+            white-space: normal;
+        }
+        .baseline{
+            width: 100%;
+            height: 1px;
+            background: rgb(201, 216, 224);
+            margin: 20px 0;
+        }
+        .el-table__header thead th{
+            background: #546E7A;
+            color: #fff;
+            border-bottom: 1px solid #668491;
+            border-right: 1px solid #668491;
+            text-align: center;
+        }
+        .el-table__body tbody tr td{
+            text-align: center;
+        }
+        .el-table__body tbody tr td:last-child{
+            border-right: none;
+        }
+        .el-table__body tbody tr:last-child td{
+            border-bottom: none;
+        }
+        .operating_data{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .couponTable{
+            border-top: 1px solid #cadee7;
+            border-left: 1px solid #cadee7;
+        }
+        .couponTable td{
+            width: 25%;
+            padding: 10px;
+            border-bottom: 1px solid #cadee7;
+            border-right: 1px solid #cadee7;
+        }
+        .couponTable td:nth-child(odd){
+            color: #546e7a;
+            background: #f7f9fb;
+        }
+        .tagUrl>span{
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+    
+        .el-date-editor .el-range-separator{
+            padding: 0;
+            width: 6%;
+        }
+    </style>
+</head>
+
+<body>
+    <div v-cloak id="promotionTaskList">
+        <el-form ref="form" :model="form" label-width="120px">
+            <el-row type="flex">
+                <el-col :span="6">
+                    <el-form-item :label="$lang('推广任务ID')">
+                        <el-input v-model="form.search.promotion_task_no"></el-input>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('状态')">
+                        <el-select v-model="form.search.status_cd" collapse-tags clearable  multiple filterable :placeholder="$lang('请选择')">
+                            <el-option
+                                v-for="(val,key) in promotion_task_status"
+                                :key="val.CD"
+                                :label="val.CD_VAL"
+                                :value="val.CD">
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col> 
+                <el-col :span="6">
+                    <el-form-item :label="$lang('认领人')">
+                        <el-select v-model="form.search.create_by" collapse-tags clearable  multiple filterable :placeholder="$lang('请选择')">
+                            <el-option
+                                v-for="(val,key) in users"
+                                :key="val.mName"
+                                :label="val.mName"
+                                :value="val.mName">
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col> 
+                <el-col :span="6">
+                    <el-form-item :label="$lang('推广平台')">
+                        <el-select v-model="form.search.channel_platform_id" collapse-tags clearable  multiple filterable :placeholder="$lang('请选择')">
+                            <el-option
+                                v-for="(val,key) in channel_platform"
+                                :key="val.id"
+                                :label="val.platform_name"
+                                :value="val.id">
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>  
+            </el-row>
+            <el-row type="flex">
+                <el-col :span="6">
+                    <el-form-item :label="$lang('推广媒介')">
+                        <el-select v-model="form.search.channel_medium_id" collapse-tags clearable  multiple filterable :placeholder="$lang('请选择')">
+                            <el-option
+                                v-for="(val,key) in channel_medium"
+                                :key="val.id"
+                                :label="val.medium_name"
+                                :value="val.id">
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col> 
+                <el-col :span="6">
+                    <el-form-item :label="$lang('认领日期')">
+                        <el-date-picker
+                            v-model="form.search.create_at"
+                            type="daterange"
+                            value-format="yyyy-MM-dd"
+                            :range-separator="$lang('至')"
+                            :start-placeholder="$lang('开始日期')"
+                            :end-placeholder="$lang('结束日期')">
+                        </el-date-picker>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('SKU')">
+                        <el-input v-model="form.search.sku_id"></el-input>
+                    </el-form-item>
+                </el-col> 
+                <el-col :span="6">
+                    <el-form-item :label="$lang('平台')">
+                        <el-select v-model="form.search.platform_cd" @change="selectPlatform" collapse-tags clearable  multiple filterable :placeholder="$lang('请选择')">
+                            <el-option
+                                v-for="(val,key) in new_plat"
+                                :key="val.CD"
+                                :label="val.CD_VAL"
+                                :value="val.CD">
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>  
+            </el-row>
+            <el-row type="flex">
+                <el-col :span="6">
+                    <el-form-item :label="$lang('站点')">
+                        <el-select v-model="form.search.site_cd" collapse-tags clearable  multiple filterable :placeholder="$lang('请选择')">
+                            <el-option
+                                v-for="(val,key) in plat"
+                                :key="val.CD"
+                                :label="val.CD_VAL"
+                                :value="val.CD">
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('推广内容链接')">
+                        <el-input v-model="form.search.promotion_link"></el-input>
+                    </el-form-item>
+                </el-col> 
+                <el-col :span="6">
+                    <el-form-item :label="$lang('Coupon')">
+                        <el-input v-model="form.search.coupon"></el-input>
+                    </el-form-item>
+                </el-col> 
+                <el-col :span="6">
+                    <el-form-item :label="$lang('推广需求ID')">
+                        <el-input v-model="form.search.promotion_demand_no"></el-input>
+                    </el-form-item>
+                </el-col>  
+            </el-row>
+            <el-row type="flex">
+                <el-col :span="6">
+                    <el-form-item :label="$lang('需求人')">
+                        <el-select v-model="form.search.demand_create_by" collapse-tags clearable  multiple filterable :placeholder="$lang('请选择')">
+                            <el-option
+                                v-for="(val,key) in users"
+                                :key="val.mName"
+                                :label="val.mName"
+                                :value="val.mName">
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('需求日期')">
+                        <el-date-picker
+                            v-model="form.search.demand_create_at"
+                            type="daterange"
+                            value-format="yyyy-MM-dd"
+                            :range-separator="$lang('至')"
+                            :start-placeholder="$lang('开始日期')"
+                            :end-placeholder="$lang('结束日期')">
+                        </el-date-picker>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('推广国家')">
+                        <el-select v-model="countrys" collapse-tags clearable  multiple filterable :placeholder="$lang('请选择')">
+                            <el-option
+                                    v-for="(item,key) in countryName"
+                                    :key="item.id"
+                                    :label="item.countyName"
+                                    :value="item.id">
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('推广上线时间')">
+                        <el-date-picker
+                                v-model="promotion_line_time"
+                                type="daterange"
+                                value-format="yyyy-MM-dd"
+                                range-separator="至"
+                                start-placeholder="开始日期"
+                                end-placeholder="结束日期">
+                        </el-date-picker>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('标签类型')">
+                        <el-select v-model="form.search.type_cd" filterable   :placeholder="$lang('请选择')">
+                            <el-option
+                                    v-for="(val,key) in cds"
+                                    :key="val.CD"
+                                    :label="val.CD_VAL"
+                                    :value="val.CD">
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('标签名称')">
+                        <el-select v-model="form.search.tag_name" filterable   :placeholder="$lang('请选择')">
+                            <el-option
+                                    v-for="(val,key) in cds_name"
+                                    :key="val.id"
+                                    :label="val.tag_name"
+                                    :value="val.tag_name">
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('优惠码来源')">
+                        <el-select v-model="form.search.coupon_source_cd"  :placeholder="$lang('优惠码来源')">
+                            <el-option
+                                    v-for="(item,key) in coupon_source_all"
+                                    :key="item.cd"
+                                    :label="item.cdVal"
+                                    :value="item.cd">
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+           
+            <el-row type="flex">
+                <el-col :span="24">
+                    <el-button type="primary" @click="search">{{$lang("查询")}}</el-button>
+                    <el-button @click="reset">{{$lang("重置")}}</el-button>
+                </el-col>
+            </el-row>
+        </el-form>
+        <div class="baseline"></div>
+        <!-- 搜索结果 -->
+        <div class="operating_data">
+            <div>
+                <span style="font-size: 14px;">{{$lang('搜索结果')}}：{{$lang('共')}}<span> {{page.count}} </span>{{$lang('条')}}</span>
+            </div>
+            <div v-if="isEdit && type==='confirmCoupon'" style="display:flex">
+                <div style="margin-right:10px">
+                    <el-select v-model="rows.coupon_source_cd" :disabled="isEdm" :placeholder="$lang('优惠码来源')">
+                        <el-option
+                                v-for="(item,key) in coupon_source"
+                                :key="item.cd"
+                                :label="item.cdVal"
+                                :value="item.cd">
+                        </el-option>
+                    </el-select>
+                </div>
+                <div  style="margin-right:10px">
+                    <el-input v-if="rows.coupon_source_cd !== 'N003780002'" :disabled="isEdm" v-model="rows.coupon"></el-input>
+                    <el-select v-else filterable v-model="rows.coupon" placeholder="coupon">
+                        <el-option
+                                v-for="(item,key) in couponList"
+                                :key="key"
+                                :label="item.code"
+                                :value="item.code">
+                        </el-option>
+                    </el-select>
+                </div>
+                <div  style="margin-right:10px">
+                    <el-select  v-model="rows.platform_cd"  :placeholder="$lang('平台')">
+                        <el-option
+                                v-for="(val,key) in new_plat"
+                                :key="val.CD"
+                                :label="val.CD_VAL"
+                                :value="val.CD">
+                        </el-option>
+                    </el-select>
+                </div>
+            </div>
+            <div>
+                <el-button v-if="!isEdit" type="primary" @click="operating('copy')">{{$lang("复制")}}</el-button>
+                <el-button v-if="!isEdit" type="primary" @click="operating('export')">{{$lang("导出")}}</el-button>
+                <el-button v-if="!isEdit" type="info" @click="operating('confirmCoupon')">{{$lang("运营反馈")}}</el-button>
+                <el-button v-if="!isEdit" type="primary" @click="operating('editPromotion')">{{$lang("推广反馈")}}</el-button>
+                <el-button v-if="!isEdit" type="success" @click="operating('confirmComplete')">{{$lang("确认完成")}}</el-button>
+                <el-button v-if="!isEdit" type="danger" @click="operating('confirmReturn')">{{$lang("确认退回")}}</el-button>
+                <el-button v-if="!isEdit" type="primary" @click="operating('paymentRequest')">{{$lang("发起付款申请")}}</el-button>
+
+                <el-button v-if="isEdit" type="info" @click="operating('cancel')">{{$lang("取消")}}</el-button>
+                <el-button v-if="isEdit" type="primary" @click="operating('submit')">{{$lang("提交")}}</el-button>
+                
+            </div>
+        </div>
+        <div>
+            <div class="wrapper">
+                <el-table :data="tableData" border style="width: 100%;margin-top: 20px;"  :max-height="tableHeight" :default-sort = "{prop: 'create_at', order: 'descending'}" @sort-change="changeSort" ref="multipleTable" v-loading="tableLoading" @row-click = "onRowClick" :row-class-name="tableRowClassName" @selection-change="handleSelectionChange">
+                        <el-table-column
+                            type="selection"
+                            :selectable="checkBoxStatus"
+                            fixed="left"
+                            width="55">
+                        </el-table-column>
+                        <el-table-column fixed="left" width="120" :label="$lang('推广任务ID')"> 
+                            <template slot-scope="scope">
+                                <span>{{scope.row.promotion_task_no}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column fixed="left" :label="$lang('状态')"> 
+                            <template slot-scope="scope">
+                                <span>{{scope.row.status_cd_val}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column width="150"  :label="$lang('优惠码来源')"> 
+                            <template slot-scope="scope">
+                                <el-select v-if="scope.row.editStatus == '1' && isEdit" :disabled="scope.row.channel_platform_name == 'EmarsysEDM' && scope.row.channel_medium_name == 'EDM'" v-model="scope.row.coupon_source_cd" >
+                                    <el-option
+                                            v-for="(item,key) in coupon_source"
+                                            :key="item.cd"
+                                            :label="item.cdVal"
+                                            :value="item.cd">
+                                    </el-option>
+                                </el-select>
+                                <span v-else>{{scope.row.coupon_source_cd_val}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column width="170" label="coupon"> 
+                            <template slot-scope="scope">
+                                <el-input v-if="scope.row.editStatus == '1'  && isEdit && scope.row.coupon_source_cd !== 'N003780002'" :disabled="scope.row.channel_platform_name == 'EmarsysEDM' && scope.row.channel_medium_name == 'EDM'" v-model="scope.row.coupon"></el-input>
+                                <el-select v-else-if="scope.row.editStatus == '1' && isEdit && scope.row.coupon_source_cd === 'N003780002'" :disabled="scope.row.channel_platform_name == 'EmarsysEDM' && scope.row.channel_medium_name == 'EDM'" filterable v-model="scope.row.coupon">
+                                    <el-option
+                                        v-for="(item,key) in couponList"
+                                        :key="key"
+                                        :label="item.code"
+                                        :value="item.code">
+                                    </el-option>
+                                </el-select>
+                                <div v-else-if="scope.row.editStatus !== '1' && scope.row.coupon_source_cd == 'N003780001'">
+                                    <el-popover
+                                        placement="right"
+                                        width="600"
+                                        trigger="hover">
+                                    <table class="couponTable">
+                                        <tr>
+                                            <td>{{$lang('优惠券名称')}}</td>
+                                            <td>{{gridData.activity_name}}</td>
+                                            <td>{{$lang('支持站点')}}</td>
+                                            <td>{{gridData.site_cds}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>{{$lang('支持SKU')}}</td>
+                                            <td>{{gridData.sku_ids}}</td>
+                                            <td>{{$lang('优惠类型')}}</td>
+                                            <td>{{gridData.reduction_type_val}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>{{$lang('数量')}}</td>
+                                            <td>{{gridData.usage_count_limit}}</td>
+                                            <td>{{$lang('已发放数量')}}</td>
+                                            <td>{{gridData.used_count}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>{{$lang('应用层面')}}</td>
+                                            <td>{{gridData.is_show}}</td>
+                                            <td>{{$lang('开始时间')}}</td>
+                                            <td>{{gridData.time_limit_start}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>{{$lang('结束时间')}}</td>
+                                            <td>{{gridData.time_limit_end}}</td>
+                                            <td></td>
+                                            <td></td>
+                                        </tr>
+                                        
+                                    </table>
+                                    <span @mouseover="gridShow(scope.row.coupon)" slot="reference">{{scope.row.coupon}}</span>
+                                    </el-popover>
+                                </div>
+                                
+                                <div v-else-if="scope.row.editStatus !== '1' && scope.row.coupon_source_cd == 'N003780002'">
+                                    <el-tooltip class="item" effect="dark" content="新后台优惠码请至新后查看相关信息！！" placement="top-start">
+                                        <span>{{scope.row.coupon}}</span>
+                                    </el-tooltip>
+                                </div>
+                                <div v-else-if="scope.row.editStatus !== '1'  && scope.row.coupon_source_cd !== 'N003780001' && scope.row.coupon_source_cd !== 'N003780002'">
+                                        <span>{{scope.row.coupon}}</span>
+                                </div>
+
+                                <!-- <span v-else>{{scope.row.coupon}}</span> -->
+                            </template>
+                        </el-table-column>
+                        
+                        <el-table-column width="150"  :label="$lang('平台')"> 
+                            <template slot-scope="scope">
+                                <el-select v-if="scope.row.editStatus == '1' && isEdit" filterable v-model="scope.row.platform_cd"  :placeholder="$lang('平台')">
+                                    <el-option
+                                            v-for="(val,key) in new_plat"
+                                            :key="val.CD"
+                                            :label="val.CD_VAL"
+                                            :value="val.CD">
+                                    </el-option>
+                                </el-select>
+                                <span v-else>{{scope.row.platform_cd_val}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column width="200" :label="$lang('推广链接')"> 
+                            <template slot-scope="scope">
+                                <el-input v-if="scope.row.editStatus == '2' && isEdit" v-model="scope.row.promotion_link"></el-input>
+                                <!-- <span v-else>{{scope.row.promotion_link}}</span> -->
+
+                                <el-tooltip v-else placement="top-end">
+                                    <div slot="content"><div style="width: 350px;word-break: break-all;">{{scope.row.promotion_link}}</div><br/><span style="float: right;cursor: pointer;" @click="openCopy(scope.row.promotion_link)">{{$lang('复制')}}</span></div>
+                                    <div class="tagUrl">
+                                        <span>{{scope.row.promotion_link}}</span>
+                                    </div>
+                                </el-tooltip>
+
+                            </template>
+                        </el-table-column>
+                    <el-table-column width="200" :label="$lang('推广上线时间')">
+                        <template slot-scope="scope">
+                            <el-date-picker
+                                    v-if="scope.row.editStatus == '2' && isEdit"
+                                    v-model="scope.row.promotion_line_time"
+                                    type="date"
+                                    value-format="yyyy-MM-dd"
+                                    placeholder="选择日期">
+                            </el-date-picker>
+                            <span v-else>{{scope.row.promotion_line_time}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column  :label="$lang('进度反馈')"> 
+                        <template slot-scope="scope">
+                            <el-input v-if="scope.row.editStatus == '2' && isEdit" v-model="scope.row.feedback"></el-input>
+                            <span v-else>{{scope.row.feedback}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column  label="SKU"> 
+                        <template slot-scope="scope">
+                            <span>{{scope.row.sku_id}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column width="150" :label="$lang('商品名称')"> 
+                        <template slot-scope="scope">
+                            <span>{{scope.row.product_name}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column width="150" :label="$lang('商品属性')"> 
+                        <template slot-scope="scope">
+                            <span>{{scope.row.product_attribute}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column width="270" :label="$lang('商品链接/活动页链接/站点链接（带Tracking Code）')"> 
+                        <template slot-scope="scope">
+                            <el-tooltip placement="top-end">
+                                <div slot="content"><div style="width: 350px;word-break: break-all;">{{scope.row.link_tracking}}</div><br/><span style="float: right;cursor: pointer;" @click="openCopy(scope.row.link_tracking)">{{$lang('复制')}}</span></div>
+                                <div class="tagUrl">
+                                    <span>{{scope.row.link_tracking}}</span>
+                                </div>
+                            </el-tooltip>
+                        </template>
+                    </el-table-column>
+                    <el-table-column width="270" :label="$lang('链接截图')">
+                        <template slot-scope="scope">
+                            <a :href="'/index.php?g=common&m=file&a=downloadAttachment&file='+ scope.row.file_real_path" style="text-align: left;color:blue">{{scope.row.file_origin_name}}</a>
+                            <el-upload
+                                    class="avatar-uploader"
+                                    action="/index.php?g=marketing&m=promotionTask&a=updateAttachment"
+                                    :show-file-list="false"
+                                    :data="{id:scope.row.id}"
+                                    name="file"
+                                    :on-success="function(res,file){handleAvatarSuccess(res,file,scope.row)}"
+                                    :on-error="handleAvatarError"
+                                    >
+                                <el-button size="small" type="primary">{{$lang('点击上传')}}</el-button>
+                            </el-upload>
+                        </template>
+                    </el-table-column>
+                    <el-table-column sortable width="120"  prop="create_at" :label="$lang('推广国家')">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.area_name}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column  :label="$lang('推广价格')" width="120"> 
+                        <template slot-scope="scope">
+                            <span v-if="scope.row.promotion_pirce">{{scope.row.currency_cd_val}} </span>
+                            <span v-if="scope.row.promotion_pirce">{{scope.row.promotion_pirce}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column  :label="$lang('推广平台')"> 
+                        <template slot-scope="scope">
+                            <span>{{scope.row.channel_platform_name}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column  :label="$lang('推广媒介')"> 
+                        <template slot-scope="scope">
+                            <span>{{scope.row.channel_medium_name}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column width="120" :label="$lang('预估总花费')"> 
+                        <template slot-scope="scope">
+                            <span>{{scope.row.forecast_sum_currency_cd_val}} {{scope.row.forecast_sum_price}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column  sortable  prop="forecast_sum_price_xchr" width="180" :label="$lang('预估总花费（USD）')"> 
+                        <template slot-scope="scope">
+                            <span>{{scope.row.forecast_sum_price_usd}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column  sortable  prop="now_total_price_xchr" width="200" :label="$lang('当前累计花费（USD）')"> 
+                        <template slot-scope="scope">
+                            <span>{{scope.row.now_total_price_uds}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column  sortable width="150" prop="forecast_rol"  :label="$lang('预估ROI')"> 
+                        <template slot-scope="scope">
+                            <span>{{scope.row.forecast_rol}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column  :label="$lang('站点')"> 
+                        <template slot-scope="scope">
+                            <span>{{scope.row.site_cd_val}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column width="120" :label="$lang('推广需求ID')"> 
+                        <template slot-scope="scope">
+                            <span>{{scope.row.promotion_demand_no}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column width="150" :label="$lang('优惠前商品价格（页面币种）')">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.currency_cd_val}} {{scope.row.dis_product_pirce}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column width="150" :label="$lang('需求方利润率范围')">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.profit_front}}% - {{scope.row.profit_back}}%</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column  :label="$lang('需求人')"> 
+                        <template slot-scope="scope">
+                            <span>{{scope.row.demand_create_by}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column  :label="$lang('认领人')"> 
+                        <template slot-scope="scope">
+                            <span>{{scope.row.create_by}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column  :label="$lang('需求日期')"> 
+                        <template slot-scope="scope">
+                            <span>{{scope.row.demand_create_at}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column sortable width="120"  prop="create_at" :label="$lang('认领日期')"> 
+                        <template slot-scope="scope">
+                            <span>{{scope.row.create_at}}</span>
+                        </template>
+                    </el-table-column>
+                    <!-- <el-table-column sortable width="120"  prop="create_at" :label="$lang('推广需求ID')">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.create_at}}</span>
+                        </template>
+                    </el-table-column> -->
+
+                    <el-table-column width="120" :label="$lang('标签类型')">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.type_cd_val}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column width="120" :label="$lang('标签名称')">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.tag_name}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column width="150" :label="$lang('退回原因')">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.return_reason}}</span>
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </div>
+        </div>
+        <!-- 分页 -->
+        <div style="text-align: right;margin-top: 20px;">
+            <el-pagination
+                    background
+                    @current-change="handleCurrentChange"
+                    @size-change="handleSizeChange"
+                    :current-page.sync="page.this_page"
+                    :page-size="page.page_count"
+                    :page-sizes="[10, 30, 50, 100]"
+                    layout="total, sizes, prev, pager, next, jumper"
+                    :total="page.count">
+            </el-pagination>
+        </div>
+        <!-- dialog -->
+        <!-- <el-dialog
+            :title="$lang('提示')"
+            :visible.sync="dialogVisible"
+            width="30%"
+            :before-close="handleClose">
+            <span>{{$lang("请输入驳回原因")}}</span>
+
+            <el-input
+                style="margin-top: 20px;"
+                type="textarea"
+                :rows="2"
+                :placeholder="$lang('请输入内容')"
+                v-model="rebuttal_reasons">
+            </el-input>
+            <span slot="footer" class="dialog-footer">
+                <el-button @click="dialogVisible = false">{{$lang('取消')}}</el-button>
+                <el-button type="primary" @click="edit('N003590002')">{{$lang('确定')}}</el-button>
+            </span>
+        </el-dialog> -->
+
+    </div>
+</body>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js?<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.9.1.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script>
+    if (getCookie('think_language') !== "zh-cn") {
+        ELEMENT.locale(ELEMENT.lang.en)
+    };
+    var Vm = new Vue({
+        el: '#promotionTaskList',
+        data: {
+          rows:{
+            coupon:'',
+            platform_cd:"",
+            coupon_source_cd:''
+          },
+          isEdm:false,
+          type:'',
+          promotion_line_time:[],
+          cds:[],
+          cds_name:[],
+          countrys:[],
+            form: {
+                search:{
+                  area_id:'',
+                    ids:"",
+                    status_cd:[],
+                    promotion_task_no:"",
+                    create_by:[],
+                    create_at_start:"",
+                    create_at_end:"",
+                    channel_platform_id:[],
+                    channel_medium_id:[],
+                    promotion_link:"",
+                    promotion_demand_no:'',
+                    platform_cd:[],
+                    site_cd:[],
+                    sku_id:"",
+                    demand_create_by:[],
+                    demand_create_at_start:"",
+                    demand_create_at_end:"",
+                    coupon_source_cd:""
+                }
+            },
+            page:{
+                count:0,
+                this_page:1,
+                page_count:10,
+            },
+            tableLoading:false,
+            multipleSelection:[],
+            tableData:[],
+            channel_platform:[],
+            channel_medium:[],
+            new_plat:[],
+            plat:[],
+            users:[],
+            coupon_source_all:[],
+            coupon_source:[],
+            promotion_task_status:[],
+            isEdit:false,
+            field:'create_at ',
+            sort_value:'desc ',
+            tableHeight:null,
+            return_reason:'',
+            gridData:{},
+            countryName:[],
+            couponList:[],
+        },
+      watch:{
+        'rows.coupon':function(v){
+          for(var x = 0;x<this.multipleSelection.length;x++){
+            this.multipleSelection[x].coupon = v
+          }
+        },
+        'rows.platform_cd':function(v){
+          for(var x = 0;x<this.multipleSelection.length;x++){
+            this.multipleSelection[x].platform_cd = v
+          }
+        },
+        'rows.coupon_source_cd':function(v){
+          for(var x = 0;x<this.multipleSelection.length;x++){
+            this.multipleSelection[x].coupon_source_cd = v
+          }
+        },
+        countrys:function(v){
+          this.form.search.area_id = String(v)
+        }
+      },
+        created() {
+            this.getCommonData();
+            this.getTableData();
+            
+        },
+        mounted() {
+                var _this = this
+                console.log('innerHeight',window.innerHeight);
+                _this.tableHeight = window.innerHeight - 80;
+
+                window.onresize = () => {
+                    return (() => {
+                        _this.tableHeight = window.innerHeight - 80;
+
+                    })()
+                }
+                this.getCountry()
+
+        }, 
+        methods: {
+          handleAvatarSuccess:function(res,file,row){
+            console.log(res, file,row)
+            if(res.status === 0){
+              this.$message.error(this.$lang(res.info))
+              return
+            }
+            this.$message.success(this.$lang(res.msg))
+            row.attachment = res.data.file_real_path
+            row.file_show_name = res.data.file_show_name
+            row.file_origin_name = res.data.file_origin_name
+            row.file_real_path = res.data.file_real_path
+            row.file_save_name = res.data.file_save_name
+          },
+          handleAvatarError:function(){
+            this.$message.success(this.$lang('上传失败'))
+          },
+          getCountry:function(){
+            var _this = this
+            // 推广国家
+            var param = {
+              'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+              'erp-req': true
+            }
+
+            var headers = {
+              headers: {
+                'erp-req': true,
+                'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+              }
+            }
+
+
+            var host = (window.location.origin == window.location.protocol + "//erp.gshopper.com") ?
+              window.location.protocol + "//insight.gshopper.com/insight-backend/gpActivity" :
+              ((window.location.origin == window.location.protocol + "//erp.gshopper.prod.com") ?
+                window.location.protocol + "//insight.gshopper.prod.com/insight-backend/gpActivity" :
+                window.location.protocol + "//insight.gshopper.stage.com/insight-backend/gpActivity");
+
+
+            axios.post(host + '/queryCountryName', param, {
+              headers:headers.headers
+            }).then(function(res) {
+              if(res.data.success === true){
+                _this.countryName = res.data.datas
+              }else{
+                _this.$message.warning(res.msg);
+              }
+            })
+          },
+            getCommonData:function(){
+                var _this = this;
+                var idd = _this.getQueryVariable('id')
+                var create_by = _this.getQueryVariable('create_by')
+                var status_cd = _this.getQueryVariable('status_cd')
+                var demand_create_by = _this.getQueryVariable('demand_create_by')
+                if(idd){
+                    _this.form.search.promotion_task_no = idd
+                }
+                if(create_by){
+                    _this.form.search.create_by = create_by.split(",")
+                    _this.form.search.status_cd = status_cd.split(",")
+                }
+                if(demand_create_by){
+                    _this.form.search.demand_create_by = demand_create_by.split(",")
+                    _this.form.search.status_cd = status_cd.split(",")
+                }
+
+              axios.post('/index.php?g=Marketing&m=PromotionTag&a=getListData', {
+              }).then(function (res) {
+                if(res.data.code === 2000){
+                  _this.cds_name = res.data.data
+                }
+              })
+              axios.post('/index.php?g=universal&m=dictionary&a=getCodeList', {
+                search:{code_id: "",
+                  code_value: "",
+                  comment_content: "",
+                  comment_type: "",
+                  need_count: 1,
+                  prefix: "N00374"},
+                pages:{current_page: 1,
+                  per_page: 100}
+              }).then(function (res) {
+                if(res.data.code === 200){
+                  _this.cds = res.data.data.data
+                }
+              })
+
+                axios.post('/index.php?g=common&m=index&a=get_cd', {
+                    cd_type: {
+                        new_plat: true,
+                        // plat: false,
+                        promotion_task_status:true
+                    }
+                }).then(function (res) {
+                    if (res.data.code === 2000) {
+                        console.log('res',res);
+                        _this.new_plat = res.data.data.new_plat
+                        // _this.plat = res.data.data.plat
+                        _this.promotion_task_status = res.data.data.promotion_task_status
+                    }
+                })
+
+                axios.post('/index.php?g=oms&m=CommonData&a=commonData', {
+                    "data": {
+                        "query": {
+                            users: true,
+                            coupon_source:true
+                        },
+                        "type":"sorting"
+                    }
+                }).then(function (res) {
+                    if (res.data.code === 2000) {
+                        _this.users = res.data.data.users
+                        var couponSourceAll = ''
+                        var couponSourceArr = res.data.data.coupon_source
+                        var couponSource = JSON.parse(JSON.stringify(res.data.data.coupon_source))
+
+                        for (var item in couponSourceArr) {
+                            if(item == 0){
+                                couponSourceAll += couponSourceArr[item].cd
+                            }else{
+                                couponSourceAll += ',' + couponSourceArr[item].cd
+                            }
+                        }
+                        couponSourceArr.unshift({
+                            cdVal: '所有',
+                            cd: couponSourceAll,
+                        })
+
+                        _this.coupon_source_all = couponSourceArr
+                        _this.coupon_source = couponSource
+
+                    }
+                })
+
+                axios.get('/index.php?g=Marketing&m=PromotionTask&a=getChannelData').then(function (res) {
+                    if (res.data.code === 2000) {
+                        _this.channel_platform = res.data.data.channel_platform
+                        _this.channel_medium = res.data.data.channel_medium
+                    }
+                })
+
+                axios.post('/index.php?g=Marketing&m=PromotionTask&a=getCoupon', {
+                    "search": {
+                            user: 'gshopper',
+                            title:'',
+                            store_name:'',
+                            type:'',
+                            curpage:1,
+                            rows:1000,
+                    }
+                }).then(function (res) {
+                    if (res.data.code === 2000) {
+                        _this.couponList = res.data.data
+                    }else{
+                        _this.$message.warning(res.data.msg);
+                    }
+                })
+
+                _this.selectPlatform()
+          
+            },
+            getQueryVariable:function(variable){
+                var query = window.location.search.substring(1);
+                var vars = query.split("&");
+                for (var i=0;i<vars.length;i++) {
+                        var pair = vars[i].split("=");
+                        if(pair[0] == variable){return pair[1];}
+                }
+                return(false);
+            },
+            getTableData:function(val){
+                var _this = this;
+                console.log(val);
+                var params = {
+                    "search":{
+                        // "ids":'',
+                        "promotion_task_no":_this.form.search.promotion_task_no,
+                        "status_cd":_this.form.search.status_cd.join(","),
+                        "create_by":_this.form.search.create_by.join(","),
+                        "create_at_start" : _this.form.search.create_at ? _this.form.search.create_at[0] : '',
+                        "create_at_end" : _this.form.search.create_at ? _this.form.search.create_at[1] : '',
+                        "channel_platform_id":_this.form.search.channel_platform_id.join(","),
+                        "channel_medium_id":_this.form.search.channel_medium_id.join(","),
+                        "promotion_link":_this.form.search.promotion_link,
+                        "promotion_demand_no":_this.form.search.promotion_demand_no,
+                        "platform_cd":_this.form.search.platform_cd.join(","),
+                        "site_cd":_this.form.search.site_cd.join(","),
+                        "sku_id":_this.form.search.sku_id,
+                        "coupon":_this.form.search.coupon,
+                        "demand_create_by":_this.form.search.demand_create_by.join(","),
+                        "demand_create_at_start" : _this.form.search.demand_create_at ? _this.form.search.demand_create_at[0] : '',
+                        "demand_create_at_end" : _this.form.search.demand_create_at ? _this.form.search.demand_create_at[1] : '',
+                        "area_id":  _this.form.search.area_id,
+                        "coupon_source_cd":_this.form.search.coupon_source_cd,
+                      type_cd:_this.form.search.type_cd,
+                      tag_name:_this.form.search.tag_name,
+                      promotion_line_time_start:(!this.promotion_line_time?'':this.promotion_line_time[0]),
+                      promotion_line_time_end:(!this.promotion_line_time?'':this.promotion_line_time[1])
+                    },
+                    "pages":{
+                        "per_page": _this.page.page_count,
+                        "current_page": _this.page.this_page
+                    },
+                    "sort_data":{
+                        "field":_this.field?_this.field:'',
+                        "sort_value":_this.field?_this.sort_value:''
+                    }
+                };
+                axios.post("/index.php?g=Marketing&m=PromotionTask&a=getList", params).then(function(res){
+                    console.log(res);
+                    if (res.data.code == 2000) {
+                        // _this.tableData = res.data.data.datas ? res.data.data.datas : []
+                        var datasArr = res.data.data.datas
+                        if(datasArr){
+                            for (var item in datasArr) {
+                                datasArr[item].checkBoxSt = true
+                            }
+                            _this.tableData = datasArr
+                        }else{
+                            _this.tableData = []
+                        }
+                      if(res.data.data.page){
+                        _this.page.count = Number(res.data.data.page[0].total_rows)
+                      }else{
+                        _this.page.count=0
+                      }
+
+                    }else {
+                        _this.$message.warning(res.data.msg);
+                    }
+                })
+            },
+            search:function(){
+                this.isEdit = false
+                this.rows = {
+                    coupon:'',
+                    platform_cd:"",
+                    coupon_source_cd:''
+                }
+                this.getTableData()
+            },
+            reset:function(){
+                this.isEdit = false
+                this.rows = {
+                    coupon:'',
+                    platform_cd:"",
+                    coupon_source_cd:''
+                }
+                this.form.search = {
+                    ids:"",
+                    status_cd:[],
+                    promotion_task_no:"",
+                    create_by:[],
+                    create_at_start:"",
+                    create_at_end:"",
+                    channel_platform_id:[],
+                    channel_medium_id:[],
+                    promotion_link:"",
+                    promotion_demand_no:'',
+                    platform_cd:[],
+                    site_cd:[],
+                    sku_id:"",
+                    demand_create_by:[],
+                    demand_create_at_start:"",
+                    demand_create_at_end:"",
+                  area_id:'',
+                }
+                this.promotion_line_time = []
+                this.countrys = []
+                this.page = {
+                    count:0,
+                    this_page:1,
+                    page_count:10,
+                }
+                this.field = 'create_at'
+                this.sort_value = 'desc'
+                this.$refs.multipleTable.sort('create_at','descending');
+                this.getTableData()
+            },
+            view:function(val){
+                // console.log(val);
+                // newTab('/index.php?g=logistics&m=Expensebill&a=fee_detail&fee_id='+val.payment_id, this.$lang('费用单详情'));
+            },
+            openCopy:function(val){
+                let url = val;
+                let oInput = document.createElement('input');
+                oInput.value = url;
+                document.body.appendChild(oInput);
+                oInput.select();
+                document.execCommand("Copy");
+                this.$message({
+                message: this.$lang('已成功复制到剪切板'),
+                type: 'success'
+                });
+                oInput.remove()
+            },
+            //翻页切换不同页面
+            handleCurrentChange:function(val) {
+                this.page.this_page = val;
+                this.isEdit = false
+                this.rows = {
+                    coupon:'',
+                    platform_cd:"",
+                    coupon_source_cd:''
+                }
+                this.getTableData()
+            },
+            //切换每页展示的数目
+            handleSizeChange:function (val) {
+                this.page.this_page = 1;
+                this.page.page_count = val;
+                this.isEdit = false
+                this.rows = {
+                    coupon:'',
+                    platform_cd:"",
+                    coupon_source_cd:''
+                }
+                this.getTableData()
+            },
+            handleSelectionChange:function(val){
+                console.log(val);
+                this.multipleSelection = val;
+            },
+            tableRowClassName:function({row, rowIndex}) {
+                row.row_index = rowIndex;
+            },
+            onRowClick:function(row, event, column) {
+                this.currentRowIndex = row.row_index;
+            },
+            changeSort:function(val){
+                console.log('changeSort',val);
+                this.$refs.multipleTable.clearSort()
+                this.field = val.prop
+                this.sort_value = val.order == 'descending' ? 'desc':'asc'
+                this.getTableData()
+            },
+            selectPlatform:function(val){
+                console.log(val);
+                var _this = this;
+
+                axios.post('/index.php?g=oms&m=order&a=getSite', {
+                    plat_cd: val ? val : []
+                }).then(function (res) {
+                    if (res.data && res.data.code == 2000) {
+                        _this.plat = res.data.data
+                    } else {
+                        _this.$message.error(res.data.msg || _this.$lang('获取站点异常'));
+                    }
+                })
+
+            },
+            gridShow:function(val){
+                console.log(val);
+                var _this = this;
+
+                // var params = {
+                //     "search":{
+                //         // "ids":'',
+                //         "promotion_task_no":_this.form.search.promotion_task_no,
+                //         "status_cd":_this.form.search.status_cd.join(","),
+                //         "create_by":_this.form.search.create_by.join(","),
+                //         "create_at_start" : _this.form.search.create_at ? _this.form.search.create_at[0] : '',
+                //         "create_at_end" : _this.form.search.create_at ? _this.form.search.create_at[1] : '',
+                //         "channel_platform_id":_this.form.search.channel_platform_id.join(","),
+                //         "channel_medium_id":_this.form.search.channel_medium_id.join(","),
+                //         "promotion_link":_this.form.search.promotion_link,
+                //         "promotion_demand_no":_this.form.search.promotion_demand_no,
+                //         "platform_cd":_this.form.search.platform_cd.join(","),
+                //         "site_cd":_this.form.search.site_cd.join(","),
+                //         "sku_id":_this.form.search.sku_id,
+                //         "demand_create_by":_this.form.search.demand_create_by.join(","),
+                //         "demand_create_at_start" : _this.form.search.demand_create_at ? _this.form.search.demand_create_at[0] : '',
+                //         "demand_create_at_end" : _this.form.search.demand_create_at ? _this.form.search.demand_create_at[1] : '',
+                //     },
+                //     "pages":{
+                //         "per_page": _this.page.page_count,
+                //         "current_page": _this.page.this_page
+                //     },
+                //     "sort_data":{
+                //         "field":_this.field?_this.field:'',
+                //         "sort_value":_this.field?_this.sort_value:''
+                //     }
+                // };
+                axios.post("/index.php?g=Marketing&m=PromotionTask&a=searchCoupon", {
+                    "coupon":val
+                }).then(function(res){
+                    console.log(res);
+                    if (res.data.code == 2000) {
+                        _this.gridData = res.data.data
+                    }else {
+                        _this.$message.warning(res.data.msg);
+                    }
+                })
+            },
+            checkBoxStatus:function(row){
+                if(row.checkBoxSt){
+                    return true;
+                }else{
+                    return false;
+                }
+            },
+            operating:function(type,submitType){
+                var _this = this
+              _this.type = type
+                var multipleSelectionArr = _this.multipleSelection
+                if(type == 'export'){
+                    // 导出
+                    var ids = ''
+                    
+                    for (var item in multipleSelectionArr) {
+                        if(ids){
+                            ids = ids+','+multipleSelectionArr[item].id
+                        }else{
+                            ids = multipleSelectionArr[item].id
+                        }
+                    }
+
+                    var params = {
+                        "search":{
+                            "ids":ids,
+                            "promotion_task_no":_this.form.search.promotion_task_no,
+                            "create_by":_this.form.search.create_by.join(","),
+                            "create_at_start" : _this.form.search.create_at ? _this.form.search.create_at[0] : '',
+                            "create_at_end" : _this.form.search.create_at ? _this.form.search.create_at[1] : '',
+                            "channel_platform_id":_this.form.search.channel_platform_id.join(","),
+                            "channel_medium_id":_this.form.search.channel_medium_id.join(","),
+                            "promotion_link":_this.form.search.promotion_link,
+                            "promotion_demand_no":_this.form.search.promotion_demand_no,
+                            "platform_cd":_this.form.search.platform_cd.join(","),
+                            "site_cd":_this.form.search.site_cd.join(","),
+                            "sku_id":_this.form.search.sku_id,
+                            "demand_create_by":_this.form.search.demand_create_by.join(","),
+                            "demand_create_at_start" : _this.form.search.demand_create_at ? _this.form.search.demand_create_at[0] : '',
+                            "demand_create_at_end" : _this.form.search.demand_create_at ? _this.form.search.demand_create_at[1] : '',
+                            "area_id":  _this.form.search.area_id,
+                            "coupon_source_cd":_this.form.search.coupon_source_cd,
+                        },
+                        "pages":{
+                            "per_page": _this.page.page_count,
+                            "current_page": _this.page.this_page
+                        },
+                        "sort_data":{
+                            "field":_this.field?_this.field:'',
+                            "sort_value":_this.field?_this.sort_value:''
+                        }
+                    };
+                    
+                    var tmep = document.createElement('form');
+                    tmep.action = '/index.php?g=Marketing&m=PromotionTask&a=export';
+                    tmep.method = "post";
+                    tmep.style.display = "none";
+                    var opt = document.createElement("input");
+                    opt.name = 'post_data';
+                    opt.value = JSON.stringify(params);
+                    tmep.appendChild(opt);
+                    document.body.appendChild(tmep);
+                    tmep.submit();
+                    $(tmep).remove();
+
+                }else if(type == 'confirmCoupon'){
+                    // 确认优惠码
+                    if(multipleSelectionArr.length == 0){
+                        _this.$message.warning(_this.$lang('请勾选推广任务'))
+                    }else{
+                        var result = multipleSelectionArr.filter(item => {
+                            return item.status_cd != 'N003600004'
+                        })
+                        if(result.length == 0){
+                            var edmStatus = multipleSelectionArr.filter(item => {
+                                return item.channel_platform_name == 'EmarsysEDM' && item.channel_medium_name == 'EDM'
+                            })
+
+                            if(edmStatus.length == 0){
+                                _this.isEdm = false
+                            }else{
+                                _this.isEdm = true
+                            }
+                            _this.isEdit = true
+                            console.log(multipleSelectionArr)
+                            var tableDataArr = _this.tableData
+                            for (var item2 in tableDataArr) {
+                                tableDataArr[item2].checkBoxSt = false
+                            }
+                            for (var item in multipleSelectionArr) {
+                                var index = multipleSelectionArr[item].row_index
+                                _this.tableData[index].checkBoxSt = true
+                                _this.$set(_this.tableData[index], 'editStatus', '1');
+                                // _this.$set(_this.multipleSelection[index], 'editStatus', '1');
+                            }
+                            console.log(_this.tableData,_this.multipleSelection)
+                        }else{
+                            _this.$message({
+                                type: 'warning',
+                                message: _this.$lang('推广任务状态不符合确认优惠码条件')
+                            }); 
+                        }
+                    }
+                }else if(type == 'editPromotion'){
+                    // 编辑推广进展
+                    if(multipleSelectionArr.length == 0){
+                        _this.$message.warning(_this.$lang('请勾选推广任务'))
+                    }else{
+                        var result = multipleSelectionArr.filter(item => {
+                            return item.status_cd != 'N003600003'
+                        })
+                        if(result.length == 0){
+                            _this.isEdit = true
+                            for (var item in multipleSelectionArr) {
+                                var index = multipleSelectionArr[item].row_index
+                                _this.$set(_this.tableData[index], 'editStatus', '2');
+                                _this.$set(_this.multipleSelection[index], 'editStatus', '2');
+
+                            }
+                        }else{
+                            _this.$message({
+                                type: 'warning',
+                                message: _this.$lang('推广任务状态不符合编辑推广进展条件')
+                                
+                            }); 
+                        }
+                    }
+                }else if(type == 'confirmComplete'){
+                    // 确认完成
+                    if(multipleSelectionArr.length == 0){
+                        _this.$message.warning(_this.$lang('请勾选推广任务'))
+                    }else{
+                        var result = multipleSelectionArr.filter(item => {
+                            return item.status_cd != 'N003600003'
+                        })
+                        if(result.length == 0){
+                            // _this.isEdit = true
+
+                            _this.$confirm(_this.$lang('确认完成需求？'), _this.$lang('提示'), {
+                                confirmButtonText: _this.$lang('确定'),
+                                cancelButtonText: _this.$lang('取消'),
+                                type: 'warning'
+                            }).then(() => {
+                                // console.log('multipleSelectionArr',multipleSelectionArr);
+                                // for (var item in multipleSelectionArr) {
+                                //     var index = multipleSelectionArr[item].row_index
+                                //     _this.$set(_this.tableData[index], 'editStatus', '3');
+                                //     _this.$set(_this.multipleSelection[index], 'editStatus', '3');
+                                // }
+                                _this.operating('submit','3')
+                            }).catch(() => {
+                                _this.$message({
+                                    type: 'info',
+                                    message: _this.$lang('已取消')
+                                });     
+
+                            });
+
+
+                        }else{
+                            _this.$message({
+                                type: 'warning',
+                                message: _this.$lang('推广任务状态不符合确认完成条件')
+                            }); 
+                        }
+                    }
+                }else if(type == 'confirmReturn'){
+                    // 确认退回
+                    if(multipleSelectionArr.length == 0){
+                        _this.$message.warning(_this.$lang('请勾选推广任务'))
+                    }else{
+                        var result = multipleSelectionArr.filter(item => {
+                            return item.status_cd != 'N003600004' && item.status_cd != 'N003600003'
+                        })
+                        if(result.length == 0){
+
+                            _this.$prompt(_this.$lang('请输入退回原因'), _this.$lang('提示'), {
+                                confirmButtonText: _this.$lang('确定'),
+                                cancelButtonText: _this.$lang('取消'),
+                            }).then(({ value }) => {
+                                console.log(value);
+                                if(value){
+                                    _this.return_reason = value
+                                    // for (var item in multipleSelectionArr) {
+                                    //     var index = multipleSelectionArr[item].row_index
+                                    //     _this.$set(_this.tableData[index], 'editStatus', '4');
+                                    //     _this.$set(_this.multipleSelection[index], 'editStatus', '4');
+
+                                    // }
+                                    _this.operating('submit','4')
+                                }else{
+                                    _this.$message({
+                                        type: 'warning',
+                                        message: _this.$lang('请输入退回原因')
+                                    });   
+                                }
+                                
+
+                            }).catch(() => {
+                                _this.$message({
+                                    type: 'info',
+                                    message: _this.$lang('已取消')
+                                });       
+                            });
+
+
+                            // _this.isEdit = true
+                            
+                        }else{
+                            _this.$message({
+                                type: 'warning',
+                                message: _this.$lang('推广任务状态不符合退回条件')
+                            }); 
+                        }
+                    }
+                }else if(type == 'paymentRequest'){
+                    // 发起付款申请
+                    // var multipleSelectionArr = this.multipleSelection
+                    var idd = ''
+                    var roi = ''
+                    var files=[]
+                    if(multipleSelectionArr.length == 0){
+                        this.$message.warning(this.$lang('请勾选需求'))
+                    }else{
+
+                        for (var item in multipleSelectionArr) {
+                            if(idd){
+                                idd = idd+','+multipleSelectionArr[item].promotion_task_no
+                                roi = roi+','+multipleSelectionArr[item].forecast_rol.replace(/,/g,'')
+                            }else{
+                                idd = multipleSelectionArr[item].promotion_task_no
+                                roi = multipleSelectionArr[item].forecast_rol.replace(/,/g,'')
+                            }
+                          files.push({name:multipleSelectionArr[item].file_show_name,url:'/index.php?g=common&m=file&a=downloadAttachment&file='+ multipleSelectionArr[item].file_show_name, saveName:multipleSelectionArr[item].file_save_name,lastName:multipleSelectionArr[item].file_show_name})
+                        }
+                      var timestamp = (new Date()).valueOf();
+                        sessionStorage.setItem('files'+timestamp,JSON.stringify(files))
+                        newTab('/index.php?m=finance&a=create_general_payment&idd='+idd+'&roi='+roi+'&timestamp='+timestamp, _this.$lang('申请付款'));
+
+                    }
+                }else if(type == 'cancel'){
+                    _this.isEdit = false
+                    _this.rows = {
+                        coupon:'',
+                        platform_cd:"",
+                        coupon_source_cd:''
+                    }
+                    _this.getTableData()
+                }else if(type == 'submit'){
+                    // console.log('submitType',submitType);
+                    // console.log('multipleSelectionArr',multipleSelectionArr);
+                    var post_data = []
+                    for (var item in multipleSelectionArr) {
+                      var obj = {}
+                      obj.promotion_task_no = multipleSelectionArr[item].promotion_task_no
+                    //   obj.type = submitType
+                      obj.type = submitType ? submitType : multipleSelectionArr[item].editStatus
+                      obj.coupon = multipleSelectionArr[item].coupon
+                      obj.promotion_link = multipleSelectionArr[item].promotion_link
+                      obj.feedback = multipleSelectionArr[item].feedback
+                      obj.return_reason = submitType == '4' ? _this.return_reason : ''
+                      obj.promotion_line_time = multipleSelectionArr[item].promotion_line_time
+                      obj.coupon_source_cd = multipleSelectionArr[item].coupon_source_cd
+                        obj.platform_cd = multipleSelectionArr[item].platform_cd
+                    //   obj.return_reason = multipleSelectionArr[item].editStatus == '4' ? _this.return_reason : ''
+                      
+                      post_data.push(obj)
+                    }
+                    console.log(post_data);
+                    
+                    var params = {
+                        "post_data":post_data
+                    };
+                    axios.post("/index.php?g=Marketing&m=PromotionTask&a=edit", params).then(function(res){
+                        console.log(res);
+                        if (res.data.code == 2000) {
+                            _this.$message.success(_this.$lang('操作成功'));
+                            _this.isEdit = false
+                            _this.getTableData()
+                        }else {
+                            _this.$message.warning(res.data.msg);
+                        }
+                    })
+                    _this.rows = {
+                        coupon:'',
+                        platform_cd:"",
+                        coupon_source_cd:''
+                    }
+                }else if(type == 'copy'){
+                    console.log('multipleSelectionArr',multipleSelectionArr);
+
+                    var multipleSelectionArr = this.multipleSelection
+                    var idd = ''
+                    var taskid = ''
+                    var isStatus = true
+
+
+
+                    if(multipleSelectionArr.length == 0){
+                        this.$message.warning(this.$lang('请勾选需求'))
+                    }else{
+                        for (var item in multipleSelectionArr) {
+                            console.log('item',item);
+                            if(idd){
+                                idd = idd+','+multipleSelectionArr[item].promotion_demand_no
+                            }else{
+                                idd = multipleSelectionArr[item].promotion_demand_no
+                            }
+                            if(taskid){
+                                taskid = taskid+','+multipleSelectionArr[item].promotion_task_no
+                            }else{
+                                taskid = multipleSelectionArr[item].promotion_task_no
+                            }
+                        }
+                        if(isStatus){
+                            newTab('/index.php?m=management&a=claim_demand&source=task&idd='+idd+'&taskid='+taskid, this.$lang('认领推广需求'));
+                        }
+                    }
+
+
+
+
+
+                }
+            },
+                
+        },
+    })
+</script>
+
+</html>

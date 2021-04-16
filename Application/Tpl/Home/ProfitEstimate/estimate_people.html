@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+        <{Think.lang.预估人配置}>
+    </title>
+
+    <link href="../Public/css/H-ui-3.1.min.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="../Public/css/stock.css?v=<{$Think.const.V}>" />
+    <link rel="stylesheet" type="text/css" href="../Public/css/style.css?v=<{$Think.const.V}>" />
+    <link rel="stylesheet" type="text/css" href="../Public/css/default.css?v=<{$Think.const.V}>" />
+    <link rel="stylesheet" type="text/css" href="../Public/lib/Hui-iconfont/1.0.7/iconfont.css?v=<{$Think.const.V}>" />
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.13.0.css?v=<{$Think.const.V}>">
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+
+        .el-tabs__nav-wrap::after,
+        .el-tabs__active-bar {
+            height: 0;
+        }
+
+        .tabs {
+            padding-left: 20px;
+        }
+
+        .baseline {
+            width: 100%;
+            height: 1px;
+            background: #C9D8E0;
+            margin: 1rem 0;
+        }
+
+        .es-content {
+            margin-top: 20px;
+        }
+
+        .dialog-content {
+            border: 1px solid #000000;
+            border-bottom: none;
+        }
+
+        .range-cell {
+            display: flex;
+            border-bottom: 1px solid #000000;
+            text-align: center;
+            line-height: 40px;
+            height: 40px;
+            align-items: center;
+        }
+
+        .range-title,
+        .range-value {
+            flex: 1;
+        }
+
+        .range-title {
+            border-right: 1px solid #000000;
+        }
+
+        .button-group {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        /* element 样式 */
+        .el-tabs__active-bar {
+            background: #FF5224;
+            width: 40px;
+        }
+
+        .el-tabs__nav-wrap::after {
+            display: none;
+        }
+
+        .el-tabs__item.is-top {
+            font-family: PingFangSC-Semibold;
+            font-size: 18px;
+            color: #263238;
+            letter-spacing: 0;
+            outline: none;
+            border: none;
+            box-shadow: none;
+        }
+
+        .el-tabs__item.is-active {
+            font-weight: 600;
+        }
+
+        .el-tabs__item:focus.is-active.is-focus:not(:active) {
+            box-shadow: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="estimatePeople" v-cloak>
+        <el-tabs v-model="activeTab" class="tabs" @tab-click="handleChangeTab">
+            <el-tab-pane :label="$lang('预估人信息')" name="estimate_people">
+                <div class="es-header">
+                    <el-form :model="searchForm" label-width="120px" label-position="right">
+                        <el-row>
+                            <el-col :span="6">
+                                <el-form-item :label="$lang('负责人')">
+                                    <el-select v-model="searchForm.principal" @change="getData" multiple filterable
+                                        clearable :placeholder="$lang('请选择负责人')">
+                                        <el-option v-for="user in users" :key="user.value" :label="user.name"
+                                            :value="user.name">
+                                        </el-option>
+                                    </el-select>
+                                </el-form-item>
+                            </el-col>
+                            <el-col :span="6">
+                                <el-form-item :label="$lang('预估期数')">
+                                    <el-input v-model="searchForm.period" @change="getData" style="width: 200px;"
+                                        :placeholder="$lang('请输入预估期数')">
+                                    </el-input>
+                                </el-form-item>
+                            </el-col>
+                            <el-col :span="6">
+                                <el-form-item :label="$lang('预估指标')">
+                                    <el-select v-model="searchForm.estimate_index" @change="getData" multiple filterable
+                                        clearable :placeholder="$lang('请选择预估指标')">
+                                        <el-option v-for="estimate in estimates" :key="estimate"
+                                            :label="$lang(estimate)" :value="estimate">
+                                        </el-option>
+                                    </el-select>
+                                </el-form-item>
+                            </el-col>
+                            <el-col :span="6">
+                                <el-form-item :label="$lang('考核指标')">
+                                    <el-select v-model="searchForm.assess_index" @change="getData" multiple filterable
+                                        clearable :placeholder="$lang('请选择考核指标')">
+                                        <el-option v-for="index in assess" :key="index" :label="$lang(index)"
+                                            :value="index">
+                                        </el-option>
+                                    </el-select>
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+                        <el-row>
+                            <el-col :span="6">
+                                <el-form-item :label="$lang('考核业务')">
+                                    <el-select v-model="searchForm.assess_business" @change="getData" multiple
+                                        filterable clearable :placeholder="$lang('请选择考核业务')">
+                                        <el-option v-for="business in businesses" :key="business" :label="business"
+                                            :value="business">
+                                        </el-option>
+                                    </el-select>
+                                </el-form-item>
+                            </el-col>
+                            <el-col :span="6">
+                                <el-form-item :label="$lang('比对数据源')">
+                                    <el-select v-model="searchForm.compared_source" @change="getData" clearable multiple
+                                        filterable clearable :placeholder="$lang('请选择比对数据源')">
+                                        <el-option v-for="source in ['insight','录入数据']" :key="source"
+                                            :label="$lang(source)" :value="source">
+                                        </el-option>
+                                    </el-select>
+                                </el-form-item>
+                            </el-col>
+                            <el-col :span="6">
+                                <el-form-item :label="$lang('状态')">
+                                    <el-select v-model="searchForm.status" @change="getData" multiple filterable
+                                        clearable :placeholder="$lang('请选择状态')">
+                                        <el-option v-for="state in states" :key="state.value" :label="$lang(state.name)"
+                                            :value="state.value">
+                                        </el-option>
+                                    </el-select>
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+                    </el-form>
+                    <!-- <div class="s-button-group">
+                        <el-button>{{$lang('查询')}}</el-button>
+                        <el-button>{{$lang('重置')}}</el-button>
+                    </div> -->
+                </div>
+                <div class="baseline"></div>
+                <div class="es-content">
+                    <div class="operate use-row">
+                        <div class="col-100" style="text-align: right; margin-right: 20px;">
+                            <el-button type="primary" @click="handleAddEsPeople">{{$lang('新增预估人')}}</el-button>
+                            <el-button type="primary" @click="handleShowLog">{{$lang('查看操作日志')}}</el-button>
+                        </div>
+                    </div>
+                    <div class="table-list">
+                        <el-table :data="data" border v-loading="loading">
+                            <el-table-column label="ID" prop="pid">
+                            </el-table-column>
+                            <el-table-column :label="$lang('负责人')" prop="principal">
+                            </el-table-column>
+                            <el-table-column :label="$lang('预估期数')" prop="period">
+                            </el-table-column>
+                            <el-table-column :label="$lang('预估指标')" prop="estimate_index">
+                                <template slot-scope="scope">
+                                    <span v-for="index in scope.row.estimate_index.split('，')">{{$lang(index)}}，</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column :label="$lang('考核指标')" prop="assess_index">
+                                <template slot-scope="scope">
+                                    <span v-for="index in scope.row.assess_index.split('，')">{{$lang(index)}}</span>
+                                    <!-- <div>{{$lang(scope.row.assess_index)}}</div> -->
+                                </template>
+                            </el-table-column>
+                            <el-table-column :label="$lang('考核业务')" prop="assess_business">
+                            </el-table-column>
+                            <el-table-column :label="$lang('比对数据源')" prop="compared_source">
+                                <template slot-scope="scope">
+                                    <div>{{$lang(scope.row.compared_source)}}</div>
+                                </template>
+                            </el-table-column>
+                            <el-table-column :label="$lang('考核范围')">
+                                <template slot-scope="scope">
+                                    <el-button type="text" @click="handleShowKPIRange(scope.row)">{{$lang('查看')}}
+                                    </el-button>
+                                </template>
+                            </el-table-column>
+                            <el-table-column :label="$lang('状态')" prop="status">
+                                <template slot-scope="scope">
+                                    <el-switch v-model="scope.row.status" :active-value="1" :inactive-value="0"
+                                        active-color="#13ce66" inactive-color="#dcdfe6"
+                                        @change="handleSwitchStatus(scope.row)">
+                                    </el-switch>
+                                </template>
+                            </el-table-column>
+                            <el-table-column :label="$lang('操作')">
+                                <template slot-scope="scope">
+                                    <el-button size="small" v-if="scope.row.status !== 0" @click="handleEditEsPeople(scope.row)">{{$lang('编辑')}}
+                                    </el-button>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                    </div>
+                    <div class="use-row pagination">
+                        <div class="col-100 text-right">
+                            <el-pagination background layout="sizes, prev, pager, next" :page-sizes="[10, 50, 100]"
+                                @size-change="handleEsSize" @current-change="handleEsCurrent" :total="esTotal">
+                            </el-pagination>
+                        </div>
+                    </div>
+                </div>
+                <!-- 添加预估人 -->
+                <el-dialog :title="type === 'add' ? $lang('新增预估人') : $lang('编辑预估人')" :visible.sync="showAddEsForm"
+                    @close="handleEsPeopleModal">
+                    <el-form :model="addEsPeopleForm" label-width="100px" :rules="rules" ref="form">
+                        <el-form-item :label="$lang('负责人')" prop="principal">
+                            <el-select v-model="addEsPeopleForm.principal" filterable :placeholder="$lang('请选择负责人')" :disabled="type === 'edit'">
+                                <el-option v-for="user in users" :key="user.id" :label="user.name" :value="user.name">
+                                </el-option>
+                            </el-select>
+                        </el-form-item>
+                        <el-form-item :label="$lang('预估期数')" prop="period">
+                            <el-input v-model="addEsPeopleForm.period" style="width: 220px;"
+                                :placeholder="$lang('请输入预估期数')"></el-input>
+                        </el-form-item>
+                        <el-form-item :label="$lang('预估指标')" prop="estimate_index">
+                            <el-checkbox-group v-model="addEsPeopleForm.estimate_index">
+                                <el-checkbox label="销售额">{{$lang('销售额')}}</el-checkbox>
+                                <el-checkbox label='运营成本'>{{$lang('运营成本')}}</el-checkbox>
+                                <el-checkbox label='公司成本'>{{$lang('公司成本')}}</el-checkbox>
+                            </el-checkbox-group>
+                        </el-form-item>
+                        <el-form-item :label="$lang('考核指标')" prop="assess_index">
+                            <el-radio v-model="addEsPeopleForm.assess_index" label="净利">{{$lang('净利')}}</el-radio>
+                            <el-radio v-model="addEsPeopleForm.assess_index" label="销售额">{{$lang('销售额')}}</el-radio>
+                        </el-form-item>
+                        <el-form-item :label="$lang('考核业务')" prop="assess_business">
+                            <el-checkbox-group v-model="addEsPeopleForm.assess_business">
+                                <el-checkbox label="B2B">B2B</el-checkbox>
+                                <el-checkbox label="TPP">TPP</el-checkbox>
+                                <el-checkbox label="GP">GP</el-checkbox>
+                            </el-checkbox-group>
+                        </el-form-item>
+                        <el-form-item :label="$lang('比对数据源')" prop="compared_source">
+                            <el-radio v-model="addEsPeopleForm.compared_source" label="insight">insight</el-radio>
+                            <el-radio v-model="addEsPeopleForm.compared_source" label="录入数据">{{$lang('录入数据')}}
+                            </el-radio>
+                        </el-form-item>
+                        <el-form-item :label="$lang('考核范围')">
+                            <el-select v-model="addEsPeopleForm.assess_range_type" @change="handleChangeRange"
+                                :disabled="addEsPeopleForm.compared_source === '录入数据'">
+                                <el-option v-for="type in assessRangeTypes" :key="type.value" :label="type.type"
+                                    :value="type.value">
+                                </el-option>
+                            </el-select>
+                            <el-select v-model="addEsPeopleForm.assess_range" multiple filterable clearable
+                                :disabled="addEsPeopleForm.compared_source === '录入数据'">
+                                <el-option v-for="dept in deptList" :key="dept.value" :label="dept.name"
+                                    :value="dept.value">
+                                </el-option>
+                            </el-select>
+                        </el-form-item>
+                        <el-form-item>
+                            <el-button @click="handleSubmit" :loading="bLoading">{{$lang('确认')}}</el-button>
+                            <el-button @click="handleAddEsPeople">{{$lang('取消')}}</el-button>
+                        </el-form-item>
+                    </el-form>
+                </el-dialog>
+                <!-- 考核范围 -->
+                <el-dialog :title="$lang('考核范围')" :visible.sync="showKPIRange">
+                    <div class="dialog-content">
+                        <div class="range-cell">
+                            <div class="range-title">{{$lang('业务部门')}}</div>
+                            <div class="range-value">{{range.dept}}</div>
+                        </div>
+                        <div class="range-cell">
+                            <div class="range-title">{{$lang('小组')}}</div>
+                            <div class="range-value">{{range.group}}
+                            </div>
+                        </div>
+                        <div class="range-cell">
+                            <div class="range-title">{{$lang('业务细分')}}</div>
+                            <div class="range-value">{{range.subBusyTeam}}
+                            </div>
+                        </div>
+                    </div>
+                </el-dialog>
+                <!-- 操作日志dialog -->
+                <el-dialog :title="$lang('操作日志')" :visible.sync="showEsLog" class-name="log-table-title">
+                    <el-table :data="logs" border align="center" :header-cell-style="getRowClass">
+                        <el-table-column :label="$lang('操作日志')">
+                            <el-table-column prop="operating_time" :label="$lang('操作时间')"></el-table-column>
+                            <el-table-column prop="operator" :label="$lang('操作人')"></el-table-column>
+                            <el-table-column prop="message" :label="$lang('详细信息')"></el-table-column>
+                        </el-table-column>
+                    </el-table>
+                    <div slot="footer" class="dialog-footer">
+                        <div class="col-100 text-right">
+                            <el-pagination background layout="sizes, prev, pager, next"  @size-change="handleLogSize" @current-change="handleLogCurrent" :page-sizes="[10, 50, 100]"
+                                :total="logTotal">
+                            </el-pagination>
+                        </div>
+                    </div>
+                </el-dialog>
+            </el-tab-pane>
+            <el-tab-pane :label="$lang('汇报顺序')" name="report">
+                <div>
+                    <div class="use-row">
+                        <div class="col-100" style="text-align: right;margin-right: 20px">
+                            <el-button type="primary" @click="handleEditReport">{{$lang('编辑')}}</el-button>
+                            <el-button type="primary" @click="handleShowReportLog">{{$lang('查看操作日志')}}</el-button>
+                        </div>
+                    </div>
+                    <el-table :data="reportData" border class="table-list" v-loading="loading">
+                        <el-table-column prop="report_order" label="#"></el-table-column>
+                        <el-table-column prop="principal" :label="$lang('负责人')"></el-table-column>
+                    </el-table>
+                    <div class="use-row pagination">
+                        <div class="col-100 text-right">
+                            <el-pagination background layout="sizes, prev, pager, next" :page-sizes="[10, 50, 100]"
+                                @size-change="handleReportSize" @current-change="handleReportCurrent"
+                                :total="reportTotal">
+                            </el-pagination>
+                        </div>
+                    </div>
+                </div>
+                <!-- 编辑汇报顺序 -->
+                <el-dialog :title="$lang('编辑汇报顺序')" border :visible.sync="editReport">
+                    <el-table :data="editReportData" border index>
+                        <el-table-column prop="principal" :label="$lang('负责人')"></el-table-column>
+                        <el-table-column :label="$lang('操作')">
+                            <template slot-scope="scope">
+                                <el-button type="text"
+                                    v-if="scope.$index === 0 || scope.$index < editReportData.length - 1"
+                                    @click="handleDown(scope.row)">
+                                    <i class="el-icon-arrow-down"></i>
+                                </el-button>
+                                <template v-if="scope.$index === editReportData.length || scope.$index > 0">
+                                    <el-button type="text" @click="handleUp(scope.row)">
+                                        <i class="el-icon-arrow-up"></i>
+                                    </el-button>
+                                </template>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                    <div class="button-group">
+                        <el-button @click="handleReportSubmit" :loading="bLoading">{{$lang('确认')}}</el-button>
+                        <el-button @click="handleCancelEditReport">{{$lang('取消')}}</el-button>
+                    </div>
+                </el-dialog>
+                <!-- 操作日志dialog -->
+                <el-dialog :title="$lang('操作日志')" :visible.sync="showReportLog">
+                    <el-table :data="reportLogs" border :header-cell-style="getRowClass" align="center">
+                        <el-table-column :label="$lang('操作日志')">
+                            <el-table-column prop="operating_time" :label="$lang('操作时间')"></el-table-column>
+                            <el-table-column prop="operator" :label="$lang('操作人')"></el-table-column>
+                            <el-table-column prop="message" :label="$lang('详细信息')"></el-table-column>
+                        </el-table-column>
+                    </el-table>
+                    <div slot="footer" class="dialog-footer">
+                        <div class="col-100 text-right">
+                            <el-pagination background layout="sizes, prev, pager, next"  @size-change="handleLogReportSize" @current-change="handleLogReportCurrent" :page-sizes="[10, 50, 100]"
+                                :total="reportLogTotal">
+                            </el-pagination>
+                        </div>
+                    </div>
+                </el-dialog>
+            </el-tab-pane>
+        </el-tabs>
+    </div>
+</body>
+<script src="../Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script type="text/javascript" src="../Public/js/request.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="../Public/js/Qs.js"></script>
+
+<script>
+    if (getCookie("think_language") !== "zh-cn") {
+        ELEMENT.locale(ELEMENT.lang.en);
+    }
+    var app = new Vue({
+        name: "estimate_people",
+        el: "#estimatePeople",
+        data() {
+            const numberValidator = (rule, value, cb) => {
+                value = '' + value;
+                const number = parseFloat(value);
+                if (isNaN(number) || number < 0 || value.indexOf('.') !== -1) {
+                    cb(new Error(this.$lang('请输入正整数！')))
+                } else {
+                    cb();
+                }
+            }
+            return {
+                activeTab: 'estimate_people',
+                users: [],
+                searchForm: {
+                    principal: [],
+                    period: undefined,
+                    estimate_index: [],
+                    assess_index: [],
+                    assess_business: [],
+                    compared_source: [],
+                    status: [],
+                    page: 1,
+                    pageSize: 10
+                },
+                states: [{ value: 1, name: '启用' }, { value: 0, name: '停用' }],
+                businesses: ['B2B', 'TPP', 'GP'],
+                assess: ['销售额', '净利'],
+                estimates: ['销售额', '运营成本', '公司成本'],
+                data: [],
+                esTotal: 0,
+                logParams: {
+                    page: 1,
+                    pageSize: 10,
+                    log_type: 'person',
+                },
+                logs: [],
+                logTotal: 0,
+                reportLogs: [],
+                reportLogParams: {
+                    page: 1,
+                    pageSize: 10,
+                    log_type: 'report_order',
+                },
+                reportLogTotal: 1,
+                showEsLog: false,
+                showKPIRange: false,
+                range: {},
+                origin: {},
+                addEsPeopleForm: {
+                    principal: '',
+                    period: '',
+                    estimate_index: ['销售额', '运营成本', '公司成本'],
+                    assess_index: '净利',
+                    assess_business: ['B2B', 'TPP', 'GP'],
+                    compared_source: 'insight',
+                    assess_range_type: '0',
+                    assess_range: [-1]
+                },
+                assessRangeTypes: [
+                    {
+                        value: '0',
+                        type: this.$lang('业务部门')
+                    },
+                    {
+                        value: '1',
+                        type: this.$lang('小组')
+                    },
+                    {
+                        value: '2',
+                        type: this.$lang('业务细分')
+                    }
+                ],
+                type: 'add',
+                showAddEsForm: false,
+                rules: {
+                    principal: [
+                        { required: true, message: this.$lang('请选择负责人！'), trigger: 'blur' }
+                    ],
+                    period: [
+                        { required: true, message: this.$lang('请输入预估期数！'), trigger: 'blur' },
+                        { validator: numberValidator, trigger: 'blur' },
+                    ],
+                    estimate_index: [
+                        { required: true, message: this.$lang('请选择预估指标！'), trigger: 'blur' }
+                    ],
+                    assess_business: [
+                        { required: true, message: this.$lang('请选择考核业务！'), trigger: 'blur' }
+                    ]
+
+                },
+                showReportLog: false,
+                reportParam: {
+                    page: 1,
+                    pageSize: 10
+                },
+                username: '',
+                reportData: [],
+                operationNo: '',
+                reportTotal: 0,
+                editReport: false,
+                editReportData: [],
+                bLoading: false,
+                loading: false,
+                deptList: [], // 业务部门
+            }
+        },
+        created() {
+            this.getData();
+            this.getUsers();
+        },
+        watch: {
+            'addEsPeopleForm.compared_source'() {
+                if (this.addEsPeopleForm.compared_source === '录入数据') {
+                    this.addEsPeopleForm.assess_range = [];
+                    this.addEsPeopleForm.assess_range_type = '';
+                } else {
+                    this.addEsPeopleForm.assess_range_type = '0';
+                    this.addEsPeopleForm.assess_range = [-1];
+                }
+            },
+        },
+        methods: {
+            getData() {
+                const { principal, period, estimate_index, assess_index, assess_business, compared_source, status, page, pageSize } = this.searchForm;
+                const params = {
+                    period,
+                    page,
+                    pageSize,
+                    principal: principal.join(',') || undefined,
+                    estimate_index: estimate_index.join(',') || undefined,
+                    assess_index: assess_index.join(',') || undefined,
+                    assess_business: assess_business.join(',') || undefined,
+                    compared_source: compared_source.join(',') || undefined,
+                    status: status.join(',') || undefined,
+                };
+                this.laoding = true;
+                request('estimatePerson/queryEstimatePerson', params, 'insight').then(res => {
+                    this.laoding = false;
+                    if (res.success) {
+                        this.data = res.datas;
+                        this.esTotal = res.totalCount;
+                    }
+                })
+            },
+            handleEsCurrent(current) {
+                this.searchForm.page = current;
+                this.getData();
+            },
+            handleEsSize(size) {
+                this.searchForm.pageSize = size;
+                this.getData();
+            },
+            handleChangeTab() {
+                if (this.activeTab === 'report') {
+                    this.getReportData();
+                }
+            },
+            getReportData() {
+                this.loading = true
+                const { page, pageSize } = this.reportParam;
+                const params = {
+                    queryType: "report_order",
+                    status: "1",
+                    page,
+                    pageSize
+                }
+                request('estimatePerson/queryEstimatePerson', params, 'insight').then(res => {
+                    this.loading = false;
+                    if (res.success) {
+                        this.reportData = res.datas;
+                        this.reportTotal = res.totalCount;
+                    }
+                })
+            },
+            handleShowLog() {
+                this.showEsLog = !this.showEsLog
+                if (this.showEsLog) {
+                    this.getLogs();
+                }
+            },
+            getLogs() {
+                const params = Object.assign({}, this.logParams);
+                request('profitAndLossEstimateLog/queryLog', params, 'insight').then(res => {
+                    if (res.success) {
+                        this.logs = res.datas;
+                        this.logTotal = res.totalCount
+                    }
+                })
+            },
+            handleLogCurrent(current) {
+                this.logParams.page = current;
+                this.getLogs();
+            },
+            handleLogSize(size) {
+                this.logParams.pageSize = size;
+                this.getLogs();
+            },
+            getReportLogs() {
+                const params = Object.assign({}, this.reportLogParams);
+                request('profitAndLossEstimateLog/queryLog', params, 'insight').then(res => {
+                    if (res.success) {
+                        this.reportLogs = res.datas;
+                        this.reportLogTotal = res.totalCount
+                    }
+                })
+            },
+            handleLogReportCurrent(current) {
+                this.reportLogParams.page = current;
+                this.getReportLogs();
+            },
+            handleLogReportSize(size) {
+                this.reportLogParams.pageSize = size;
+                this.getReportLogs();
+            },
+            // 负责人
+            getUsers() {
+                request('index.php?m=admin&a=admin_options', {}).then(res => {
+                    this.users = res.data;
+                    this.users.map(user => {
+                        if (user.id === getCookie('userId')) {
+                            this.addEsPeopleForm.principal = user.name;
+                            this.username = user.name;
+                        }
+                    })
+                })
+            },
+            BusinessGroup() {
+                let lang = getCookie("think_language");
+                request('estimatePerson/queryBusyGroupAll', {lang: lang === 'zh-cn' ? 'zh' : lang}, 'insight').then(res => {
+                    if (res.success) {
+                        this.deptList = res.datas;
+                    } else {
+                        this.deptList = [];
+                    }
+                })
+            },
+            handleChangeRange() {
+                this.addEsPeopleForm.assess_range = [-1];
+                this.getDeptList();
+            },
+            getDeptList(type = '0') {
+                if (this.addEsPeopleForm.assess_range_type === '1') {
+                    return this.BusinessGroup();
+                } else if (this.addEsPeopleForm.assess_range_type === '2') {
+                    return this.getBusiness();
+                }
+                request('/estimatePerson/queryBusyTeamAll', {}, 'insight').then(res => {
+                    if (res.success) {
+                        this.deptList = res.datas;
+                    } else {
+                        this.deptList = [];
+                    }
+                })
+            },
+            getBusiness() {
+                // 业务细分
+                let lang = getCookie("think_language");
+                request('estimatePerson/querySubBusyGroupAll', { lang: lang === 'zh-cn' ? 'zh' : lang }, 'insight').then(res => {
+                    if (res.success) {
+                        this.deptList = res.datas;
+                    } else {
+                        this.deptList = [];
+                    }
+                })
+            },
+            handleShowKPIRange(item) {
+                if (item.compared_source === '录入数据') {
+                    this.showKPIRange = true;
+                    return this.range = {
+                        dept: "-",
+                        group: "-",
+                        subBusyTeam: "-"
+                    };
+                }
+                let lang = getCookie("think_language");
+                const params = {
+                    assessRangeType: item.assess_range_type,
+                    assessRange: item.assess_range,
+                    language: lang === 'zh-cn' ? 'zh' : lang
+                }
+                request('estimatePerson/getAssessRangeInfo', params, 'insight').then(res => {
+                    if (res.success) {
+                        this.showKPIRange = true;
+                        this.range = res.datas;
+                    }
+
+                })
+            },
+            handleAddEsPeople() {
+                this.showAddEsForm = !this.showAddEsForm;
+                if (this.deptList.length === 0) {
+                    this.getDeptList();
+                }
+            },
+            handleEsPeopleModal() {
+                this.type = 'add';
+                this.addEsPeopleForm = {
+                    principal: this.username,
+                    period: '',
+                    estimate_index: ['销售额', '运营成本', '公司成本'],
+                    assess_index: '净利',
+                    assess_business: ['B2B', 'TPP', 'GP'],
+                    compared_source: 'insight',
+                    assess_range_type: '0',
+                    assess_range: [-1]
+                },
+                    this.$refs.form.resetFields();
+            },
+            handleSubmit() {
+                this.$refs.form.validate(valid => {
+                    if (!valid) return;
+                    const { principal, period, estimate_index, assess_index, assess_business, compared_source, assess_range_type, assess_range } = Object.assign({}, this.addEsPeopleForm);
+                    if (compared_source !== '录入数据') {
+                        if (assess_range.length === 0) {
+                            return this.$message.warning(this.$lang('考核范围不能为空'));
+                        }
+                    }
+                    const assess_range_name = [];
+                    this.deptList.map(dept => {
+                        if (assess_range.includes(dept.value)) {
+                            assess_range_name.push(dept.name);
+                        }
+                    })
+                    const params = {
+                        principal,
+                        period,
+                        assess_index,
+                        compared_source,
+                        assess_range_type,
+                        estimate_index: estimate_index.join(','),
+                        assess_business: assess_business.join(','),
+                        assess_range: assess_range.join(','),
+                        assess_range_name: assess_range_name.join(',')
+                    }
+                    this.bLoading = true;
+                    let uri = 'estimatePerson/addEstimatePerson';
+                    if (this.type === 'edit') {
+                        params.id = this.addEsPeopleForm.id;
+                        uri = 'estimatePerson/editEstimatePerson';
+                        if (this.addEsPeopleForm.principal === this.origin.principal) {
+                            delete params.principal;
+                        }
+                    }
+                    request(uri, params, 'insight').then(res => {
+                        this.bLoading = false;
+                        if (res.success) {
+                            this.$message.success(this.$lang(res.msg));
+                            this.handleAddEsPeople()
+                            this.getData();
+                        }
+                    })
+                })
+            },
+            handleSwitchStatus(row) {
+                const params = {
+                    id: row.id,
+                    status: row.status
+                }
+                this.bLoading = true
+                request('estimatePerson/editEstimatePersonStatus', params, 'insight').then(res => {
+                    this.bLoading = false;
+                    if (res.success) {
+                        this.$message.success(this.$lang('修改成功'));
+                    }
+                })
+            },
+            handleEditEsPeople(row) {
+                this.showAddEsForm = true;
+                this.type = 'edit';
+                const form = Object.assign({}, row);
+                this.origin = Object.assign({}, row);
+                this.addEsPeopleForm = {
+                    id: row.id,
+                    principal: form.principal,
+                    period: form.period,
+                    estimate_index: form.estimate_index.split('，'),
+                    assess_index: form.assess_index,
+                    assess_business: form.assess_business.split(','),
+                    compared_source: form.compared_source,
+                    assess_range_type: form.assess_range_type,
+                    assess_range: form.assess_range.split(',')
+                }
+                this.addEsPeopleForm.assess_range = this.addEsPeopleForm.assess_range.map(item => parseFloat(item));
+                this.getDeptList(this.addEsPeopleForm.assess_range_type);
+            },
+            handleShowReportLog() {
+                this.showReportLog = !this.showReportLog;
+                if (this.showReportLog) {
+                    this.getReportLogs();
+                }
+            },
+            handleEditReport() {
+                request('estimatePerson/getReportOrderTable', {}, 'insight').then(res => {
+                    if (res.success) {
+                        this.editReportData = res.datas.datas;
+                        this.operationNo = res.datas.operationNo;
+                        this.editReport = true;
+                    }
+                })
+            },
+            getRowClass({ row, column, rowIndex, columnIndex }) {
+                if (rowIndex === 0) {
+                    return 'background: #546e7a;color: #fff;'
+                }
+            },
+            handleDown(row) {
+                const index = this.editReportData.findIndex(item => item.id === row.id)
+                this.editReportData[index] = this.editReportData.splice(index + 1, 1, this.editReportData[index])[0]
+                const indexReportOrder = this.editReportData[index].report_order;
+                this.editReportData[index].report_order = this.editReportData[index + 1].report_order;
+                this.editReportData[index + 1].report_order = indexReportOrder;
+            },
+            handleUp(row) {
+                const index = this.editReportData.findIndex(item => item.id === row.id)
+                this.editReportData[index] = this.editReportData.splice(index - 1, 1, this.editReportData[index])[0]
+                const indexReportOrder = this.editReportData[index].report_order;
+                this.editReportData[index].report_order = this.editReportData[index - 1].report_order;
+                this.editReportData[index - 1].report_order = indexReportOrder;
+            },
+            handleReportSubmit() {
+                const params = {
+                    operationNo: this.operationNo,
+                    datas: this.editReportData
+                }
+                this.bLoading = true;
+                request('estimatePerson/editReportOrder', params, 'insight').then(res => {
+                    this.bLoading = false;
+                    if (res.success) {
+                        this.editReport = false;
+                        this.$message.success(this.$lang(res.msg));
+                        this.getReportData()
+                    }
+                })
+            },
+            handleCancelEditReport() {
+                this.editReportData = [];
+                this.editReport = false;
+            },
+            handleReportCurrent(current) {
+                this.reportParam.page = current;
+                this.getReportData();
+            },
+            handleReportSize(size) {
+                this.reportParam.pageSize = size;
+                this.getReportData();
+            }
+        }
+    });
+</script>
+
+</html>

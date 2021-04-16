@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>
+        <{$Think.lang.正次品转换}>
+    </title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="./Application/Tpl/Home/Public/lib/Hui-iconfont/1.0.7/iconfont.css" />
+    <!-- <link href="./Application/Tpl/Home/Public/css/H-ui-3.1.min.css" rel="stylesheet" type="text/css"> -->
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/stock.css">
+    <link rel="stylesheet" type="text/css" href="./Application/Tpl/Home/Public/css/style.css" />
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" type="text/css" href="./Application/Tpl/Home/Public/css/NewAllocate.css" />
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+    <!-- <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.config.VER_NUM}>"> -->
+</head>
+<style>
+    .col-sm-4 {
+        padding: 0;
+    }
+    
+    .title-left {
+        width: 25%;
+        float: left;
+    }
+    /* span {line-height: 31px;} */
+    
+    table {
+        margin-top: 10px;
+    }
+    
+    table thead th {
+        text-align: center;
+    }
+    
+    .select-box {
+        border: solid 1px #ddd;
+    }
+    
+    .table-bg thead th {
+        background-color: #537a8c;
+        color: white;
+    }
+    
+    .el-input__icon {
+        line-height: 0 !important;
+    }
+    /* .el-select-dropdown {
+        top: 160px !important;
+    } */
+    
+    .table {
+        width: 100%;
+        border-left: 1px solid #E0E0E0;
+        border-bottom: 1px solid #E0E0E0;
+    }
+    
+    .table thead th {
+        background-color: #537a8c;
+        color: white;
+    }
+    
+    .table thead th,
+    .table tbody td {
+        border-top: 1px solid #E0E0E0;
+        border-right: 1px solid #E0E0E0;
+        text-align: center;
+    }
+    
+    .product-search input {
+        width: 100%;
+        padding: 0px;
+        height: 32px;
+        border: 1px solid rgba(0, 0, 0, 0.15);
+        border-radius: 5px;
+        outline: none;
+    }
+    
+    .product-search select {
+        width: 110%;
+        padding: 0px;
+        height: 32px;
+        border: 1px solid rgba(0, 0, 0, 0.15);
+        border-radius: 5px;
+        outline: none;
+    }
+    .create_new_process .codeView .codeView-row{
+        margin: 35px 0px;
+    }
+    .create_new_process .codeView .codeView-row > div{
+        line-height: 20px;
+    }
+</style>
+
+<body>
+    <div id="content">
+        <form method="post" enctype="multipart/form-data" class="create_new_process" v-if="tabChange">
+            <p class="codeView-title">
+                <{$Think.lang.正次品转换}>（1/2）
+            </p>
+            <div class="codeView docs-example" style="border-radius: 0px; height: 655px;">
+                <div class="empty" style="height:50px"></div>
+                <div class="codeView-row">
+                    <div class="Hui-tags-editor cl">
+                        <span class="Hui-tags-token">
+                            <{$Think.lang.转换类型}><span style="color:red">*</span>
+                        </span>
+                    </div>
+                    <div class="Hui-tags-editor-right">
+                        <el-select :placeholder="$lang('请选择')" v-model="active_params.type_cd" style="width:100%" clearable filterable>
+                            <el-option v-for="(item) in transType" :key="item.CD" :label="$lang(item.CD_VAL)" :value="item.CD">
+                            </el-option>
+                        </el-select>
+                    </div>
+                </div>
+                <div class="codeView-row">
+                    <div class="Hui-tags-editor cl">
+                        <span class="Hui-tags-token">
+                            <{$Think.lang.本次转换是否同步更新采购单}><span style="color:red">*</span>
+                        </span>
+                    </div>
+                    <div class="Hui-tags-editor-right">
+                        <el-select :placeholder="$lang('请选择')" v-model="active_params.affect_supplier_settlement" clearable style="width:100%">
+                            <el-option :label="$lang('否')" value="0"></el-option>
+                            <el-option :label="$lang('是')" value="1"></el-option>
+                        </el-select>
+                    </div>
+                </div>
+                <div class="codeView-row">
+                    <div class="Hui-tags-editor cl">
+                        <span class="Hui-tags-token">
+                            <{$Think.lang.货物归属销售团队}><span style="color:red">*</span>
+                        </span>
+                    </div>
+                    <div class="Hui-tags-editor-right">
+                        <el-select :placeholder="$lang('请选择')" v-model="active_params.sales_team_cd" style="width:100%" clearable filterable>
+                            <el-option v-for="(item) in transTeam" :key="item.CD" :label="$lang(item.CD_VAL)" :value="item.CD">
+                            </el-option>
+                        </el-select>
+                    </div>
+                </div>
+                <div class="codeView-row">
+                    <div class="Hui-tags-editor cl">
+                        <span class="Hui-tags-token">
+                            <{$Think.lang.货物归属仓库}><span style="color:red">*</span>
+                        </span>
+                    </div>
+                    <div class="Hui-tags-editor-right">
+                        <el-select :placeholder="$lang('请选择')" v-model="active_params.warehouse_cd" style="width:100%" clearable filterable>
+                            <el-option v-for="item in transWarehouse" :key="item.CD" :label="$lang(item.CD_VAL)" :value="item.CD"></el-option>
+                        </el-select>
+                    </div>
+                </div>
+                <div class="codeView-row">
+                    <div class="Hui-tags-editor cl">
+                        <span class="Hui-tags-token">
+                            <{$Think.lang.货物归属采购单号}>
+                        </span>
+                    </div>
+                    <div class="Hui-tags-editor-right">
+                        <el-input :placeholder="$lang('请输入内容')" v-model="active_params.sales_no" style="width:100%">
+                        </el-input>
+                    </div>
+                </div>
+                <div class="codeView-row">
+                    <div class="Hui-tags-editor cl">
+                        <span class="Hui-tags-token">
+                            <{$Think.lang.货物归属需求编号}>
+                        </span>
+                    </div>
+                    <div class="Hui-tags-editor-right">
+                        <el-input :placeholder="$lang('请输入内容')" v-model="active_params.demand_no" style="width:100%">
+                        </el-input>
+                    </div>
+                </div>
+                <div class="codeView-row">
+                    <div class="Hui-tags-editor cl">
+                        <span class="Hui-tags-token">
+                            <{$Think.lang.转换备注}>
+                        </span>
+                    </div>
+                    <div class="Hui-tags-editor-right">
+                        <el-input type="textarea" :placeholder="$lang('请输入内容')" v-model="active_params.remark" style="width:100%">
+                        </el-input>
+                    </div>
+                </div>
+                <div class="row-btn">
+                    <input class="btn btn-block btn-primary" type="button" value="<{$Think.lang.下一步}>" @click="create_new_process">
+                </div>
+            </div>
+        </form>
+        <template v-if="!tabChange">
+            <p class="content-title">
+                <{$Think.lang.正次品转换}>（2/2）
+            </p>
+            <div id="content">
+                <div class="ck-wrap">
+                    <!--search-->
+                    <div>
+                        <div class="row-top-title">
+                            <div>
+                                <span>
+                                    <{$Think.lang.转换类型}>：
+                                </span>
+                                <div>{{type_style}}</div>
+                            </div>
+                            <div>
+                                <span>
+                                    <{$Think.lang.本次转换是否同步更新采购单}>：
+                                </span>
+                                <div class="fontNormal">
+                                    <div>{{affectValue}}</div>
+                                </div>
+                            </div>
+                            <div>
+                                <span>
+                                    <{$Think.lang.货物归属销售团队}>：
+                                </span>
+                                <div class="fontNormal">
+                                    <div>{{sales_teamValue}}</div>
+                                </div>
+                            </div>
+                            <div>
+                                <span>
+                                    <{$Think.lang.货物归属仓库}>：
+                                </span>
+                                <div class="fontNormal">
+                                    <div>{{warehouseValue}}</div>
+                                </div>
+                            </div>
+                            <div>
+                                <span>
+                                    <{$Think.lang.货物归属采购单号}>：
+                                </span>
+                                <div class="fontNormal">
+                                    <div>{{toactive_params.purchase_no}}</div>
+                                </div>
+                            </div>
+                            <div>
+                                <span>
+                                    <{$Think.lang.货物归属需求编号}>：
+                                </span>
+                                <div class="fontNormal">
+                                    <div>{{toactive_params.demand_no}}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row-line" style="clear:both"></div>
+                    <div class="row row-form">
+                        <div class="col-sm-3 col-lg-3 col-md-3">
+                            <div class="align-left" style="width:120px;">
+                                <span>
+                                    <{$Think.lang.SKU编码/条形码}> </span> </div> <div class="product-search">
+                                        <input type="text" class="input-text" style="width:100%;"
+                                            v-model="toactive_params.sku_id" />
+                            </div>
+                        </div>
+                        <div class="col-sm-3 col-lg-3 col-md-3" style="margin-left:50px;">
+                            <div class="align-left" style="width:65px;">
+                                <span>
+                                    <{$Think.lang.选择状态}>
+                                </span>
+                            </div>
+                            <div class="product-search">
+                                <select class="select select-box" v-model="selected_state">
+                                    <option value="0">
+                                        <{$Think.lang.请选择选择状态}>
+                                    </option>
+                                    <option value="1">
+                                        <{$Think.lang.未选择}>
+                                    </option>
+                                    <option value="2">
+                                        <{$Think.lang.已选择}>
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-6 col-md-6" style="margin-left:50px;">
+                            <button class="btn btn-search" @click="search" style="background:#1E7EB4;margin-left:10px;">
+                                <{$Think.lang.查看}>
+                            </button>
+                            <button class="btn btn-reset" @click="reset" style="margin-left:10px;">
+                                <{$Think.lang.重置}>
+                            </button>
+                        </div>
+                    </div>
+                    <div style="height: 10px;"></div>
+                    <div class="row-line"></div>
+                    <div style="height: 10px;"></div>
+                    <div class="row_result">
+                        <span>
+                            <{$Think.lang.总计}>{{totalCount}}<{$Think.lang.条数据}>
+                        </span>
+                    </div>
+                    <!--content-->
+                    <div>
+                        <table class="table table-bg">
+                            <thead>
+                                <th>
+                                    <{$Think.lang.序号}>
+                                </th>
+                                <th>
+                                    <{$Think.lang.SKU编码}>
+                                </th>
+                                <th>
+                                    <{$Think.lang.条形码}>
+                                </th>
+                                <th>
+                                    <{$Think.lang.商品名称}>
+                                </th>
+                                <th>
+                                    <{$Think.lang.属性}>
+                                </th>
+                                <th>
+                                    <{$Think.lang.归属采购团队}>
+                                </th>
+                                <th>
+                                    <{$Think.lang.归属采购单号}>
+                                </th>
+                                <th>
+                                    <{$Think.lang.批次号}>
+                                </th>
+                                <th>
+                                    <{$Think.lang.到期日}>
+                                </th>
+                                <th>
+                                    <{$Think.lang.转换前商品类型}>
+                                </th>
+                                <th>
+                                    <{$Think.lang.可售数量}>
+                                </th>
+                                <th>
+                                    <{$Think.lang.转换数量}>
+                                </th>
+                                <th>
+                                    <{$Think.lang.选择状态}>
+                                </th>
+                                <th>
+                                    <{$Think.lang.操作}>
+                                </th>
+                            </thead>
+                            <tbody>
+                                <!-- slice((currpage-1)*pageSize,currpage*pageSize) -->
+                                <template v-for="(r, k) in listData" v-if="dataChangeFlag">
+                                    <tr class="text-c"
+                                        v-show="k <= ((currpage*pageSize)-1) && k>((currpage-1)*pageSize-1)">
+                                        <td>{{k+1}}</td>
+                                        <td>{{r.sku_id}}</td>
+                                        <td>{{r.upc_id}}</td>
+                                        <td>{{r.spu_name}}</td>
+                                        <td>{{r.attributes}}</td>
+                                        <td>
+                                            {{r.purchase_team}}
+                                        </td>
+                                        <td>
+                                            {{r.purchase_order_no}}
+                                        </td>
+                                        <td>
+                                            {{r.batch_code}}
+                                        </td>
+                                        <td>{{r.deadline_date_for_use}}</td>
+                                        <td>{{typeValue}}</td>
+                                        <td>{{r.available_for_sale_num}}</td>
+                                        <td>
+                                            <span v-if="r.inputHide">{{r.need_num}}</span>
+                                            <input type="text" style="width:100px;" class="input-text"
+                                                v-model="r.need_num" @keyup="addition(k, r)" @blur="save(k, r)"
+                                                v-else />
+                                        </td>
+                                        <td>
+                                            <span v-if="r.need_num > 0"><i
+                                                    class="Hui-iconfont Hui-iconfont-xuanze"></i></span>
+                                            <span v-else></span>
+                                        </td>
+                                        <td class="content-td-operation">
+                                            <span class="td-btn td-btn-cancel" @click="inputEdit(k, r);"
+                                                v-if="r.inputHide">
+                                                <{$Think.lang.修改}>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </template>
+        <template v-for="(r, k) in filterData" v-if="!dataChangeFlag">
+                                    <tr class="text-c"
+                                        v-show="k <= ((currpage*pageSize)-1) && k>((currpage-1)*pageSize-1)">
+                                        <td>{{k+1}}</td>
+                                        <td>{{r.sku_id}}</td>
+                                        <td>{{r.upc_id}}</td>
+                                        <td>{{r.spu_name}}</td>
+                                        <td>{{r.attributes}}</td>
+                                        <td>
+                                            {{r.purchase_team}}
+                                        </td>
+                                        <td>
+                                            {{r.purchase_order_no}}
+                                        </td>
+                                        <td>
+                                            {{r.batch_code}}
+                                        </td>
+                                        <td>{{r.deadline_date_for_use}}</td>
+                                        <td>{{typeValue}}</td>
+                                        <td>{{r.available_for_sale_num}}</td>
+                                        <td>
+                                            <span v-if="r.inputHide">{{r.need_num}}</span>
+                                            <input type="text" style="width:100px;" class="input-text"
+                                                v-model="r.need_num" @keyup="addition(k, r)" @blur="save(k, r)"
+                                                v-else />
+                                        </td>
+                                        <td>
+                                            <span v-if="r.need_num > 0"><i
+                                                    class="Hui-iconfont Hui-iconfont-xuanze"></i></span>
+                                            <span v-else></span>
+                                        </td>
+                                        <td class="content-td-operation">
+                                            <span class="td-btn td-btn-cancel" @click="inputEdit(k, r);"
+                                                v-if="r.inputHide">
+                                                <{$Think.lang.修改}>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </template>
+
+        </tbody>
+        </table>
+    </div>
+    <div class="col-100 text-right">
+        <ul class="pagination">
+            <li><a href="#" v-if="currpage > 1" @click="currpage=1">第一页</a></li>
+            <li><a href="#" v-if="currpage > 1" @click="currpage--">上一页</a></li>
+            <li><a href="#" v-if="currpage < pageSum-5" @click="currpage=currpage+5">下五页</a></li>
+            <li><a href="#" v-if="currpage < pageSum" @click="currpage++">下一页</a></li>
+            <li><a href="#" v-if="currpage < pageSum" @click="currpage=pageSum">最后一页</a></li>
+        </ul>
+    </div>
+
+    <div class="row bottom-row">
+        <div>
+            <button class="bottom-btn btn-back-bottom" @click="lastStep()">
+                                <{$Think.lang.上一步}>
+                            </button>
+            <button class="bottom-btn btn-check-bottom" @click="launchAllocation()" :disabled="clickFlag">
+                                <{$Think.lang.提交审批}>
+                            </button>
+        </div>
+    </div>
+    </div>
+    </div>
+    </template>
+    </div>
+
+</body>
+
+<script src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/jquery-ui.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js?<{$Think.config.VER_NUM}>">
+</script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui-3.1.min.js"></script>
+<script src="./Application/Tpl/Home/Public/lib/layer-v3.0.3/layer/layer.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/common_allo.js"></script>
+<!-- <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script> -->
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js">
+</script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>">
+</script>
+<script type="text/javascript">
+    var vm = new Vue({
+        el: '#content',
+        data: {
+            clickFlag: false,
+            currpage: 1,
+            pageSize: 10,
+            pageSum: 1,
+            tabChange: true,
+            dataChangeFlag: true,
+            filterData: [],
+            listData: [],
+            totalCount: 0,
+            selected_state: 0,
+
+            transTeam: '',
+            transWarehouse: '',
+            transType: '',
+            active_params: {
+                type_cd: '',
+                affect_supplier_settlement: '',
+                sales_team_cd: '',
+                warehouse_cd: '',
+                sales_no: '',
+                demand_no: '',
+                remark: '',
+            },
+
+            toactive_params: {
+                type_cd: '',
+                affect_supplier_settlement: '',
+                sales_team_cd: '',
+                warehouse_cd: '',
+                purchase_no: '',
+                demand_no: '',
+                sku_id: '',
+            },
+            type_style: '',
+            typeValue: '',
+            affectValue: '',
+            sales_teamValue: '',
+            warehouseValue: '',
+            queryPost: function(url, param) {
+                var headers = {
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                }
+                return axios.post(url, Qs.stringify(param), headers);
+            },
+        },
+        mounted: function() {
+            setTimeout(function() {
+                for (key in vm.listData) {
+                    if (vm.listData[key].need_num > 0) {
+                        if (vm.listData[key].inputHide) {} else {
+                            Vue.set(vm.listData[key], 'inputHide', true)
+                        }
+                    }
+                }
+            }, 50)
+        },
+        created: function() {
+            this.getBaseData();
+        },
+        methods: {
+            getBaseData() {
+                let param = {
+                    cd_type: {
+                        warehouse: true,
+                        sell_team: true,
+                        product_conversion_type: true,
+                    }
+                }
+                this.queryPost("/index.php?g=common&m=index&a=get_cd", param).then((res) => {
+                    if (res.data.code === 2000) {
+                        this.transWarehouse = res.data.data.warehouse;
+                        this.transTeam = res.data.data.sell_team;
+                        this.transType = res.data.data.product_conversion_type;
+                    } else {
+                        this.$message.error(this.$lang(res.data.msg));
+                    }
+                }).catch(function(err) {
+                    console.log(err);
+                });
+            },
+            //跳转转换下一步
+            create_new_process: function() {
+                this.dataChangeFlag = true;
+                this.currpage = 1;
+                this.pageSize = 10;
+                vm.toactive_params.sku_id = '';
+                vm.selected_state = 0;
+                if (this.active_params.type_cd && this.active_params.affect_supplier_settlement && this
+                    .active_params.sales_team_cd && this.active_params.warehouse_cd) {
+                    this.tabChange = false;
+                    this.toactive_params.type_cd = this.active_params.type_cd;
+                    this.toactive_params.affect_supplier_settlement = this.active_params
+                        .affect_supplier_settlement;
+                    this.toactive_params.purchase_no = this.active_params.sales_no;
+                    this.toactive_params.demand_no = this.active_params.demand_no;
+                    this.toactive_params.sales_team_cd = this.active_params.sales_team_cd;
+                    this.toactive_params.warehouse_cd = this.active_params.warehouse_cd;
+                    for (var item of this.transTeam) {
+                        if (item.CD == this.active_params.sales_team_cd) {
+                            this.sales_teamValue = item.CD_VAL
+                        }
+                    }
+                    for (var item of this.transWarehouse) {
+                        if (item.CD == this.active_params.warehouse_cd) {
+                            this.warehouseValue = item.CD_VAL
+                        }
+                    }
+                    for (var item of this.transType) {
+                        if (item.CD == this.active_params.type_cd) {
+                            this.type_style = item.CD_VAL
+                        }
+                    }
+                    this.typeValue = this.active_params.type_cd == 'N002720001' ? '正品' : '残次品'
+                    if (this.active_params.affect_supplier_settlement == 0) {
+                        this.affectValue = '否'
+                    } else if (this.active_params.affect_supplier_settlement == 1) {
+                        this.affectValue = '是'
+                    }
+                } else {
+                    layer.msg('<{$Think.lang.请选择必选项}>');
+                    return;
+                }
+                this.getListData();
+            },
+
+            getListData: function() {
+                this.dataChangeFlag = true;
+                this.listData = [];
+                this.queryPost("/index.php?g=warehouse&m=product&a=conversion_goods_search", this
+                    .toactive_params).then((res) => {
+                    var _data = res.data;
+                    if (_data.code == 2000) {
+                        if (_data.data) {
+                            this.listData = _data.data;
+                            this.pageSum = Math.ceil(this.listData.length / this.pageSize);
+                            this.totalCount = _data.data.length;
+                            for (var key in this.listData) {
+                                Vue.set(this.listData[key], 'need_num', 0)
+                            }
+                        } else {
+                            this.$message.error(this.$lang("暂无数据"));
+                        }
+                    } else {
+                        this.$message.error(this.$lang("获取列数据失败"));
+                    }
+                }).catch(function(err) {
+                    console.log(err);
+                });
+            },
+            search: function() {
+                this.filterData = [];
+                this.dataChangeFlag = false;
+                this.currpage = 1;
+                this.pageSize = 10;
+                if (vm.toactive_params.sku_id.trim() == '') {
+                    if (vm.selected_state == 0) {
+                        this.filterData = this.listData;
+                    } else {
+                        for (var item in this.listData) {
+                            if (this.listData[item].need_num > 0 && vm.selected_state == 2) {
+                                this.filterData.push(this.listData[item])
+                            } else if (vm.selected_state == 1 && (this.listData[item].need_num == 0 || !this
+                                    .listData[item].hasOwnProperty('need_num'))) {
+                                this.filterData.push(this.listData[item])
+                            }
+                        }
+                    }
+                } else {
+                    for (var item in this.listData) {
+                        if (this.toactive_params.sku_id == this.listData[item].sku_id || this.listData[item].upc_id.indexOf(this.toactive_params.sku_id) !== -1) {
+                            if (this.listData[item].need_num > 0 && vm.selected_state == 2) {
+                                this.filterData.push(this.listData[item])
+                            } else if (vm.selected_state == 1 && (this.listData[item].need_num == 0 || !this
+                                    .listData[item].hasOwnProperty('need_num'))) {
+                                this.filterData.push(this.listData[item])
+                            } else if (vm.selected_state == 0) {
+                                this.filterData.push(this.listData[item])
+                            }
+                        }
+                    }
+                }
+                this.totalCount = this.filterData.length;
+                this.pageSum = Math.ceil(this.filterData.length / this.pageSize);
+            },
+            reset: function() {
+                this.dataChangeFlag = true;
+                this.currpage = 1;
+                this.pageSize = 10;
+                vm.toactive_params.sku_id = '';
+                vm.selected_state = 0;
+                this.getListData();
+            },
+            addition: function(index, r) {
+                var launch_num = parseInt(r.need_num);
+                var max = parseInt(r.available_for_sale_num);
+                if (launch_num > max) {
+                    layer.msg('转换超出最大可售范围');
+                    r.need_num = max;
+                } else {
+                    if (launch_num >= 0) {
+                        r.need_num = launch_num;
+                    } else {
+                        r.need_num = 0;
+                    }
+                }
+                // this.listData.splice(index, 0);
+                return;
+            },
+            edit: function(index, e) {
+                e.edit = true;
+                if (e.need_num == null)
+                    e.need_num = 0;
+                e.need_num_bak = e.need_num;
+                // this.listData.splice(index, 0);
+            },
+            inputEdit: function(index, e) {
+                for (var item in vm.listData) {
+                    if (e.bath_id == vm.listData[item].bath_id) {
+                        vm.listData[item].inputHide = false;
+                    }
+                }
+            },
+            save: function(index, e) {
+                if (e.need_num > 0) {
+                    for (var item in vm.listData) {
+                        if (e.bath_id == vm.listData[item].bath_id) {
+                            if (vm.listData[item].inputHide) {} else {
+                                Vue.set(vm.listData[item], 'inputHide', true)
+                            }
+                        }
+                    }
+                }
+                if (!$.isNumeric(e.need_num)) {
+                    layer.msg('<{$Think.lang.请输入数字字符}>');
+                    return;
+                }
+                var need_num = parseInt(e.need_num);
+                var need_num_bak = parseInt(e.need_num_bak);
+                var available_for_sale_num_total = parseInt(e.available_for_sale_num);
+                if (need_num > available_for_sale_num_total) {
+                    layer.msg('<{$Think.lang.转换数量不能大于可售数量}>');
+                    return;
+                }
+                if (need_num == need_num_bak) {
+                    e.edit = false;
+                    // this.listData.splice(index, 0);
+                    return;
+                }
+
+            },
+
+            lastStep: function() {
+                this.tabChange = true;
+            },
+            launchAllocation: function() {
+                this.clickFlag = true;
+                var detail = [];
+                for (var item of this.listData) {
+                    if (item.need_num) {
+                        detail.push({
+                            sku_id: item.sku_id,
+                            stream_id: item.stream_id,
+                            batch_id: item.bath_id,
+                            number: item.need_num,
+                            batch_code: item.batch_code
+                        })
+                    }
+                }
+                if (detail.length == 0) {
+                    layer.msg('<{$Think.lang.转换数量不能为空}>');
+                    this.clickFlag = false;
+                    return false;
+                }
+                Vue.set(this.active_params, 'detail', detail);
+
+
+                /* 
+                ** 提交前弹框提示用户本次操作将产生的应付金额
+                */
+                const postData = {
+                    action_type_cd: this.type_style == '正转次' ? 'N002870011' : 'N002870012',
+                    money_type: this.type_style == '正转次' ? '2' : '1',
+                    detail,
+                    affect_supplier_settlement: this.active_params.affect_supplier_settlement
+                }
+                let tipString = this.type_style == '<{$Think.lang.正转次}>' ? '<{$Think.lang.本操作将生成采购余额：}><br>' : '<{$Think.lang.本操作将生成应付金额：}><br>'
+
+                // 通过接口获取应付金额
+                axios.post('/index.php?m=order_detail&a=get_operation_amount', postData).then((res) => {
+                    const data = res.data.data
+                    if (res.data.code === 200) {
+
+                        // 弹框提示本次操作将产生的应付金额
+                        if (data.is_show == '1') {
+                            if (this.type_style == '正转次') {
+                                data.end_pay_info.forEach(item => {
+                                    tipString = tipString + `(${item.currency_type}) ${item.amount}<br>`
+                                })
+                            } else {
+                                data.pre_pay_info.forEach(item => {
+                                    tipString = tipString + `(${item.currency_type}) ${item.amount}<br>`
+                                })
+                            }
+                            this.$confirm(tipString, '提示', {
+                                confirmButtonText: '确定',
+                                cancelButtonText: '取消',
+                                type: 'info',
+                                dangerouslyUseHTMLString: true
+                            }).then(() => {
+
+                                // 确定后提交
+                                this.queryPost("/index.php?g=warehouse&m=product&a=create_conversion", this.active_params).then((res) => {
+                                    var _data = res.data;
+                                    if (_data.code == 2000) {
+                                        // this.$message.success(this.$lang(_data.msg));
+                                        // setTimeout(function() {
+                                        //     var couponUrl = '/index.php?g=scm&m=display&a=positive_neg_list';
+                                        //     var route = document.createElement("a");
+                                        //     route.setAttribute("style", "display: none");
+                                        //     route.setAttribute("onclick", "backNewtab(this,'正次品转换')");
+                                        //     route.setAttribute("_href", couponUrl);
+                                        //     route.click();
+                                        // }, 1000)
+                                        layer.msg(this.$lang(_data.msg), {
+                                            icon: 16,
+                                            time: 500
+                                        }, function () {
+                                            var couponUrl =
+                                                '/index.php?g=scm&m=display&a=positive_neg_list';
+                                            var route = document.createElement("a");
+                                            route.setAttribute("style", "display: none");
+                                            route.setAttribute("onclick", "backNewtab(this,'正次品转换')");
+                                            route.setAttribute("_href", couponUrl);
+                                            route.click();
+                                            this.clickFlag = false;
+                                        });
+                                    } else {
+                                        this.$message.error(this.$lang(_data.msg));
+                                        this.clickFlag = false;
+                                    }
+                                }).catch(function (err) {
+                                    console.log(err);
+                                    this.clickFlag = false;
+                                });
+                            }).catch(() => { this.clickFlag = false });
+                        } else {
+                            this.queryPost("/index.php?g=warehouse&m=product&a=create_conversion", this.active_params).then((res) => {
+                                var _data = res.data;
+                                if (_data.code == 2000) {
+                                    // this.$message.success(this.$lang(_data.msg));
+                                    // setTimeout(function() {
+                                    //     var couponUrl = '/index.php?g=scm&m=display&a=positive_neg_list';
+                                    //     var route = document.createElement("a");
+                                    //     route.setAttribute("style", "display: none");
+                                    //     route.setAttribute("onclick", "backNewtab(this,'正次品转换')");
+                                    //     route.setAttribute("_href", couponUrl);
+                                    //     route.click();
+                                    // }, 1000)
+                                    layer.msg(this.$lang(_data.msg), {
+                                        icon: 16,
+                                        time: 500
+                                    }, function () {
+                                        var couponUrl =
+                                            '/index.php?g=scm&m=display&a=positive_neg_list';
+                                        var route = document.createElement("a");
+                                        route.setAttribute("style", "display: none");
+                                        route.setAttribute("onclick", "backNewtab(this,'正次品转换')");
+                                        route.setAttribute("_href", couponUrl);
+                                        route.click();
+                                        this.clickFlag = false;
+                                    });
+                                } else {
+                                    this.$message.error(this.$lang(_data.msg));
+                                    this.clickFlag = false;
+                                }
+                            }).catch(function (err) {
+                                console.log(err);
+                                this.clickFlag = false;
+                            });
+                        }
+                        
+                    } else {
+                        this.$message.error(this.$lang(res.data.msg));
+                        this.clickFlag = false;
+                    }
+                }).catch(() => {
+                    this.clickFlag = false;
+                })              
+            },
+        }
+    });
+</script>
+
+</html>
+
+</html>

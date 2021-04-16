@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html lang="en">
+
+<head>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.8.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/lib/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <title>
+        <{$Think.lang.推广标签列表}>
+    </title>
+    <style>
+        [v-cloak]{
+            display: none;
+        }
+        #promotionTaskList{
+            box-sizing: border-box;
+            padding: 20px;
+            margin: 0;
+        }
+        .el-button--mini {
+            width: 8%;
+            height: 30px;
+        }
+
+        .el-button-group {
+            display: inline-block;
+            vertical-align: middle;
+            width: 100%;
+            margin-bottom: 30px;
+        }
+        .active_btn {
+            color: #fff;
+            background-color: #409eff;
+            border-color: #409eff;
+        }
+        .el-select,.el-date-editor--daterange.el-input__inner{
+            width: 100%;
+            display: flex;
+        }
+        .el-select .el-tag{
+            display: table;
+        }
+        .el-select .el-tag .el-select__tags-text{
+            white-space: normal;
+        }
+        .baseline{
+            width: 100%;
+            height: 1px;
+            background: rgb(201, 216, 224);
+            margin: 20px 0;
+        }
+        .el-table__header thead th{
+            background: #546E7A;
+            color: #fff;
+            border-bottom: 1px solid #668491;
+            border-right: 1px solid #668491;
+            text-align: center;
+        }
+        .el-table__body tbody tr td{
+            text-align: center;
+        }
+        .el-table__body tbody tr td:last-child{
+            border-right: none;
+        }
+        .el-table__body tbody tr:last-child td{
+            border-bottom: none;
+        }
+        .operating_data{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .couponTable{
+            border-top: 1px solid #cadee7;
+            border-left: 1px solid #cadee7;
+        }
+        .couponTable td{
+            width: 25%;
+            padding: 10px;
+            border-bottom: 1px solid #cadee7;
+            border-right: 1px solid #cadee7;
+        }
+        .couponTable td:nth-child(odd){
+            color: #546e7a;
+            background: #f7f9fb;
+        }
+        .tagUrl>span{
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+    
+        .el-date-editor .el-range-separator{
+            padding: 0;
+            width: 6%;
+        }
+    </style>
+</head>
+
+<body>
+    <div v-cloak id="promotionTaskList">
+        <el-form ref="form" :model="form" label-width="120px">
+            <el-row type="flex">
+                <el-col :span="6">
+                    <el-form-item :label="$lang('标签类型')">
+                        <el-select v-model="form.type_cd" collapse-tags clearable    :placeholder="$lang('请选择')">
+                            <el-option
+                                    v-for="(val,key) in cds"
+                                    :key="val.CD"
+                                    :label="val.CD_VAL"
+                                    :value="val.CD">
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('标签名称')">
+                        <el-input v-model="form.tag_name"></el-input>
+                    </el-form-item>
+                </el-col> 
+                <el-col :span="6">
+                    <el-form-item :label="$lang('状态')">
+                        <el-select v-model="form.status" :placeholder="$lang('请选择')">
+                            <el-option
+                                v-for="(val,key) in tags"
+                                :key="val.key"
+                                :label="val.v"
+                                :value="val.id">
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+           
+            <el-row type="flex">
+                <el-col :span="24">
+                    <el-button type="primary" @click="getTableData">{{$lang("搜索")}}</el-button>
+                    <el-button @click="reset">{{$lang("重置")}}</el-button>
+                </el-col>
+            </el-row>
+        </el-form>
+        <div class="baseline"></div>
+        <!-- 搜索结果 -->
+        <div class="operating_data">
+            <div>
+                <!--<span style="font-size: 14px;">{{$lang('搜索结果')}}：{{$lang('共')}}<span> {{page.count}} </span>{{$lang('条')}}</span>-->
+            </div>
+            <div>
+                <el-button v-if="edit"  type="primary" @click="save()">{{$lang("保存")}}</el-button>
+                <el-button  type="primary" @click="edit = true">{{$lang("编辑")}}</el-button>
+                <el-button  type="primary" @click="dialogVisible = true">{{$lang("新增")}}</el-button>
+                
+            </div>
+        </div>
+        <div>
+            <div class="wrapper">
+                <el-table @selection-change="handleSelection" :data="tableData" border style="width: 100%;margin-top: 20px;"  :max-height="tableHeight" :default-sort = "{prop: 'create_at', order: 'descending'}" @sort-change="changeSort" ref="multipleTable" v-loading="tableLoading" @row-click = "onRowClick" :row-class-name="tableRowClassName" @selection-change="handleSelectionChange">
+                        <el-table-column
+                            type="selection"
+                            fixed="left"
+                            width="55">
+                        </el-table-column>
+                        <el-table-column fixed="left" width="120" :label="$lang('ID')">
+                            <template slot-scope="scope">
+                                <span>{{scope.row.id_number}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column  :label="$lang('标签名称')">
+                            <template slot-scope="scope">
+                                <span>{{scope.row.tag_name}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column  :label="$lang('标签类型')">
+                            <template slot-scope="scope">
+                                <span>{{scope.row.type_cd_val}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column width="170" :label="$lang('状态')">
+                            <template slot-scope="scope">
+                                <el-radio :disabled="!edit|| checkSelect(scope.row)" v-model="scope.row.status" label="1">激活</el-radio>
+                                <el-radio :disabled="!edit|| checkSelect(scope.row)" v-model="scope.row.status" label="0">关闭</el-radio>
+                            </template>
+                        </el-table-column>
+
+                </el-table>
+            </div>
+        </div>
+        <!-- 分页 -->
+        <div style="text-align: right;margin-top: 20px;">
+            <el-pagination
+                    background
+                    @current-change="handleCurrentChange"
+                    @size-change="handleSizeChange"
+                    :current-page.sync="pages.current_page"
+                    :page-size="pages.per_page"
+                    :page-sizes="[10, 30, 50, 100]"
+                    layout="total, sizes, prev, pager, next, jumper"
+                    :total="pages.count">
+            </el-pagination>
+        </div>
+        <!-- dialog -->
+        <el-dialog
+                :title="$lang('新增标签')"
+                :visible.sync="dialogVisible"
+                width="30%"
+                >
+            <div style="display: flex;align-items: center;">
+                <div style="width: 80px">{{$lang('标签类型')}}</div>
+                <el-select v-model="add.type_cd" collapse-tags clearable    :placeholder="$lang('请选择')">
+                    <el-option
+                            v-for="(val,key) in cds"
+                            :key="val.CD"
+                            :label="val.CD_VAL"
+                            :value="val.CD">
+                    </el-option>
+                </el-select>
+            </div>
+            <div style="display: flex;align-items: center;margin-top: 20px">
+                <div style="width: 80px">{{$lang('标签名称')}}</div>
+                <el-input v-model="add.tag_name"></el-input>
+            </div>
+
+            <span slot="footer" class="dialog-footer">
+                <el-button type="primary" @click="sub">确 定</el-button>
+                <el-button @click="dialogVisible = false">取 消</el-button>
+              </span>
+        </el-dialog>
+
+    </div>
+</body>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.9.1.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script>
+    if (getCookie('think_language') !== "zh-cn") {
+        ELEMENT.locale(ELEMENT.lang.en)
+    };
+    var Vm = new Vue({
+        el: '#promotionTaskList',
+        data: {
+          add:{
+            type_cd:'',
+            tag_name:'',
+          },
+          dialogVisible:false,
+          edit:false,
+          countrys:[],
+          cds:[],
+          tags:[{id:'',v:'全部'},{id:'1',v:'激活'},{id:'0',v:'关闭'}],
+            form: {
+              type_cd:'',
+              tag_name:'',
+              status:'',
+            },
+            pages:{
+              "per_page": 10,
+              "current_page": 1
+            },
+            tableLoading:false,
+            multipleSelection:[],
+            tableData:[],
+            channel_platform:[],
+            channel_medium:[],
+            new_plat:[],
+            plat:[],
+            users:[],
+            promotion_task_status:[],
+            isEdit:false,
+            field:'create_at ',
+            sort_value:'desc ',
+            tableHeight:null,
+            return_reason:'',
+            gridData:{},
+          countryName:[]
+        },
+      watch:{
+        countrys:function(v){
+          this.form.search.area_id = String(v)
+        },
+        dialogVisible:function(){
+          this.add = {
+            type_cd:'',
+              tag_name:'',
+          }
+        }
+      },
+        created() {
+            this.getCommonData();
+            this.getTableData();
+            
+        },
+        mounted() {
+                var _this = this
+                _this.tableHeight = window.innerHeight - 80;
+
+                window.onresize = () => {
+                    return (() => {
+                        _this.tableHeight = window.innerHeight - 80;
+
+                    })()
+                }
+
+        }, 
+        methods: {
+          handleSelection: function (val) {
+            this.multipleSelection = val;
+          },
+          checkSelect:function(row){
+            for(var x = 0;x<this.multipleSelection.length;x++){
+              if(this.multipleSelection[x].id === row.id){
+                return false
+              }
+            }
+            return true
+          },
+          sub:function(){
+            var _this = this
+            axios.post("/index.php?g=Marketing&m=PromotionTag&a=create", this.add).then(function(res){
+              if (res.data.code == 2000) {
+                _this.$message.success(res.data.msg);
+                _this.dialogVisible = false
+                _this.getTableData()
+              }else {
+                _this.$message.warning(res.data.msg);
+              }
+            })
+          },
+            getCommonData:function(){
+                var _this = this;
+              axios.post('/index.php?g=universal&m=dictionary&a=getCodeList', {
+                search:{code_id: "",
+                  code_value: "",
+                  comment_content: "",
+                  comment_type: "",
+                  need_count: 1,
+                  prefix: "N00374"},
+                pages:{current_page: 1,
+                  per_page: 100}
+              }).then(function (res) {
+                if(res.data.code === 200){
+                  _this.cds = res.data.data.data
+                }
+              })
+               /* axios.post('/index.php?g=Marketing&m=PromotionTag&a=getData', {
+                }).then(function (res) {
+                  if(res.data.code === 2000){
+                    _this.cds = res.data.data
+                  }
+                })*/
+            },
+            getQueryVariable:function(variable){
+                var query = window.location.search.substring(1);
+                var vars = query.split("&");
+                for (var i=0;i<vars.length;i++) {
+                        var pair = vars[i].split("=");
+                        if(pair[0] == variable){return pair[1];}
+                }
+                return(false);
+            },
+            getTableData:function(val){
+                var _this = this;
+                var params = {
+                   search:this.form,
+                  pages:this.pages
+                };
+                axios.post("/index.php?g=Marketing&m=PromotionTag&a=getList", params).then(function(res){
+                    console.log(res);
+                    if (res.data.code == 2000) {
+                        _this.tableData = res.data.data.datas ? res.data.data.datas : []
+                        _this.pages.count = Number(res.data.data.page[0].total_rows)
+                    }else {
+                        _this.$message.warning(res.data.msg);
+                    }
+                })
+            },
+            reset:function(){
+                this.form = {
+                type_cd:'',
+                  tag_name:'',
+                  status:'',
+              }
+                this.pages = {
+                "per_page": 10,
+                  "current_page": 1
+              }
+                this.getTableData()
+            },
+            view:function(val){
+                // console.log(val);
+                // newTab('/index.php?g=logistics&m=Expensebill&a=fee_detail&fee_id='+val.payment_id, this.$lang('费用单详情'));
+            },
+           save:function(){
+              var _this = this;
+              var data = []
+              for(var x = 0;x<this.multipleSelection.length;x++){
+                data.push({
+                  id:this.multipleSelection[x].id,
+                  status:this.multipleSelection[x].status,
+                })
+              }
+             axios.post("/index.php?g=Marketing&m=PromotionTag&a=edit", data).then(function(res){
+               if (res.data.code == 2000) {
+                 _this.$message.success(res.data.msg);
+                 _this.edit = false
+               }else {
+                 _this.$message.warning(res.data.msg);
+               }
+             })
+           },
+            openCopy:function(val){
+                let url = val;
+                let oInput = document.createElement('input');
+                oInput.value = url;
+                document.body.appendChild(oInput);
+                oInput.select();
+                document.execCommand("Copy");
+                this.$message({
+                message: this.$lang('已成功复制到剪切板'),
+                type: 'success'
+                });
+                oInput.remove()
+            },
+            //翻页切换不同页面
+            handleCurrentChange:function(val) {
+                this.pages.current_page = val;
+                this.getTableData()
+            },
+            //切换每页展示的数目
+            handleSizeChange:function (val) {
+                this.page.this_page = 1;
+                this.page.page_count = val;
+                this.getTableData()
+            },
+            handleSelectionChange:function(val){
+                console.log(val);
+                this.multipleSelection = val;
+            },
+            tableRowClassName:function({row, rowIndex}) {
+                row.row_index = rowIndex;
+            },
+            onRowClick:function(row, event, column) {
+                this.currentRowIndex = row.row_index;
+            },
+            changeSort:function(val){
+                console.log('changeSort',val);
+                this.$refs.multipleTable.clearSort()
+                this.field = val.prop
+                this.sort_value = val.order == 'descending' ? 'desc':'asc'
+                this.getTableData()
+            },
+            selectPlatform:function(val){
+                console.log(val);
+                var _this = this;
+
+                axios.post('/index.php?g=oms&m=order&a=getSite', {
+                    plat_cd: val ? val : []
+                }).then(function (res) {
+                    if (res.data && res.data.code == 2000) {
+                        _this.plat = res.data.data
+                    } else {
+                        _this.$message.error(res.data.msg || _this.$lang('获取站点异常'));
+                    }
+                })
+
+            },
+            gridShow:function(val){
+                console.log(val);
+                var _this = this;
+
+                // var params = {
+                //     "search":{
+                //         // "ids":'',
+                //         "promotion_task_no":_this.form.search.promotion_task_no,
+                //         "status_cd":_this.form.search.status_cd.join(","),
+                //         "create_by":_this.form.search.create_by.join(","),
+                //         "create_at_start" : _this.form.search.create_at ? _this.form.search.create_at[0] : '',
+                //         "create_at_end" : _this.form.search.create_at ? _this.form.search.create_at[1] : '',
+                //         "channel_platform_id":_this.form.search.channel_platform_id.join(","),
+                //         "channel_medium_id":_this.form.search.channel_medium_id.join(","),
+                //         "promotion_link":_this.form.search.promotion_link,
+                //         "promotion_demand_no":_this.form.search.promotion_demand_no,
+                //         "platform_cd":_this.form.search.platform_cd.join(","),
+                //         "site_cd":_this.form.search.site_cd.join(","),
+                //         "sku_id":_this.form.search.sku_id,
+                //         "demand_create_by":_this.form.search.demand_create_by.join(","),
+                //         "demand_create_at_start" : _this.form.search.demand_create_at ? _this.form.search.demand_create_at[0] : '',
+                //         "demand_create_at_end" : _this.form.search.demand_create_at ? _this.form.search.demand_create_at[1] : '',
+                //     },
+                //     "pages":{
+                //         "per_page": _this.page.page_count,
+                //         "current_page": _this.page.this_page
+                //     },
+                //     "sort_data":{
+                //         "field":_this.field?_this.field:'',
+                //         "sort_value":_this.field?_this.sort_value:''
+                //     }
+                // };
+                axios.post("/index.php?g=Marketing&m=PromotionTask&a=searchCoupon", {
+                    "coupon":val
+                }).then(function(res){
+                    console.log(res);
+                    if (res.data.code == 2000) {
+                        _this.gridData = res.data.data
+                    }else {
+                        _this.$message.warning(res.data.msg);
+                    }
+                })
+            },
+            operating:function(type,submitType){
+                var _this = this
+                var multipleSelectionArr = _this.multipleSelection
+                if(type == 'export'){
+                    // 导出
+                    var ids = ''
+                    
+                    for (var item in multipleSelectionArr) {
+                        if(ids){
+                            ids = ids+','+multipleSelectionArr[item].id
+                        }else{
+                            ids = multipleSelectionArr[item].id
+                        }
+                    }
+
+                    var params = {
+                        "search":{
+                            "ids":ids,
+                            "promotion_task_no":_this.form.search.promotion_task_no,
+                            "create_by":_this.form.search.create_by.join(","),
+                            "create_at_start" : _this.form.search.create_at ? _this.form.search.create_at[0] : '',
+                            "create_at_end" : _this.form.search.create_at ? _this.form.search.create_at[1] : '',
+                            "channel_platform_id":_this.form.search.channel_platform_id.join(","),
+                            "channel_medium_id":_this.form.search.channel_medium_id.join(","),
+                            "promotion_link":_this.form.search.promotion_link,
+                            "promotion_demand_no":_this.form.search.promotion_demand_no,
+                            "platform_cd":_this.form.search.platform_cd.join(","),
+                            "site_cd":_this.form.search.site_cd.join(","),
+                            "sku_id":_this.form.search.sku_id,
+                            "demand_create_by":_this.form.search.demand_create_by.join(","),
+                            "demand_create_at_start" : _this.form.search.demand_create_at ? _this.form.search.demand_create_at[0] : '',
+                            "demand_create_at_end" : _this.form.search.demand_create_at ? _this.form.search.demand_create_at[1] : '',
+                          "area_id":  _this.form.search.area_id
+                        },
+                        "pages":{
+                            "per_page": _this.page.page_count,
+                            "current_page": _this.page.this_page
+                        },
+                        "sort_data":{
+                            "field":_this.field?_this.field:'',
+                            "sort_value":_this.field?_this.sort_value:''
+                        }
+                    };
+                    
+                    var tmep = document.createElement('form');
+                    tmep.action = '/index.php?g=Marketing&m=PromotionTask&a=export';
+                    tmep.method = "post";
+                    tmep.style.display = "none";
+                    var opt = document.createElement("input");
+                    opt.name = 'post_data';
+                    opt.value = JSON.stringify(params);
+                    tmep.appendChild(opt);
+                    document.body.appendChild(tmep);
+                    tmep.submit();
+                    $(tmep).remove();
+
+                }else if(type == 'confirmCoupon'){
+                    // 确认优惠码
+                    if(multipleSelectionArr.length == 0){
+                        _this.$message.warning(_this.$lang('请勾选推广任务'))
+                    }else{
+                        var result = multipleSelectionArr.filter(item => {
+                            return item.status_cd != 'N003600004'
+                        })
+                        if(result.length == 0){
+                            _this.isEdit = true
+                            for (var item in multipleSelectionArr) {
+                                var index = multipleSelectionArr[item].row_index
+                                _this.$set(_this.tableData[index], 'editStatus', '1');
+                                _this.$set(_this.multipleSelection[index], 'editStatus', '1');
+
+                            }
+
+                        }else{
+                            _this.$message({
+                                type: 'warning',
+                                message: _this.$lang('推广任务状态不符合确认优惠码条件')
+                            }); 
+                        }
+                    }
+                }else if(type == 'editPromotion'){
+                    // 编辑推广进展
+                    if(multipleSelectionArr.length == 0){
+                        _this.$message.warning(_this.$lang('请勾选推广任务'))
+                    }else{
+                        var result = multipleSelectionArr.filter(item => {
+                            return item.status_cd != 'N003600003'
+                        })
+                        if(result.length == 0){
+                            _this.isEdit = true
+                            for (var item in multipleSelectionArr) {
+                                var index = multipleSelectionArr[item].row_index
+                                _this.$set(_this.tableData[index], 'editStatus', '2');
+                                _this.$set(_this.multipleSelection[index], 'editStatus', '2');
+
+                            }
+                        }else{
+                            _this.$message({
+                                type: 'warning',
+                                message: _this.$lang('推广任务状态不符合编辑推广进展条件')
+                                
+                            }); 
+                        }
+                    }
+                }else if(type == 'confirmComplete'){
+                    // 确认完成
+                    if(multipleSelectionArr.length == 0){
+                        _this.$message.warning(_this.$lang('请勾选推广任务'))
+                    }else{
+                        var result = multipleSelectionArr.filter(item => {
+                            return item.status_cd != 'N003600003'
+                        })
+                        if(result.length == 0){
+                            // _this.isEdit = true
+
+                            _this.$confirm(_this.$lang('确认完成需求？'), _this.$lang('提示'), {
+                                confirmButtonText: _this.$lang('确定'),
+                                cancelButtonText: _this.$lang('取消'),
+                                type: 'warning'
+                            }).then(() => {
+                                // console.log('multipleSelectionArr',multipleSelectionArr);
+                                // for (var item in multipleSelectionArr) {
+                                //     var index = multipleSelectionArr[item].row_index
+                                //     _this.$set(_this.tableData[index], 'editStatus', '3');
+                                //     _this.$set(_this.multipleSelection[index], 'editStatus', '3');
+                                // }
+                                _this.operating('submit','3')
+                            }).catch(() => {
+                                _this.$message({
+                                    type: 'info',
+                                    message: _this.$lang('已取消')
+                                });     
+
+                            });
+
+
+                        }else{
+                            _this.$message({
+                                type: 'warning',
+                                message: _this.$lang('推广任务状态不符合确认完成条件')
+                            }); 
+                        }
+                    }
+                }else if(type == 'confirmReturn'){
+                    // 确认退回
+                    if(multipleSelectionArr.length == 0){
+                        _this.$message.warning(_this.$lang('请勾选推广任务'))
+                    }else{
+                        var result = multipleSelectionArr.filter(item => {
+                            return item.status_cd != 'N003600004' && item.status_cd != 'N003600003'
+                        })
+                        if(result.length == 0){
+
+                            _this.$prompt(_this.$lang('请输入退回原因'), _this.$lang('提示'), {
+                                confirmButtonText: _this.$lang('确定'),
+                                cancelButtonText: _this.$lang('取消'),
+                            }).then(({ value }) => {
+                                console.log(value);
+                                if(value){
+                                    _this.return_reason = value
+                                    // for (var item in multipleSelectionArr) {
+                                    //     var index = multipleSelectionArr[item].row_index
+                                    //     _this.$set(_this.tableData[index], 'editStatus', '4');
+                                    //     _this.$set(_this.multipleSelection[index], 'editStatus', '4');
+
+                                    // }
+                                    _this.operating('submit','4')
+                                }else{
+                                    _this.$message({
+                                        type: 'warning',
+                                        message: _this.$lang('请输入退回原因')
+                                    });   
+                                }
+                                
+
+                            }).catch(() => {
+                                _this.$message({
+                                    type: 'info',
+                                    message: _this.$lang('已取消')
+                                });       
+                            });
+
+
+                            // _this.isEdit = true
+                            
+                        }else{
+                            _this.$message({
+                                type: 'warning',
+                                message: _this.$lang('推广任务状态不符合退回条件')
+                            }); 
+                        }
+                    }
+                }else if(type == 'paymentRequest'){
+                    // 发起付款申请
+                    console.log('multipleSelection',this.multipleSelection);
+                    // var multipleSelectionArr = this.multipleSelection
+                    var idd = ''
+                    var roi = ''
+                    if(multipleSelectionArr.length == 0){
+                        this.$message.warning(this.$lang('请勾选需求'))
+                    }else{
+
+                        for (var item in multipleSelectionArr) {
+                            if(idd){
+                                idd = idd+','+multipleSelectionArr[item].promotion_task_no
+                                roi = roi+','+multipleSelectionArr[item].forecast_rol.replace(/,/g,'')
+                            }else{
+                                idd = multipleSelectionArr[item].promotion_task_no
+                                roi = multipleSelectionArr[item].forecast_rol.replace(/,/g,'')
+                            }
+                        }
+                        console.log('roi',roi);
+                        newTab('/index.php?m=finance&a=create_general_payment&idd='+idd+'&roi='+roi, _this.$lang('申请付款'));
+
+                    }
+                }else if(type == 'cancel'){
+                    _this.isEdit = false
+                    _this.getTableData()
+                }else if(type == 'submit'){
+                    // console.log('submitType',submitType);
+                    // console.log('multipleSelectionArr',multipleSelectionArr);
+                    var post_data = []
+                    for (var item in multipleSelectionArr) {
+                      var obj = {}
+                      obj.promotion_task_no = multipleSelectionArr[item].promotion_task_no
+                    //   obj.type = submitType
+                      obj.type = submitType ? submitType : multipleSelectionArr[item].editStatus
+                      obj.coupon = multipleSelectionArr[item].coupon
+                      obj.promotion_link = multipleSelectionArr[item].promotion_link
+                      obj.feedback = multipleSelectionArr[item].feedback
+                      obj.return_reason = submitType == '4' ? _this.return_reason : ''
+                    //   obj.return_reason = multipleSelectionArr[item].editStatus == '4' ? _this.return_reason : ''
+                      
+                      post_data.push(obj)
+                    }
+                    console.log(post_data);
+                    
+                    var params = {
+                        "post_data":post_data
+                    };
+                    axios.post("/index.php?g=Marketing&m=PromotionTask&a=edit", params).then(function(res){
+                        console.log(res);
+                        if (res.data.code == 2000) {
+                            _this.$message.success(_this.$lang('操作成功'));
+                            _this.isEdit = false
+                            _this.getTableData()
+                        }else {
+                            _this.$message.warning(res.data.msg);
+                        }
+                    })
+                }
+            },
+                
+        },
+    })
+</script>
+
+</html>

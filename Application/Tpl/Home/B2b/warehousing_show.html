@@ -1,0 +1,482 @@
+﻿<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="../Public/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="../Public/icon/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../Public/css/send.css" />
+    <link rel="stylesheet" href="../Public/utils/css/public.style.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <title>
+        <{$Think.lang.理货详情}>
+    </title>
+    <script type="text/javascript">
+        var url = window.location.href;
+    </script>
+    <style>
+        .wrap {
+            box-sizing: border-box;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .row {
+            margin: 0;
+        }
+
+        .row+.row {
+            margin-top: 20px;
+        }
+
+        [class*="col-"] {
+            padding: 0;
+        }
+
+        .thumbnail-wrap {
+            position: relative;
+            z-index: 999;
+        }
+
+        .thumbnail-wrap .img-wrap {
+            position: absolute;
+            bottom: 0px;
+            left: 90px;
+            width: 300px;
+            height: 300px;
+            border: 1px solid #eef5f9;
+        }
+
+        .thumbnail-wrap img {
+            box-shadow: 4px 4px 20px #242525;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="warehousing_detail" v-cloak="" class="wrap">
+        <div class="row">
+            <div class="col-lg-12 col-md-12 col-sm-12 use-title">
+                <span>{{$lang('理货详情')}}</span>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12 col-md-12">
+                <table class="b2b-table-one">
+                    <caption>{{$lang('基础信息')}}</caption>
+                    <tbody class="use-body">
+                        <tr>
+                            <td><label>{{$lang('发货单号')}}</label></td>
+                            <td>{{warehousing_info.SHIP_LIST_ID}}</td>
+                            <td><label>{{$lang('B2B订单号')}}</label></td>
+                            <td>{{warehousing_info.PO_ID}}</td>
+                        </tr>
+                        <tr>
+                            <td><label>{{$lang('PO单号')}}</label></td>
+                            <td>{{warehousing_info.THR_PO_ID}}</td>
+                            <td><label>{{$lang('客户名称')}}</label></td>
+                            <td>{{warehousing_info.CLIENT_NAME}}</td>
+                        </tr>
+                        <tr>
+                            <td><label>{{$lang('目的地')}}</label></td>
+                            <td>{{join_ares(warehousing_info.TARGET_PORT)}}</td>
+                            <td><label>{{$lang('PO发起人')}}</label></td>
+                            <td>{{warehousing_info.PO_USER}}( <span v-if="warehousing_info.SALES_TEAM">{{initdata.sales_team[warehousing_info.SALES_TEAM].CD_VAL}}</span>) </td>
+                        </tr>
+                        <tr>
+                            <td><label>{{$lang('交货方式')}}</label></td>
+                            <td><span v-if="warehousing_info.DELIVERY_METHOD in initdata.shipping">{{initdata.shipping[warehousing_info.DELIVERY_METHOD].CD_VAL}}</span></td>
+                            <td><label>{{$lang('PO时间')}}</label></td>
+                            <td>{{warehousing_info.po_time}}</td>
+                        </tr>
+                        <tr>
+                            <td><label>{{$lang('订单备注')}}</label></td>
+                            <td>{{$lang(warehousing_info.remarks)}}</td>
+                            <td><label>{{$lang('提单号')}}</label></td>
+                            <td>{{ship_list[0].BILL_LADING_CODE}}</td>
+                        </tr>
+                        <tr>
+                            <td><label>{{$lang('发货时间')}}</label></td>
+                            <td>{{GetDateStr(ship_list[0].ship_delivery_time)}}</td>
+                            <td><label>{{$lang('发货数量')}}</label></td>
+                            <td>{{king(warehousing_info.SHIPMENTS_NUMBER_all)}}</td>
+                        </tr>
+                        <tr>
+                            <td><label>{{$lang('商品成本')}}</label></td>
+                            <td>RMB {{king(ship_list[0].power_all)}}</td>
+                            <td><label>{{$lang('物流成本')}}</label></td>
+                            <td><span v-if="warehousing_info.LOGISTICS_CURRENCY in initdata.currency">{{initdata.currency[warehousing_info.LOGISTICS_CURRENCY].CD_VAL}}</span> {{king(warehousing_info.logistics_costs_sum)}}</td>
+                            <!--<td><label><{$Think.lang.发货总成本}></label></td>
+                    <td>RMB&nbsp;{{king(warehousing_info.power_all_sum)}}</td>-->
+                        </tr>
+                        <tr>
+                            <td><label>{{$lang('发货人')}}</label></td>
+                            <td>{{warehousing_info.AUTHOR}}</td>
+                            <td><label>{{$lang('发货提交时间')}}</label></td>
+                            <td>{{GetDateStr(warehousing_info.SUBMIT_TIME)}}</td>
+                        </tr>
+                        <tr>
+                            <td><label> {{$lang('预计到港时间')}} </label></td>
+                            <td>{{GetDateStr(ship_list[0].Estimated_arrival_DATE)}}</td>
+                            <td><label>{{$lang('理货类型')}}</label></td>
+                            <td>{{warehousing_info.tally_type_cd_val}}</td>
+                        </tr>
+                        <tr>
+                            <td><label> {{$lang('发货备注')}} </label></td>
+                            <td>{{$lang(ship_list[0].REMARKS)}}</td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12 col-md-12" v-for="(s,key) in ship_list">
+                <table class="b2b-table-three">
+                    <caption>
+                        <div class="use-row">
+                            <div class="col-50">
+                                {{$lang('商品信息')}}&nbsp;({{$lang('币种')}}：{{initdata.currency[warehousing_info.po_currency].CD_VAL}})
+                            </div>
+                            <div class="col-50 text-right use-btn">
+                                <a v-if="s.status == 0" :href="'<{:U('b2b/warehousing_confirm')}>&ORDER_ID='+s.ORDER_ID+'&ID='+s.ID">
+                                    <button type="button" class="btn-pub btn-yellow" style="line-height: initial">{{$lang('确定入库')}}</button>
+                                </a>
+                            </div>
+                        </div>
+                    </caption>
+
+                    <thead class="use-head">
+                        <tr>
+                            <th>
+                                <{$Think.lang.SKUID}>
+                            </th>
+                            <th>
+                                <{$Think.lang.BarCode}>
+                            </th>
+                            <th>{{$lang('商品名称')}}</th>
+                            <th>{{$lang('商品属性')}}</th>
+                            <th>{{$lang('商品图片')}}</th>
+                            <th>{{$lang('发货数')}}</th>
+                            <th>{{$lang('合格品数量')}}</th>
+                            <th>{{$lang('差异数')}}</th>
+                            <th>{{$lang('预计结算金额')}}</th>
+                            <th>{{$lang('残次品数量')}}</th>
+                            <th>{{$lang('备注')}}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="use-body">
+                        <tr v-for="(g,gkey) in s.goods">
+                            <td v-if="g.warehouse_sku">{{g.warehouse_sku}}</td>
+                            <td v-else></td>
+                            <td style="white-space: pre-line">{{g.bar_code}}</td>
+                            <td>{{g.goods_title}}</td>
+                            <td>{{g.goods_info}}</td>
+                            <td>
+                                <span v-if="g.guds_img_cdn_addr">
+                        <img @mouseover="showThumbnail(gkey,'act',s.goods)" @mouseout="showThumbnail(gkey,'close',s.goods)" width="60"
+                        height="60" :src="g.guds_img_cdn_addr" alt=""> </span>
+                                <div v-if="g.show_img" class="thumbnail-wrap">
+                                    <div class="img-wrap">
+                                        <img :src="g.guds_img_cdn_addr" alt="" width="300" height="300">
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{king(g.DELIVERED_NUM)}}</td>
+                            <!--<td>{{king(g.DELIVERED_NUM_z)}}</td>-->
+			    <td>{{g.DELIVERED_NUM_z}}</td>
+                            <td>{{Math.abs(g.TOBE_WAREHOUSING_NUM - g.DELIVERED_NUM_z)}}</td>
+                            <td v-if="warehousing_info.status == '2'">{{king((g.price_goods * g.DELIVERED_NUM_z).toFixed(2))}}</td>
+                            <td v-else>{{king((g.price_goods * g.DELIVERED_NUM).toFixed(2))}}</td>
+                            <td>{{g.incomplete_number}}</td>
+                            <td>{{g.REMARKS}}</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <{$Think.lang.合计}>
+                            </td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td>{{king(all_DELIVERED_NUM)}}</td>
+                            <td>{{all_DELIVERED_NUM_z}}</td>
+                            <td></td>
+                            <td>{{king(all_js)}}</td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12 col-md-12" v-for="(s,key) in ship_list">
+                <table class="b2b-table-one">
+                    <caption>{{$lang('入库信息')}}</caption>
+                    <tbody class="use-body">
+                        <tr>
+                            <td>{{$lang('预计入库时间')}}</td>
+                            <td>{{GetDateStr(s.Estimated_arrival_DATE)}}</td>
+                            <td>{{$lang('实际入库时间')}}</td>
+                            <td style="border-right: 1px solid #CADEE7;" v-if="s.WAREING_DATE">{{GetDateStr(ship_list[0].WAREING_DATE)}}</td>
+                            <td style="border-right: 1px solid #CADEE7;" v-else></td>
+                        </tr>
+                        <tr>
+                            <td>{{$lang('入库仓库')}}</td>
+                            <td>
+                                {{s.return_warehouse_cd_val}}
+                            </td>
+                            <td>{{$lang('入库凭证')}}</td>
+                            <td class="use-btn">
+                                <p v-for="item in fileName" style="margin:0">
+                                    <a target="_blank" :href="'<{:U('orderDetail/download')}>&file=' + item.save_name">{{item.name}}</a>
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>{{$lang('预计结算金额')}}</td>
+                            <td>
+                                {{initdata.currency[warehousing_info.po_currency].CD_VAL}} {{king(totalAmount)}}
+                            </td>
+                            <td>{{$lang('理货说明')}}</td>
+                            <td class="use-btn">
+                                {{s.tally_statement}}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>{{$lang('操作时间')}}</td>
+                            <td class="use-btn">
+                                {{s.SUBMIT_TIME}}
+                            </td>
+                            <td>{{$lang('操作人')}}</td>
+                            <td class="use-btn">
+                                {{s.submit_user}}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="row">
+            <a onclick="opennewtab(this,'入库列表页')" _href="<{:U('warehousing_list')}>"><button class="btn-pub btn-default mg-l-20">{{$lang('返回列表')}}</button></a>
+            <a v-if="warehousing_info.tally_type_cd_val === '正常理货'" @click="orderDetal(orderId, '发起退货')" style="margin: 0"><button class="btn-pub btn-default mg-l-20">{{$lang('发起退货')}}</button></a>
+            <a v-if="warehousing_info.tally_type_cd == 'N002780001' && warehousing_info.status == '2' && warehousing_info.receivable_status == 'N002540100'" @click="RevokeSubmit" style="margin: 0"><button class="btn-pub btn-default mg-l-20">{{$lang('撤回到待确认')}}</button></a>
+        </div>
+    </div>
+    <script src="../Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+    <script type="text/javascript" src="../Public/js/stock/alert.js"></script>
+    <!-- <script type="text/javascript" src="../Public/js/vue.js"></script> -->
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="../Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="../Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="../Public/lib/bootstrap/js/tether.min.js"></script>
+    <script type="text/javascript" src="../Public/lib/bootstrap/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript" src="../Public/utils/utils.js?v=1123"></script>
+    <script>
+        function getQueryString(name) {
+            var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+            var r = window.location.search.substr(1).match(reg);
+            if (r != null) return unescape(r[2]);
+            return null;
+        }
+
+        var orderId = getQueryString('order_id');
+        var vm = new Vue({
+            el: '#warehousing_detail',
+            data: {
+                orderId: orderId,
+                warehousing_info: <{$warehousing_info}> ,
+                initdata: <{$initdata}> ,
+                ship_list: <{$ship_list}> ,
+                fileName: []
+            },
+            computed: {
+                all_DELIVERED_NUM: function() {
+                    return this.cal_sum('DELIVERED_NUM')
+                },
+                all_DELIVERED_NUM_z: function() {
+                    return this.cal_sum('DELIVERED_NUM_z')
+                },
+                all_js: function() {
+                    return this.cal_sum('end_amount')
+                },
+                all_cy: function() {
+                    var t = 0
+                    var doship_goods = this.ship_list[0].goods
+                    for (d in doship_goods) {
+                        t = Math.abs(this.unking(doship_goods[d].DELIVERED_NUM) - this.unking(doship_goods[d].DELIVERED_NUM_z))
+                    }
+                    return this.king(t)
+                },
+                all_defective_stored: function() {
+                    return this.cal_sum('defective_stored')
+                },
+                totalAmount: function() {
+                    return this.ship_list[0].goods.reduce(function(res, item) {
+                        res += item.price_goods * item.DELIVERED_NUM_z;
+                        return res;
+                    }, 0);
+                }
+            },
+            created: function() {
+                this.fileName = JSON.parse(this.ship_list[0].file_name);
+            },
+            methods: {
+                orderDetal: function(orderId, title) {
+                    var dom = document.createElement('a');
+                    var _href;
+                    if (title === '发起退货') {
+                        _href = "/index.php?m=b2b&a=b2b_return&order_id=" + orderId;
+                    }
+                    dom.setAttribute("onclick", "opennewtab(this,'" + this.$lang(title) + "')");
+                    dom.setAttribute("_href", _href);
+                    dom.click();
+                },
+                RevokeSubmit() {
+                    var _this = this;
+                    var data = {
+                        warehouse_list_id: _this.warehousing_info.warehouse_list_id,
+                        order_id: _this.warehousing_info.order_id
+                    }
+                    axios.post('/index.php?m=b2b&a=warehouseRevokeSubmit', data).then(function(response) {
+                        if (response.data.code == 200) {
+                            _this.$message.success(_this.$lang(response.data.msg));
+                            setTimeout(function() {
+                                window.location.reload();
+                            }, 1000);
+                        } else {
+                            _this.$message.error(_this.$lang(response.data.msg));
+                        }
+                    }).catch(function(err) {
+                        console.log(err);
+                    });
+                },
+                save() {
+
+                },
+                confirm_this(k) {
+                    var _this = this;
+                    var wareshousing_goods = this.ship_list[k]
+                    axios.post('/index.php?m=b2b&a=warehouseing_save', {
+                        params: {
+                            wareshousing_goods: wareshousing_goods
+                        }
+                    }).then(function(response) {
+                        var res = response.data;
+                        if (1 == res.status) {
+                            // utils.modal(true, {width:500,title:'<{$Think.lang.提示}>',btnClass:'btn-primary',content:res.info});
+                            this.$message({
+                                type: 'success',
+                                message: this.$lang(res.info)
+                            })
+                        } else {
+                            // utils.modal(true, {width:500,title:'<{$Think.lang.提示}>',btnClass:'btn-primary',content:res.info});
+                            this.$message({
+                                type: 'error',
+                                message: this.$lang(res.info)
+                            })
+                        }
+                    })
+                },
+                cal_sum: function(k) {
+                    var t = 0
+                    var doship_goods = this.ship_list[0].goods
+                    for (d in doship_goods) {
+                        if (doship_goods[d][k]) t += parseFloat(doship_goods[d][k])
+                    }
+                    t = isNaN(t) ? 0 : t
+                    return t;
+                },
+                clean_this() {
+                    history.go(0)
+                },
+                buttongroups_ben(name, key, e) {
+                    var name_arr = name.split('-')
+                    var key_arr = key.split('_')
+                    var show_key = 'SHOW_' + key_arr[1]
+                    this.ship_list[name_arr[0]].goods[name_arr[1]][show_key] = 0
+                    if (e === 0) this.ship_list[name_arr[0]].goods[name_arr[1]][show_key] = 1
+                    this.ship_list.splice(1, 0)
+                },
+                join_ares(e) {
+                    if (e != null) {
+                        e_data = JSON.parse(e)
+                        var initdata = this.initdata
+                        var area = ''
+                        if (e_data.country) area = initdata.area[e_data.country]
+                        if (e_data.stareet) area += '-' + initdata.area[e_data.stareet]
+                        if (e_data.city) area += '-' + initdata.area[e_data.city]
+                        if (e_data.targetCity) area += '-' + e_data.targetCity
+                        return area
+                    }
+                    return e
+                },
+                king: function(e) {
+                    if (e == 0) return '0.00';
+                    if (!e) return null
+                    var k = (+e).toFixed(2).toString().split('.')
+                    if (e.toString().indexOf('.') > 0) {
+                        var s = '.' + k[1]
+                    } else {
+                        var s = ''
+                    }
+                    return k[0].toString().replace(/\d{1,3}(?=(\d{3})+(\.\d*)?$)/g, '$&,') + s;
+                },
+                unking(num) {
+                    if (isNaN(num) && typeof(num) == 'string') {
+                        var x = num.split(',');
+                        return parseFloat(x.join(""));
+                    } else {
+                        return num
+                    }
+                },
+                GetDateStr(times) {
+                    if (!times) return null
+                    var dd = new Date(times);
+                    dd.setDate(dd.getDate());
+                    var y = dd.getFullYear();
+                    var m = dd.getMonth() + 1;
+                    var d = dd.getDate();
+                    return y + "-" + m + "-" + d;
+                },
+                showThumbnail(key, type, data_event) {
+                    if ('act' == type) {
+                        data_event[key].show_img = true
+                    } else {
+                        data_event[key].show_img = false
+                    }
+                },
+                search_bar_code(sku, gk, k) {
+                    var sku = sku
+                    var k = k
+                    var gk = gk
+                    axios.post('/index.php?m=b2b&a=search_bar_code', {
+                        params: {
+                            goods_info: sku
+                        }
+                    }).then(function(response) {
+                        var res = response.data;
+                        if (res['status'] == 1) {
+                            Vue.set(vm.ship_list[k].goods[gk], 'bar_code', res['info'])
+                        }
+                    })
+                }
+            }
+        })
+    </script>
+</body>
+
+</html>

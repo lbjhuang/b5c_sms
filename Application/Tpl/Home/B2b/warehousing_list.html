@@ -1,0 +1,456 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="../Public/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../Public/icon/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../Public/css/send.css" />
+    <link rel="stylesheet" href="../Public/utils/css/public.style.css">
+    <link rel="stylesheet" href="../Public/css/new-button.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <title>
+        <{$Think.lang.理货列表}>
+    </title>
+    <script type="text/javascript">
+        var url = window.location.href;
+    </script>
+    <style>
+        .wrap {
+            box-sizing: border-box;
+            padding: 20px;
+            margin: 0;
+        }
+        
+        .row {
+            margin: 0;
+        }
+        
+        .row+.row {
+            margin-top: 20px;
+        }
+        
+        [class*="col-"] {
+            padding: 0;
+        }
+        
+        .pagination>li>a {
+            letter-spacing: 0;
+            font-size: 0.6rem;
+        }
+        
+        .b2b-table .use-body .use-btn a {
+            color: white;
+            cursor: pointer
+        }
+        
+        .form-label {
+            display: inline-block;
+            margin: 0;
+            font-family: "Arial", "Microsoft YaHei", "黑体", "宋体", sans-serif;
+            font-size: 0.7rem;
+            color: #263238;
+            letter-spacing: 0;
+            vertical-align: middle;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .form-input {
+            font-size: 0.7rem;
+            color: rgb(38, 50, 56);
+            height: 1.7rem;
+            box-sizing: border-box;
+            min-width: 230px;
+            padding: 0.1rem 0.3rem;
+            border-radius: 0.2rem;
+            border-width: 1px;
+            border-style: solid;
+            border-color: rgb(215, 218, 221);
+            border-image: initial;
+        }
+        
+        .input-with-select .el-input-group__prepend {
+            background-color: #fff;
+        }
+        .textarea {
+            font-size: 0.7rem;
+            border-radius: 0.2rem;
+            border: 1px solid #D7DADD;
+            width: 350px;
+            height: 2.5rem;
+            margin-bottom: -30px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="warehouse" v-cloak="" class="wrap">
+        <form action="<{:U('warehousing_list')}>" method="post">
+            <div class="row">
+                <div class="col-lg-12 col-md-12 col-sm-12 new-btn-group">
+                    <button v-for="s in initdata.warehousing_state" @click="go(s.CD,'status')" type="button" :class="s.CD == action.status?'active':''">{{$lang(s.CD_VAL)}}</button>
+                    <input type="hidden" name="status" v-model="action.status">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-12 col-md-12 col-sm-12">
+                    <label class="form-label">{{$lang('B2B订单号/销售PO单号')}}</label>
+                    <textarea type="text" class="form-input textarea" v-model="action.PO_ID" id="textarea" @input="handleOrderInput" name="PO_ID" style="min-width: 230px;" :placeholder="$lang('支持英文逗号/换行符/空格分割')"></textarea>
+
+                    <label class="form-label" style="margin-left: 30px;">{{$lang('客户名称')}}</label>
+                    <input type="text" class="form-input" placeholder="" @change="customerNameChange" name="CLIENT_NAME" v-model="action.CLIENT_NAME">
+
+                    <!-- <select name="orderId" v-model="action.orderId" style="width: 130px;min-width: 130px;">
+                        <option :value="item.orderId" v-for="item in orderNum">{{$lang(item.orderName)}}</option>
+                    </select> -->
+
+                    <label class="form-label" style="margin-left:30px;">{{$lang('发货仓库')}}</label>
+                    <el-select v-model="action.warehouse" filterable :placeholder="$lang('请选择发货仓库')">
+                        <el-option v-for="item in initdata.all_warehouse" :key="item.CD" :label="$lang(item.warehouse)" :value="item.CD">
+                        </el-option>
+                    </el-select>
+                    <select style="visibility: hidden;" name="warehouse" v-model="action.warehouse">
+                        <option value="">{{$lang('请选择发货仓库')}}</option>
+                        <option v-for="s in initdata.all_warehouse" :value="s.CD">{{$lang(s.warehouse)}}</option>
+                    </select>    
+                </div>
+                
+            </div>
+            <div class="row">
+                <div class="col-lg-12 col-md-12 col-sm-12">
+                    <label class="form-label">{{$lang('销售团队')}}</label>
+                        <el-select v-model="action.SALES_TEAM" filterable :placeholder="$lang('请选择销售团队')">
+                            <el-option v-for="item in initdata.sales_team" :key="item.CD" :label="$lang(item.CD_VAL)" :value="item.CD">
+                            </el-option>
+                        </el-select>
+                        <select style="display:none;" name="SALES_TEAM" v-model="action.SALES_TEAM">
+                        <option value="">{{$lang('请选择销售团队')}}</option>
+                        <option v-for="s in initdata.sales_team" :value="s.CD">{{$lang(s.CD_VAL)}}</option>
+                    </select>
+
+                    <label class="form-label" style="margin-left:30px;">{{$lang('发货操作日期')}}</label>
+                    <el-date-picker value-format="yyyy-MM-dd" name="SUBMIT_TIME" size="small" v-model="action.SUBMIT_TIME" type="daterange" align="right" unlink-panels :range-separator="$lang('至')" :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')">
+                    </el-date-picker>
+
+                    <label class="form-label" style="margin-left:30px;width:50px;">{{$lang('发货人')}}</label>
+                    <input type="text" class="form-input" :placeholder="$lang('请输入花名拼音')" name="AUTHOR" v-model="action.AUTHOR" @blur="trim('AUTHOR')">
+                        
+                </div>
+                
+            </div>
+            <div class="row">
+                <div class="col-lg-12 col-md-12 col-sm-12">
+                    <label class="form-label">{{$lang('提单号')}}</label>
+                    <input type="text" class="form-input" :placeholder="$lang('请输入单号')" name="BILL_LADING_CODE" autocomplete="off" v-model="action.BILL_LADING_CODE" @blur="trim('BILL_LADING_CODE')"> 
+                    <label class="form-label" style="margin-left:10px;">{{$lang('发货单号')}}</label>
+                    <input type="text" class="form-input" :placeholder="$lang('请输入单号')" name="DOSHIP_ID" autocomplete="off" v-model="action.DOSHIP_ID" @blur="trim('DOSHIP_ID')">
+
+                    <label class="form-label" style="margin-left:10px;">{{$lang('销售同事/销售助理')}}</label>
+                    <input class="form-input" type="text" placeholder="" @change="saleManChange" name="sales_assistant_by" v-model="action.sales_assistant_by">
+
+                    <label class="form-label" style="margin-left:10px;">{{$lang('SKU/条形码')}}</label>
+                    <input class="form-input" type="text" placeholder="" @change="skuBarcodeChange" name="sku_or_barcode" v-model="action.sku_or_barcode">    
+                </div>
+                
+                
+            </div>
+            <div class="row">
+                <div class="col-lg-12 search-btn-group">
+                    <button type="submit" id="submit_button" class="search-btn">{{$lang('查询')}}</button>
+                    <button type="reset" @click="resetForm()" class="reset-btn">{{$lang('重置')}}</button>
+                </div>
+            </div>
+        </form>
+        <div class="baseline"></div>
+        <div class="row">
+            <div class="col-lg-12 result-num">
+                {{$lang('结果')}}:{{$lang('共')}}<b>&nbsp;&nbsp;{{count}}&nbsp;&nbsp;</b>{{$lang('条记录')}}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12 col-md-12">
+                <table class="b2b-table">
+                    <thead class="use-head">
+                        <tr class="text-center">
+                            <th width="120">{{$lang('发货单号')}}</th>
+                            <th width="100">{{$lang('提单号')}}</th>
+                            <th width="120">{{$lang('B2B订单号')}}</th>
+                            <th width="120">{{$lang('PO单号')}}</th>
+                            <th>{{$lang('客户')}}</th>
+                            <th>{{$lang('发货仓库')}}</th>
+                            <th>{{$lang('目标港口')}}</th>
+                            <th>{{$lang('已发货数')}}</th>
+                            <th>{{$lang('合格品数量')}}</th>
+                            <th>{{$lang('PO时间')}}</th>
+                            <th width="120">{{$lang('发货操作时间')}}</th>
+                            <th>{{$lang('发货人')}}</th>
+                            <th>{{$lang('状态')}}</th>
+                            <th width="100">{{$lang('操作')}}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="use-body">
+                        <tr class="" v-for="w in warehouse_list">
+                            <td>{{w.SHIP_LIST_ID}}</td>
+                            <td>{{w.BILL_LADING_CODE}}</td>
+                            <td>{{w.PO_ID}}</td>
+                            <td>{{w.THR_PO_ID}}</td>
+                            <td>{{$lang(w.CLIENT_NAME)}}</td>
+                            <td v-if="w.warehouse">
+                                <span v-if="w.warehouse in initdata.all_warehouse">{{$lang(initdata.all_warehouse[w.warehouse].warehouse)}}</span>
+                            </td>
+                            <td v-else></td>
+                            <td>{{join_ares(w.TARGET_PORT)}}</td>
+                            <td>{{king(w.SHIPMENTS_NUMBER)}}</td>
+                            <!-- todo 已发货数多SKU合并-->
+                            <td>{{king(w.WAREHOUSEING_NUM)}}</td>
+                            <td>{{w.po_time}}</td>
+                            <td>{{w.SUBMIT_TIME}}</td>
+                            <td>{{w.AUTHOR}}</td>
+                            <td v-if="w.status != 0">{{initdata.warehousing_state[w.status].CD_VAL}}</td>
+                            <td v-else="">
+                                <{$Think.lang.未确认}>
+                            </td>
+                            <td class="use-btn no-wrap">
+                                <a v-if="!w.submit_user" @click="toDetail(w.ORDER_ID,w.ID, '理货详情页', 1)" class="btn-pub btn-green">{{$lang('查看')}}</a>
+                                <a v-else @click="toDetail(w.ORDER_ID,w.ID, '理货详情页', 2)" class="btn-pub btn-green">{{$lang('查看')}}</a>
+                                <?php if(ButtonAction::hidden()){ ?>
+                                <a v-if="w.status == 0" @click="toDetail(w.ORDER_ID,w.ID,'理货确认页')" class="btn-pub btn-blue mg-l-10">{{$lang('确认')}}</a>
+                                <?php } ?>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-lg-12 col-md-12">
+                <ul class="pagination">
+                    <{$page}>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <script src="../Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+    <script type="text/javascript" src="../Public/js/stock/alert.js"></script>
+    <script type="text/javascript" src="../Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript" src="../Public/js/axios.min.js"></script>
+    <script>
+        let hiddenTextarea;
+        const HIDDEN_STYLE = `
+            height:0 !important;
+            visibility:hidden !important;
+            overflow:hidden !important;
+            position:absolute !important;
+            z-index:-1000 !important;
+            top:0 !important;
+            right:0 !important
+        `;
+    
+        const CONTEXT_STYLE = [
+            'letter-spacing',
+            'line-height',
+            'padding-top',
+            'padding-bottom',
+            'font-family',
+            'font-weight',
+            'font-size',
+            'text-rendering',
+            'text-transform',
+            'width',
+            'text-indent',
+            'padding-left',
+            'padding-right',
+            'border-width',
+            'box-sizing'
+        ];
+    
+        function calculateNodeStyling(targetElement) {
+            console.log(targetElement, 'ele')
+            const style = window.getComputedStyle(targetElement);
+            console.log(style, 'style')
+    
+            const boxSizing = style.getPropertyValue('box-sizing');
+    
+            const paddingSize = (
+                parseFloat(style.getPropertyValue('padding-bottom')) +
+                parseFloat(style.getPropertyValue('padding-top'))
+            );
+    
+            const borderSize = (
+                parseFloat(style.getPropertyValue('border-bottom-width')) +
+                parseFloat(style.getPropertyValue('border-top-width'))
+            );
+    
+            const contextStyle = CONTEXT_STYLE
+                .map(name => `${name}:${style.getPropertyValue(name)}`)
+                .join(';');
+    
+            return { contextStyle, paddingSize, borderSize, boxSizing };
+        }
+    
+        function calcTextareaHeight(
+            targetElement,
+            minRows = 1,
+            maxRows = null
+        ) {
+            if (!hiddenTextarea) {
+                hiddenTextarea = document.createElement('textarea');
+                document.body.appendChild(hiddenTextarea);
+            }
+    
+            let {
+                paddingSize,
+                borderSize,
+                boxSizing,
+                contextStyle
+            } = calculateNodeStyling(targetElement);
+    
+            hiddenTextarea.setAttribute('style', `${contextStyle};${HIDDEN_STYLE}`);
+            hiddenTextarea.value = targetElement.value || targetElement.placeholder || '';
+    
+            let height = hiddenTextarea.scrollHeight;
+            const result = {};
+    
+            if (boxSizing === 'border-box') {
+                height = height + borderSize;
+            } else if (boxSizing === 'content-box') {
+                height = height - paddingSize;
+            }
+    
+            hiddenTextarea.value = '';
+            let singleRowHeight = hiddenTextarea.scrollHeight - paddingSize;
+    
+            if (minRows !== null) {
+                let minHeight = singleRowHeight * minRows;
+                if (boxSizing === 'border-box') {
+                    minHeight = minHeight + paddingSize + borderSize;
+                }
+                height = Math.max(minHeight, height);
+                result.minHeight = `${minHeight}px`;
+            }
+            if (maxRows !== null) {
+                let maxHeight = singleRowHeight * maxRows;
+                if (boxSizing === 'border-box') {
+                    maxHeight = maxHeight + paddingSize + borderSize;
+                }
+                height = Math.min(maxHeight, height);
+            }
+            result.height = `${height}px`;
+            hiddenTextarea.parentNode && hiddenTextarea.parentNode.removeChild(hiddenTextarea);
+            hiddenTextarea = null;
+            return result;
+        };
+    </script>
+    <script>
+        var vm = new Vue({
+            el: '#warehouse',
+            data: {
+                initdata: <{$initdata}> ,
+                action: <{$action}> ,
+                warehouse_list: <{$data}> ,
+                count: <{$count}> ,
+                orderNum: [{
+                    orderId: 'THR_PO_ID',
+                    orderName: 'PO单号 '
+                }, {
+                    orderId: 'PO_ID',
+                    orderName: 'B2B订单号'
+                }],
+                searchType: 'BILL_LADING_CODE',
+            },
+            created: function() {
+                console.log(this.action)
+            },
+            mounted() {
+                this.handleOrderInput()
+            },
+            methods: {
+                trim: function(name) {
+                    this.action[name] = $.trim(this.action[name])
+                },
+                toDetail: function opennewtab(orderId, id, title, jumpNum) {
+                    var dom = document.createElement('a');
+                    var _href;
+                    if (title == '理货详情页' && jumpNum == 1) {
+                        _href = '<{:U("b2b/warehousing_detail")}>&ORDER_ID=' + orderId + '&ID=' + id;
+                    } else if (title == '理货详情页' && jumpNum == 2) {
+                        _href = '<{:U("b2b/warehousing_show")}>&ORDER_ID=' + orderId + '&ID=' + id;
+                    } else {
+                        _href = '<{:U("b2b/warehousing_confirm")}>&ORDER_ID=' + orderId + '&ID=' + id + '&type=1';
+                    }
+                    dom.setAttribute("onclick", "opennewtab(this,'" + this.$lang(title) + "')");
+                    dom.setAttribute("_href", _href);
+                    dom.click();
+                },
+                go: function(e, type) {
+                    this.action[type] = e
+                },
+                resetForm:function(){
+                    this.action.CLIENT_NAME = ''
+                    this.action.PO_ID = ''
+                    this.action.warehouse = ''
+                    this.action.SALES_TEAM = ''
+                    this.action.SUBMIT_TIME = ''
+                    this.action.AUTHOR = ''
+                    this.action.BILL_LADING_CODE = ''
+                    this.action.DOSHIP_ID = ''
+                    this.action.sales_assistant_by = ''
+                    this.action.sku_or_barcode = ''
+                    this.action.status = 0
+                    // document.querySelector('#warehousing_list_form').submit()
+
+                    setTimeout(function() {
+                        $("#submit_button").click()
+                    }, 500)
+                },
+                join_ares(e) {
+                    if (e != null) {
+                        e_data = JSON.parse(e)
+                        var initdata = this.initdata
+                        var area = ''
+                        if (e_data.country) area = initdata.area[e_data.country]
+                        if (e_data.stareet) area += '-' + initdata.area[e_data.stareet]
+                        if (e_data.city) area += '-' + initdata.area[e_data.city]
+                        if (e_data.targetCity) area += '-' + e_data.targetCity
+                        return area
+                    }
+                    return e
+                },
+                king: function(e) {
+                    if (!e) return null
+                    var k = e.toString().split('.')
+                    if (e.toString().indexOf('.') > 0) {
+                        var s = '.' + k[1]
+                    } else {
+                        var s = ''
+                    }
+                    return k[0].toString().replace(/\d{1,3}(?=(\d{3})+(\.\d*)?$)/g, '$&,') + s;
+                },
+                customerNameChange: function(value) {
+                    this.action.CLIENT_NAME = this.action.CLIENT_NAME.replace(/\s+/g, "");
+                },
+                saleManChange: function(value) {
+                    this.action.sales_assistant_by = this.action.sales_assistant_by.replace(/\s+/g, "");
+                },
+                skuBarcodeChange: function(value) {
+                    this.action.sku_or_barcode = this.action.sku_or_barcode.replace(/\s+/g, "");
+                },
+                handleOrderInput: function () {
+                    var ele = document.getElementById('textarea');
+                    var height = calcTextareaHeight(ele);
+                    ele.style.height = height.height;
+                    ele.style['min-height'] = '50px';
+                }
+
+            }
+        })
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,742 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/GroupSku/common.css?v=<{$Think.const.V}>">
+    <title>$lang('订单列表')</title>
+</head>
+
+<body class="orderList">
+    <div  id="list" class="list-common" style="margin-bottom:220px;" v-cloak>
+        <div class='cls' style="height:auto;">
+            <el-col :span="24">
+                <div class="fl sort-item">
+                    <el-select :popper-append-to-body=false filterable clearable size="small" :multiple-limit=10 v-model="form.warehouse_cd" multiple collapse-tags :placeholder="$lang('仓库')" style="width:300px">
+                        <el-option v-for="item in baseData.warehouses" :key="item.CD" :label="$lang(item.CD_VAL)" :value="item.CD"> </el-option>
+                    </el-select>
+                </div>
+                <!-- <div class="fl sort-item">
+                    <el-select :popper-append-to-body=false filterable clearable size="small" :multiple-limit=10 v-model="form.warehouse_type" multiple collapse-tags :placeholder="$lang('库存类型')" style="width:300px">
+                        <el-option v-for="item in baseData.inventory_type" :key="item.cd" :label="$lang(item.cdVal)" :value="item.cd"> </el-option>
+                    </el-select>
+                </div> -->
+                <div class="fl sort-item">
+                    <el-select :popper-append-to-body=false filterable clearable size="small" :multiple-limit=10 v-model="form.sale_team_cd" multiple collapse-tags :placeholder="$lang('销售团队')" style="width:300px">
+                        <el-option v-for="(item,key) in baseData.saleTeams" :key="key" :label="$lang(item)" :value="key"> </el-option>
+                    </el-select>
+                </div>
+                <div class="fl sort-item">
+                    <div>
+                        <el-select :popper-append-to-body=false filterable size="small" v-model="form.date_type">
+                            <el-option v-for="(item,key) in dateType" :key="key" :label="$lang(item)" :value="key"> </el-option>
+                        </el-select>
+                        <el-date-picker value-format="yyyy-MM-dd" size="small" v-model="form.dateRange" type="daterange"
+                            align="right" unlink-panels :range-separator="$lang('至')" :start-placeholder="$lang('开始日期')"
+                            :end-placeholder="$lang('结束日期')" :picker-options="pickerOptions">
+                        </el-date-picker>
+
+                    </div>
+                </div>
+            </el-col>
+        </div>
+        <div class="search-btn-container">
+            <div class="btns">
+                <el-select :popper-append-to-body=false filterable size="small" v-model="form.search_type"
+                    :placeholder="$lang('请选择')" style="width:150px">
+                    <el-option v-for="(item,key) in searchType" :key="key" :label="$lang(item)" :value="key">
+                    </el-option>
+                </el-select>
+                <el-input size="small" class="search-keywords" v-model="form.search_value"></el-input>
+                <el-select :popper-append-to-body=false filterable clearable size="small" :multiple-limit=10 v-model="form.small_sale_team_cd" multiple collapse-tags :placeholder="$lang('销售小团队')" style="width:300px">
+                    <el-option v-for="(item,index) in sell_small_team_all" :key="index" :label="item" :value="index">
+                </el-select>
+                <button @click="doSearch()" class="btn-search" name="search">{{$lang('搜索')}}</button>
+                <button @click="doReset" class="btn-reset" name="reset">{{$lang('重置')}}</button>
+            </div>
+        </div>
+        <!-- 搜索查询 end-->
+        <div class="orderList-line line-split"></div>
+        <!-- 订单表格主体 start-->
+        <div class="orderList-Main list-common-main">
+            <header>
+                <el-row>
+                    <el-col :span="12">
+                        {{$lang('搜索结果')}}:{{$lang('共')}}
+                        <span class="num-bold">{{totalCount}}</span> {{$lang('条记录')}}
+                        <el-button type="text" @click="exportOrder" style="margin-left:20px;">{{$lang('导出')}}</el-button>
+                    </el-col>
+                    <el-col :span="12" class="text-right">
+                        <el-button type="info" @click="activaModal(false)">{{$lang('新建拆包单')}}</el-button>
+                        <el-button type="primary" @click="activaModal(true)">{{$lang('新建打包单')}}</el-button>
+                    </el-col>
+                </el-row>
+            </header>
+            <el-table border show-header ref="multipleTable" :data="tableData" tooltip-effect="dark" style="width: 100%" class="order-list-table table-common" v-loading="tableLoading">
+                <el-table-column type="index" :label="$lang('序号')"  :index="indexMethod" width="50"></el-table-column>
+                <el-table-column :label="$lang('商品图片')">
+                    <template scope=scope>
+                        <img v-if="scope.row.img" style="cursor: pointer;" :src="scope.row.img" width="60" height="60" @mouseover="showImgFn(scope.row,true)" @mouseout="showImgFn(scope.row,false)">
+                        <div v-if="scope.row.isShowImg && scope.row.img" class="thumbnail-wrap">
+                            <div class="img-wrap">
+                                <img :src="scope.row.img" width="300" height="300" />
+                            </div>
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="sku_id" :label="$lang('组合SKU编码')"></el-table-column>
+                <el-table-column prop="product_sku.upc_id" :label="$lang('条形码')"></el-table-column>
+                <el-table-column prop="sku_name" :label="$lang('商品名称')">
+                    <template scope="scope">
+                        <div>{{$lang(scope.row.sku_name)}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('仓库')" width="180">
+                    <template scope="scope">
+                        <div>{{$lang(scope.row.warehouse_cd_val)}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('销售团队')">
+                    <template scope=scope>
+                        {{$lang(scope.row.sale_team_cd_val)}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="small_sale_team_code_val" :label="$lang('销售小团队')"> </el-table-column>
+                <el-table-column prop="history_num" :label="$lang('历史总组合数量')"> </el-table-column>
+                <el-table-column prop="current_in_num" :label="$lang('当前在库数量')"> </el-table-column>
+                <el-table-column prop="current_take_num" :label="$lang('当前占用数量')"> </el-table-column>
+                <el-table-column prop="remaining_num" :label="$lang('剩余库存数量')"> </el-table-column>
+                <el-table-column :label="$lang('单据')">
+                        <template scope="scope">
+                            <el-popover placement="bottom-end" width="1300" trigger="click" >
+                                <el-table :data="groupSkuDedailList" height="200" border style="width: 100%" class="popover-table" v-loading="popoverTableLoading">
+                                    <el-table-column prop="bill_code" :label="$lang('单据号')" width="200"></el-table-column>
+                                    <el-table-column :label="$lang('类型')" width="100">
+                                        <template scope='scoped'>
+                                            <span>{{$lang(scoped.row.group_type_val)}}；</span>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column :label="$lang('仓库')" width="130">
+                                        <template scope='scoped'>
+                                            <span>{{$lang(scoped.row.warehouse_cd_val)}}；</span>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column prop="sale_team_cd_val" :label="$lang('销售团队')" width="150"></el-table-column>
+                                    <el-table-column prop="all_num" :label="$lang('数量')" width="100"></el-table-column>
+                                    <el-table-column prop="created_by" :label="$lang('申请人')" width="100"></el-table-column>
+                                    <el-table-column prop="audit_user" :label="$lang('审核人')" width="100"></el-table-column>
+                                    <el-table-column prop="audit_user" :label="$lang('时间')">
+                                        <template scope='childScope'>
+                                            <span v-if="childScope.row.created_at">{{$lang('申请时间')}}：{{childScope.row.created_at}}；</span>
+                                            <span v-if="childScope.row.audit_time"><br/></span>    
+                                            <span v-if="childScope.row.audit_time">{{$lang('审核时间')}}：{{childScope.row.audit_time}}；</span> 
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column :label="$lang('单据状态')" width="80">
+                                        <template scope='childScope'>
+                                            <el-button type="text" @click="shouGroupDetail(childScope.row)">
+                                                <span :class="[{auditColor:childScope.row.audit_status_val == '待审核'},
+                                                            {rejectColor:childScope.row.audit_status_val == '已驳回'}]">
+                                                    {{$lang(childScope.row.audit_status_val)}}
+                                                </span>
+                                            </el-button>
+                                        </template>
+                                    </el-table-column>
+                                </el-table>
+                                <div slot="reference" class="name-wrapper">
+                                    <i class='el-icon-d-arrow-left' slot="reference" @click="getGroupSkuDetail(scope.row)"></i>
+                                </div>
+                            </el-popover>
+                        </template>
+                </el-table-column>
+                <el-table-column :label="$lang('提醒')">
+                    <template scope="scope">
+                        <span class="auditColor"> {{scope.row.approval_num}}{{$lang('单')}} {{$lang('待审核')}}  </span>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <el-pagination background @size-change="handleSizeChange" @current-change="handleCurrentChange"
+                :current-page.sync="page.this_page" :page-sizes="[10, 30, 50, 100]" :page-size="page.page_count" layout="sizes,prev, pager, next, jumper"
+                :total="totalCount"> </el-pagination>
+        </div>
+        <!-- 订单表格主体 end-->
+        <el-dialog :title="baleType? $lang('打包单详情'): $lang('拆包单详情')" :visible.sync="dialogVisible" width="800px" :before-close="handleClose">
+            <div>
+               <table class="dailogTable" cellpadding="0" cellspacing="0">
+                   <tr>
+                       <td>{{$lang('组合SKU ID')}}</td>
+                       <td> 
+                           <span v-if="baleAudit">{{dailogForm.group_sku_id}}</span>
+                           <el-input v-else :placeholder="$lang('请输入SKU ID')" v-model="dailogForm.group_sku_id" @blur="getGroupSkuNum()"></el-input> 
+                        </td>
+                       <td>{{$lang('仓库名称')}}</td>
+                       <td>
+                            <span v-if="baleAudit">{{$lang(dailogForm.warehouse_cd_val)}}</span>
+                            <el-select v-else :popper-append-to-body=false filterable @change="getGroupSkuNum()" clearable size="small" v-model="dailogForm.warehouse_cd"  :placeholder="$lang('仓库')" style="width:90%">
+                                <el-option v-for="item in baseData.warehouses" :key="item.CD" :label="$lang(item.CD_VAL)" :value="item.CD"> </el-option>
+                            </el-select>
+                       </td>
+                   </tr>
+                   <tr>
+                       <td>{{$lang('商品名称')}}</td>
+                       <td>{{groupSku.skuName}}</td>
+                       <td>{{$lang('销售团队')}}</td>
+                       <td>
+                            <span v-if="baleAudit">{{dailogForm.sale_team_cd_val}}</span>
+                            <el-select v-else :popper-append-to-body=false filterable @change="getGroupSkuNum('sellTeam')" clearable size="small"v-model="dailogForm.sale_team_cd" :placeholder="$lang('销售团队')" style="width:90%">
+                                <el-option v-for="(item,key) in baseData.saleTeams" :key="key" :label="$lang(item)" :value="key"> </el-option>
+                            </el-select>
+                       </td>
+                   </tr>
+                   <!-- <tr>
+                        <td>{{$lang('归属店铺')}}</td>
+                        <td>
+                             <span v-if="baleAudit">{{dailogForm.ascription_store_val}}</span>
+                             <el-select v-else :popper-append-to-body=false filterable @change="getGroupSkuNum()" clearable size="small"v-model="dailogForm.ascription_store" :placeholder="$lang('归属店铺')" style="width:90%">
+                                 <el-option v-for="(item,key) in ascriptionstore_list" :key="key" :label="item.nickname" :value="item.realName"> </el-option>
+                             </el-select>
+                        </td> 
+                   </tr> -->
+                   <tr>
+                    <td>{{$lang('销售小团队')}}</td>
+                        <td>
+                            <span v-if="baleAudit">{{dailogForm.small_sale_team_code_val}}</span>
+                            <el-select v-else :popper-append-to-body=false filterable @change="getGroupSkuNum()" clearable size="small"v-model="dailogForm.sell_samll_team_cd" :placeholder="$lang('销售小团队')" style="width:90%">
+                                <el-option v-for="(item,index) in sell_small_team" :key="index" :label="item" :value="index">
+                            </el-select>
+                        </td> 
+                </tr>
+               </table>
+               <table class="dailogTableList" v-if="groupSku.list.length" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <th>SKU ID</td>
+                        <th style="width: 200px">{{$lang('商品名称')}}</td>
+                        <th style="width: 100px" v-if="!baleAudit && baleType">{{$lang('可售')}}</td>
+                        <th style="width: 100px">{{$lang('组合件数')}}</td>
+                        <th v-if="!baleAudit && !baleType">{{$lang('剩余组合库存')}}</th>
+                        <th v-if="baleType">{{$lang('组合入库')}}</th>
+                        <th v-else>{{$lang('取消组合')}}</th>
+                    </tr>
+                    <tr v-for="(item,index) in groupSku.list">
+                        <td>{{item.sku_id}}</td>
+                        <td>{{item.spu_name}}</td>
+                        <td v-if="!baleAudit && baleType">{{item.num}}</td>
+                        <td>{{item.coefficient}}</td>
+                        <td :rowspan="groupSku.list.length" v-if="!index && !baleType && !baleAudit">{{groupSku.isCancelNum}}</td>
+                        <td :rowspan="groupSku.list.length" v-if="!index">
+                            <span v-if="baleAudit">{{groupSku.maxNum}}</span>
+                            <el-input v-else :disabled="groupSku.isCancelNum == 0" v-model="groupSku.maxNum" :placeholder="$lang('请输入数量')"></el-input>
+                        </td>
+                    </tr>
+                </table>                                                                           
+            </div>
+            <span slot="footer" class="dialog-footer">
+                <div v-if="dailogForm.audit_status == 'N002470100'">
+                    <el-button @click="audit(false)">{{$lang('驳回')}}</el-button>
+                    <el-button type="primary" @click="audit(true)">{{$lang('通过')}}</el-button>
+                </div>
+                <div  v-else-if="dailogForm.audit_status == 'N002470200'">
+                    <span class="auditColor">{{$lang('已通过')}}</span>
+                </div>
+                <div v-else-if="dailogForm.audit_status == 'N002470300'">
+                    <span class="rejectColor">{{$lang('已驳回')}}</span>
+                </div>
+                <div v-else>
+                    <div v-if="groupSku.isCancelNum!== 0">
+                        <el-button @click="handleClose">{{$lang('取消')}}</el-button>
+                        <el-button type="primary" @click="createGroupOrder">{{$lang('确定')}}</el-button>
+                    </div>
+                </div>
+            </span>
+</el-dialog>
+    </div>
+    <!--引入js-->
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script>
+        if (getCookie('think_language') !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en)
+        }
+        var vm = new Vue({
+            el: '#list',
+            data: {
+                baseData:{},
+                dateType:{
+                    created_at:'申请时间',
+                    audit_time:'审核时间',
+                },
+                searchType:{
+                    group_sku_id:'组合商品编码',
+                    sku_name:'商品名称',
+                    upc_id:'条形码',
+                    group_bill_code:'组合入库单号',
+                },
+                pickerOptions:{},
+                form:{
+                    dateRange:[],
+                    warehouse_cd:[],
+                    warehouse_type:[],
+                    sale_team_cd:[],
+                    small_sale_team_cd:[],
+                    date_type:'created_at',
+                    time_begin:'',
+                    time_end:'',
+                    search_type:'group_sku_id',
+                    search_value:'',
+                },
+                page: {
+                    this_page: 1,
+                    page_count: 10
+                },
+                tableData:[],
+                totalCount:0,
+                tableLoading:false,
+                popoverTableLoading:false,
+                dialogVisible:false,
+                //组合查询条件
+                dailogForm:{
+                    group_sku_id:'',
+                    warehouse_cd:'',
+                    sale_team_cd:'',
+                    sale_team_cd_val:'',
+                    warehouse_cd_val:'',
+                    ascription_store: '', // 归属店铺
+                    sell_samll_team_cd:'',
+                    small_sale_team_code_val:'',
+                },
+                ascriptionstore_list: [], // 归属店铺列表
+                sell_small_team:[],
+                sell_small_team_all:[],
+                //组合sku列表
+                groupSku:{
+                    list:[],
+                    skuName:'',
+                    maxNum:0,
+                    isCancelNum:0
+                },
+                originMaxNum: 0, // 原始组合大小
+                groupSkuDedailList:[],
+                //是否是审核状态
+                baleAudit:false,
+                //是否是打包状态
+                baleType:true
+            },
+            created: function () {
+                this.pickerOptions = {
+                    shortcuts: [{
+                        text: this.$lang('最近一周'),
+                        onClick: function onClick(picker) {
+                            var end = new Date();
+                            var start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: this.$lang('最近一个月'),
+                        onClick: function onClick(picker) {
+                            var end = new Date();
+                            var start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: this.$lang('最近三个月'),
+                        onClick: function onClick(picker) {
+                            var end = new Date();
+                            var start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }]
+                }
+                this.getCd();
+                this.doSearch();
+                this.getAscriptionstoreList();
+                this.getsellSmallTeamAll();
+            },
+            methods: {
+                getCd: function () {
+                    var _this = this;
+                    var param = {
+                        data: {
+                            query: {
+                                warehouses: "true",
+                                saleTeams: "true",
+                                inventory_type: "true",
+                            },
+                            type: "sorting"
+                        }
+                    }
+                    axios.post('/index.php?g=oms&m=CommonData&a=commonData', param)
+                        .then(function (res) {
+                            _this.baseData = res.data.data;
+                        })
+                },
+                indexMethod(index) {
+                    return (this.page.this_page - 1)  * this.page.page_count + index + 1;
+                },
+                // 获取归属店铺列表
+                getAscriptionstoreList() {
+                    let _this = this;
+                    axios.post('/index.php?m=store&a=get_store').then(function(res) {
+                        console.log(res)
+                        if (res.status === 200 && res.data.code == 200) {
+                            var arr = [];
+                            var obj = res.data.data;
+                            for (let i in obj) {
+                                var o = {
+                                    nickname:obj[i],
+                                    realName:Number(i)
+                                };
+                                // o[i] = obj[i];
+                                arr.push(o); //属性
+                                    // arr.push(obj[i])
+                                // console.log(i);
+                                
+                            }
+                            console.log(arr);
+                            _this.ascriptionstore_list = arr;
+                        }
+                    }).catch(function(err) {console.log(err)});
+                },
+                getsellSmallTeamAll:function(){
+                    var _this = this
+                    var data = {
+                        "field" : "",
+                        "CD" : "",
+                        "need_open" : "",
+                        "need_default" : "Y"
+                    };
+
+                    axios.post('/index.php?g=universal&m=dictionary&a=getListByField', data).then(function(res) {
+                        console.log('res',res);
+                        if(res.data.code == 200){
+                            _this.sell_small_team_all = res.data.data
+                        }
+                    }).catch(function(err) {
+                        console.log(err);
+                    });
+                    // this.sell_small_team_all = [
+                    //     {
+                    //         CD: "N003230002",
+                    //         CD_VAL: "Kay.Yan - Team",
+                    //         ETC: "N001282800",
+                    //         ETC2: null,
+                    //         ETC3: null
+                    //     }
+                    // ]
+                    // this.sell_small_team_all.unshift({
+                    //     CD: '',
+                    //     CD_VAL: '无',
+                    // })
+
+                },
+                getsellSmallTeam:function(){
+                    var _this = this
+                    var data = {
+                        "field" : "ETC",
+                        "CD" : this.dailogForm.sale_team_cd,
+                        "need_open" : "Y",
+                        "need_default" : "N"
+                    };
+
+                    axios.post('/index.php?g=universal&m=dictionary&a=getListByField', data).then(function(res) {
+                        console.log('res',res);
+                        if(res.data.code == 200){
+                            _this.sell_small_team = res.data.data
+                        }
+                    }).catch(function(err) {
+                        console.log(err);
+                    });
+
+                },
+                // 查询功能
+                doSearch: function(type) {
+                    if(!type){
+                        this.page.this_page = 1;
+                    }
+                    var _this = this;
+                    this.form.time_begin = this.form.dateRange[0];
+                    this.form.time_end = this.form.dateRange[1];
+                    var param = {
+                        data:this.form,
+                        page:this.page
+                    }
+                    this.tableLoading = true;
+                    axios.post('/index.php?m=GroupSku&a=getLists',param)
+                        .then(function(res){
+                            var result = res.data;
+                            _this.tableLoading = false;
+                            if(result.code == 200){
+                                _this.tableData = result.data.data;
+                                _this.totalCount = +result.data.total;
+                            }else{
+                                _this.tableData = [];
+                                _this.totalCount = 0;
+                                _this.$message.warning(result.msg);
+                            }
+                        })
+                },
+                getGroupSkuNum:function(num){
+                    this.$forceUpdate()  
+                    if(num == 'sellTeam'){
+                        this.dailogForm.sell_samll_team_cd = ''
+                        this.getsellSmallTeam();
+                    }
+                    if ((!num && num !== 0) || num == 'sellTeam') {
+                        var searchParam = this.dailogForm.group_sku_id.length && this.dailogForm.sale_team_cd && this.dailogForm.warehouse_cd;
+                        var searchCreate = this.dailogForm.group_sku_id.length && this.dailogForm.sale_team_cd && this.dailogForm.warehouse_cd;
+                        // var searchCreate = this.dailogForm.group_sku_id.length && this.dailogForm.sale_team_cd && this.dailogForm.warehouse_cd && this.dailogForm.ascription_store;
+                        if (this.baleType) {
+                            if(!searchCreate) return false;
+                        } else {
+                            if(!searchParam) return false;
+                        }
+                    }
+
+                    var _this = this,
+                        // param = this.dailogForm;
+                        param = {
+                            group_sku_id:this.dailogForm.group_sku_id,
+                            warehouse_cd:this.dailogForm.warehouse_cd,
+                            sale_team_cd:this.dailogForm.sale_team_cd,
+                            warehouse_cd_val:this.dailogForm.warehouse_cd_val,
+                            sale_team_cd_val:this.dailogForm.sale_team_cd_val,
+                            id:this.dailogForm.id,
+                            audit_status:this.dailogForm.audit_status,
+                            // ascription_store: this.dailogForm.ascription_store,
+                            small_sale_team_cd:this.dailogForm.sell_samll_team_cd || '',
+                            is_cancel: this.baleType ? 0:1
+                        }
+                        // param.is_cancel = this.baleType ? 0:1;
+                    axios.post('/index.php?m=GroupSku&a=getGroupSkuNum',param)
+                        .then(function(res){
+                            var data = res.data.data;
+                            if(res.data.code == 200){
+                                console.log('baleAudit',_this.baleAudit);
+                                _this.groupSku.list = data.child_sku;
+                                _this.groupSku.skuName = data.group_sku_name;
+                                // _this.groupSku.maxNum = data.max_num || 0;
+                                _this.groupSku.maxNum = !_this.baleAudit ? (data.max_num || 0) :  _this.groupSku.maxNum;
+                                _this.originMaxNum = data.max_num || 0;
+                                _this.groupSku.isCancelNum = data.max_num || 0;
+                            }else{
+                                _this.$message.error(_this.$lang(res.data.msg));
+                            }
+                        })
+                },
+                createGroupOrder:function(){
+                    var _this = this;
+                    param = {
+                        num: this.groupSku.maxNum,
+                        sku_id: this.dailogForm.group_sku_id,
+                        warehouse_cd: this.dailogForm.warehouse_cd,
+                        sale_team_cd: this.dailogForm.sale_team_cd,
+                        // ascription_store: this.dailogForm.ascription_store,
+                        small_sale_team_cd: this.dailogForm.sell_samll_team_cd,
+                    };
+                    if(!this.dailogForm.group_sku_id.length){
+                        this.$message.error(this.$lang('组合SKU ID不能为空'));
+                        return false;
+                    }
+                    if(!this.dailogForm.sale_team_cd){
+                        this.$message.error(this.$lang('销售团队不能为空'));
+                        return false;
+                    }
+                    if(!this.dailogForm.warehouse_cd){
+                        this.$message.error(this.$lang('仓库名字不能为空'));
+                        return false;
+                    }
+                    // if(this.baleType && !this.dailogForm.ascription_store){
+                    //     this.$message.error(this.$lang('归属店铺不能为空'));
+                    //     return false;
+                    // }
+                    if(!this.groupSku.maxNum){
+                        this.$message.error(this.$lang('组合数量不能为空'));
+                        return false;
+                    }
+                    if (this.groupSku.maxNum > this.originMaxNum) {
+                        this.$message.error(this.$lang('组合数量不能大于最大可组合数量'));
+                        return false;
+                    }
+                    // console.log(this.dailogForm.ascription_store)
+                    //创建组合商品 或 创建取v-for消组合商品
+                    var url = this.baleType ? 'createGroupOrder' : 'cancelGroupOrder';
+                    axios.post('/index.php?m=groupSku&a=' + url, param)
+                        .then(function (res) {
+                            if(res.data.code == 2000){
+                                _this.$message.success(_this.$lang('提交成功'))
+                                _this.handleClose();
+                            }else{
+                                _this.$message.error(_this.$lang('提交失败'))
+                            }
+                        })
+                },
+                getGroupSkuDetail:function(item){
+                    var _this = this;
+                    this.popoverTableLoading = true;
+                    this.form.time_begin = this.form.dateRange[0];
+                    this.form.time_end = this.form.dateRange[1];
+
+                    axios.post('/index.php?m=GroupSku&a=getGroupSkuDetaileds', {
+                        group_sku_id: item.sku_id,
+                        warehouse_cd: item.warehouse_cd,
+                        sale_team_cd: item.sale_team_cd,
+                        small_sale_team_cd:item.small_sale_team_code,
+                        list_search:this.form
+                    })
+                    .then(function (res) {
+                        _this.popoverTableLoading = false;
+                        _this.groupSkuDedailList = res.data.data || [];
+                    })
+                },
+                shouGroupDetail:function(item){
+                    this.dialogVisible = true;
+                    //审核或创建状态
+                    this.baleAudit = true;
+                    //打包或拆包状态
+                    console.log(item)
+                    this.baleType = !item.group_type;
+                    this.groupSku.list = JSON.parse(item.sku_json);
+                    this.groupSku.maxNum = item.num;
+                    this.dailogForm = {
+                        group_sku_id:item.sku_id,
+                        warehouse_cd:item.warehouse_cd,
+                        sale_team_cd:item.sale_team_cd,
+                        warehouse_cd_val:item.warehouse_cd_val,
+                        sale_team_cd_val:item.sale_team_cd_val,
+                        small_sale_team_code_val:item.small_sale_team_code_val,
+                        id:item.id,
+                        audit_status:item.audit_status,
+                        // ascription_store: item.ascription_store,
+                        // ascription_store_val:  this.ascriptionstore_list.find(res => {
+                        //     return item.ascription_store === res.realName
+                        // }) ? this.ascriptionstore_list.find(res => {
+                        //     return item.ascription_store === res.realName
+                        // }).nickname : '',
+                        
+                    };
+                    this.getGroupSkuNum(item.num);
+
+                },
+                audit:function(type){
+                    var _this = this;
+                    var param = {
+                            group_bill_id:this.dailogForm.id,
+                            audit_status:type ? "N002470200" : "N002470300"
+                        }
+                    var url = this.baleType ? 'adoptGroupOrder' : 'rejectGroupOrder';
+                    axios.post('/index.php?m=GroupSku&a=' + url,param)
+                        .then(function(res){
+                            var data = res.data;
+                            if(data.code == 2000){
+                                _this.handleClose();
+                                _this.$message.success(_this.$lang('审核成功'));
+                            }else{
+                                _this.$message.warning(_this.$lang('审核失败'));
+                            }
+                         })
+                         .catch(function(err){
+                             console.log(err);
+                         })
+                },
+                //重置功能
+                doReset: function doReset() {
+                    this.form = {
+                        warehouse_cd: [],
+                        warehouse_type: [],
+                        sale_team_cd: [],
+                        date_type: 'created_at',
+                        dateRange: [],
+                        time_begin: '',
+                        time_end: '',
+                        search_type: 'group_sku_id',
+                        search_value: '',
+                        small_sale_team_cd:[]
+                    }
+                    this.doSearch();
+                },  
+                //导出功能
+                exportOrder: function exportOrder() {
+                    var _this = this;
+                    this.form.time_begin = this.form.dateRange[0];
+                    this.form.time_end = this.form.dateRange[1];
+                    var param = {
+                        data:this.form,
+                        page:this.page
+                    }
+                    
+                    var tmep = document.createElement('form');
+                    tmep.action = '/index.php?m=GroupSku&a=exportExcel';
+                    tmep.method = "post";
+                    tmep.style.display = "none";
+                    var opt = document.createElement("input");
+                    opt.name = 'post_data';
+                    opt.value = JSON.stringify(param);
+                    tmep.appendChild(opt);
+                    document.body.appendChild(tmep);
+                    tmep.submit();
+                    $(tmep).remove();
+                },
+                showImgFn: function (e,type) {
+                    this.$set(e,'isShowImg',type)
+                },
+                handleSizeChange: function handleSizeChange(val) {
+                    this.page.page_count = val;
+                    this.doSearch();
+                },
+                handleCurrentChange: function handleCurrentChange(val) {
+                    this.page.this_page = val;
+                    this.doSearch(true);
+                },
+                activaModal:function(type){
+                    //打包或拆包
+                    this.baleType = type;
+                    this.dialogVisible = true;
+                    //审核或新建状态
+                    this.baleAudit = false;
+                },
+                handleClose:function(){
+                    this.dialogVisible = false;
+                    this.dailogForm = {
+                        group_sku_id: '',
+                        warehouse_cd: '',
+                        sale_team_cd: '',
+                        sale_team_cd_val: '',
+                        warehouse_cd_val: '',
+                        // ascription_store: ''
+                    };
+                    this.groupSku = {
+                        list: [],
+                        skuName: '',
+                        maxNum: 0,
+                    };
+                    this.sell_small_team = []
+                }
+            },
+            watch: {
+                //搜索条件数据修改，自动请求接口
+                // form: {
+                //     handler: function (newValue, oldValue) {
+                //        this.doSearch();
+                //     },
+                //     deep: true
+                // },
+            }
+        });
+    </script>
+</body>
+
+</html>

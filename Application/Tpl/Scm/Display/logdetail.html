@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+    <!-- <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.config.VER_NUM}>"> -->
+    <title>记录详情</title>
+</head>
+<style>
+    .header {
+        background-color: #546E7A;
+        color: #fff;
+        line-height: 40px;
+        padding-left: 20px;
+    }
+
+    .forecast-table {
+        width: 100%;
+        font-size: 13px;
+        color: #546E7A;
+        font-family: MicrosoftYaHei;
+        border-bottom: 1px solid #CADEE7;
+        border-right: 1px solid #CADEE7;
+        background: #F7F9FB;
+        margin: 0;
+    }
+
+    .forecast-table td {
+        padding: 8px 10px;
+        border-top: 1px solid #CADEE7;
+        border-left: 1px solid #CADEE7;
+        background: #F7F9FB;
+        text-align: center;
+    }
+
+    .forecast-table tr>td:first-child {
+        width: 20%;
+        min-width: 160px;
+    }
+
+    .forecast-table tr>td:nth-child(2) {
+        width: 40%;
+        text-align: left;
+    }
+
+    .forecast-table tr>td:nth-child(3) {
+        text-align: left;
+    }
+    .forecast-table tr td {
+        word-wrap:break-word;
+        word-break:break-all;
+    }
+    .red {
+        color: #bf0917 !important;
+    }
+    .red a {
+        color: #bf0917 !important;
+    }
+    .demaltColor {
+        color: #546E7A;
+    }
+
+    a {
+        color: #546E7A;
+    }
+</style>
+
+<body class="orderList">
+    <div id="list" v-cloak style="margin-bottom:220px;padding-left: 40px;">
+        <header class="header">
+            <el-row>
+                <el-col>
+                    {{$lang('记录详情')}}
+                </el-col>
+            </el-row>
+        </header>
+        <!-- 需求记录详情 -->
+        <table class="forecast-table" cellpadding="0" cellspacing="0">
+            <tr v-for="(item, index) in Datas" :key="index">
+                <td>{{item.text}}</td>
+
+                <td width="18%" v-if="type(item.oldData) !== 'array'">
+                    <span v-if="index === 0">
+                        <span v-if="oldDtas">【{{$lang('上一次')}}】</span>
+                    </span>
+                    <span v-html="item.oldData"></span>
+                </td>
+                <td v-else-if="check(item.key)">
+                    <a v-for="(it, i) in item.oldData" :href="'/index.php?m=order_detail&a=download&file='+it.save_name">{{it.original_name}}</a>
+                </td>
+                <td v-else>
+                    <p v-for="(it, i) in item.oldData">{{it}}</p>
+                </td>
+
+                <td v-if="type(item.newData) !== 'array'" :class="{red: item.flag}" >
+                    <span v-if="index === 0" :class="index?'':'demaltColor'">【{{$lang('修改后')}}】</span>
+                    <span>{{ (index === 2 || index === 3 ||index === 9) ? $lang(item.newData) : (item.newData)}}</span>
+                </td>
+                <td v-else-if="check(item.key)" :class="{red: item.flag}">
+                    <a v-for="(it, i) in item.newData" :href="'/index.php?m=order_detail&a=download&file='+it.save_name">{{it.original_name}}，</a>
+                </td>
+                <td v-else :class="{red: item.flag} && type(item.newData[0]) !== 'object'">
+                    <p v-for="(it, i) in item.newData">{{it}}</p>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js?<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script>
+        if(getCookie('think_language') !== "zh-cn" ){
+            ELEMENT.locale(ELEMENT.lang.en)
+        }
+        re = new Vue({
+            el: '#list',
+            data: {
+                dedailType: 'demand',
+                tableLoading: true,
+                Datas: [],
+                oldDtas: '',
+                quotationDatas:[],
+                demandTexts:[],
+                demandDatas:[],
+                quotationTexts:[],
+                queryPost: function (url, param) {
+                    var headers = {
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    }
+                    return axios.post(url, Qs.stringify(param), headers);
+                }
+            },
+            created: function () {
+            this.demandDatas = ["create", "demand_code", "status_val", "demand_type_val", "customer", "contract", "our_company_val", "business_mode_val", "receive_mode_val",
+            "address", "receive_address", "sell_amount", "ship_date", "collection_cycle_val", "collection_time_val", "invoice_type",
+            "expense", "tax", "expense_spot", "tax_spot", "seller", "sell_team_val", "deadline", "remark",
+            "goods_val", 'forensic_audit_proposal','po', 'po_with_watermark', 'po_archive', 'forensic_audit_email_receiver',
+        ],
+            this.demandTexts = [this.$lang('操作人与操作时间'), this.$lang('需求编号'), this.$lang('需求状态'), this.$lang('需求类型'), this.$lang('客户名称'), this.$lang('框架合同'), this.$lang('我方公司'), this.$lang('业务类型'), this.$lang('客户收货方式'), this.$lang('收货城市'),
+                this.$lang('详细地址或港口/机场等'), this.$lang('预计销售金额（含税）'), this.$lang('预计销售时间'), this.$lang('收款周期'), this.$lang('收款时间'), this.$lang('销售发票'), this.$lang('【采购部分】销售物流及服务费用（预估）'), this.$lang('【采购部分】销售应缴税'),
+                this.$lang('【现货部分】销售物流及服务费用（预估）'), this.$lang('【现货部分】销售应缴税'),
+                this.$lang('销售同事'), this.$lang('销售团队'), this.$lang('需求截止时间'), this.$lang('订单备注'), this.$lang('商品信息'),
+                this.$lang('审核建议'), this.$lang('销售PO附件'), this.$lang('po水印'), this.$lang('po附档附件'), this.$lang('邮件收件人'),
+            ],
+
+            this.quotationDatas = ["create", "quotation_code", "status_val", "supplier", "contract", "our_company_val", "invoice_type", "ship_time", "arrive_time",
+                "payment_cycle_val", "payment_time_val", "expense", "drawback_time", "source_country_val", "delivery_type_val",
+                "remark", "goods_val", 'forensic_audit_proposal', 'po', 'po_with_watermark', 'po_archive', 'forensic_audit_email_receiver',
+            ],
+            this.quotationTexts = [this.$lang('操作人与操作时间'), this.$lang('采购编号'), this.$lang('采购状态'), this.$lang('供应商'), this.$lang('框架合同'), this.$lang('我方公司'), this.$lang('购发票'), this.$lang('供应商发货时间'), this.$lang('预计发货时间'),
+                this.$lang('付款周期'), this.$lang('付款时间'), this.$lang('物流等费用'), this.$lang('退税时间'), this.$lang('货源国家'), this.$lang('发货操作'), this.$lang('订单备注'), this.$lang('商品信息'), this.$lang('审核建议'), 
+                this.$lang('销售PO附件'), this.$lang('po水印'), this.$lang('po附档附件'), this.$lang('邮件收件人'),
+            ];
+                this.getLogDetail();
+            },
+            methods: {
+                check: function (val) {
+                    switch (val) {
+                        case 'po':
+                        case 'po_archive':
+                        case 'po_with_watermark':
+                            return true;
+                        break;
+                        default:
+                            return false;
+                    };
+                },
+                getLogDetail: function () {
+                    var _this = this;
+                    var _param = {
+                        id: getQueryString("type"),
+                        detail_type: getQueryString("type_id")
+                    };
+                    this.dedailType = getQueryString("type_id");
+
+                    this.queryPost("/index.php?g=scm&m=log&a=log_detail", _param).then(function (res) {
+                        var _data = res.data;
+                        if (_data.code === 2000) {
+                            var _old = _data.data.oldData,
+                                _new = _data.data.now;
+                            _this.oldDtas = _data.data.oldData;
+
+                            var _arr = [];
+
+                            if (_old) {
+                                for (var key in _old) {
+                                    if (key !== "collection_time_val" && key !== "goods_val") {
+                                        if (!_old[key]) {
+                                            _old[key] = '';
+                                        };
+                                    };
+                                };
+                            };
+
+                            for (var key in _new) {
+                                if (key !== "payment_time_val" && key !== "goods_val") {
+                                    if (!_new[key]) {
+                                        _new[key] = '';
+                                    };
+                                };
+                            };
+
+                            if (_this.dedailType === "demand") { //需求记录详情
+                                for (var i = 0, len = re.demandDatas.length; i < len; i++) {
+                                    var _obj = {
+                                        text: re.demandTexts[i],
+                                        oldData: '',
+                                        newData: '',
+                                        flag: false,
+                                        key: re.demandDatas[i]
+                                    };
+
+                                    switch (re.demandDatas[i]) {
+                                        case "create":
+                                            if (_old) {
+                                                _this.$set(_obj, "oldData", _old["create_user"] + "-" + _old["create_time"]);
+                                            };
+                                            _this.$set(_obj, "newData", _new["create_user"] + "-" + _new["create_time"]);
+                                            break;
+                                        case "address":
+                                            if (_old) {
+                                                _this.$set(_obj, "oldData", _old["receive_country_val"] + "-" + _old["receive_province_val"] + "-" + _old["receive_city_val"]);
+                                            };
+                                            _this.$set(_obj, "newData", _new["receive_country_val"] + "-" + _new["receive_province_val"] + "-" + _new["receive_city_val"]);
+                                            break;
+                                        case "sell_amount":
+                                            if (_old) {
+                                                _this.$set(_obj, "oldData", _old["sell_currency_val"] + "-" + _old["sell_amount"]);
+                                            };
+                                            _this.$set(_obj, "newData", _new["sell_currency_val"] + "-" + _new["sell_amount"]);
+                                            break;
+                                        case "invoice_type":
+                                            if (_old) {
+                                                _this.$set(_obj, "oldData", _old["invoice_type_val"] + "-" + _old["tax_rate_val"]);
+                                            };
+                                            _this.$set(_obj, "newData", _new["invoice_type_val"] + "-" + _new["tax_rate_val"]);
+                                            break;
+                                        case "invoice_type":
+                                            if (_old) {
+                                                _this.$set(_obj, "oldData", _old["invoice_type_val"] + "-" + _old["tax_rate_val"]);
+                                            };
+
+                                            _this.$set(_obj, "newData", _new["invoice_type_val"] + "-" + _new["tax_rate_val"]);
+                                            break;
+                                        case "expense":
+                                            if (_old) {
+                                                _this.$set(_obj, "oldData", _old["expense_currency_val"] + "-" + _old["expense"]);
+                                            };
+                                            _this.$set(_obj, "newData", _new["expense_currency_val"] + "-" + _new["expense"]);
+                                            break;
+                                        case "tax":
+                                            if (_old) {
+                                                _this.$set(_obj, "oldData", _old["tax_currency_val"] + "-" + _old["tax"]);
+                                            };
+                                            _this.$set(_obj, "newData", _new["tax_currency_val"] + "-" + _new["tax"]);
+                                            break;
+                                        case "expense_spot":
+                                            if (_old) {
+                                                _this.$set(_obj, "oldData", _old["expense_currency_spot_val"] + "-" + _old["expense_spot"]);
+                                            };
+                                            _this.$set(_obj, "newData", _new["expense_currency_spot_val"] + "-" + _new["expense_spot"]);
+                                            break;
+                                        case "tax_spot":
+                                            if (_old) {
+                                                _this.$set(_obj, "oldData", _old["tax_currency_spot_val"] + "-" + _old["tax_spot"]);
+                                            };
+                                            _this.$set(_obj, "newData", _new["tax_currency_spot_val"] + "-" + _new["tax_spot"]);
+                                            break;
+                                        case 'po':
+                                        case 'po_archive':
+                                        case 'po_with_watermark':        
+                                        case "goods_val":
+                                            if (_old) {
+                                                if (_old[re.demandDatas[i]] === null) {
+                                                    _this.$set(_obj, "oldData", []);
+                                                } else {
+                                                    _this.$set(_obj, "oldData", _old[re.demandDatas[i]]);
+                                                };
+                                            };
+
+                                            if (_new[re.demandDatas[i]] === null) {
+                                                _this.$set(_obj, "newData", []);
+                                            } else {
+                                                _this.$set(_obj, "newData", _new[re.demandDatas[i]]);
+                                            };
+
+                                            break;
+                                        default:
+                                            if (_old) {
+                                                _this.$set(_obj, "oldData", _old[re.demandDatas[i]]);
+                                            };
+                                            _this.$set(_obj, "newData", _new[re.demandDatas[i]]);
+                                    };
+
+                                    _arr.push(_obj);
+                                };
+                            } else {
+                                for (var i = 0, len = re.quotationDatas.length; i < len; i++) {
+                                    var _obj = {
+                                        text: re.quotationTexts[i],
+                                        oldData: '',
+                                        newData: '',
+                                        flag: false,
+                                        key: re.quotationDatas[i]
+                                    };
+
+                                    switch (re.quotationDatas[i]) {
+                                        case "create":
+                                            if (_old) {
+                                                _this.$set(_obj, "oldData", _old["create_user"] + "-" + _old["create_time"]);
+                                            };
+                                            _this.$set(_obj, "newData", _new["create_user"] + "-" + _new["create_time"]);
+                                            break;
+                                        case "expense":
+                                            if (_old) {
+                                                _this.$set(_obj, "oldData", _old["expense_currency_val"] + "-" + _old["expense"]);
+                                            };
+                                            _this.$set(_obj, "newData", _new["expense_currency_val"] + "-" + _new["expense"]);
+                                            break;
+                                        case "invoice_type":
+                                            if (_old) {
+                                                _this.$set(_obj, "oldData", _old["invoice_type_val"] + "-" + _old["tax_rate_val"]);
+                                            };
+                                            _this.$set(_obj, "newData", _new["invoice_type_val"] + "-" + _new["tax_rate_val"]);
+                                        case 'po':
+                                        case 'po_archive':
+                                        case 'po_with_watermark':    
+                                        case "goods_val":
+                                            if (_old) {
+                                                if (_old[re.quotationDatas[i]] === null) {
+                                                    _this.$set(_obj, "oldData", []);
+                                                } else {
+                                                    _this.$set(_obj, "oldData", _old[re.quotationDatas[i]]);
+                                                };
+                                            };
+
+                                            if (_new[re.quotationDatas[i]] === null) {
+                                                _this.$set(_obj, "newData", []);
+                                            } else {
+                                                _this.$set(_obj, "newData", _new[re.quotationDatas[i]]);
+                                            };
+
+                                            break;
+                                        default:
+
+                                            if (_old) {
+                                                _this.$set(_obj, "oldData", _old[re.quotationDatas[i]]);
+                                            };
+
+                                            _this.$set(_obj, "newData", _new[re.quotationDatas[i]]);
+                                    };
+
+                                    _arr.push(_obj);
+
+                                };
+                            };
+
+                            if (_old) {
+                                _arr.forEach(function (element) {
+                                    if (_this.type(element.oldData) !== "array") {
+                                        if (element.oldData !== element.newData) {
+                                            element.flag = true;
+                                        };
+                                    } else {
+                                        var len = Math.max(element.oldData.length, element.newData.length);
+                                        for (var j = 0; j < len; j++) {
+                                            if (element.oldData[j] !== element.newData[j] && element.oldData.length) {
+                                                element.flag = true;
+                                            };
+                                        };
+                                    };
+                                });
+                            };
+
+                            _this.Datas = _arr;
+                            console.log( _this.Datas)
+
+                        };
+
+                    });
+                },
+                // 简单判断数据类型
+                type: function (o) {
+                    var s = Object.prototype.toString.call(o);
+                    return s.slice(s.indexOf(" ") + 1, s.length - 1).toLowerCase();
+                }
+            },
+            //监听数据
+            watch: {
+
+            },
+        });
+
+        //获取连接参数
+        function getQueryString(name) {
+            var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+            var r = window.location.search.substr(1).match(reg);
+            if (r != null) return unescape(r[2]);
+            return null;
+        };
+    </script>
+</body>
+
+</html>

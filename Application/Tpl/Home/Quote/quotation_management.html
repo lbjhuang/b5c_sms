@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>报价管理</title>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.13.0.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>">
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+        .el-form-item{
+            width: 100%;
+        }
+        .el-form-item__content{
+            width: 70%;
+        }
+        .el-form-item__content .el-date-editor{
+            width: 100%;
+        }
+        .el-form-item__content .el-select{
+            width: 100%;
+        }
+        .card-box{
+            padding: 20px;
+            display: flex;
+        }
+        .card-box .card-btn{
+            width: 120px;
+            height: 38px;
+            text-align: center;
+            line-height: 38px;
+            border: 1px solid #DCDFE6;
+            cursor: pointer;
+        }
+        .card-box .card-btn.active{
+            background: #409EFF;
+            color: #ffffff;
+        }
+        .card-box .card-btn.card-offer{
+            border-radius: 4px 0 0 4px;
+            border-right: none;
+        }
+        .card-box .card-btn.card-cabinets{
+            border-radius: 0 4px 4px 0;
+        }
+        .search-box{
+            padding: 20px 30px;
+        }
+        .search-box .btn-box{
+            padding-left: 50px;
+        }
+        .line{
+            height: 20px;
+            background: #f4f4f4;
+        }
+        .option-btn-box{
+            padding: 20px 50px;
+        }
+        .offer-table-box{
+            padding: 0 20px;
+        }
+        .table-box tr th{
+            background: #546E7A;
+            color: #fff;
+        }
+        .page-box{
+            text-align: right;
+        }
+        .cabinets-box{
+            padding: 0 20px;
+        }
+
+        .ops-center {
+            text-align: center;
+        }
+
+        .ops-center .ops-btn {
+            margin: 0px 20px;
+        }
+
+        .states {
+            margin-bottom: 10px;
+        }
+
+        .title-info-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .title-info {
+            margin-left: 50px;
+            font-weight: 500;
+        }
+
+        .search-item-i>span {
+            background: rgba(244, 244, 244, 1);
+            border-radius: 20px;
+            line-height: 35px;
+            text-align: center;
+            padding: 0;
+            display: inline-block;
+            font-size: 13px;
+            margin: 5px;
+            cursor: pointer;
+        }
+
+        .search-item-i>span.active {
+            background: #0375DE;
+            color: #fff;
+        }
+
+        .search-item-i>span.tab-item-min {
+            min-width: 115px;
+            min-height: 35px;
+            word-break: break-all;
+            padding: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="quotation-box" id="quotation" v-cloak>
+        <div class="card-box">
+            <div class="card-btn card-offer" :class="activeName == 1 ? 'active': ''" @click="cardChange(1)">{{$lang('报价单页')}}</div>
+            <div class="card-btn card-cabinets" :class="activeName == 2 ? 'active': ''" @click="cardChange(2)">{{$lang('拼柜单页')}}</div>
+        </div>
+        <div class="offer-box" v-show="activeName == 1">
+            <div class="search-box">
+                <el-form :inline="true" :model="serchForm" ref="serchForm" class="search-box-form" size="small" label-width="30%">
+                   <el-row :gutter="50" class="search-box-row">
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('报价发起人')" prop="created_by">
+                                <el-input v-model="serchForm.created_by" :placeholder="$lang('报价发起人')"></el-input>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('报价单号')" prop="quote_no">
+                                <el-input v-model="serchForm.quote_no" :placeholder="$lang('报价单号')"></el-input>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('报价类型')" prop="quote_type">
+                                <el-select filterable v-model="serchForm.quote_type" :placeholder="$lang('请选择报价类型')" clearable>
+                                    <el-option v-for="(item,index) in quoteType" :label="$lang(item)" :value="index" :key="index"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('报价意向')" prop="quote_intention_type">
+                                <el-select filterable v-model="serchForm.quote_intention_type" :placeholder="$lang('请选择报价意向')" clearable>
+                                    <el-option v-for="(item,index) in quoteIntentionType" :label="$lang(item)" :value="index" :key="index"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row :gutter="50" class="search-box-row">
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('调拨单号')" prop="allo_no">
+                                <el-input v-model="serchForm.allo_no" :placeholder="$lang('调拨单号')"></el-input>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('报价状态')" prop="status_cd">
+                                <el-select filterable v-model="serchForm.status_cd" :placeholder="$lang('请选择报价状态')" clearable>
+                                    <el-option v-for="(item,index) in quoteStatus" :label="$lang(item)" :value="index" :key="index"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('报价发起时间')" prop="create_date">
+                                <el-date-picker v-model="serchForm.create_date" type="daterange" :range-separator="$lang('至')" :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')" value-format="yyyy-MM-dd" ></el-date-picker>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('报价更新时间')" prop="updata_date">
+                                <el-date-picker v-model="serchForm.updata_date" type="daterange" :range-separator="$lang('至')" :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')" value-format="yyyy-MM-dd" ></el-date-picker>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row :gutter="50" class="search-box-row">
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('调出仓库')" prop="allo_out_warehouse">
+                                <el-select filterable v-model="serchForm.allo_out_warehouse" :placeholder="$lang('请选择调出仓库')" clearable>
+                                    <el-option v-for="(item,index) in warehouses" :label="$lang(item.CD_VAL)" :value="item.CD" :key="index"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('调入仓库')" prop="allo_in_warehouse">
+                                <el-select filterable v-model="serchForm.allo_in_warehouse" :placeholder="$lang('请选择调入仓库')" clearable>
+                                    <el-option v-for="(item,index) in warehouses" :label="$lang(item.CD_VAL)" :value="item.CD" :key="index"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('销售小团队')" prop="small_team_cd">
+                                <el-select filterable multiple v-model="serchForm.small_team_cd" :placeholder="$lang('请选择销售小团队')" clearable>
+                                    <el-option v-for="(item,index) in quote_small_teams" :label="$lang(item.cdVal)" :value="item.cd" :key="index"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('计划运输渠道')" prop="planned_transportation_channel_cd">
+                                <el-select filterable multiple v-model="serchForm.planned_transportation_channel_cd" :placeholder="$lang('请选择计划运输渠道')" clearable>
+                                    <el-option v-for="(item,index) in planned_transportation_channel_cds" :key="index" :label="$lang(item.cdVal)" :value="item.cd"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row :gutter="50" class="search-box-row">
+                        <el-col :span="6">
+                            <div class="btn-box">
+                                <el-button type="primary" size="small" @click="doSearch">{{$lang('查询')}}</el-button>
+                                <el-button type="default" size="small" @click="doRest">{{$lang('重置')}}</el-button>
+                            </div>
+                            
+                        </el-col>
+                    </el-row>
+                  </el-form>
+            </div>
+            <div class="line"></div>
+            <div class="option-btn-box">
+                <el-button size="medium" @click="offerDialog = true">{{$lang('发起报价')}}</el-button>
+                <el-button size="medium" @click="createCabinets">{{$lang('发起拼柜')}}</el-button>
+                <el-button size="medium" @click="cancelQuote">{{$lang('取消报价')}}</el-button>
+                <el-button size="medium" @click="exportQuote" :disabled="exportDisabled">{{$lang('导出报价')}}</el-button>
+            </div>
+            <div class="offer-table-box  table-box">
+                <el-table :data="offerTableData" border v-loading="tableLoading" @selection-change="handleSelectionChange" ref="refTable">
+                    <!-- <el-table-column type="index" width="50" :label="$lang('序号')" align="center"></el-table-column> -->
+                    <el-table-column type="selection" width="50"></el-table-column>
+                    <el-table-column :label="$lang('报价单号')" align="center" prop="quote_no">
+                        <template slot-scope="scope">
+                            <span style="cursor: pointer;color: #409EFF;" @click="seeDetail(scope.row)">{{scope.row.quote_no}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('关联调拨单号')" align="center" prop="quote_allos"></el-table-column>
+                    <el-table-column :label="$lang('报价类型')" align="center" prop="quote_type_val">
+                        <template slot-scope="scope">
+                            {{$lang(scope.row.quote_type_val)}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('报价发起时间')" align="center" prop="created_at" width="160"></el-table-column>
+                    <el-table-column :label="$lang('报价更新时间')" align="center" prop="updated_at" width="160"></el-table-column>
+                    <el-table-column :label="$lang('调出仓库')" align="center" prop="allo_out_warehouse_val">
+                        <template slot-scope="scope">
+                            {{$lang(scope.row.allo_out_warehouse_val)}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('调入仓库')" align="center" prop="allo_in_warehouse_val">
+                        <template slot-scope="scope">
+                            {{$lang(scope.row.allo_in_warehouse_val)}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('报价状态')" align="center" prop="status_cd_val">
+                        <template slot-scope="scope">
+                            {{$lang(scope.row.status_cd_val)}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('货物体积(立方米)')" align="center" prop="all_total_volume"></el-table-column>
+                    <el-table-column :label="$lang('总箱数(箱)')" align="center" prop="all_total_box_num"></el-table-column>
+                    <el-table-column :label="$lang('货物重量(千克)')" align="center" prop="all_total_weight"></el-table-column>
+                    <el-table-column :label="$lang('销售小团队')" align="center" prop="small_team_cd_val"></el-table-column>
+                    <el-table-column :label="$lang('计划运输渠道')" align="center" prop="planned_transportation_channel_cd_val"></el-table-column>
+                    <el-table-column :label="$lang('操作')" align="center">
+                        <template slot-scope="scope">
+                            <el-button v-if="scope.row.status_cd != 'N003580004'" size="small" type="default" @click="offterSee(scope.row)">{{$lang('编辑')}}</el-button>
+                        </template>
+                    </el-table-column>
+                </el-table>
+                <div class="page-box">
+                    <el-pagination @size-change="offerSizeChange" @current-change="offerCurrentChange" :current-page="serchForm.p" :page-sizes="[10, 20, 50, 100]" :page-size="serchForm.size" layout="total, sizes, prev, pager, next, jumper" :total="offerTotal">
+                    </el-pagination>
+                </div>
+            </div>
+        </div>
+        <div class="cabinets-box table-box" v-show="activeName == 2">
+            <div class="search-header">
+                <el-row type="flex" class="states">
+                    <el-col :span="2" class="title-info-container">
+                        <div class="title-info">{{$lang('拼柜状态')}}</div>
+                    </el-col>
+                    <el-col :span="22" class="search-item-i">
+                        <span class="tab-item-min" :class="{active: activeIds.includes(code)}"
+                            v-for="(state, code) in states" :key="code"
+                            @click="handleState(code)">{{$lang(state)}}</span>
+                        <!-- <span class="tab-item-min active" v-for="">{{$lang('待处理')}}</span> -->
+                        <!-- <span class="tab-item-min">{{$lang('处理中')}}</span> -->
+                    </el-col>
+                </el-row>
+                <el-form label-width="120px">
+                    <el-row>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('报价发起人')">
+                                <el-autocomplete style="width: 300px;" v-model="quoteManageForm.created_by"
+                                    :fetch-suggestions="querySearchUser" @select="handleUserSelected">
+                                </el-autocomplete>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('报价单号')" filterable multiple>
+                                <el-input v-model="quoteManageForm.quote_no"></el-input>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('拼柜单号')">
+                                <el-input v-model="quoteManageForm.lcl_no"></el-input>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('销售小团队')">
+                                <el-select filterable multiple style="width: 300px;" v-model="quoteManageForm.small_team_cd">
+                                    <el-option v-for="team in quote_small_teams" :key="team.cd" :label="$lang(team.cdVal)" :value="team.cd"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('调出仓库')">
+                                <el-select filterable multiple style="width: 300px;" v-model="quoteManageForm.allo_out_warehouse" filterable multiple>
+                                    <el-option v-for="warehouse in warehouses" :key="warehouse.CD" :label="$lang(warehouse.CD_VAL)" :value="warehouse.CD"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('拼柜发起时间')">
+                                <el-date-picker
+                                    v-model="quoteManageForm.created_date"
+                                    type="daterange"
+                                    value-format="yyyy-MM-dd"
+                                    :range-separator="$lang('至')"
+                                    :start-placeholder="$lang('开始日期')"
+                                    :end-placeholder="$lang('结束日期')">
+                                </el-date-picker>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('拼柜更新时间')">
+                                <el-date-picker
+                                    v-model="quoteManageForm.updated_date"
+                                    type="daterange"
+                                    value-format="yyyy-MM-dd"
+                                    :range-separator="$lang('至')"
+                                    :start-placeholder="$lang('开始日期')"
+                                    :end-placeholder="$lang('结束日期')">
+                                </el-date-picker>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="6">
+                            <div class="ops-center">
+                                <span class="ops-btn">
+                                    <el-button @click="handleSearch">{{$lang('查询')}}</el-button>
+                                </span>
+                                <span class="ops-btn">
+                                    <el-button @click="reset">{{$lang('重置')}}</el-button>
+                                </span>
+                            </div>
+                        </el-col>
+                    </el-row>
+                </el-form>
+            </div>
+            <el-table :data="cabinetsTableData" border class="table-box" v-loading="tableQuoteLoading">
+                <el-table-column type="selection" width="50"></el-table-column>
+                <el-table-column :label="$lang('拼柜单号')" align="center" prop="lcl_no">
+                    <template slot-scope="scope">
+                        <span style="cursor: pointer;color: #409EFF;" @click="seeCabinetsDetail(scope.row)">{{scope.row.lcl_no}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('拼柜关联报价单号')" align="center" prop="quote_nos"></el-table-column>
+                <el-table-column :label="$lang('销售小团队')" prop="small_team_cds_val"></el-table-column>
+                <el-table-column :label="$lang('报价发起人')" prop="created_byes"></el-table-column>
+                <el-table-column :label="$lang('调出仓库')" prop="allo_out_warehouse_val"></el-table-column>
+                <el-table-column :label="$lang('拼柜发起时间')" prop="created_at"></el-table-column>
+                <el-table-column :label="$lang('拼柜更新时间')" prop="updated_at"></el-table-column>
+                <el-table-column :label="$lang('拼柜状态')" align="center" prop="status_cd_val">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.status_cd_val)}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('操作')" align="center" width="200px">
+                    <template slot-scope="scope">
+                        <el-button v-if="scope.row.status_cd != 'N003580004'" size="small" type="default" @click="cabinetsSee(scope.row)">{{$lang('编辑')}}</el-button>
+                        <el-button size="small" :loading="scope.row.loading" @click="handleCancel(scope.row)">{{$lang('取消拼柜')}}</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <div class="page-box">
+                <el-pagination @size-change="cabinetsSizeChange" @current-change="cabinetsCurrentChange" :current-page="quoteManageForm.p" :page-sizes="[10, 20, 50, 100]" :page-size="quoteManageForm.size" layout="total, sizes, prev, pager, next, jumper" :total="cabinetsTotal">
+                </el-pagination>
+            </div>
+        </div>
+        <el-dialog :title="$lang('发起报价')" :visible.sync="offerDialog" width="600px" center @close="offerDialogClose">
+            <el-form :inline="true" :model="createOfferForm" :rules="rulesOffer" ref="ruleOfferForm" class="create-offer-form" size="small" label-width="140px">
+                <el-form-item :label="$lang('报价类型')" prop="quote_type">
+                    <el-select filterable v-model="createOfferForm.quote_type" :placeholder="$lang('请选择报价类型')" clearable>
+                        <el-option v-for="(item,index) in quoteType" :label="$lang(item)" :value="index" :key="index"></el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item :label="$lang('关联调拨单号')" prop="allocate_nos" v-if="createOfferForm.quote_type == 1">
+                    <el-input v-model="createOfferForm.allocate_nos" :placeholder="$lang('支持关联多个调拨单号,以逗号隔开')"></el-input>
+                </el-form-item>
+                <el-form-item :label="$lang('报价要求完成时间')" prop="require_complete_date">
+                    <el-date-picker v-model="createOfferForm.require_complete_date" type="date" :placeholder="$lang('请选择时间')" :picker-options="pickerOptions" value-format="yyyy-MM-dd"></el-date-picker>
+                </el-form-item>
+                <el-form-item :label="$lang('报价意向')" prop="quote_intention_type" clearable>
+                    <el-select filterable v-model="createOfferForm.quote_intention_type" :placeholder="$lang('请选择报价意向')">
+                        <el-option v-for="(item,index) in quoteIntentionType" :label="$lang(item)" :value="index" :key="index"></el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item :label="$lang('销售小团队')" prop="small_team_cd" clearable>
+                    <el-select filterable v-model="createOfferForm.small_team_cd" :placeholder="$lang('请选择销售小团队')">
+                        <el-option v-for="(item,index) in quote_small_teams" :label="$lang(item.cdVal)" :value="item.cd" :key="index"></el-option>
+                    </el-select>
+                </el-form-item>
+            </el-form>
+            <span slot="footer" class="dialog-footer">
+                <el-button type="primary" @click="offerQuery">{{$lang('确定')}}</el-button>
+            </span>
+        </el-dialog>
+        <el-dialog :title="$lang('请选择需拼柜报价单号')" :visible.sync="cabinetsDialog" width="600px" center @close="cabinetsDialogClose">
+            <el-form :inline="true" :model="createCabinetsForm" :rules="rulesCabinets" ref="ruleCabinetsForm" class="create-Cabinets-form" size="small" label-width="140px">
+                <el-form-item :label="$lang('关联报价单号')" prop="lcl_quote_nos">
+                    <el-select filterable v-model="createCabinetsForm.lcl_quote_nos" multiple collapse-tags :placeholder="$lang('请选择关联报价单号')">
+                        <el-option v-for="(item,index) in quotations" :key="index" :label="item.quote_no" :value="item.quote_no"></el-option>
+                    </el-select>
+                </el-form-item>
+            </el-form>
+            <span slot="footer" class="dialog-footer">
+                <el-button type="primary" @click="cabinetsQuery">{{$lang('确定')}}</el-button>
+            </span>
+        </el-dialog>
+    </div>
+</body>
+</html>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/axios.min.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="\Application\Tpl\Home\Public\js\H-ui.admin.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.13.0.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script>
+    if (getCookie('think_language') !== "zh-cn") {
+        ELEMENT.locale(ELEMENT.lang.en)
+    }
+    var VM = new Vue({
+        el: '#quotation',
+        data() {
+            return {
+                serchForm: {
+                    size: 10,
+                    p: 1,
+                    created_by: '',
+                    quote_no: '',
+                    quote_type: '',
+                    quote_intention_type: '',
+                    allo_no: '',
+                    status_cd: '',
+                    allo_in_warehouse: '',
+                    allo_out_warehouse: '',
+                    create_date: '',
+                    updata_date: '',
+                    planned_transportation_channel_cd: '', //计划运输渠道
+                    small_team_cd: '', // 销售团队
+                },
+                multipleSelection: [],
+                tableLoading: false,
+                offerTotal: 0,
+                offerTableData: [],
+                activeName: 1,
+                page: 1,
+                pageSize: 10,
+                cabinetsTotal: 0,
+                cabinetsTableData: [],
+                tableQuoteLoading: false,
+                offerDialog: false,
+                createOfferForm: {
+                    quote_type: '',
+                    quote_intention_type: '',
+                    require_complete_date: '',
+                    allocate_nos: '',
+                    small_team_cd: '', // 销售小团队
+                },
+                users: [],
+                quoteManageForm: {
+                    p: 1,
+                    size: 10,
+                    created_by: undefined,
+                    lcl_no: undefined,
+                    quote_no: undefined,
+                    status_cds: [],
+                    small_team_cd: undefined,
+                    created_date: [],
+                    updated_date: [],
+                    updated_at_from: undefined,
+                    updated_at_to: undefined,
+                    allo_out_warehouse: []
+                },
+                activeIds: [], // 拼柜状态
+                states: [], // 拼柜状态
+                pickerOptions: {
+                    disabledDate(time) {
+                        return time.getTime() < Date.now() - 86400000;
+                    },
+                },
+                rulesOffer: {
+                    quote_type: [
+                        { required: true, message: this.$lang('请选择报价类型'), trigger: 'change' }
+                    ],
+                    allocate_nos: [
+                        { required: true, validator: this.validateAllocate, trigger: 'blur' }
+                    ],
+                    require_complete_date: [
+                        { required: true, message: this.$lang('请选择时间'), trigger: 'change' }
+                    ],
+                    quote_intention_type: [
+                        { required: true, message: this.$lang('请选择报价意向'), trigger: 'change' }
+                    ],
+                    small_team_cd: [
+                        { required: true, message: this.$lang('请选择销售小团队'), trigger: 'change' }
+                    ],
+                },
+                cabinetsDialog: false,
+                createCabinetsForm: {
+                    lcl_quote_nos: []
+                },
+                rulesCabinets: {
+                    lcl_quote_nos: [
+                        { required: true, message: this.$lang('请选择关联报价单号'), trigger: 'blur' }
+                    ],
+                },
+                quotations: [],
+                warehouses: [],
+                quoteStatus: [],
+                quoteType: [],
+                quoteIntentionType: [],
+                planned_transportation_channel_cds: [],
+                quote_small_teams: [],
+                exportDisabled: false,
+            }
+        },
+        created() {
+            this.getOptions();
+            this.getList();
+        },
+        methods: {
+            // 调拨单号校验
+            validateAllocate(rule, value, callback) {
+                if (value === '') {
+                    callback(new Error(this.$lang('请输入关联调拨单号')));
+                } else {
+                    let param = {
+                        "quote_type": "1",
+                        "allocate_nos": this.createOfferForm.allocate_nos
+                    }
+                    axios.post('/index.php?&m=quote&a=allocate_nos_valid',param).then(res => {
+                        console.log(res)
+                        if(res.status == 200 && res.data.code == 2000) {
+                            callback();
+                        } else {
+                            callback(new Error(this.$lang(res.data.msg)));
+                        }
+                    }).catch(err => {
+                        console.log(err)
+                    })
+                }
+            },
+            handleUserSelected(user) {
+                this.quoteManageForm.created_by = user.value;
+            },
+            querySearchUser(username, cb) {
+                if (username) {
+                    axios.get('/index.php?m=admin&a=admin_options', {params: { name: username }}).then(res => {
+                        this.users = res.data.data;
+                        const results = res.data.data.map(user => {
+                            return {
+                                id: user.id,
+                                value: user.name
+                            }
+                        })
+                        cb(results);
+                    })
+                } else {
+                    cb([]);
+                }
+            },
+            handleState(code) {
+                if (this.activeIds.includes(code)) {
+                    const index = this.activeIds.findIndex(CD => CD === code);
+                    this.activeIds.splice(index, 1);
+                } else {
+                    this.activeIds.push(code);
+                }
+                this.quoteManageForm.status_cds = this.activeIds;
+            },
+            handleCancel(item) {
+                item.loading = true;
+                axios.post('/index.php?m=quote&a=cancel_quote_lcl', {quote_lcl_id: item.id}).then(res => {
+                    item.loading = false;
+                    if (res.data.code !== 2000) return this.$message.error(res.data.msg);
+                    this.$message.success(this.$lang('操作成功'));
+                    this.getQuoteList();
+                })
+            },
+            handleSelectionChange(val) {
+                this.multipleSelection = val;
+            },
+            // 取消报价
+            cancelQuote() {
+                if(this.multipleSelection.length == 0) {
+                    this.$message.warning(this.$lang('请先选择报价单'));
+                    return false;
+                }
+                if(this.multipleSelection.length > 1) {
+                    this.$message.warning(this.$lang('一次只能操作一条报价单'));
+                    return false;
+                }
+                let param = {
+                    quotation_id: this.multipleSelection[0].id,
+                    is_confirm: 0, // 首次提交
+                }
+                this.tableLoading = true;
+                axios.post('/index.php?m=quote&a=cancel_quotation',param).then(res => {
+                    console.log(res)
+                    if(res.status == 200 && res.data.code == 2000) {
+                        this.$confirm(this.$lang('是否确认取消此报价单？'), this.$lang('提示'), {
+                        confirmButtonText: this.$lang('确定'),
+                        center: true,
+                        showCancelButton: false,
+                        type: 'warning'
+                        }).then(() => {
+                            let objs = {
+                                quotation_id: this.multipleSelection[0].id,
+                                is_confirm: 1, // 二次提交
+                            }
+                            axios.post('/index.php?m=quote&a=cancel_quotation',objs).then(res => {
+                                console.log(res)
+                                if(res.status == 200 && res.data.code == 2000) {
+                                    this.getList();
+                                    this.$message({
+                                        type: 'success',
+                                        message: this.$lang('成功')
+                                    });
+                                } else {
+                                    this.tableLoading = false;
+                                    this.$message.error(this.$lang(res.data.msg))
+                                }
+                            }).catch(err => {
+                                console.log(err)
+                            })
+                        }).catch(
+                            () => {
+                                
+                                this.getList();
+                            }
+                        );
+                    } else {
+                        this.tableLoading = false;
+                        this.$message.error(this.$lang(res.data.msg))
+                    }
+                }).catch(err => {
+                    console.log(err)
+                })
+                
+            },
+            // 导出报价
+            exportQuote() {
+                if(this.multipleSelection.length == 0) {
+                    this.$message.warning('请先选择报价单');
+                    return false;
+                }
+                this.exportDisabled = true
+                let ids = this.multipleSelection.map(res => {
+                    return res.id;
+                })
+                let param = {
+                    "quotation_ids": ids
+                }
+                axios.post('/index.php?m=quote&a=export_quotation',param).then((res) => {
+                    console.log(res)
+                    if(res.data.code == 3000) { //判断是否可以支持导出
+                        
+                        this.exportDisabled = false;
+                        this.$refs.refTable.clearSelection();
+                        this.$message.error(this.$lang(res.data.msg))
+                        
+                    } else {
+                        axios({
+                            method: "post",
+                            url: "/index.php?m=quote&a=export_quotation",
+                            responseType: "blob",
+                            data: param,
+                        }).then((res) => { // 导出
+                            this.exportDisabled = false;
+                            this.$refs.refTable.clearSelection();
+                            let url = window.URL.createObjectURL(new Blob([res.data]));
+                            console.log(url)
+                            let link = document.createElement("a");
+                            link.style.display = "none";
+                            link.href = url;
+                            link.setAttribute("download", "报价单" + Date.parse(new Date()) + ".xlsx");
+                    
+                            document.body.appendChild(link);
+                            link.click();
+                            
+                        }).catch((err) => {
+                            console.log(err)
+                        });
+                    }
+                }).catch((err) => {
+                    this.exportDisabled = false;
+                    this.$refs.refTable.clearSelection();
+                    console.log(err)
+                });
+            },
+            cardChange(active){
+                if(this.activeName == active) {
+                    return false;
+                }
+                this.activeName = active;
+                if(this.activeName == 2) {
+                    this.getQuoteList()
+                }
+            },
+            offerSizeChange(size) {
+                this.serchForm.size = size;
+                this.getList();
+            },
+            offerCurrentChange(page) {
+                this.serchForm.p = page;
+                this.getList();
+            },
+            cabinetsSizeChange(size) {
+                this.quoteManageForm.size = size;
+                this.getQuoteList();
+            },
+            cabinetsCurrentChange(page) {
+                this.quoteManageForm.p = page;
+                this.getQuoteList();
+            },
+            offterSee(row) {
+                newTab("/index.php?m=quote&a=quotation_management_detail&id=" + row.id, this.$lang('编辑报价'));
+            },
+            seeDetail(row) {
+                newTab("/index.php?m=quote&a=see_management_detail&id=" + row.id, this.$lang('报价详情'));
+            },
+            offerDialogClose() {
+                this.$refs['ruleOfferForm'].resetFields();
+            },
+            offerQuery() {
+                this.$refs['ruleOfferForm'].validate((valid) => {
+                    if (valid) {
+                        axios.post('/index.php?&m=quote&a=save_quotation_step1',this.createOfferForm).then(res => {
+                            console.log(res)
+                            if(res.status == 200 && res.data.code == 2000) {
+                            this.offerDialog = false;
+                                newTab("/index.php?m=quote&a=quotation_management_detail&id=" + res.data.data.id, this.$lang('报价详情'));
+                            } else {
+                                this.$message.error(this.$lang(res.data.msg))
+                            }
+                        }).catch(err => {
+                            console.log(err)
+                        })
+                    } else {
+                        return false;
+                    }
+                    });
+            },
+            cabinetsSee(row) {
+                newTab("/index.php?m=quote&a=combine_cabinets_detail&id=" + row.id, this.$lang('编辑拼柜'));
+            },
+            seeCabinetsDetail(row) {
+                newTab("/index.php?m=quote&a=see_cabinets_detail&id=" + row.id, this.$lang('拼柜详情'));
+            },
+            cabinetsDialogClose() {
+                this.$refs['ruleCabinetsForm'].resetFields();
+            },
+            cabinetsQuery() {
+                this.$refs['ruleCabinetsForm'].validate((valid) => {
+                    if(valid) {
+                        if(this.createCabinetsForm.lcl_quote_nos.length > 1) {
+                            axios.post('/index.php?&m=quote&a=save_quote_lcl_step1',this.createCabinetsForm).then(res => {
+                                console.log(res)
+                                if(res.status == 200 && res.data.code == 2000) {
+                                this.cabinetsDialog = false;
+                                    newTab("/index.php?m=quote&a=combine_cabinets_detail&id=" + res.data.data.id, this.$lang('拼柜详情'));
+                                } else {
+                                    this.$message.error(this.$lang(res.data.msg))
+                                }
+                            }).catch(err => {
+                                console.log(err)
+                            })
+                        } else {
+                            this.$message.warning(this.$lang('管理报价单号数量需大于1'))
+                        }
+                        
+                    } else {
+                        return false;
+                    }
+                })
+            },
+            createCabinets() {
+                this.cabinetsDialog = true;
+                axios.post('/index.php?&m=quote&a=get_quotation_lcl_options').then(res => {
+                    console.log(res.data.data)
+                    if(res.status == 200 && res.data.code === 2000) {
+                        this.quotations = res.data.data;
+                    } else {
+                        this.$message.error(this.$lang(res.data.msg))
+                    }
+                }).catch(err => {
+                    console.log(err)
+                })
+            },
+            doSearch() {
+                this.serchForm.p = 1;
+                this.getList();
+            },
+            doRest() {
+                this.$refs["serchForm"].resetFields();
+                this.serchForm.p = 1;
+                this.serchForm.size = 10;
+                this.getList();
+            },
+            getOptions() {
+                const param = {
+                    "data": {
+                        "query": {
+                            "warehouses":true, // 仓库目录
+                            "quoteStatus": true, // 报价单状态
+                            "quoteType": true, // 报价类型 
+                            "quoteIntentionType": true, // 报价意向类 
+                            "planned_transportation_channel_cds": true, // 运输渠道
+                            "quote_small_teams": true, // 销售小团队
+                            "quoteLclStatus": true
+                        }
+                    }
+                }
+                axios.post('/index.php?g=oms&m=CommonData&a=commonData',param).then(res => {
+                    console.log(res);
+                    if(res.status == 200 && res.data.code == 2000) {
+                        this.warehouses = res.data.data.warehouses;
+                        this.quoteStatus = res.data.data.quoteStatus;
+                        this.quoteType = res.data.data.quoteType;
+                        this.quoteIntentionType = res.data.data.quoteIntentionType;
+                        this.planned_transportation_channel_cds = res.data.data.planned_transportation_channel_cds;
+                        this.quote_small_teams = res.data.data.quote_small_teams;
+                        this.states = res.data.data.quoteLclStatus  || [];
+                    }
+                }).catch(err => {
+                    console.log(err);
+                })
+            },
+            handleSearch() {
+                this.quoteManageForm.p = 1;
+                this.getQuoteList();
+            },
+            reset() {
+                this.quoteManageForm = {
+                    p: 1,
+                    size: 10,
+                    created_by: undefined,
+                    lcl_no: undefined,
+                    quote_no: undefined,
+                    status_cds: [],
+                    small_team_cd: undefined,
+                    created_date: [],
+                    updated_date: [],
+                    allo_out_warehouse: []
+                }
+                this.activeIds = [];
+                this.getQuoteList();
+            },
+            getQuoteList() {
+                const {p, size, created_by, lcl_no, quote_no, status_cds, small_team_cd, allo_out_warehouse} = this.quoteManageForm;
+                const [created_at_from, created_at_to] = this.quoteManageForm.created_date || [];
+                const [updated_at_from, updated_at_to] = this.quoteManageForm.updated_date || [];
+                const params = {
+                    p,
+                    size,
+                    created_by,
+                    lcl_no,
+                    quote_no,
+                    status_cds,
+                    small_team_cd,
+                    allo_out_warehouse,
+                    created_at_from,
+                    created_at_to,
+                    updated_at_from,
+                    updated_at_to
+                }
+                this.tableQuoteLoading = true;
+                axios.get('/index.php?m=quote&a=quote_lcl_list',{params}).then(res => {
+                    this.tableQuoteLoading = false;
+                    if(res.status == 200 && res.data.code == 2000) {
+                        this.cabinetsTableData = res.data.data.data.map(item => {
+                            item.loading = false;
+                            return item;
+                        });
+                        this.cabinetsTotal = Number(res.data.data.page.total);
+                    } else {
+                        this.$message.error(this.$lang(res.data.msg))
+                    }
+                })
+            },
+            getList() {
+                console.log(this.serchForm)
+                let param = {
+                    size: this.serchForm.size,
+                    p: this.serchForm.p,
+                    created_by: this.serchForm.created_by,
+                    quote_no: this.serchForm.quote_no,
+                    quote_type: this.serchForm.quote_type,
+                    quote_intention_type: this.serchForm.quote_intention_type,
+                    allo_no: this.serchForm.allo_no,
+                    status_cd: this.serchForm.status_cd,
+                    allo_in_warehouse: this.serchForm.allo_in_warehouse,
+                    allo_out_warehouse: this.serchForm.allo_out_warehouse,
+                    created_at_from: this.serchForm.create_date[0],
+                    created_at_to: this.serchForm.create_date[1],
+                    updated_at_from: this.serchForm.updata_date[0],
+                    updated_at_to: this.serchForm.updata_date[1],
+                    planned_transportation_channel_cd: this.serchForm.planned_transportation_channel_cd,
+                    small_team_cd: this.serchForm.small_team_cd
+                }
+                console.log(param)
+                this.tableLoading = true;
+                axios.get('/index.php?&m=quote&a=index',{params: param}).then(res => {
+                    console.log(res)
+                    this.tableLoading = false;
+                    if(res.status == 200 && res.data.code == 2000) {
+                        this.offerTableData = res.data.data.data;
+                        this.offerTotal = Number(res.data.data.page.total);
+                    } else {
+                        this.$message.error(this.$lang(res.data.msg))
+                    }
+                })
+            }
+        },
+    })
+</script>

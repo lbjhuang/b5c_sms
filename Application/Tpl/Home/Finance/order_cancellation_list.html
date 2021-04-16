@@ -1,0 +1,599 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>平台账单列表</title>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>" />
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>" />
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>" />
+</head>
+
+<style>
+    [v-cloak] {
+        display: none;
+    }
+    
+    .wrap {
+        box-sizing: border-box;
+        padding: 20px;
+        margin: 0;
+    }
+    
+    .el-pagination {
+        margin-bottom: 180px;
+    }
+    
+    .export-wrap {
+        white-space: nowrap;
+    }
+    
+    .export-wrap .occupy {
+        display: inline-block;
+        width: 49.5%;
+    }
+    
+    .table-list {
+        border-collapse: collapse;
+        border-spacing: 0;
+        width: 100%;
+        background: #ffffff;
+        border: 1px solid #cadee7;
+    }
+    
+    .table-list tr th {
+        padding: 0 15px;
+        background: #546e7a;
+        height: 40px;
+        text-align: center;
+        font-size: 0.7rem;
+        color: #ffffff;
+        letter-spacing: 0;
+        border: 1px solid #668491;
+        white-space: nowrap;
+    }
+    
+    .table-list tr td {
+        font-size: 0.68rem;
+        color: #263238;
+        letter-spacing: 0;
+        text-align: center;
+        padding: 0.5rem;
+        border: 1px solid #cadee7;
+        font-family: "Microsoft YaHei";
+    }
+    
+    .table-list tr td p {
+        font-size: 0.68rem;
+        text-align: center;
+        padding: 0;
+        margin: 0;
+        font-family: "Microsoft YaHei";
+    }
+    
+    .table-list tr:nth-of-type(even) {
+        background: #f7f9fb;
+        border: 1px solid #cadee7;
+    }
+    
+    .el-col {
+        padding: 0 10px;
+    }
+    
+    .el-select {
+        width: 100%;
+    }
+    
+    .el-date-editor .el-range-input {
+        width: 36%;
+    }
+    .btn-group>.label-name {
+        font-family: MicrosoftYaHei;
+        font-size: 13px;
+        color: #546E7A;
+        letter-spacing: 0;
+    }
+
+    .btn-group>button {
+        border: none;
+        padding: 10px 18px;
+        font-family: MicrosoftYaHei;
+        font-size: 13px;
+        color: #263238;
+        letter-spacing: 0;
+        background: white;
+        margin: 0 11px;
+        cursor: pointer;
+        outline: none;
+    }
+
+    .btn-group>button.active {
+        background: #1E7EB4;
+        border-radius: 100px;
+        color: #FFFFFF;
+        letter-spacing: 0;
+        line-height: 14px;
+    }
+
+    .btn-group>button:hover {
+        background: #228ECA;
+        border-radius: 100px;
+        color: #FFFFFF;
+        letter-spacing: 0;
+        line-height: 14px;
+    }
+    .use-row{
+        margin: 10px 0 20px;
+        align-items: center;
+    }
+    .our_company_select .el-select__tags span{
+        display: flex;
+        flex-wrap: wrap;
+    }
+    .our_company_select .el-select__tags span>span:first-child{
+        position: relative;
+        padding-right: 10px;
+    }
+    .our_company_select .el-select__tags span>span:first-child span{
+        display: block;
+        max-width: 200px;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+    .our_company_select .el-select__tags span>span:first-child i{
+        position: absolute;
+        right: 0;
+        top: 6px;
+    }
+</style>
+
+<body>
+    <div id="turn" v-cloak class="wrap">
+        <el-form ref="form" :model="form" :label-position="labelPosition" label-width="130px">
+            <el-row>               
+                <el-col :span="8">
+                    <el-form-item :label="$lang('平台')">
+                        <el-select :filterable="true" v-model="form.site_code" clearable multiple @change="siteChange">
+                            <el-option :key="item.cd" :label="item.cdVal" :value="item.cd" v-for="item in baseData.site_cd"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="8">
+                    <el-form-item :label="$lang('站点')">
+                        <el-select :filterable="true" v-model="form.platform_code" @change="platformChange" clearable multiple>
+                            <el-option :key="item.cd" :label="$lang(item.cdVal)" :value="item.cd" v-for="item in sale_channel"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="8">
+                    <el-form-item :label="$lang('店铺')">
+                        <el-select :filterable="true" v-model="form.store_id" clearable multiple>
+                            <el-option :key="item.ID" :label="$lang(item.STORE_NAME)" :value="item.ID" v-for="item in stores"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="8">
+                    <el-form-item :label="$lang('我方公司')">
+                        <el-select :filterable="true" class="our_company_select" v-model="form.company_code" collapse-tags clearable multiple>
+                            <el-option :key="item.cd" :label="item.cdVal" :value="item.cd" v-for="item in baseData.company"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="8">
+                    <el-form-item :label="$lang('销售团队')">
+                        <el-select :filterable="true" v-model="form.sale_team_cd" clearable multiple>
+                            <el-option :key="val" :label="item" :value="val" v-for="(item,val) in baseData.saleTeams"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="8">
+                    <el-form-item :label="$lang('订单状态')">
+                        <el-select :filterable="true" v-model="form.bill_status" clearable multiple>
+                            <el-option :key="item.cd" :label="$lang(item.cdVal)" :value="item.cd" v-for="item in baseData.bwcOrderStatus"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row>               
+                <el-col :span="8">
+                    <el-form-item :label="$lang('ERP收入更新日期')">
+                        <el-date-picker v-model="form.zd_date" style="width: 100%;" type="daterange" align="right" unlink-panels value-format="yyyy-MM-dd" :range-separator="$lang('至')">
+                        </el-date-picker>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="8">
+                    <el-form-item :label="$lang('核销金额更新日期')">
+                        <el-date-picker v-model="form.bill_time" style="width: 100%;" type="daterange" align="right" unlink-panels value-format="yyyy-MM-dd" :range-separator="$lang('至')">
+                        </el-date-picker>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="8">
+                    <el-form-item :label="$lang('平台订单号')">
+                        <el-input v-model.lazy="form.thr_order_no" clearable></el-input>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row>                
+                <el-col :span="8">
+                    <el-form-item :label="$lang('待核销收入')">
+                        <el-select v-model="form.wait_cancellation_amount" :placeholder='$lang("全部")' multiple>
+                            <el-option v-for="item in wait_cancellation" :key="item.CD" :label="item.CD_VAL" :value="item.CD"> </el-option>
+                        </el-select>
+                    </el-form-item>
+                    
+                </el-col>
+            </el-row>
+            <el-row>
+              <el-col :span="16">
+                    <el-button type="primary" @click="search()">{{$lang("查询")}}</el-button>
+                    <el-button @click="reset()">{{$lang("重置")}}</el-button>
+                </el-col>
+            </el-row>
+        </el-form>
+        <div class="baseline"></div>
+        <div class="use-row export-wrap">
+            <div v-if="isdataSum"  v-loading="sumLoding" class="col-50 result-num occupy"
+                style="color: #409EFF;cursor: pointer;text-decoration: underline;"
+                @click="seeDataSum">{{$lang('查看汇总数据')}}</div>
+            <div v-else class="col-50 result-num occupy">
+                {{ $lang("搜索结果") }}：&nbsp;{{ $lang("共") }}
+                <b>{{ totalCount }}</b> {{ $lang("条") }}
+                {{$lang('总应核销金额')}}：&nbsp;{{'USD'}} <b> {{in_come_amounts}}</b>&nbsp;&nbsp;
+                {{$lang('剩余应核销金额')}}：&nbsp;{{'USD'}} <b> {{wait_cancellation_amounts}}</b>&nbsp;&nbsp;
+                {{$lang('已核销金额')}}：&nbsp;{{'USD'}} <b> {{bill_amount_counts}}</b>&nbsp;&nbsp;
+            </div>
+            <div class="col-50 text-right occupy">
+                <?php if(ButtonAction::hidden()){ ?>
+                <el-button type="primary" @click="importDetail()"> {{ $lang("导入账单") }} </el-button>
+                <el-button type="primary" @click="exportTurnOver()"> {{ $lang("导出") }} </el-button>
+                <?php }?>
+            </div>
+        </div>
+        <div class="use-row">
+            <div class="col-100">
+                <table class="table-list" id="dataList"  v-loading="tableLoading">
+                    <thead>
+                        <tr>
+                            <th>{{ $lang("平台订单号") }}</th>
+                            <th>{{ $lang("平台") }}</th>
+                            <th>{{ $lang("站点") }}</th>
+                            <th>{{ $lang("店铺") }}</th>
+                            <th>{{ $lang("我方注册公司") }}</th>
+                            <th>{{ $lang("销售团队") }}</th>
+                            <th>{{ $lang("交易币种") }}</th>
+                            <th>{{ $lang("ERP收入(交易币种)") }}</th>
+                            <th>{{ $lang("ERP收入更新时间") }}</th>
+                            <th>{{ $lang("已核销收入(交易币种)") }}</th>
+                            <th>{{ $lang("核销金额更新时间") }}</th>
+                            <th>{{ $lang("待核销收入(交易币种)") }}</th>
+                            <th>{{ $lang("操作") }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="item in dataList">
+                            <td>
+                            <p>{{item.order_id}}</p>
+                            <a style="color:blue;cursor:pointer;" @click="toDetail(item.order_no,item.order_id,item.plat_cd)">{{$lang('查看')}}</a>
+                            </td>
+                            <td>{{$lang(item.platform_name)}}</td>
+                            <td>{{$lang(item.site_name) }}</td>
+                            <td>{{$lang(item.store_name) }}</td>
+                            <td>{{ $lang(item.company_name) }}</td>
+                            <td>{{ $lang(item.sale_team_name) }}</td>
+                            <td>{{$lang(item.currency)}}</td>
+                            <td>{{ item.in_come_amount }}</td>
+                            <td>{{ item.zd_date }}</td>
+                            <td>{{item.bill_amount_count}}</td>
+                            <td>{{item.created_at }}</td>
+                            <td>{{item.wait_cancellation_amount}}</td>
+                            <td>
+                                <el-button type="primary" @click="viewDetail(item)">{{$lang('查看详情')}}</el-button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="use-row">
+            <div class="col-100 text-right">
+                <el-pagination v-if="dataList" @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="form.pageIndex" :page-sizes="[20, 50, 100, 200,300]" :page-size="form.pageSize" layout="sizes, prev, pager, next,jumper" :total="totalCount"></el-pagination>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home//Public/lib/jquery.table2excel.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script>
+        if (getCookie("think_language") !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en);
+        }
+        var turn = new Vue({
+            el: "#turn",
+            data: {
+                isdataSum: true,
+                sumLoding: false,
+                labelPosition: "left",
+                dataList: [],//列表数据
+                baseData: {},//通用接口数据
+                sale_channel: {},//站点接口数据
+                stores: {},//店铺接口数据
+                totalCount: 0,
+                in_come_amounts: '',//总应核销金额
+                bill_amount_counts: '',//已核销金额
+                wait_cancellation_amounts: '',//剩余应核销金额
+                tableLoading: false,
+                form: {
+                    bill_status: '',//账单状态
+                    site_code: "",//平台
+                    platform_code: "",//站点
+                    store_id: "",//店铺
+                    company_code: "",//公司
+                    sale_team_cd: "",//销售团队
+                    zd_date: [],//ERP收入更新时间 
+                    thr_order_no: "",//平台订单号
+                    wait_cancellation_amount: "",//待核销收入
+                    bill_time: [],//核销金额更新时间
+                    pageIndex: 1,
+                    pageSize: 20,
+
+                },
+                wait_cancellation: [{//待核销收入
+                        CD: '1',
+                        CD_VAL: '正'
+                    }, {
+                        CD: '-1',
+                        CD_VAL: '负'
+                    }, {
+                        CD: '0',
+                        CD_VAL: '0'
+                    }
+
+                ],
+                getValue: function(dataName, key) {//过滤方法
+                    var result = "";
+                    for (var i in this.baseData[dataName]) {
+                        if (this.baseData[dataName][i].cd == key) {
+                            result = this.baseData[dataName][i].cdVal;
+                            break;
+                        }
+                    }
+                    return result ? result : "";
+                }
+            },
+            created: function() {
+                this.dateInit()
+                this.search();
+            },
+            methods: {
+                dateInit:function(){
+                    var today = new Date();
+                    var todayStr = this.dateFormatCn(today)
+                    this.form.zd_date = [todayStr,todayStr]
+                },
+                //切换平台
+                siteChange: function(val){
+                    this.form.platform_code = [];
+                    this.form.store_id = [];
+                    if(this.form.site_code == [] || this.form.site_code == ''){
+                        this.sale_channel = this.baseData.sale_channel;
+                        this.stores = this.baseData.stores;
+                    }else{
+                        var _this = this;
+                        var param = {
+                            data: {
+                                site_code: val
+                            }
+                        };
+                        axios.post("/index.php?m=finance&a=sub_basis", param)
+                            .then(function(res) {
+                                if (res.data.code == 2000) {
+                                    turn.sale_channel = res.data.data;
+                                    // turn.getData();
+                                } else {
+                                    _this.$message.warning(_this.$lang("数据查询失败"));
+                                }
+                            });
+                    }
+                    
+                },
+                platformChange: function(val){
+                    this.form.store_id = [];
+                    if(this.form.platform_code == [] || this.form.platform_code == ''){
+                        this.stores = this.baseData.stores;
+                    }else{
+                        var _this = this;
+                        var param = {
+                            data: {
+                                plat_code: val
+                            }
+                        };
+                        axios.post("/index.php?m=finance&a=get_store", param)
+                            .then(function(res) {
+                                if (res.data.code == 2000) {
+                                    turn.stores = res.data.data;
+                                    // turn.getData();
+                                } else {
+                                    _this.$message.warning(_this.$lang("数据查询失败"));
+                                }
+                            });
+                    }
+                    
+                },
+                //通用数据
+                search: function() {
+                    this.isdataSum = true
+                    var _this = this;
+                    var param = {
+                        data: {
+                            query: {
+                                bwcOrderStatus: "true",
+                                site_cd: "true",
+                                company: "true",
+                                saleTeams: "true",
+                                sale_channel: "true",//站点
+                                stores: "true",//店铺
+                            }
+                        }
+                    };
+                    axios.post("/index.php?g=oms&m=CommonData&a=commonData", param)
+                        .then(function(res) {
+                            if (res.data.code == 2000) {
+                                turn.baseData = res.data.data;
+                                turn.sale_channel = res.data.data.sale_channel;
+                                turn.stores = res.data.data.stores;
+                                turn.getData();
+                            } else {
+                                _this.$message.warning(_this.$lang("数据查询失败"));
+                            }
+                        });
+                },
+                
+                // 列表汇总数据
+                seeDataSum() {
+                    this.sumLoding = true;
+                    axios.post("/index.php?m=finance&a=platform_bill_count", {
+                        data: {
+                            query: this.form
+                        }
+                    }).then((res) => {
+                        this.sumLoding = false;
+                        var resData = res.data;
+                        if (resData.code == 2000) {
+                            this.in_come_amounts = resData.data.in_come_amounts;
+                            this.bill_amount_counts = resData.data.bill_amount_counts;
+                            this.wait_cancellation_amounts = resData.data.wait_cancellation_amounts;
+                            this.isdataSum = false
+                        } else {
+                            this.$message({
+                                type: 'error',
+                                message: resData.msg
+                            });
+                        }
+                    }).catch(err => {
+                        console.log(err)
+                    });
+                },
+                //列表数据
+                getData: function() {
+                    this.tableLoading = true;
+                    this.isdataSum = true
+                    var _this = this,
+                    param = {
+                            data: {}
+                    };
+                    param.data.query = this.form;
+                    
+
+                    axios.post("/index.php?m=finance&a=platform_bill_cancellation_data", param)
+                        .then(function(res) {
+                            var result = res.data;
+                            if (result.code == 2000) {
+                                turn.dataList = result ? result.data.pageData : [];
+                                turn.totalCount = +result.data.totalCount;
+                                _this.tableLoading = false;
+                            } else {
+                                _this.$message.warning(_this.$lang("订单数据查询失败"));
+                                _this.tableLoading = false;
+                            }
+                        });
+                },
+                //跳转导入账单页面
+                importDetail: function(item) {
+                    newTab("/index.php?m=finance&a=platform_bill_import&", this.$lang('导入账单'));
+                },
+                handleSizeChange: function(size) {
+                    this.form.pageSize = size;
+                    this.getData();
+                },
+                handleCurrentChange: function(currentPage) {
+                    this.form.pageIndex = currentPage;
+                    this.getData();
+                },
+                reset: function() {
+                    for (var k in this.form) {
+                        switch (k) {
+                            case 'thr_order_no':
+                                this.form[k] = '';
+                                break;
+                            case 'pageIndex':
+                                this.form[k] = 1;
+                                break;
+                            case 'pageSize':
+                                this.form[k] = 20;
+                                break;
+                            default:
+                                this.form[k] = [];
+                        }
+                    }
+                    // this.getData();
+                },
+                //跳转订单详情页
+                toDetail: function toDetail(order_no, thirdId, platCD) {
+                    var dom = document.createElement('a');
+                    var _href = "/index.php?g=OMS&m=Order&a=orderDetail&order_no=" + order_no + "&thrId=" + thirdId + "&platCode=" + platCD;
+                    dom.setAttribute("onclick", "opennewtab(this,'" + this.$lang('订单详情') + "')");
+                    dom.setAttribute("_href", _href);
+                    dom.click();
+                },
+                //跳转核销详情页
+                viewDetail: function(item) {
+                    newTab("/index.php?m=finance&a=cancellation_detail&thr_order_no=" + item.thr_order_no, this.$lang('订单核销详情'));
+                },
+                //导出
+                exportTurnOver: function() { 
+                  var param = { data: {} };
+                  param.data.query = this.form;
+            
+                  var tmp = document.createElement("form");
+                  tmp.action = "/index.php?m=finance&a=platform_bill_cancellation_export";
+                  tmp.method = "post";
+                  tmp.style.display = "none";
+                  var opt = document.createElement("input");
+                  opt.name = "post_data";
+                  opt.value = JSON.stringify(param);
+                  tmp.appendChild(opt);
+                  document.body.appendChild(tmp);
+                  tmp.submit();
+                  $(tmp).remove();
+                },
+                dateFormatCn:function(val){
+                    if(val == '' || val == null ){
+                        return('')
+                    }else{
+                        var myMonth = val.getMonth() + 1
+                        var myDate = val.getDate()
+                        if(myMonth<10){
+                            myMonth = "0" + myMonth
+                        }
+                        if(myDate<10){
+                            myDate = "0" + myDate
+                        }
+                        return(val.getFullYear()+'-'+myMonth+'-' +myDate)
+                    }
+                }
+            },
+            watch: {
+                // form: {
+                //     handler:function(newValue, oldValue) {
+                //         this.getData();
+                //     },
+                //     deep: true
+                // }
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>
+        <{$Think.lang.入库打印单}>
+    </title>
+    <link href="../Public/css/H-ui-3.1.min.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="../Public/css/stock.css">
+    <link rel="stylesheet" type="text/css" href="../Public/css/style.css"/>
+    <link rel="stylesheet" type="text/css" href="../Public/lib/Hui-iconfont/1.0.7/iconfont.css"/>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" type="text/css" href="../Public/css/NewAllocate.css"/>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <style>
+
+        .col-sm-4 {
+            padding: 0;
+        }
+
+        .title-left {
+            width: 25%;
+            float: left;
+        }
+
+        /* span {line-height: 31px;} */
+
+        table {
+            margin-top: 10px;
+        }
+
+        table thead th {
+            text-align: center;
+        }
+
+        .select-box {
+            border: solid 1px #ddd;
+        }
+
+        .table-bg thead th {
+            background-color: #537a8c;
+            color: white;
+        }
+
+        .thumbnail-wrap {
+            position: relative;
+            z-index: 999;
+        }
+
+        .thumbnail-wrap .img-wrap {
+            position: absolute;
+            top: -60px;
+            left: 120px;
+            width: 300px;
+            height: 300px;
+            border: 1px solid #eef5f9;
+        }
+
+        .thumbnail-wrap img {
+            box-shadow: 4px 4px 20px #242525;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .el-input__icon {
+            line-height: 0 !important;
+        }
+
+        /* .el-select-dropdown {
+             top: 197px !important;
+         }*/
+
+        #content .row-form .col-sm-3 > div {
+            margin-top: 0 !important;
+            float: left;
+            height: 32px;
+            line-height: 32px;
+        }
+        #content .table th{
+            background: #DEDEDE;
+            color: #263238;
+            border: 1px solid #263238;
+        }
+        #content .table td{
+            border: 1px solid #263238;
+        }
+        .el-select .el-input {
+            width: 130px;
+        }
+    </style>
+</head>
+<body id="content">
+<div id="main">
+    <div id="print">
+        <p class="ck-wrap-title">入库打印单</p>
+        <table style="border-collapse:collapse" class="table table-bg">
+            <thead>
+            <th>SKU</th>
+            <th>条形码</th>
+            <th>商品名称</th>
+            <th>商品属性</th>
+            <th>商品图片</th>
+            <th>正品货位</th>
+            <th>残次品货位</th>
+            <th>待入库数量</th>
+            <th>实际入库数量（正品）</th>
+            <th>实际入库数量（残次品）</th>
+            <th >备注</th>
+            </thead>
+            <tbody>
+            <template  v-for="(v,k) in goods">
+                <tr class="text-c">
+                    <td>{{v.sku_id}}</td>
+                    <td>{{v.upc_id}}</td>
+                    <td style="text-overflow:ellipsis;overflow:hidden;max-width:200px"><el-tooltip class="item" effect="dark" :content="v.goods_name" placement="bottom">
+                        <div  style="text-overflow:ellipsis;overflow:hidden;max-width:200px">{{v.goods_name}}</div>
+                    </el-tooltip></td>
+                    <td>{{v.goods_attribute}}</td>
+                    <td>
+                        <el-popover
+                                v-if="v.goods_image"
+                                placement="right"
+                                title=""
+                                trigger="hover">
+                            <img :src="v.goods_image" style="height: 300px;"/>
+                            <img slot="reference" :src="v.goods_image"  style="height: 50px;">
+                        </el-popover>
+                    </td>
+                    <td>{{v.location_code}}</td><!--正品货位-->
+                    <td>{{v.defective_location_code }}</td><!--残次品货位-->
+                    <td>
+                        {{v.over_in_warehouse_num}}
+                    </td><!--待入库数量-->
+                    <td> </td>
+                    <td></td>
+                    <td   ></td>
+                </tr>
+            </template>
+            </tbody>
+        </table>
+    </div>
+    <div class="bottom-row">
+        <div>
+            <button class="bottom-btn btn-check-bottom" @click="doPrint">打印</button>
+        </div>
+    </div>
+</div>
+</body>
+<script src="../Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script src="../Public/lib/layer-v3.0.3/layer/layer.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript"
+        src="./Application/Tpl/Home/Public/js/vue.2.5.13.js?<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript"
+        src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script>
+    var id = getQueryString('id')
+    var vueApp = new Vue({
+        el: '#main',
+        data: {
+            goods:[]
+        },
+        mounted: function () {
+        },
+        created: function () {
+            var _this = this;
+            axios.post('index.php?m=order_detail&a=getInWarehouseInfo', {
+                ship_id: id
+            }).then(function (response) {
+                if(response.data.code === 200){
+                    _this.goods = response.data.data;
+                }
+            })
+            this.getCurr()
+        },
+        methods: {
+            doPrint: function () {
+                var _this = this;
+                var currentWindow = window;
+                var newWindow = window.open('', '_blank'); //打开新窗口
+                var codestr = document.querySelector("#print").innerHTML; //获取需要生成pdf页面的div代码
+                newWindow.document.write('    <link rel="stylesheet" href="../Public/css/stock.css">\n' +
+                    '    <link rel="stylesheet" type="text/css" href="../Public/css/style.css"/>\n' +
+                    '    <link rel="stylesheet" type="text/css" href="../Public/lib/Hui-iconfont/1.0.7/iconfont.css"/>\n' +
+                    '    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css">');
+                newWindow.document.write('<link rel="stylesheet" type="text/css" href="../Public/css/NewAllocate.css">');
+                newWindow.document.write('<style>'+document.querySelector('style').innerHTML + '</style>')
+                newWindow.document.write('<body id="content">'+codestr + '</body>'); //向文档写入HTML表达式或者JavaScript代码
+                newWindow.document.write('<script type="text/javascript">this.opener.location.reload()</scipt>');
+                //关闭document的输出流, 显示选定的数据
+                // setTimeout(function () {
+                newWindow.document.close();
+
+                // },100)
+                newWindow.onload = function () {
+
+                    this.opener.document.addEventListener('visibilitychange',function () {
+                        /* if(!newWindow.opener.document.hidden){
+                             newWindow.close();
+                             var dom = newWindow.opener.document.createElement('a');
+                             var _href = "/index.php?g=oms&m=picking&a=pickingList";
+                             dom.setAttribute("onclick", "backNewtab(this)");
+                             dom.setAttribute("_href", _href);
+                             dom.onclick();
+                         }*/
+                    });
+                    newWindow.print(); //打印当前窗口
+                    setTimeout(function () {
+                        newWindow.close();
+                        window.parent.document.querySelector('#min_title_list [title="入库单打印"] b').click()
+                    },100)
+                };
+            },
+            handleClose:function(){
+                this.logistics_information.reason_difference = ''
+                this.dialogVisible = false;
+            },
+            success:function(){
+                this.dialogVisible = false;
+                var _this = this;
+                var goods = [];
+                for(var x = 0; x< this.goods.length;x++){
+                    var obj = {
+                        sku_id:this.goods[x].sku_id,
+                        this_out_authentic_products:this.goods[x].this_out_authentic_products,
+                        this_out_defective_products:this.goods[x].this_out_defective_products
+                    }
+                    goods.push(obj)
+                }
+                
+                axios.post('/index.php?m=AllocationExtendNew&a=inboundTagCompletion&id='+id,{
+                    id:id,
+                    in_reason_difference:_this.logistics_information.reason_difference
+                }).then(function (response) {
+                    
+                    if(response.data.code === 200){
+
+                        _this.$message({
+                            message: '操作成功',
+                            type: 'success'
+                        });
+                        setTimeout(function(){
+                            location.href = 'index.php?m=allocation_extend_new&a=transportation&id='+id
+                        },1700)
+
+                    }else{
+                        var text = response.data.msg;
+                        for(var x in response.data.data){
+                            if(response.data.data[x] instanceof Array){
+                                text = response.data.data[x][0]
+                            }
+                        }
+                        _this.$message({
+                            message: text,
+                            type: 'error'
+                        });
+                    }
+                })
+                this.logistics_information.reason_difference = ''
+            },
+            open() {
+                const h = this.$createElement;
+                this.$msgbox({
+                    title: '消息',
+                    message: h('p', null, [
+                        h('span', null, '内容可以是 '),
+                        h('i', { style: 'color: teal' }, 'VNode')
+                    ]),
+                    showCancelButton: true,
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    beforeClose: (action, instance, done) => {
+                        if (action === 'confirm') {
+                            instance.confirmButtonLoading = true;
+                            instance.confirmButtonText = '执行中...';
+                            setTimeout(() => {
+                                done();
+                                setTimeout(() => {
+                                    instance.confirmButtonLoading = false;
+                                }, 300);
+                            }, 3000);
+                        } else {
+                            done();
+                        }
+                    }
+                }).then(action => {
+                    this.$message({
+                        type: 'info',
+                        message: 'action: ' + action
+                    });
+                });
+            },
+            orderDetal: function (orderId, title) {
+                var dom = document.createElement('a');
+                var _href;
+                if (title === '调拨单审核' || title === '调拨单详情') {
+                    _href = '/index.php?m=allocation_extend_new&a=allot_check&id='+orderId
+                }
+                dom.setAttribute("onclick", "opennewtab(this,'"+this.$lang(title) + "')");
+                dom.setAttribute("_href", _href);
+                dom.click();
+            },
+            all:function(arr,type){
+                var n = 0
+                if(arr){
+                    for(var x = 0;x<arr.length;x++){
+                        n += Number(arr[x][type])
+                    }
+                }
+                return n
+            },
+            /**
+             * 获取币种
+             */
+            getCurr:function(){
+                var _this = this;
+                axios.post('/index.php?g=common&m=index&a=get_cd', {
+
+                    cd_type:{
+                        currency:true
+                    }
+
+                }).then(function (response) {
+                    if(response.data.code === 2000){
+                        _this.curr = response.data.data.currency
+                    }
+                })
+            },
+            postMessage:function(type){
+                var _this = this;
+                var goods = [];
+                for(var x = 0; x< this.goods.length;x++){
+                    var obj = {
+                        sku_id:this.goods[x].sku_id,
+                        upc_id: this.goods[x].upc_id,
+                        this_in_authentic_products:this.goods[x].this_in_authentic_products,
+                        this_in_defective_products:this.goods[x].this_in_defective_products
+                    }
+                    goods.push(obj)
+                }
+                axios.post('/index.php?m=AllocationExtendNew&a=submitInStock&allo_id='+id, {
+                    logistics_information:_this.logistics_information,
+                    goods:goods
+                }).then(function (response) {
+                    if(response.data.code === 200){
+
+                        _this.$message({
+                            message: '操作成功',
+                            type: 'success'
+                        });
+                        setTimeout(function(){
+                            location.href = 'index.php?m=allocation_extend_new&a=transportation&id='+id
+                        },1700)
+
+                        /* setTimeout(function(){
+                             switch (type) {
+                                 case 'save':
+                                     _this.orderDetal(id+'&type=1','调拨单详情')
+                                     break;
+                                 case 'submit':
+                                     _this.orderDetal(id+'&type=0','调拨单审核')
+                                     break;
+                             }
+                         },1000)
+                         setTimeout(function(){
+                             var url = '/index.php?m=allocation_extend_new&a=create_new_process'
+                             sessionStorage.setItem('closeWindow',url)
+                         },1200)*/
+                    }else{
+                        var text = response.data.msg;
+                        for(var x in response.data.data){
+                            if(response.data.data[x] instanceof Array){
+                                text = response.data.data[x][0]
+                            }
+                        }
+                        _this.$message({
+                            message: text,
+                            type: 'error'
+                        });
+                    }
+                })
+            }
+        }
+    });
+
+    function getQueryString(name) {
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+        var r = window.location.search.substr(1).match(reg);
+        if (r != null) return unescape(r[2]); return null;
+    }
+</script>
+</html>

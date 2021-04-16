@@ -1,0 +1,1570 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>账户详情</title>
+    <link rel="stylesheet" href="../Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="../Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="../Public/../Hr/hrstyle.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="../Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+</head>
+
+<style>
+    [v-cloak] {
+        display: none;
+    }
+
+    .tran-table {
+        width: 100%;
+        font-size: 13px;
+        color: #546E7A;
+        font-family: MicrosoftYaHei;
+        border-bottom: 1px solid #CADEE7;
+        border-right: 1px solid #CADEE7;
+        background: #F7F9FB;
+        margin: 20px 0;
+    }
+
+    .tran-table th {
+        padding: 8px;
+        border-top: 1px solid #CADEE7;
+        border-left: 1px solid #CADEE7;
+        background: #e4e9ed;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .tran-table td {
+        padding: 8px 10px;
+        border-top: 1px solid #CADEE7;
+        border-left: 1px solid #CADEE7;
+        background: #F7F9FB;
+        text-align: center;
+    }
+
+    .tran-table td:nth-child(odd) {
+        text-align: center;
+    }
+
+    .tran-table td:nth-child(odd) {
+        width: 15%;
+        padding: 18px 10px;
+        background: #f5fafe;
+    }
+
+    .tran-table td:nth-child(even) {
+        width: 35%;
+    }
+
+    .tran-table caption {
+        background: #546E7A;
+        font-family: MicrosoftYaHei;
+        font-size: 16px;
+        color: #FFFFFF;
+        letter-spacing: 0;
+        padding: 6px 10px 8px;
+        text-align: left;
+    }
+
+    .required {
+        color: red;
+    }
+
+
+    .circle-wrap {
+        margin-top: -26px;
+        display: flex;
+    }
+
+    .process-wrap {
+        border: 1px solid #cadee7;
+        padding-bottom: 15px;
+    }
+
+    .process-title {
+        margin-bottom: 30px;
+        background: #546E7A;
+        font-family: MicrosoftYaHei;
+        font-size: 16px;
+        color: #FFFFFF;
+        letter-spacing: 0;
+        padding: 6px 10px 8px;
+        text-align: left;
+        box-sizing: border-box;
+    }
+
+
+    .circle-wrap .text {
+        font-family: MicrosoftYaHei;
+        font-size: 13px;
+        color: #263238;
+        letter-spacing: 0;
+        font-family: MicrosoftYaHei;
+        font-size: 13px;
+        color: #263238;
+        letter-spacing: 0;
+        margin: 15px 0;
+        display: inline-block;
+    }
+
+    .circle-wrap .time {
+        font-family: MicrosoftYaHei;
+        font-size: 12px;
+        color: #90A4AE;
+        letter-spacing: 0;
+    }
+
+    .circle-child-wrap {
+        position: relative;
+        width: 100%;
+        display: inline-block;
+        z-index: 1;
+    }
+
+    .circle-child-wrap .circle {
+        display: inline-block;
+        background: #C8D2D7;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        vertical-align: middle;
+        font-style: normal;
+        font-family: MicrosoftYaHei-Bold;
+        font-size: 16px;
+        color: #FFFFFF;
+        letter-spacing: 0;
+        line-height: 28px;
+    }
+
+    .circle-child-wrap .line {
+        display: inline-block;
+        height: 4px;
+        vertical-align: middle;
+        background: #15C330;
+        top: 50%;
+        left: 50%;
+        transform: translate(0, -50%);
+        position: absolute;
+        width: 100%;
+        z-index: -1;
+    }
+
+    .circle-wrap div:last-child .line {
+        width: 0;
+    }
+
+    .load {
+        background: #C8D2D7 !important;
+    }
+
+    .el-upload-list__item {
+        float: left;
+        width: 30%;
+        margin-right: 20px;
+    }
+</style>
+
+<body>
+    <div id="transApp" class="show-list" v-cloak style="padding-bottom:150px;">
+        <div class="use-title">Group Fund Allocation</div>
+        <div class="baseline"></div>
+        <!-- 审核流程 -->
+        <div class="use-row process-wrap" v-show="status == 'audit'">
+            <div class="col-100 process-title">
+                {{$lang('转账&换汇进度')}}
+            </div>
+            <div class="col-100 text-center">
+                <div class="circle-wrap">
+                    <div v-for="(item,key) in auditProcss">
+                        <span class="text">&nbsp;{{$lang(item.cdVal)}}&nbsp;</span>
+                        <br/>
+                        <em class="circle-child-wrap">
+                            <span span class="circle">
+                                <span v-if="item.state == 1">{{key + 1}}</span>
+                                <img v-if="item.state == 2" src="../Public/images/Finance/past.png" alt=""/>
+                                <img style="cursor:pointer" v-if="item.state == 3" src="../Public/images/Finance/fail.png" alt="" :title="$lang('不同意原因') +':' + appInfo.auditReason"/>
+                            </span>
+                            <span class="line" :class="[item.state != 2 ? 'load' : '']"></span>
+                        </em>
+                        <br>
+                        <span v-if="currentStep >= key + 1" class="text">&nbsp;{{item.etc}}&nbsp;</span>
+                        <br>
+                        <span v-if="currentStep >= key + 1" class="time">{{item.auditTime}}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 创建需求 -->
+        <div class="use-row" v-if="status == 'edit'">
+            <div class="col-100">
+                <table class="tran-table" cellpadding="0" cellspacing="0">
+                    <caption>
+                        {{$lang('申请信息')}}
+                    </caption>
+                    <tbody>
+                        <tr>
+                            <td>
+                                {{$lang('付款公司归属')}}
+                                <span class="required">*</span>
+                            </td>
+                            <td style="text-align: left;">
+                                <el-radio-group v-model="form.paymentCompanyClassCd" >
+                                    <el-radio v-for="item in baseData.account_class_cd" :key="item.cd" :label="item.cd" @change="handlePaymentComanyClass">
+                                        {{$lang(item.cdVal)}}
+                                    </el-radio>
+                                </el-radio-group>
+                            </td>
+                            <td>
+                                {{$lang('收款公司归属')}}
+                                <span class="required">*</span>
+                            </td>
+                            <td style="text-align: left;">
+                                <el-radio-group v-model="form.collectionCompanyClassCd">
+                                    <el-radio v-for="item in baseData.account_class_cd" :key="item.cd" :label="item.cd" @change="handleCollectionCompanyClass">
+                                        {{$lang(item.cdVal)}}
+                                    </el-radio>
+                                </el-radio-group>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                {{$lang('付款公司')}}
+                                    <span class="required">*</span>
+                            </td>
+                            <td>
+                                <el-select v-if="form.paymentCompanyClassCd === 'N003510001'" :filterable="true" :placeholder="$lang('请选择付款公司')" v-model="form.payCompanyCode" clearable @change="searchBank({company:'payCompanyCode',getValue:'openBank',baseKey:'payBank'})">
+                                    <el-option :key="item.cd" :label="item.CD_VAL" :value="item.CD" v-for="item in baseData.company_open"></el-option>
+                                </el-select>
+                                <el-select v-else :filterable="true" :placeholder="$lang('请选择付款公司')" v-model="form.payCompanyCode" clearable @change="searchBank({company:'payCompanyCode',getValue:'openBank',baseKey:'payBank'})">
+                                    <el-option :key="item.ID" :label="item.SP_NAME" :value="item.ID" v-for="item in baseData.supplier"></el-option>
+                                </el-select>
+                            </td>
+                            <td>
+                                {{$lang('收款公司')}}
+                                    <span class="required">*</span>
+                            </td>
+                            <td>
+                                <el-select v-if="form.collectionCompanyClassCd === 'N003510001'" :filterable="true" :placeholder="$lang('请选择收款公司')" v-model="form.recCompanyCode" clearable @change="searchBank({company:'recCompanyCode',getValue:'openBank',baseKey:'recBank'})">
+                                    <el-option :key="item.cd" :label="item.CD_VAL" :value="item.CD" v-for="item in baseData.company_open"></el-option>
+                                </el-select>
+                                <el-select v-else :filterable="true" :placeholder="$lang('请选择收款公司')" v-model="form.recCompanyCode" clearable @change="searchBank({company:'recCompanyCode',getValue:'openBank',baseKey:'recBank'})">
+                                    <el-option :key="item.ID" :label="item.SP_NAME" :value="item.ID" v-for="item in baseData.supplier"></el-option>
+                                </el-select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                {{$lang('付款银行名称')}}
+                                    <span class="required">*</span>
+                            </td>
+                            <td>
+                                <el-select :filterable="true" :placeholder="$lang('请选择银行名称')" v-model="form.payOpenBank" clearable @change="searchBank({bankName:'payOpenBank',getValue:'accountBank',baseKey:'payAccout',company:'payCompanyCode'})">
+                                    <el-option :key="key" :label="$lang(item)" :value="item" v-for="(item,key) in baseData.payBank"></el-option>
+                                </el-select>
+                            </td>
+                            <td>
+                                {{$lang('收款银行名称')}}
+                                    <span class="required">*</span>
+                            </td>
+                            <td>
+                                <el-select :filterable="true" :placeholder="$lang('请选择银行名称')" v-model="form.recOpenBank" clearable @change="searchBank({bankName:'recOpenBank',getValue:'accountBank',baseKey:'recAccout',company:'recCompanyCode',rec:true})">
+                                    <el-option :key="key" :label="$lang(item)" :value="item" v-for="(item,key) in baseData.recBank"></el-option>
+                                </el-select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                {{$lang('付款公司银行账号')}}
+                                    <span class="required">*</span>
+                            </td>
+                            <td>
+                                <el-select :filterable="true" :placeholder="$lang('请选择付款账号')" v-model="form.payAccountBank" clearable @change="searchBank({bankName:'payOpenBank',getValue:'accountBank',baseKey:'payAccout',company:'payCompanyCode',account:'payAccountBank'})">
+                                    <el-option :key="key" :label="item" :value="item" v-for="(item,key) in baseData.payAccout"></el-option>
+                                </el-select>
+                            </td>
+                            <td>
+                                {{$lang('收款公司银行账号')}}
+                                    <span class="required">*</span>
+                            </td>
+                            <td>
+                                <el-select :filterable="true" :placeholder="$lang('请选择收款账号')" v-model="form.recAccountBank" clearable @change="searchBank({bankName:'recOpenBank',getValue:'accountBank',baseKey:'recAccout',company:'recCompanyCode',account:'recAccountBank',rec:true})">
+                                    <el-option :key="key" :label="item" :value="item" v-for="(item,key)  in baseData.recAccout"></el-option>
+                                </el-select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                {{$lang('付款银行')}} SWIFT Code
+                            </td>
+                            <td>{{form.paySwiftCode}}</td>
+                            <td>
+                                {{$lang('收款银行')}} SWIFT Code
+                            </td>
+                            <td>{{form.recSwiftCode}}</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                {{$lang('付款账户币种')}}
+                            </td>
+                            <td>{{getValue('currency',form.payCurrencyCode)}}</td>
+                            <td>
+                                {{$lang('收款账户币种')}}
+                            </td>
+                            <td>{{getValue('currency',form.recCurrencyCode)}}</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                {{$lang('申请付款金额')}}
+                                    <span class="required">*</span>
+                            </td>
+                            <td>
+                                <!-- @keyup.native="inNum($event,'form','amountMoney')" -->
+                                <el-input :placeholder="$lang('请填写金额')" v-model="form.amountMoney" class="input-with-select" type="number">
+                                    <el-select v-model="form.currencyCode" slot="prepend" :placeholder="$lang('币种')" style="width:80px">
+                                        <el-option :key="item.cd" :label="item.cdVal" :value="item.cd" v-for="item in baseData.currency"></el-option>
+                                    </el-select>
+                                </el-input>
+                            </td>
+                            <td>
+                                {{$lang('用途')}}
+                                    <span class="required">*</span>
+                            </td>
+                            <td>
+                                <el-input v-model="form.use" :placeholder="$lang('请填写用途')"></el-input>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                {{$lang('备注')}}
+                            </td>
+                            <td colspan="3" style="text-align: left;">
+                                <el-input type="textarea" :autoSize="{ minRows: 2, maxRows: 3}" v-model="form.reason" auto-complete="off" :placeholder="$lang('请填写备注')"></el-input>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                {{$lang('上传图片')}}
+                            </td>
+                            <td colspan="3" style="text-align: left;">
+                                <el-upload class="upload-demo" name="attachment" multiple action="" :on-remove="changeFile" :on-change="changeFile" :auto-upload="false"
+                                    :file-list="fileList" list-type="picture">
+                                    <el-button size="small" type="primary">
+                                        {{$lang('选取文件')}}
+                                    </el-button>
+                                    <div slot="tip" class="el-upload__tip">
+                                        {{$lang('只能上传图片文件，且不超过50M')}}
+                                    </div>
+                                </el-upload>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!-- 查看详情 -->
+        <div class="use-row" v-if="status == 'audit'">
+            <div class="col-100">
+                <table class="tran-table" cellpadding="0" cellspacing="0">
+                    <caption>
+                        {{$lang('申请信息')}}
+                    </caption>
+                    <tbody>
+                        <tr>
+                            <td>
+                                {{$lang('资金划转类型')}}
+                            </td>
+                            <td style="text-align: right;">{{appInfo.accountTransferTypeVal}}</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                {{$lang('资金划转编号')}}
+                            </td>
+                            <td>{{appInfo.transferNo}}</td>
+                            <td>
+                                {{$lang('流程状态')}}
+                            </td>
+                            <td>{{getValue('turnOver',appInfo.state)}}</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                {{$lang('付款公司归属')}}
+                            </td>
+                            <td>{{$lang(appInfo.paymentCompanyClassCdVal)}}</td>
+                            <td>
+                                {{$lang('收款公司归属')}}
+                            </td>
+                            <td>{{$lang(appInfo.collectionCompanyClassCdVal)}}</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                {{$lang('付款公司')}}
+                            </td>
+                            <td>{{$lang(appInfo.payCompanyName)}}</td>
+                            <td>
+                                {{$lang('收款公司')}}
+                            </td>
+                            <td> {{$lang(appInfo.recCompanyName)}}</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                {{$lang('付款银行名称')}}
+                            </td>
+                            <td>{{appInfo.payOpenBank}}</td>
+                            <td>
+                                {{$lang('收款银行名称')}}
+                            </td>
+                            <td>{{appInfo.recOpenBank}}</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                {{$lang('付款公司银行账号')}}
+                            </td>
+                            <td>{{appInfo.payAccountBank}}</td>
+                            <td>
+                                {{$lang('收款公司银行账号')}}
+                            </td>
+                            <td>{{appInfo.recAccountBank}}</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                {{$lang('付款银行')}} SWIFT Code
+                            </td>
+                            <td>{{appInfo.paySwiftCode}}</td>
+                            <td>
+                                {{$lang('收款银行')}}SWIFT Code
+                            </td>
+                            <td>{{appInfo.recSwiftCode}}</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                {{$lang('付款银行')}} BSB No.
+                            </td>
+                            <td>{{appInfo.payBsbNo}}</td>
+                            <td>
+                                {{$lang('收款银行')}} BSB No.
+                            </td>
+                            <td>{{appInfo.recBsbNo}}</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                {{$lang('付款账户币种')}}
+                            </td>
+                            <td>{{getValue('currency',appInfo.payCurrencyCode)}}</td>
+                            <td>
+                                {{$lang('收款账户币种')}}
+                            </td>
+                            <td>{{getValue('currency',appInfo.recCurrencyCode)}}</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                {{$lang('申请付款金额')}}
+                            </td>
+                            <td>{{getValue('currency',appInfo.currencyCode)}}&nbsp;&nbsp;{{numberFormat(appInfo.amountMoney)}}</td>
+                            <td>
+                                {{$lang('用途')}}
+                            </td>
+                            <td>{{$lang(appInfo.use)}}</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                {{$lang('备注')}}
+                            </td>
+                            <td colspan="3">
+                                {{appInfo.reason}}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                {{$lang('上传图片')}}
+                            </td>
+                            <td colspan="3" style="text-align: left;">
+                                <a v-for="item in appInfo.attachment" :href="'data:image/png;base64,' + item.resource" :download="item.baseName" :title="$lang('点击下载附件')">
+                                    <img v-if="item.resource" :src="'data:image/jpg;base64,' + item.resource" alt="" style="margin-right: 35px;max-width:100%">
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!-- 审批备注 -->
+        <div class="use-row" v-if="modifyPermissions && commentDetail.length && auditorPermissions &&  !failState && !waitForPay && !waitForRec && !recSuccess">
+            <div class="col-100">
+                <table class="tran-table" cellpadding="0" cellspacing="0">
+                    <caption>
+                        {{$lang('审批人备注')}}
+                    </caption>
+                    <thead>
+                        <tr>
+                            <th>
+                                {{$lang('审批人')}}
+                            </th>
+                            <th>
+                                {{$lang('批注')}}
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="item in commentDetail">
+                            <td>{{item.auditorNm}}</td>
+                            <td>
+                                <el-input v-if="item.change" v-model="item.msg" :placeholder="$lang('请输入内容')"></el-input>
+                                <span v-else>{{item.msg}}</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!-- 转账操作 -->
+        <div class="use-row" v-if="(waitForPay && payPermissions  || waitForRec && recPermissions || recSuccess) || (appInfo.payTransferTime)">
+            <div class="col-100">
+                <table class="tran-table" cellpadding="0" cellspacing="0">
+                    <caption>
+                        {{$lang('付款收款详情')}}
+                    </caption>
+                    <tbody>
+                        <!-- 历史数据操作 -->
+                        <tr v-if="waitForPay && payPermissions && oldForPay">
+                            <td>
+                                {{$lang('付款日期')}}
+                                    <span class="required">*</span>
+                            </td>
+                            <td>
+                                <el-date-picker style="width:100%" v-model="payForm.payTransferTime" type="date" :placeholder="$lang('选择日期')" :picker-options="payPickerOptions">
+                                </el-date-picker>
+                            </td>
+                            <td>
+                                {{$lang('实际付款金额')}}
+                                    <span class="required">*</span>
+                            </td>
+                            <td>
+                                {{getValue('currency',appInfo.payCurrencyCode)}}&nbsp;&nbsp;
+                                <el-input style="width:80%" v-model="payForm.payActualMoney" :placeholder="$lang('请填写付款金额')"></el-input>
+                            </td>
+                        </tr>
+                        <tr v-if="waitForPay && payPermissions && oldForPay">
+                            <td>
+                                {{$lang('付款附件')}}
+                            </td>
+                            <td colspan="3" style="text-align: left;">
+                                <el-upload class="upload-demo" :on-remove="changePayFile" :on-change="changePayFile" multiple name="payVoucherFile" :auto-upload="false"
+                                    ref="payUpload" action="" :file-list="filePayList">
+                                    <el-button size="small" type="primary">
+                                        {{$lang('选取文件')}}
+                                    </el-button>
+                                    <div slot="tip" class="el-upload__tip">
+                                        {{$lang('上传文件必须小于50M')}}
+                                    </div>
+                                </el-upload>
+                            </td>
+                        </tr>
+                        <tr v-if="waitForPay && payPermissions && oldForPay">
+                            <td>
+                                {{$lang('付款备注')}}
+                            </td>
+                            <td colspan="3" style="text-align: left;">
+                                <el-input style="width:98%" type="textarea" :autoSize="{ minRows: 2, maxRows: 3}" v-model="payForm.payReason" auto-complete="off"
+                                    :placeholder="$lang('请填写备注')"></el-input>
+                            </td>
+                        </tr>
+                        <!-- 转账完成 -->
+                        <tr v-if="waitForPay && payPermissions && !oldForPay">
+                            <td>
+                                {{$lang('付款单号')}}
+                            </td>
+                            <td>
+                                <span @click="goPaymentBill(appInfo.paymentAuditId,appInfo.sourceCd)" style="color: #0000ff;cursor: pointer;">{{appInfo.paymentAuditNo}}</span>
+                            </td>
+                            <td>
+                                {{$lang('付款单状态')}}
+                            </td>
+                            <td>
+                                {{appInfo.payableStatusVal}}
+                            </td>
+                        </tr>
+                        
+                        <!-- 转账完成 -->
+                        <tr v-if="waitForRec || recSuccess">
+                            <td>
+                                {{$lang('付款单号')}}
+                            </td>
+                            <td>
+                                <!-- -->
+                                <span @click="goPaymentBill(appInfo.paymentAuditId,appInfo.sourceCd)" style="color: #0000ff;cursor: pointer;">{{appInfo.paymentAuditNo}}</span>
+                            </td>
+                            <td>
+                                {{$lang('付款单状态')}}
+                            </td>
+                            <td>
+                                {{appInfo.payableStatusVal}}
+                            </td>
+                        </tr>
+                        <tr v-if="waitForRec || recSuccess">
+                            <td>
+                                {{$lang('付款日期')}}
+                                    <span class="required">*</span>
+                            </td>
+                            <td>{{appInfo.payTransferTime}} </td>
+                            <td>
+                                {{$lang('实际付款金额')}}
+                                    <span class="required">*</span>
+                            </td>
+                            <td>
+                                {{getValue('currency',appInfo.payActualCurrencyCode)}}&nbsp;&nbsp; {{numberFormat(fixedNum(appInfo.payActualMoney,2))}}
+                            </td>
+                        </tr>
+                        <tr v-if="waitForRec || recSuccess">
+                            <td>
+                                {{$lang('付款附件')}}
+                            </td>
+                            <td colspan="3" style="text-align: left;">
+                                <a v-for="item in appInfo.payVoucherFile" :href="'/index.php?m=finance&a=downloadFile&id=' + appInfo.id + '&fieldName=payVoucherFile&saveName=' + item.saveName"
+                                    :download="item.baseName" title="点击下载附件">
+                                    <span style="margin-right: 20px;">{{item.baseName}}</span>
+                                </a>
+                            </td>
+                        </tr>
+                        <tr v-if="waitForRec || recSuccess">
+                            <td>
+                                {{$lang('付款备注')}}
+                            </td>
+                            <td colspan="3" style="text-align: left;white-space: normal;">
+                                {{appInfo.payReason}}
+                            </td>
+                        </tr>
+                        <!-- 收款信息 -->
+                        
+                        <tr v-if="waitForRec && recPermissions">
+                            <td>
+                                {{$lang('收款日期')}}
+                                    <span class="required">*</span>
+                            </td>
+                            <td>
+                                <el-date-picker style="width:100%" v-model="recForm.recTransferTime" type="date" :placeholder="$lang('选择日期')" :picker-options="payPickerOptions">
+                                </el-date-picker>
+                            </td>
+                            <td>
+                                {{$lang('实际收款金额')}}
+                                    <span class="required">*</span>
+                            </td>
+                            <td>
+                                {{getValue('currency',appInfo.recCurrencyCode)}}&nbsp;&nbsp;
+                                <el-input style="width:80%" v-model="recForm.recActualMoney" :placeholder="$lang('请填写付款金额')"></el-input>
+                            </td>
+                        </tr>
+                        <tr v-if="waitForRec  && recPermissions">
+                            <td>
+                                {{$lang('收款附件')}}
+                            </td>
+                            <td colspan="3" style="text-align: left;">
+                                <el-upload class="upload-demo" :on-remove="changeRecFile" :on-change="changeRecFile" multiple name="recVoucherFile" :auto-upload="false"
+                                    ref="recUpload" action="" :file-list="fileRecList">
+                                    <el-button size="small" type="primary">
+                                        {{$lang('选取文件')}}
+                                    </el-button>
+                                    <div slot="tip" class="el-upload__tip">
+                                        {{$lang('上传文件必须小于50M')}}
+                                    </div>
+                                </el-upload>
+                            </td>
+                        </tr>
+                        <tr v-if="waitForRec  && recPermissions">
+                            <td>
+                                {{$lang('收款备注')}}
+                            </td>
+                            <td colspan="3" style="text-align: left;">
+                                <el-input style="width:98%" type="textarea" :autoSize="{ minRows: 2, maxRows: 3}" v-model="recForm.recReason" auto-complete="off"
+                                    :placeholder="$lang('请填写备注')"></el-input>
+                            </td>
+                        </tr>
+                        <!-- 收款完成 -->
+                        <tr v-if="recSuccess">
+                            <td>
+                                {{$lang('收款日期')}}
+                                    <span class="required">*</span>
+                            </td>
+                            <td>{{appInfo.recTransferTime}} </td>
+                            <td>
+                                {{$lang('实际收款金额')}}
+                                    <span class="required">*</span>
+                            </td>
+                            <td>
+                                {{getValue('currency',appInfo.recCurrencyCode)}}&nbsp;&nbsp; {{numberFormat(fixedNum(appInfo.recActualMoney,2))}}
+                            </td>
+                        </tr>
+                        <tr v-if="recSuccess">
+                            <td>
+                                {{$lang('收款附件')}}
+                            </td>
+                            <td colspan="3" style="text-align: left;">
+                                <a v-for="item in appInfo.recVoucherFile" :href="'/index.php?m=finance&a=downloadFile&id=' + appInfo.id + '&fieldName=recVoucherFile&saveName=' + item.saveName"
+                                    :download="item.baseName" :title="$lang('点击下载附件')">
+                                    <span style="margin-right: 20px;">{{item.baseName}}</span>
+                                </a>
+                            </td>
+                        </tr>
+                        <tr v-if="recSuccess">
+                            <td>
+                                {{$lang('收款备注')}}
+                            </td>
+                            <td colspan="3" style="text-align: left;white-space: normal;">
+                                {{appInfo.recReason}}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!-- 按钮组 -->
+        <div class="use-row">
+            <!-- 创建&编辑 -->
+             <?php if(ButtonAction::hidden()){ ?>
+            <div class="col-100 text-center" v-if="status == 'edit' &&  !operatingComment">
+                <el-button type="primary" @click="submit()" :disabled='disabledSubmit'>
+                    {{$lang('提交')}}
+                </el-button>
+                <el-button @click="reset()">
+                    {{$lang('重置')}}
+                </el-button>
+            </div>
+             <?php } ?>
+            <!-- 批注 -->
+             <?php if(ButtonAction::hidden()){ ?>
+            <div class="col-100 text-center" v-if="auditorPermissions && !authIdentify && commentDetail.length && !failState && !waitForPay && !waitForRec && !recSuccess && !isLastAuditor">
+                <el-button type="primary" @click="changeCom()">
+                    {{$lang('编辑我的批注')}}
+                </el-button>
+            </div>
+             <?php } ?>
+            <!-- 审核 -->
+             <?php if(ButtonAction::hidden()){ ?>
+            <div class="col-100 text-center" v-if="status == 'audit' && authIdentify && !failState && !waitForPay && !waitForRec && !recSuccess && !operatingComment">
+                <el-button type="primary" @click="edit()" v-if="modifyPermissions">
+                    {{$lang('修改')}}
+                </el-button>
+                <el-button type="warning" @click="del()" v-if="modifyPermissions">
+                    {{$lang('删除')}}
+                </el-button>
+                <el-button type="success" @click="showComment()" :disabled="disabledSubmit">
+                    {{$lang('同意')}}
+                </el-button>
+                <el-button @click="disagreeFn()">
+                    {{$lang('不同意')}}
+                </el-button>
+                <el-button type="primary" @click="changeCom()" v-if="auditorPermissions && commentDetail.length && !isLastAuditor">
+                    {{$lang('编辑我的批注')}}
+                </el-button>
+            </div>
+             <?php } ?>
+            <!-- 批注取消保存 -->
+            <!-- 提交付款信息 -->
+             <?php if(ButtonAction::hidden()){ ?>
+            <div class="col-100 text-center" v-if="operatingComment">
+                <el-button type="primary" @click="cancelComment">
+                    {{$lang('取消')}}
+                </el-button>
+                <el-button @click="submitChangeCom">
+                    {{$lang('保存')}}
+                </el-button>
+            </div>
+             <?php } ?>
+            <!-- 提交付款信息 -->
+            <?php if(ButtonAction::hidden()){ ?>
+            <div class="col-100 text-center" v-if="waitForPay &&　payPermissions && !operatingComment && oldForPay">
+                <el-button type="primary" @click="paySubmit()" :disabled='disabledSubmit'>
+                    {{$lang('提交')}}
+                </el-button>
+                <el-button @click="cancel()">
+                    {{$lang('取消')}}
+                </el-button>
+            </div>
+             <?php } ?>
+             <?php if(ButtonAction::hidden()){ ?>
+            <!-- 提交收款信息 -->
+            <div class="col-100 text-center" v-if="waitForRec && recPermissions && !operatingComment">
+                <el-button type="primary" @click="recSubmit()" :disabled='disabledSubmit'>
+                    {{$lang('提交')}}
+                </el-button>
+                <el-button @click="cancel()">
+                    {{$lang('取消')}}
+                </el-button>
+            </div>
+             <?php } ?>
+              <?php if(ButtonAction::hidden()){ ?>
+            <!-- 发起人无权限审批 -->
+            <div class="col-100 text-center" v-if="status == 'audit' && !authIdentify && (failState || currentStep == 1) && modifyPermissions && !operatingComment">
+                <el-button type="primary" @click="edit()">
+                    {{$lang('修改')}}
+                </el-button>
+                <el-button @click="del()">
+                    {{$lang('删除')}}
+                </el-button>
+            </div>
+            <?php } ?>
+        </div>
+
+        <!-- 审核不同意意见 -->
+         <?php if(ButtonAction::hidden()){ ?>
+        <el-dialog :title="$lang('审核不同意')" :visible.sync="disagree">
+            <el-form label-width="110px" :label-position="'left'">
+                <el-row>
+                    <el-col :span="22">
+                        <el-form-item :label="$lang('不通过原因')" class="is-required">
+                            <el-input type="textarea" :autoSize="{ minRows: 4, maxRows: 6}" v-model="auditReason" auto-complete="off" :placeholder="$lang('请填写不通过原因')"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+                <el-button @click="disagree = false">
+                    {{$lang('取消')}}
+                </el-button>
+                <el-button type="primary" @click="audit(false)">
+                    {{$lang('确定')}}
+                </el-button>
+            </div>
+        </el-dialog>
+        <?php } ?>
+        <?php if(ButtonAction::hidden()){ ?>
+        <!-- 审批批注 -->
+        <el-dialog :title="$lang('批注')" size="tiny" :visible.sync="annotationVisible" center>
+            <el-row>
+                <el-col :span="24">
+                    <el-input type="textarea" :autoSize="{ minRows: 6, maxRows: 8}" v-model="comment" auto-complete="off" :placeholder="$lang('需要对其他审批人说些什么？')"></el-input>
+                </el-col>
+            </el-row>
+            <span slot="footer" class="dialog-footer">
+                <el-button type="primary" @click="audit(true)" :disabled='disabledSubmit'>
+                    {{$lang('提交')}}
+                </el-button>
+            </span>
+        </el-dialog>
+         <?php } ?>
+    </div>
+    <script type="text/javascript" src="../Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="../Public/utils/utils.js"></script>
+    <script type="text/javascript" src="../Public/lib/jquery.table2excel.js"></script>
+    <script src="../Public/js/H-ui.js"></script>
+    <script src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="../Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="../Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="../Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script>    
+        if(getCookie('think_language') !== "zh-cn" ){
+            ELEMENT.locale(ELEMENT.lang.en)
+        }
+        var transApp = new Vue({
+            el: '#transApp',
+            data: {
+                annotationVisible: false,
+                attachmentList: [],
+                payVoucherFileList: [],
+                recVoucherFileList: [],
+                comment: '', //批注
+                form: {
+                    paymentCompanyClassCd: 'N003510001',
+                    collectionCompanyClassCd: 'N003510001',
+                    payCompanyName: '',
+                    payCompanyCode: '',
+                    payOpenBank: '',
+                    payAccountBank: '',
+                    recCompanyName: '',
+                    recCompanyCode: '',
+                    recOpenBank: '',
+                    recAccountBank: '',
+                    amountMoney: '',
+                    reason: '',
+                    usePayCurrency: false,
+                    currencyCode: ''
+                },
+                payForm: {
+                    payTransferTime: '',
+                    payActualMoney: '',
+                    id: '',
+                    payReason: ''
+                },
+                recForm: {
+                    recTransferTime: '',
+                    recActualMoney: '',
+                    id: '',
+                    recReason: ''
+                },
+                auditReason: '', //原因,
+                status: '', //创建或审核状态
+                baseData: {}, //基础数据
+                fileList: [], //申请文件列表
+                filePayList: [], //转账文件列表
+                fileRecList: [], //收款文件列表
+                appInfo: {}, //申请信息
+                auditProcss: [], //审核流程
+                checkPic: false, //申请是否选中图片
+                checkPayPic: false, //转账是否选中图片
+                checkRecPic: false, //收款是否选中图片
+                type: '', //编辑或查看状态
+                failState: false, //审批失败状态
+                waitForPay: false, //是否转账状态
+                waitForRec: false, //是否收款状态
+                disagree: false, //审核不同意意见框
+                recSuccess: false, //审核收款完成。
+                authIdentify: false, //是否有审核权限,
+                payPermissions: false, //是否转账权限,
+                recPermissions: false, //是否收款权限,
+                modifyPermissions: false, //是否有修改权限,
+                currentStep: '', //当前审批节点,
+                disabledSubmit: false, //禁用提交按钮
+                disabledClick: false, // 
+                commentDetail: [], //批注
+                operatingComment: false, //取消保存批注操作按钮
+                showChangeComment: false, //批注是否展示按钮
+                auditorPermissions: [], //什么有编辑批注权限
+                isLastAuditor:false,    //是否最后一个审批人
+                payPickerOptions: {
+                    disabledDate: function name(time) {
+                        return time.getTime() > Date.now();
+                    },
+                },
+                recPickerOptions: {
+                    disabledDate: function name(time) {
+                        return time.getTime() > Date.now();
+                    },
+                },
+                numberFormat: utils.numberFormat.bind(utils),
+                fixedNum: function (param, num) {
+                    num = num || 0;
+                    var floatNum = parseFloat(param);
+                    if (!isNaN(floatNum)) {
+                        return floatNum.toFixed(num);
+                    }
+                },
+                jumpList: function () {
+                    setTimeout(function () {
+                        var route = document.createElement("a");
+                        route.setAttribute("style", "display: none");
+                        route.setAttribute("onclick", "backNewtab(this,'转账外汇')");
+                        route.setAttribute("_href", '/index.php?m=finance&a=transferAccount');
+                        route.onclick();
+                    }, 1000);
+                },
+                getValue: function (dataName, key) {
+                    var result = '';
+                    for (var i in this.baseData[dataName]) {
+                        if (dataName === 'supplier') {
+                            // 获取供应商公司名称
+                            if (this.baseData[dataName][i].ID == key) {
+                                result = this.baseData[dataName][i].SP_NAME
+                                break;
+                            }
+                        } else if (dataName === 'company_open') {
+                            if (this.baseData[dataName][i].CD == key) {
+                                result = this.baseData[dataName][i].CD_VAL
+                                break;
+                            }
+                        } else {
+                            if (this.baseData[dataName][i].cd == key) {
+                                result = this.baseData[dataName][i].cdVal
+                                break;
+                            }
+                        }
+                    }
+                    return result ? result : '-';
+                }
+            },
+            created: function () {
+                var searchId = window.location.search,
+                    idStr = searchId.substr(searchId.indexOf('id')),
+                    id = idStr.split("=")[1];
+                this.status = id ? 'audit' : 'edit';
+                this.search(id)
+                this.getOurCompany();
+                axios.defaults.headers.common.Accept = "*/*";
+            },
+            methods: {
+                getOurCompany() {
+                    axios.post('/index.php?g=common&m=index&a=get_our_company').then(res => {
+                        if (res.data.code === 2000) {
+                            this.baseData.company_open = res.data.data;
+                        } else {
+                            this.$message.error(this.$lang(res.data.msg));
+                        }
+                    })
+                },
+                // 跳转付款单详情
+                goPaymentBill(id,source_cd) {
+                    newTab("/index.php?m=finance&a=pay_order_detail&payment_audit_id=" +id + '&source_cd=' + source_cd , '付款单详情'); 
+                },
+                //获取基础数据
+                inNum: function (event, key, val) {
+                    var amount = parseFloat(this[key][val]);
+                    if (event.key !== '.' && isNaN(event.key)) {
+                        this[key][val] = isNaN(amount) ? '' : amount;
+                        return false;
+                    }
+                },
+                search: function (id) {
+                    var param = {
+                        "data": {
+                            "query": {
+                                "currency": "true",
+                                "turnOver": "true",
+                                "account_class_cd": "true",
+                                "supplier": "true"
+                            }
+                        }
+                    }
+                    axios.post("/index.php?m=finance&a=commonData", param).then(function (res) {
+                        if (res.data.code == 2000) {
+                            transApp.baseData = Object.assign({}, res.data.data, transApp.baseData);
+                            if (id) {
+                                transApp.getDetailData({
+                                    id: id
+                                })
+                            }
+                        }
+                    })
+                },
+                //获取详细数据
+                getDetailData: function (obj) {
+                    var param = {
+                        data: {
+                            query: obj
+                        }
+                    }
+                    axios.post("/index.php?m=finance&a=transferDetail", param).then(function (res) {
+                        if (res.data.code == 2000) {
+                            transApp.appInfo = res.data.data.pageData;
+                            transApp.appInfo.amountMoney = transApp.appInfo.amountMoney
+                            transApp.auditProcss = res.data.data.auditStep;
+                            transApp.failState = res.data.data.failState;
+                            transApp.waitForPay = res.data.data.waitForPay;
+                            transApp.oldForPay = res.data.data.oldForPay;
+                            transApp.waitForRec = res.data.data.waitForRec;
+                            transApp.recSuccess = res.data.data.recSuccess;
+                            transApp.authIdentify = res.data.data.authIdentify;
+                            transApp.payPermissions = res.data.data.payPermissions;
+                            transApp.recPermissions = res.data.data.recPermissions;
+                            transApp.modifyPermissions = res.data.data.modifyPermissions;
+                            transApp.currentStep = res.data.data.currentStep;
+                            transApp.commentDetail = res.data.data.comment;
+                            transApp.auditorPermissions = res.data.data.auditorPermissions;
+                            transApp.isLastAuditor = res.data.data.isLastAuditor;
+                            setTimeout(function () {
+                                $(".circle-wrap div").css({
+                                    "width": $(".circle-wrap").width() / transApp.auditProcss.length,
+                                    display:'inline-block',
+                                    verticalAlign:'top'
+                                });
+                            })
+
+                        }
+                    })
+                },
+                //银行账号联动
+                searchBank: function (obj) {
+                    var param = {
+                        data: {
+                            query: {
+                                companyCode: this.form[obj.company],
+                                openBank: this.form[obj.bankName],
+                                accountBank: this.form[obj.account],
+                                rec: obj.rec
+                            }
+                        }
+                    };
+                    Vue.set(transApp,'disabledClick', true);
+                    axios.post("/index.php?m=finance&a=bankAccountList", param).then(function (res) {
+                        var data = res.data;
+                        if (data.code == 2000) {
+                            var bank = data.data.pageData || [],
+                                result = [];
+                            for (var i = 0, len = bank.length; i < len; i++) {
+                                result.push(bank[i][obj.getValue])
+                                if (obj.account && obj.account == 'recAccountBank') {
+                                    transApp.form.recSwiftCode = bank[i].swiftCode;
+                                    // companyCode包含供应商数据CODE，因此根据不同类别获取不同的名称
+                                    transApp.form.recCompanyName = transApp.getValue(transApp.form.collectionCompanyClassCd === 'N003510001' ? 'company_open' : 'supplier', bank[i].companyCode)
+                                    transApp.form.recCurrencyCode = bank[i].currencyCode;
+                                    transApp.form.usePayCurrency = res.data.data.usePayCurrency;
+                                } else if (obj.account && obj.account == 'payAccountBank') {
+                                    transApp.form.paySwiftCode = bank[i].swiftCode;
+                                    transApp.form.payCompanyName = transApp.getValue(transApp.form.paymentCompanyClassCd === 'N003510001' ? 'company_open' : 'supplier', bank[i].companyCode)
+                                    transApp.form.payCurrencyCode = bank[i].currencyCode;
+                                }
+                            }
+                            // 银行名称去重
+                            if (obj.baseKey == 'payBank' || obj.baseKey == 'recBank') {
+                                var bank = utils.unique(result);
+                                Vue.set(transApp.baseData, obj.baseKey, bank)
+                            } else {
+                                Vue.set(transApp.baseData, obj.baseKey, result)
+                            }
+
+
+                        } else {
+                            transApp.$message({
+                                message: transApp.$lang('获取数据失败'),
+                                type: 'error'
+                            });
+                        }
+                        Vue.set(transApp,'disabledClick', false);
+                    })
+                },
+                //上传提交审核信息
+                submit: function () {
+                    // 付款银行等下拉选择操作获取接口未完成不允许提交,避免网络慢的情况提交错误数据
+                    if (this.disabledClick) {
+                        return false;
+                    }
+                    if (!this.form.paymentCompanyClassCd) {
+                        this.$message({
+                            message: this.$lang('付款公司归属不能为空'),
+                            type: 'warning'
+                        })
+                        return false
+                    }
+                    if (!this.form.collectionCompanyClassCd) {
+                        this.$message({
+                            message: this.$lang('收款公司归属不能为空'),
+                            type: 'warning'
+                        })
+                        return false
+                    }
+                    if (!this.form.payCompanyCode || !this.form.payCompanyName) {
+                        this.$message({
+                            message: this.$lang('付款公司不能为空'),
+                            type: 'warning'
+                        });
+                        return false
+                    };
+                    if (!this.form.recCompanyCode || !this.form.recCompanyName) {
+                        this.$message({
+                            message: this.$lang('收款公司不能为空'),
+                            type: 'warning'
+                        });
+                        return false
+                    };
+                    if (!this.form.payOpenBank) {
+                        this.$message({
+                            message: this.$lang('付款银行不能为空'),
+                            type: 'warning'
+                        });
+                        return false
+                    };
+                    if (!this.form.recOpenBank) {
+                        this.$message({
+                            message: this.$lang('收款银行不能为空'),
+                            type: 'warning'
+                        });
+                        return false
+                    };
+                    if (!this.form.payAccountBank) {
+                        this.$message({
+                            message: this.$lang('付款银行账号不能为空'),
+                            type: 'warning'
+                        });
+                        return false
+                    };
+
+                    if (!this.form.recAccountBank) {
+                        this.$message({
+                            message: this.$lang('收款银行账号不能为空'),
+                            type: 'warning'
+                        });
+                        return false
+                    };
+                    if (!this.form.currencyCode) {
+                        this.$message({
+                            message: this.$lang('付款币种不能为空'),
+                            type: 'warning'
+                        });
+                        return false
+                    };
+                    if (!this.form.amountMoney) {
+                        this.$message({
+                            message: this.$lang('金额不能为空'),
+                            type: 'warning'
+                        });
+                        return false
+                    };
+                    if (!this.form.use) {
+                        this.$message({
+                            message: this.$lang('用途不能为空'),
+                            type: 'warning'
+                        });
+                        return false
+                    };
+
+                    this.disabledSubmit = true;
+                    var param = new FormData();
+                    for (var k in this.form) {
+                        param.append(k, this.form[k]);
+                    }
+                    var arr = []
+                    for (var i = 0, len = this.attachmentList.length; i < len; i++) {
+                        if (this.attachmentList[i].raw) {
+                            param.append('attachment[]', this.attachmentList[i].raw);
+                        } else {
+                            arr.push({
+                                baseName: this.attachmentList[i].baseName,
+                                saveName: this.attachmentList[i].saveName
+                            })
+                        }
+                    }
+                    param.append('attachment[]', JSON.stringify(arr));
+
+                    axios.post("/index.php?m=finance&a=transferApply", param).then(function (res) {
+                        if (res.data.code == 2000) {
+                            transApp.$message({
+                                message: transApp.$lang(res.data.msg),
+                                type: 'success'
+                            });
+                            transApp.jumpList();
+                        } else {
+                            transApp.$message({
+                                message: transApp.$lang(res.data.msg),
+                                type: 'error'
+                            });
+                            transApp.disabledSubmit = false;
+                        }
+                    })
+                },
+                //上传提转账信息  
+                paySubmit: function () {
+                    if (!this.payForm.payTransferTime) {
+                        this.$message({
+                            message: this.$lang('付款日期不能为空'),
+                            type: 'warning'
+                        });
+                        return false
+                    };
+                    if (!this.payForm.payActualMoney) {
+                        this.$message({
+                            message: this.$lang('实际付款金额不能为空'),
+                            type: 'warning'
+                        });
+                        return false
+                    };
+                    this.payForm.id = this.appInfo.id;
+                    this.payForm.payTransferTime = utils.dateFormat(this.payForm.payTransferTime, 'yyyy-MM-dd')
+                    transApp.disabledSubmit = true;
+                    var param = new FormData();
+                    for (var k in this.payForm) {
+                        if(k == 'payActualMoney'){
+                            this.payForm.payActualMoney = this.payForm.payActualMoney.replace(/,/g,'')
+                        }
+                        param.append(k, this.payForm[k]);
+                    }
+
+                    var arr = [];
+                    for (var i = 0, len = this.payVoucherFileList.length; i < len; i++) {
+                        param.append('payVoucherFile[]', this.payVoucherFileList[i].raw);
+                    }
+
+                    if (arr.length) {
+                        param.append('payVoucher[]', JSON.stringify(arr));
+                    }
+
+
+                    axios.post("/index.php?m=finance&a=payConfirm", param).then(function (res) {
+                        if (res.data.code == 2000) {
+                            transApp.$message({
+                                message: transApp.$lang(res.data.msg),
+                                type: 'success'
+                            });
+                            transApp.jumpList();
+                        } else {
+                            transApp.$message({
+                                message: transApp.$lang(res.data.msg),
+                                type: 'error'
+                            });
+                            transApp.disabledSubmit = false;
+                        }
+                    })
+
+                },
+                //上传提转账信息
+                recSubmit: function () {
+                    if (!this.recForm.recTransferTime) {
+                        this.$message({
+                            message: this.$lang('收款日期不能为空'),
+                            type: 'warning'
+                        });
+                        return false
+                    };
+                    if (!this.recForm.recActualMoney) {
+                        this.$message({
+                            message: this.$lang('实际收款金额不能为空'),
+                            type: 'warning'
+                        });
+                        return false
+                    };
+                    transApp.disabledSubmit = true;
+                    this.recForm.id = this.appInfo.id;
+                    this.recForm.recTransferTime = utils.dateFormat(this.recForm.recTransferTime, 'yyyy-MM-dd')
+
+                    var param = new FormData();
+
+                    for (var k in this.recForm) {
+                        if(k == 'recActualMoney'){
+                            this.recForm.recActualMoney = this.recForm.recActualMoney.replace(/,/g,'')
+                        }
+                        param.append(k, this.recForm[k]);
+                    }
+
+                    var arr = [];
+                    for (var i = 0, len = this.recVoucherFileList.length; i < len; i++) {
+                        param.append('recVoucherFile[]', this.recVoucherFileList[i].raw);
+                    }
+                    if (arr.length) {
+                        param.append('recVoucherFile[]', JSON.stringify(arr));
+                    }
+                    axios.post("/index.php?m=finance&a=recConfirm", param).then(function (res) {
+                        if (res.data.code == 2000) {
+                            transApp.$message({
+                                message:  transApp.$lang(res.data.msg),
+                                type: 'success'
+                            });
+                            transApp.jumpList();
+                        } else {
+                            transApp.$message({
+                                message:  transApp.$lang(res.data.msg),
+                                type: 'error'
+                            });
+                            transApp.disabledSubmit = false;
+                        }
+                    })
+                },
+                cancel: function () {
+                    this.jumpList();
+                },
+                //批注
+                showComment: function () {
+                    if(this.isLastAuditor){
+                        this.audit(true);
+                    }else{
+                        this.annotationVisible = true;
+                    }
+
+                },
+                //审核同意
+                audit: function (type) {
+                    var _this = this;
+                    if (!this.isLastAuditor && type && !$.trim(this.comment)) {
+                        transApp.$message({
+                            message: this.$lang('请填写批注'),
+                            type: 'warning'
+                        });
+                        return false;
+                    }
+                    if (!type && !this.auditReason) {
+                        transApp.$message({
+                            message: this.$lang('请填写原因'),
+                            type: 'warning'
+                        });
+                        return false;
+                    }
+                    var param = {
+                        data: {
+                            agree: type,
+                            auditReason: type ? null : this.auditReason,
+                            id: this.appInfo.id,
+                            comment: $.trim(this.comment)
+                        }
+                    };
+
+                    transApp.disabledSubmit = true;
+                    axios.post("/index.php?m=finance&a=audit", param).then(function (res) {
+                        if (res.data.code === 2000) {
+                            _this.annotationVisible = false;
+                            _this.$message({
+                                message: transApp.$lang(res.data.msg),
+                                type: 'success'
+                            });
+                            setTimeout(function () {
+                                window.location.reload();
+                            }, 1000)
+                        } else {
+                            transApp.$message({
+                                message: transApp.$lang(res.data.msg),
+                                type: 'error'
+                            });
+                            transApp.disabledSubmit = false;
+                            error = {
+                                "trigger": {
+                                    "interface_identification": "transfer",
+                                    "end": "WEB",
+                                    "key": "审批失败",
+                                },
+                                "main_content": {
+                                    "request_url": document.location.href,
+                                    "request_data": param,
+                                    "reponse_data": res.data
+                                },
+                                "exception_level": "ERROR",
+                                "message_sending": {
+                                    "short_message": "转账换汇",
+                                    "prompt_end": "ERP",
+                                    "group_or_user": "all"
+                                }
+                            };
+                            if ('erp.gshopper.com' == document.location.hostname){
+                                var url = "http://cms.gshopper.com/Sentinel/addAbnormal";
+                            } else{
+                                var url = "http://cms.gshopper.stage.com/Sentinel/addAbnormal";
+                            }
+                            axios.post(url, error).then(function (err) {
+                                console.log(err)
+                            })
+                        }
+                    });
+                },
+                //不同意
+                disagreeFn: function () {
+                    this.disagree = true;
+                },
+                changeCom: function () {
+                    var _this = this;
+                    _this.auditorPermissions.forEach(function (item) {
+                        _this.commentDetail.forEach(function (com) {
+                            if (item.canAuditStep == com.currentAuditStep) {
+                                Vue.set(com, "change", true);
+                            }
+                        });
+                    });
+                    this.operatingComment = true;
+                },
+                submitChangeCom: function () {
+                    var _this = this,
+                        tag = false,
+                        param = { data: { comments: [] } };
+                   
+                        _this.commentDetail.forEach(function (item, index) {
+                            if (item.change) {
+                                if (!$.trim(item.msg)) {
+                                    tag = true;
+                                }
+                                param.data.comments.push({
+                                    transferNo: _this.appInfo.transferNo,
+                                    currentAuditStep: item.currentAuditStep,
+                                    comment: item.msg
+                                });
+                            }
+                        });
+
+                    if (tag) {
+                        transApp.$message({
+                            message: transApp.$lang('请填写批注'),
+                            type: 'warning'
+                        });
+                        return false;
+                    }
+                    axios.post("/index.php?m=finance&a=updateComment", param).then(function (res) {
+                        if (res.data.code == 2000) {
+                            transApp.$message({
+                                message: transApp.$lang('批注修改成功'),
+                                type: 'success'
+                            })
+                            transApp.operatingComment = false;
+                            transApp.getDetailData({ id: transApp.appInfo.id })
+                        } else {
+                            transApp.$message({
+                                message: transApp.$lang(res.data.data.msg),
+                                type: 'error'
+                            })
+                        }
+                    });
+                },
+                //取消批注按钮
+                cancelComment: function () {
+                    this.getDetailData({ id: this.appInfo.id });
+                    this.operatingComment = false;
+                },
+                //编辑信息
+                edit: function () {
+                    this.form = this.appInfo;
+                    if (this.appInfo.attachment) {
+                        this.appInfo.attachment.forEach(function (item) {
+                            transApp.fileList.push({
+                                name: item.baseName,
+                                url: 'data:image/png;base64,' + item.resource,
+                                saveName: item.saveName,
+                                baseName: item.baseName
+                            })
+                        });
+                    }
+                    this.attachmentList = this.appInfo.attachment ? this.appInfo.attachment : [];
+                    this.status = 'edit';
+                },
+                //del
+                del: function () {
+                    var param = {
+                        "data": {
+                            "id": this.appInfo.id
+                        }
+                    }
+                    axios.post("/index.php?m=finance&a=delTransfer", param).then(function (res) {
+                        if (res.data.code === 2000) {
+                            transApp.$message({
+                                message: transApp.$lang('删除成功'),
+                                type: 'success'
+                            });
+                            transApp.jumpList();
+                        } else {
+                            transApp.$message({
+                                message: transApp.$lang(res.data.msg),
+                                type: 'error'
+                            });
+                        }
+                    })
+                },
+                //文件变动
+                changeFile: function (file, fileList) {
+                    var type = file.raw.type.indexOf("image");
+                    if (type > -1) {
+                        this.attachmentList = fileList;
+                    } else {
+                        transApp.$message({
+                            message: transApp.$lang('只可以上传图片'),
+                            type: 'warning'
+                        });
+                        fileList.splice(fileList.length - 1, 1);
+                        this.attachmentList = fileList;
+                    }
+                },
+                //转账文件变动
+                changePayFile: function (file, fileList) {
+                    this.payVoucherFileList = fileList;
+                },
+                //收款文件变动
+                changeRecFile: function (file, fileList) {
+                    this.recVoucherFileList = fileList;
+                },
+                //重置
+                reset: function () {
+                    for (var k in this.form) {
+                        this.form[k] = '';
+                    }
+                },
+                handlePaymentComanyClass: function() {
+                    this.form.payCompanyName = '',
+                    this.form.payCompanyCode = '',
+                    this.form.payOpenBank = '',
+                    this.form.payAccountBank = ''
+                },
+                handleCollectionCompanyClass: function() {
+                    this.form.recCompanyName = '',
+                    this.form.recCompanyCode = '',
+                    this.form.recOpenBank = '',
+                    this.form.recAccountBank = ''
+                }
+            }
+        })
+    </script>
+</body>
+
+</html>

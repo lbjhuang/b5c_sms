@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="../Public/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="../Public/icon/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../Public/css/send.css"/>
+    <script type="text/javascript" src="../Public/lib/My97DatePicker/WdatePicker.js"></script>
+    <link href="../Public/lib/My97DatePicker/skin/WdatePicker.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="../Public/utils/css/public.style.css">
+    <link rel="stylesheet" href="../Public/css/new-button.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <title><{$Think.lang.收款详情}></title>
+    <script type="text/javascript">
+        var url = window.location.href;
+    </script>
+    <style>
+        .wrap {
+            box-sizing: border-box;
+            padding: 20px;
+            margin: 0;
+        }
+        .row {
+            margin: 0;
+        }
+
+        .row + .row {
+            margin-top: 20px;
+        }
+        [class*="col-"]{
+            padding: 0;
+        }
+        .concat-input{
+            width: 40% !important;
+            border-radius: 0 0.2rem 0.2rem 0 !important;
+        }
+        .el-date-picker {
+            max-width: 100%;
+        }
+
+    </style>
+</head>
+<body >
+
+<div id="gather-detail" v-cloak="" class="wrap"  v-loading="loading_switch" element-loading-text="加载中..." >
+    <form id="form" :action="'<{:U('gathering_save')}>'+url+'&ORDER_ID='+gathering.ORDER_ID+'&main_id=<{$main_id}>'" enctype="multipart/form-data" method="post">
+        <div class="row">
+            <div class="col-lg-12 col-md-12 col-sm-12 use-title">
+                <span>{{$lang('收款详情')}}</span>
+            </div>
+
+        </div>
+        <div class="row">
+            <div class="col-lg-12 col-md-12 col-sm-12">
+                <table class="b2b-table-one">
+                    <caption>
+                        <div class="row">
+                            <div class="col-lg-6 col-md-6">{{$lang('基础信息')}}</div>
+                            <!--<div class="col-lg-6 col-md-6 use-btn text-right" v-show="!show" v-if="gathering.receipt_operation_status == 0 && initdata.node_status">
+                                <button type="button" class="btn-pub btn-yellow" style="line-height: initial;" @click="upd_show"><{$Think.lang.收款}></button>
+                            </div>-->
+                        </div>
+                    </caption>
+                    <tbody class="use-body">
+                    <tr>
+                        <td><label>{{$lang('PO编号')}}</label></td>
+                        <td>{{gathering.PO_ID}}</td>
+                        <td><label>{{$lang('本节点收款状态')}}</label></td>
+                        <td>
+                            <span v-if="gathering.main_receipt_operation_status in initdata.main_gathering_state">{{initdata.main_gathering_state[(parseInt(gathering.main_receipt_operation_status))].CD_VAL}}</span>
+                            <span v-else="">{{$lang('待收款')}}</span>
+                            (
+                            <span v-if="gathering.overdue_statue == 0">{{$lang('当期未逾期')}}</span>
+                            <span class="cred" v-else-if="gathering.overdue_statue == 1">{{$lang('当期逾期')}}</span>
+                            <span v-else-if="gathering.overdue_statue == 2">{{$lang('实际未逾期')}}</span>
+                            <span class="cred" v-else-if="gathering.overdue_statue == 3">{{$lang('实际逾期')}}</span>
+                            <span v-else></span>
+                            )
+                        </td>
+
+                    </tr>
+                    <tr>
+                        <td><label>{{$lang('客户名称')}}</label></td>
+                        <td>{{gathering.client_id}}</td>
+                        <td><label>{{$lang('我方公司')}}</label></td>
+                        <td>{{gathering.our_company_info}}</td>
+                    </tr>
+                    <tr>
+                        <td><label>{{$lang('PO发起人')}}</label></td>
+                        <td>{{gathering.PO_USER}}</td>
+                        <td><label>{{$lang('PO时间')}}</label></td>
+                        <td>{{gathering.po_time}}</td>
+                    </tr>
+                    <tr>
+                        <td><label>{{$lang('发票与税点')}}</label></td>
+                        <td >
+
+                            <span ><span v-if="gathering.invoice_type in initdata.invioce">{{$lang(initdata.invioce[gathering.invoice_type].CD_VAL)}}-{{initdata.tax_point[gathering.tax_point].CD_VAL}}%</span></span>
+
+                        </td>
+                        <td><label>{{$lang('交货方式')}}</label></td>
+                        <td v-if="gathering.DELIVERY_METHOD in initdata.shipping">{{initdata.shipping[gathering.DELIVERY_METHOD].CD_VAL}}</td>
+                        <td v-else>{{gathering.DELIVERY_METHOD}}</td>
+                    </tr>
+                    <tr>
+                        <td><label>{{$lang('PO总金额')}}</label></td>
+                        <td>
+                            <span v-if="gathering.po_currency in initdata.currency">{{initdata.currency[gathering.po_currency].CD_VAL}}</span>
+                            <span v-if="show_node(gathering.receiving_code) != '-'">
+                                    {{king(gathering.estimated_amount)}}
+                                </span>
+                            <span v-else>-</span>
+                        </td>
+                        <td><label>{{$lang('结算帐期')}}</label></td>
+                        <td v-if="gathering.payment_account_type in initdata.period">{{$lang(initdata.period[gathering.payment_account_type - 1 ].CD_VAL)}}</td>
+                        <td v-else=""></td>
+                    </tr>
+                    <tr>
+                        <td><label>{{$lang('付款节点')}}</label></td>
+                        <td><span v-for="n in gathering.all_node">{{$lang(show_node(n.receiving_code))}}</span></td>
+                        <td><label>{{$lang('本期节点')}}</label></td>
+                        <td>{{$lang(show_node(gathering.receiving_code))}}</td>
+                    </tr>
+                    <tr>
+                        <td><label>{{$lang('本期应收')}}</label></td>
+                        <td>
+                            <span v-if="gathering.po_currency in initdata.currency">{{initdata.currency[gathering.po_currency].CD_VAL}}</span>
+                            <span v-if="gathering.transaction_type == 2">{{king(gathering.collect_this)}}</span>
+                            <span v-else="">{{king(gathering.expect_receipt_amount )}}</span>
+                        </td>
+
+                        <td><label><{$Think.lang.预期收款时间}></label></td>
+                        <td v-if="gathering.transaction_type == 2 && gathering.completion_date_end">{{GetDateStr(gathering.completion_date_end,0)}}
+                            合同：{{GetDateStr(gathering.main_expect_receipt_date,0)}}
+                        </td>
+                        <td v-else-if="gathering.transaction_type == 1">{{gather_date(gathering)}}
+                            合同：{{GetDateStr(gathering.main_expect_receipt_date,0)}}
+                        </td>
+                        <td v-else-if="gathering.expect_receipt_date">{{GetDateStr(gathering.expect_receipt_date,0)}}
+                            合同：{{GetDateStr(gathering.main_expect_receipt_date,0)}}
+                        </td>
+                        <td v-else=""></td>
+                    </tr>
+
+                    <tr v-if="gathering.transaction_type != 1" >
+                        <td><label>{{$lang('已收金额')}}</label></td>
+                        <td>
+                            <span v-if="gathering.po_currency ">{{initdata.currency[gathering.po_currency].CD_VAL}}</span>&nbsp;
+                            <!--<span v-if="gathering.transaction_type == 2">{{king((gathering.collect_this - parseFloat(gathering.expect_receipt_amount) - parseFloat(gathering.todo_order_amount)).toFixed(2) )}}</span>
+                            <span v-else=""> {{king((parseFloat(gathering.all_money_po) - parseFloat(gathering.todo_order_amount)).toFixed(2))}}</span>-->
+                            <span > {{king((parseFloat(gathering.all_money_po) - parseFloat(gathering.todo_order_amount)).toFixed(2))}}</span>
+
+                        </td>
+                        <td><label>{{$lang('待收金额')}}</label></td>
+                        <!--<td>
+                            <span v-if="gathering.po_currency ">{{initdata.currency[gathering.po_currency].CD_VAL}}</span>&nbsp;
+                            <span v-if="gathering.transaction_type == 2">{{king(( parseFloat(gathering.expect_receipt_amount) + parseFloat(gathering.todo_order_amount)).toFixed(2))}}</span>
+                            <span v-if="!gathering.po_currency && parseFloat(gathering.all_money_po)>parseFloat(gathering.todo_order_amount)"> {{king(( parseFloat(gathering.expect_receipt_amount) + parseFloat(gathering.todo_order_amount)).toFixed(2))}}</span>
+                            <span v-if="!gathering.po_currency && parseFloat(gathering.all_money_po)<parseFloat(gathering.todo_order_amount)">0</span>
+                        </td>-->
+                        <td>
+                            <span v-if="gathering.po_currency ">{{initdata.currency[gathering.po_currency].CD_VAL}}</span>
+
+                            <span v-if="gathering.transaction_type == 2 && (parseFloat(gathering.collect_this) - parseFloat(gathering.all_money_po) + parseFloat(gathering.todo_order_amount) ) > 0"> {{king((parseFloat(gathering.collect_this) - parseFloat(gathering.all_money_po) + parseFloat(gathering.todo_order_amount)).toFixed(2))}}</span>
+                            <span v-if="gathering.transaction_type != 2 && (parseFloat(gathering.expect_receipt_amount) - parseFloat(gathering.all_money_po) + parseFloat(gathering.todo_order_amount) ) > 0"> {{king((parseFloat(gathering.expect_receipt_amount) - parseFloat(gathering.all_money_po) + parseFloat(gathering.todo_order_amount)).toFixed(2))}}</span>
+                            <span v-if="(parseFloat(gathering.collect_this) - parseFloat(gathering.all_money_po) + parseFloat(gathering.todo_order_amount) ) <= 0 && (parseFloat(gathering.expect_receipt_amount) - parseFloat(gathering.all_money_po) + parseFloat(gathering.todo_order_amount) ) <= 0">
+                                0.00
+                            </span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="row" v-show="!show" v-if="gathering.receipt_operation_status > 0">
+            <div class="col-lg-12 col-md-12 col-sm-12">
+                <table class="b2b-table-one">
+                    <caption>{{$lang('收款信息')}}</caption>
+                    <tbody class="use-body">
+                    <tr>
+                        <td><label>{{$lang('收款金额')}}</label></td>
+                        <td><span v-if="gathering.po_currency in initdata.currency">{{initdata.currency[gathering.po_currency].CD_VAL}}</span> {{king(gathering.actual_payment_amount_z)}}</td>
+                        <td><label>{{$lang('收款时间')}}</label></td>
+                        <td>{{GetDateStr(gathering.actual_receipt_date,0)}}</td>
+                    </tr>
+                    <tr>
+                        <td><label>{{$lang('剩余待收')}}</label></td>
+                        <td v-if="(gathering.receipt_operation_status > 0) && gathering.transaction_type == 2">
+                            <span v-if="gathering.po_currency">{{initdata.currency[gathering.po_currency].CD_VAL}}</span>
+                            <!--{{king((parseFloat(gathering.received_this)+parseFloat(gathering.expect_receipt_amount) - parseFloat(gathering.actual_payment_amount_z)).toFixed(2))}}-->
+                            {{king((parseFloat(gathering.expect_receipt_amount) - parseFloat(gathering.actual_payment_amount_z) ).toFixed(2))}}
+                        </td>
+                        <td v-else="">
+                            <span v-if="gathering.po_currency">{{initdata.currency[gathering.po_currency].CD_VAL}}</span>
+                            {{king((gathering.expect_receipt_amount - gathering.actual_payment_amount_z).toFixed(2))}}</td>
+                        <td><label>{{$lang('逾期天数')}}</label></td>
+                        <td>{{overdue(gathering,gathering.actual_receipt_date)}}</td>
+                    </tr>
+
+                    <tr>
+                        <td>{{$lang('收款完成')}}</td>
+                        <td  >
+                            <!--&& !initdata.is_end-->
+                            <span v-if="gathering.completion_date_end ">{{$lang('本期收款未完成')}} &nbsp; {{GetDateStr(gathering.completion_date_end,0)}}</span>
+                            <span v-else="">{{$lang('本期收款已完成')}}{{gathering.completion_date_end}}</span>
+                        </td>
+                        <td><label>{{$lang('我方公司')}}</label></td>
+                        <td>{{gathering.company_our_receipt}}{{gathering.expect_receipt_amount - gathering.actual_payment_amount}}-{{completion_end}}</td>
+
+                    </tr>
+
+                    <tr v-if="gathering.DEVIATION_REASON && !gathering.completion_date_end">
+
+                        <td>{{$lang('差异原因')}}</td>
+                        <td  >{{gathering.DEVIATION_REASON}}</td>
+                        <td><label>{{$lang('差异凭证')}}</label></td>
+                        <td><a target="_blank" :href="'<{:U('orderDetail/download')}>&file='+gathering.file_path">{{gathering.file_name}}</a></td>
+                    </tr>
+
+                    <tr>
+                        <td><label>{{$lang('收款凭证')}}</label></td>
+                        <td><a target="_blank" :href="'<{:U('orderDetail/download')}>&file='+gathering.receive_file_path">{{gathering.receive_file_name}}</a></td>
+                        <td>{{$lang('收款备注')}}</td>
+                        <td  >{{$lang(gathering.remarks)}}</td>
+                    </tr>
+                    <tr >
+
+                        <td><label>{{$lang('提交人')}}</label></td>
+                        <td>{{gathering.operator_id}}</td>
+                        <td><label>{{$lang('提交时间')}}</label></td>
+                        <td>{{gathering.create_time}}</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="row"  v-show="(initdata.is_end && completion_end != 1 && gathering.transaction_type != 1 && !gathering.completion_date_end)">
+                <div class="col-lg-12 col-md-12">
+                    <table class="b2b-table-one">
+                        <caption>{{$lang('成本和税费')}}</caption>
+                        <tbody class="use-body">
+                        <td><label>{{$lang('总收款')}}</label></td>
+                        <td  >
+                            <span>USD</span>
+                            <!--{{king((parseFloat(gathering.all_order_money)  - parseFloat(gathering.todo_order_amount)).toFixed(2))}}-->
+                            {{allMoneyAmount}}
+
+                        </td>
+
+
+
+                        <td><label>{{$lang('金额总差异')}}</label></td>
+                        <td><span>USD</span>
+                            <!--{{king((parseFloat(gathering.all_diff) +
+                            parseFloat(gathering.todo_order_amount)).toFixed(2))}}-->
+
+                            {{allDiffAmount}}
+                        </td>
+                        </tr>
+
+                        <tr v-if="!state.submit" >
+                            <td>{{$lang('商品总成本')}}</td>
+                            <td>USD {{gathering.cost_delivery_usd}}</td>
+                            <td>{{$lang('总服务费用')}}</td>
+                            <td>
+                                <span >USD</span> {{gathering.logistics_costs}}
+                            </td>
+                        </tr>
+                        <tr v-if="!state.submit">
+                            <td>{{$lang('应交税')}}</td>
+                            <td>
+                                <span >USD</span>  {{king(gathering.sale_tax)}}
+                            </td>
+                            <td>{{$lang('残次品入库成本')}}</td>
+                            <td>
+                                <span >USD</span> {{gathering.recoverable_amount}}
+
+                            </td>
+                        </tr>
+
+                        <!-- submit -->
+
+                        <tr v-if="state.submit">
+                            <td>{{$lang('商品总成本')}}</td>
+                            <td><span>USD</span><input type="text" class="input-form concat-input" v-model="gathering.cost_delivery" name="cost_delivery"></td>
+                            <td>{{$lang('总服务费用')}}</td>
+                            <td>
+                                <span>USD</span><input type="text" class="input-form concat-input" v-model="gathering.logistics_costs" name="logistics_costs">
+                            </td>
+                        </tr>
+                        <tr v-if="state.submit">
+                            <td>{{$lang('应交税')}}</td>
+                            <td>
+                                <span>USD</span>&nbsp;<input type="text" class="input-form concat-input" v-model="gathering.sale_tax" name="sale_tax">
+                             </td>
+                            <td>{{$lang('残次品入库成本')}}</td>
+                            <td>
+                                <span>USD</span> &nbsp;<input type="text" class="input-form concat-input" v-model="gathering.recoverable_amount" name="recoverable_amount">
+                            </td>
+                        </tr>
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <br>
+            <div class="row" style="text-align: center;margin-top:20px">
+                <div class="row text-center" v-if="!state.submit">
+                    <div class="col-md-12">
+                        <a style="margin-right:15px" href="<{:U('gathering_list')}>"><el-button type="primary">{{$lang('返回')}}</el-button>
+                        <a style="margin-right:15px" v-show="0==gathering.unconfirmed_state" @click="changState('submit')"><el-button>{{$lang('确认')}}</el-button></a>
+                        <el-button style="margin-right:15px" v-show="0==gathering.unconfirmed_state" type="text" @click="returnOrder"><el-button  type="danger">{{$lang('退回')}}</el-button></el-button>
+                        <a style="margin-right:15px" v-show="0 == gathering.unconfirmed_state" :href="'<{:U('gathering_edit')}>&id='+gathering.ID+'&main_id='+gathering.main_id" type="warning"><el-button>{{$lang('修改')}}</el-button></a>
+                        <!-- <a style="margin-right:15px" href="javascript:;" v-show="0 == gathering.unconfirmed_state" @click="toModify(gathering.ID, gathering.main_id, '收款详情页')">{{$lang('修改')}}</a> -->
+                    </div>
+                </div>
+                <div class="row" v-else="">
+                    <div  class="col-md-3"><a v-show="0==gathering.unconfirmed_state"  :href="'<{:U('gathering_confirm')}>&id='+gathering.ID+'&main_id='+gathering.main_id+'&order_id='+gathering.ORDER_ID+'&cost_delivery='+gathering.cost_delivery+'&logistics_costs='+gathering.logistics_costs+'&sale_tax='+gathering.sale_tax+'&recoverable_amount='+gathering.recoverable_amount+'&transaction_type='+gathering.transaction_type+'&collect_this='+gathering.collect_this+'&expect_receipt_amount='+gathering.expect_receipt_amount+'&estimated_amount='+gathering.estimated_amount+'&PAYMENT_NODE='+gathering.PAYMENT_NODE+'&completion_date_end='+gathering.completion_date_end+'&actual_payment_amount='+gathering.actual_payment_amount_z+'&PO_ID='+gathering.PO_ID+'&client_id='+gathering.client_id+'&sales_team_id='+gathering.sales_team_id+'&invoice_type='+gathering.invoice_type+'&tax_point='+gathering.tax_point+'&payment_account_type='+gathering.payment_account_type+'&deducting_tax_currency='+gathering.deducting_tax_currency+'&side_taxed_currency='+gathering.side_taxed_currency+'&deducting_tax='+gathering.deducting_tax+'&side_taxed='+gathering.side_taxed+'&receiving_code='+gathering.receiving_code+'&overdue_statue='+gathering.overdue_statue"><button type="button" style="margin: 0" class="btn btn-pub btn-default mg-l-20">{{$lang('提交确认')}}</button></a></div>
+                    <div><el-button @click="changState('submit')">{{$lang('取消')}}</el-button></div>
+                </div>
+            </div>
+        </div>
+        <div class="row" v-show="show" v-else>
+            <div class="col-lg-12 col-md-12">
+                <table class="b2b-table-one">
+                    <caption>{{$lang('收款信息')}}</caption>
+                    <tbody class="use-body">
+                    <tr>
+                        <td><label class="must">{{$lang('收款金额')}}</label></td>
+                        <td><span style="line-height: 32px" v-if="gathering.po_currency in initdata.currency">{{initdata.currency[gathering.po_currency].CD_VAL}}</span><input style="width: 90%;float: right" type="text" v-model="gathering.actual_payment_amount"  @change="check_zero(gathering.actual_payment_amount)" name="" placeholder="" class="input-form "></td>
+
+                        <td><label class="must">{{$lang('收款时间')}}</label></td>
+                        <td>
+                            <div class="block">
+                                <!-- <el-date-picker v-model="gathering.actual_receipt_date" type="date"  :placeholder="$lang('选择日期')" @change="currencyGet" ></el-date-picker> -->
+                                <el-date-picker v-model="gathering.actual_receipt_date" format="yyyy-MM-dd" @change="currencyGet" value-format="yyyy-MM-dd" type="date":placeholder="$lang('选择日期')"></el-date-picker>
+                            </div>
+
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><label>{{$lang('金额差异')}}</label></td>
+                        <td> <span style="line-height: 32px" v-if="gathering.po_currency in initdata.currency">{{initdata.currency[gathering.po_currency].CD_VAL}}</span> {{king((parseFloat(gathering.expect_receipt_amount) - parseFloat(gathering.actual_payment_amount)).toFixed(2))}}</td>
+                        <td><label>{{$lang('逾期天数')}}</label></td>
+                        <td v-if="gathering.transaction_type == 2">{{overdue(gathering,gathering.actual_receipt_date)}}</td>
+                        <td v-else-if="gathering.transaction_type == 1"></td>
+                        <td v-else="">{{overdue(gathering,gathering.actual_receipt_date)}}</td>
+                    </tr>
+                    <tr>
+                        <td>{{$lang('收款完成')}}</td>
+                        <td  v-if="gathering.expect_receipt_amount - gathering.actual_payment_amount != 0">
+                            <span><input type="radio" id="completion_end1" name="completion_end" v-model="completion_end"  @click="completionDateEndClear()" value="0"><label for="completion_end1">{{$lang('本期收款已完成')}}</label> </span>
+                            <span v-if="gathering.expect_receipt_amount - gathering.actual_payment_amount > 0" >
+                                <input type="radio" id="completion_end2" name="completion_end" v-model="completion_end" value="1" ><label
+                                    for="completion_end2">{{$lang('本期收款未完成')}}</label>
+                            <span v-if="completion_end == 1" class="" style="width: 30%">
+                                    <el-date-picker style="display: inline-block"
+                                                    v-model="gathering.completion_date_end"
+                                                    type="date"
+                                                    :placeholder="$lang('选择日期')" >
+                                    </el-date-picker>
+                            </span>
+                            </span>
+                        </td>
+                        <td v-else="">{{$lang('本期收款已完成')}}</td>
+                        <td><label class="must">{{$lang('我方公司')}}</label></td>
+                        <td>
+                            <select v-model="gathering.company_our" name="company_our" class="input-form">
+                                <option value="" disabled>----</option>
+                                <option v-for="w in initdata.wfgs" :value="w.CD_VAL">{{w.CD_VAL}}</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr v-if="gathering.expect_receipt_amount - gathering.actual_payment_amount != 0 && completion_end != 1">
+                        <td v-if="gathering.expect_receipt_amount - gathering.actual_payment_amount == 0"><label >{{$lang('差异原因')}}</label></td>
+                        <td v-else=""><label class="must">{{$lang('差异原因')}}</label></td>
+                        <td>
+                            <select class="input-form" v-model="gathering.DEVIATION_REASON">
+                                <option value="" disabled >{{$lang('差异原因')}}</option>
+                                <option v-for="d in deviation_cause" :value="d.CD">{{$lang(d.CD_VAL)}}</option>
+                            </select>
+                        </td>
+                        <td v-if="gathering.expect_receipt_amount - gathering.actual_payment_amount == 0"><label  >{{$lang('差异凭证')}}</label></td>
+                        <td v-else=""><label class="must">{{$lang('差异凭证')}}</label></td>
+                        <td class="use-btn">
+                            <button  onclick="javascript:$('#payment_voucher').click();" type="button" class="btn-pub btn-default" data-toggle="modal" data-target="#fileModal">{{$lang('上传附件')}}</button>
+                            <span id="showfile"></span>
+                            <input style="display: none" onchange="javascript:$('#showfile').html($('#payment_voucher').val());" id="payment_voucher"  type="file" name="file" id="payment_voucher" >
+                        </td>
+                    </tr>
+                    <tr>
+
+                        <td><label class="must">{{$lang('收款凭证')}}</label></td>
+                        <td class="use-btn">
+                            <button  onclick="javascript:$('#receive_voucher').click();" type="button" class="btn-pub btn-default" data-toggle="modal" data-target="#fileModal">{{$lang('上传附件')}}</button>
+                            <span id="showreceivefile"></span>
+                            <input style="display: none" onchange="javascript:$('#showreceivefile').html($('#receive_voucher').val());" id="receive_voucher"  type="file" name="receivefile" id="receive_voucher" >
+
+                        </td>
+
+                        <td>{{$lang('收款备注')}}</td>
+                        <td ><input type="text" class="input-form" v-model="gathering.remarks" name="remarks"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="row"  v-show="(show && initdata.is_end && completion_end != 1 && gathering.transaction_type != 1 && !gathering.completion_date_end )">
+            <div class="col-lg-12 col-md-12">
+                <table class="b2b-table-one">
+                    <caption>{{$lang('成本和税费')}}</caption>
+                    <tbody class="use-body">
+                        <td><label>{{$lang('总收款')}}</label></td>
+                        <td v-if="gathering.transaction_type == 2"><span >USD</span>
+                            <!--{{king((parseFloat(gathering.estimated_amount) - parseFloat(gathering.expect_receipt_amount) + parseFloat(gathering.actual_payment_amount)).toFixed(2))}}-->
+                            {{allMoneyAmount}}
+                        </td>
+                        <td v-else=""><span >USD</span>
+                            {{allMoneyAmount}}
+                        </td>
+                        <td><label>{{$lang('金额总差异')}}</label></td>
+                        <td><span style="line-height: 32px" >USD</span> {{allDiffAmount}}</td>
+                    </tr>
+
+                    <tr >
+                        <td>{{$lang('商品总成本')}}</td>
+                        <td>USD {{gathering.cost_delivery_usd}}</td>
+                        <td>{{$lang('总服务费用')}}</td>
+                        <td>
+                            <span >USD</span>&nbsp; {{gathering.logistics_costs}}
+                        </td>
+                    </tr>
+                     <tr>
+                         <td>{{$lang('应交税')}}</td>
+                         <td>
+                             <span>USD</span>&nbsp;<span>{{gathering.sale_tax}}</span>
+                         </td>
+                         <td>{{$lang('残次品入库成本')}}</td>
+                         <td>
+                         <span >USD</span>&nbsp; {{gathering.recoverable_amount}}
+                         </td>
+                     </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="row" v-show="show" v-if="!(gathering.receipt_operation_status > 0)">
+            <div class="col-lg-12 col-md-12 text-center use-btn">
+                <button type="button" class="btn-pub btn-green" @click="save">{{$lang('收款提交')}}</button>
+                <button type="button" class="btn-pub btn-default mg-l-10" @click="clean">{{$lang('清空')}}</button>
+                <input type="hidden" id="gathering" name="gathering">
+            </div>
+        </div>
+
+    </form>
+</div>
+<script src="../Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="../Public/js/stock/alert.js"></script>
+<!-- <script type="text/javascript" src="../Public/js/vue.2.5.13.js"></script> -->
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="../Public/lib/bootstrap/js/tether.min.js"></script>
+<script type="text/javascript" src="../Public/lib/bootstrap/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="../Public/utils/utils.js?v=1123"></script>
+<script type="text/javascript" src="../Public/js/axios.min.js"></script>
+<!-- <link rel="stylesheet" href="../Public/css/element-ui.css"> -->
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="../Public/lib/ui/index.js"></script>
+<script>
+    var vm = new Vue({
+        el: '#gather-detail',
+        data: {
+            gathering:<{$gathering}>,
+            deviation_cause:<{$deviation_cause}>,
+            show:<{$show}>,
+            or_invoice_arr:<{$or_invoice_arr}>,
+            initdata:<{$initdata}>,
+            deducting_tax:1,
+            deducting_tax_order_this:0,
+            url:"<{$url}>",
+            completion_end:0,
+            state:{"submit":false},
+            loading_switch:false
+    },
+    computed:{
+        allMoneyAmount(){
+            if (!this.gathering.actual_receipt_date){
+               return 0
+            }
+            if(this.deducting_tax_order_this == 0){
+                this.deducting_tax_order_this = 0
+            }
+            let temp_current = 0
+            if (0 == this.gathering.unconfirmed_state) {
+                if (!(this.gathering.receipt_operation_status > 0)) {
+                    this.gathering.actual_payment_amount_z = this.gathering.actual_payment_amount
+                }
+                temp_current = parseFloat(this.gathering.actual_payment_amount_z) * parseFloat(this.deducting_tax_order_this);
+            }
+            var res =  this.king((parseFloat(this.unking(this.gathering.all_order_money)) + temp_current).toFixed(2));
+            console.log(this.gathering.all_order_money,this.gathering.actual_payment_amount,this.gathering.actual_payment_amount_z,this.deducting_tax_order_this)
+            if('NaN' == res)return 0
+            return res
+        },
+        allDiffAmount(){
+            if (!this.gathering.actual_receipt_date){
+                return 0
+            }
+            var res = this.king(((parseFloat(this.gathering.estimated_amount) * parseFloat(this.deducting_tax_order_this)) - this.unking(this.allMoneyAmount) ).toFixed(2))
+            if('NaN' == res)return 0
+            return  res
+        }
+    },
+    methods:{
+        toDetail: function toModify (id, orderId, title) {
+            // var dom = document.createElement('a');
+            // var _href="<{:U('gathering_edit')}>&id="+id+'&main_id='+orderId;
+            // dom.setAttribute("onclick", "opennewtab(this,'"+this.$lang(title) + "')");
+            // dom.setAttribute("_href", _href);
+            // dom.click();
+            // console.log(dom)
+            // var dom = document.createElement('a');
+            // var _href="/index.php?m=b2b&a=gathering_edit&id=" + id + "&main_id=" + orderId;
+            // dom.setAttribute("onclick", "opennewtab(this,'"+this.$lang(title) + "')");
+            // dom.setAttribute("_href", _href);
+            // dom.click();
+            // console.log(dom)
+        },
+        upd_show (){
+            this.show = !this.show
+            this.upd_js()
+        },
+        save(){
+            if(this.check_null(vm.gathering)){
+                $("#gathering").val(JSON.stringify(vm.gathering))
+                $("#form").submit()
+            }
+        },
+        check_null(e){
+            if(e.actual_payment_amount <= 0){
+                // utils.modal(true, {width:500,title:'<{$Think.lang.提示}>',btnClass:'btn-primary',content:'<{$Think.lang.本期实际收款金额异常}>'})
+                this.$message({
+                    type: 'error',
+                    message: this.$lang('本期实际收款金额异常')
+                })
+                return false
+            }
+            if((e.expect_receipt_amount != e.actual_payment_amount) && this.completion_end != 1){
+                if(e.DEVIATION_REASON == null || e.DEVIATION_REASON == 'null') {
+                    // utils.modal(true, {width:500,title:'<{$Think.lang.提示}>',btnClass:'btn-primary',content:'<{$Think.lang.剩余待收原因必填}>'})
+                    this.$message({
+                        type: 'error',
+                        message: this.$lang('剩余待收原因必填')
+                    })
+                    return false
+                }
+                if(!$('#payment_voucher').val()){
+                    // utils.modal(true, {width:500,title:'<{$Think.lang.提示}>',btnClass:'btn-primary',content:'<{$Think.lang.剩余待收凭证必填}>'})
+                    this.$message({
+                        type: 'error',
+                        message: this.$lang('剩余待收凭证必填')
+                    })
+                    return false
+                }
+            }
+            if(!$('#receive_voucher').val()){
+                // utils.modal(true, {width:500,title:'<{$Think.lang.提示}>',btnClass:'btn-primary',content:'<{$Think.lang.收款凭证必填}>'})
+                this.$message({
+                    type: 'error',
+                    message: this.$lang('收款凭证必填')
+                })
+                return false
+            }
+
+            if(!(e.actual_receipt_date != '' &&e.actual_receipt_date != null && e.actual_receipt_date != '-')){
+                // utils.modal(true, {width:500,title:'<{$Think.lang.提示}>',btnClass:'btn-primary',content:'<{$Think.lang.本期实际收款时间异常}>'})
+                this.$message({
+                    type: 'error',
+                    message: this.$lang('本期实际收款时间异常')
+                })
+                return false
+            }
+
+
+            if(e.actual_payment_amount > 0 || (e.actual_receipt_date > 0 && e.actual_receipt_date != '-'))return true
+            return false
+        },
+        clean(){
+            history.go(0)
+        },
+        buttongroups_ben(name,key,e){
+            this.gathering.invoice_status = e
+        },
+        king:function(e){
+            if(!e) return null
+            var k = e.toString().split('.')
+            if(e.toString().indexOf('.') > 0){
+                var s = '.'+k[1]
+            }else{
+                var s = ''
+            }
+            return k[0].toString().replace(/\d{1,3}(?=(\d{3})+(\.\d*)?$)/g, '$&,')+s;
+        },
+        node_to_code(e,type){
+            return this.initdata[type][e]
+        },
+        show_node(e){
+            var d = JSON.parse(e)
+            var init_data = this.initdata
+            if(!d)return ' '
+            if(!d.nodeType)return ' '
+            if(this.node_to_code(d.nodeType,'node_type')){
+                var run_e = ''
+                if(d.nodeDate in init_data.node_date) {
+                    run_e = init_data.number_th[d.nodei]+':'+init_data.node_type[d.nodeType].CD_VAL+init_data.node_date[d.nodeDate].CD_VAL+init_data.node_is_workday[d.nodeWorkday].CD_VAL+'-'+d.nodeProp+'%'
+                }
+            }else{
+                var run_e = init_data.number_th[d.nodei]+':'+init_data.node_type[d.nodeType].CD_VAL+init_data.node_date[d.nodeDate].CD_VAL+init_data.node_is_workday[d.nodeWorkday].CD_VAL+'-'+d.nodeProp+'%'
+            }
+            return run_e
+
+        },
+        GetDateStr(times,AddDayCount) {
+            var dd = new Date(times);
+            dd.setDate(dd.getDate()+parseInt(AddDayCount));
+            var y = dd.getFullYear();
+            var m = dd.getMonth()+1;
+            var d = dd.getDate();
+            return y+"-"+m+"-"+d;
+        },
+        gather_date(k){
+            var gather_key = k
+            var d = JSON.parse(gather_key.receiving_code)
+            var times =  null
+            if(!d)return '-'
+            if(!d.nodeType)return null
+            switch (d.nodeType){
+                case 'N001390100':
+//                        合同
+                    times = gather_key.po_time
+                    break;
+                case 'N001390200':
+//                        发货
+                    times = gather_key.DELIVERY_TIME
+                    break;
+                case 'N001390400':
+//                        入库
+                    times = gather_key.WAREING_DATE
+                    break;
+                case 0:
+//                        合同
+                    times = gather_key.po_time
+                    break;
+                case 1:
+//                        发货
+//                        times = gather_key.SUBMIT_TIME
+                    times = gather_key.DELIVERY_TIME
+                    break;
+                case 2:
+//                      入港
+                    times = gather_key.Estimated_arrival_DATE
+                    break;
+                case 3:
+//                        入库
+                    times = gather_key.WAREING_DATE
+                    break;
+
+                default:
+            }
+            if(d.nodeDate in this.initdata.node_date) {
+                var gather_date_string = this.GetDateStr(times, this.initdata.node_date[d.nodeDate].CD_VAL)
+            }
+            if(!times)return null
+            return gather_date_string
+        },
+        check_zero:function(e){
+            this.gathering.actual_payment_amount = parseFloat(e).toFixed(2)
+        },
+        overdue:function(e,t_date) {
+            var overdue_text = 0
+            var gatherDate = this.gather_date(e)
+            if (!e || e.transaction_type == 1 || gatherDate == null) return overdue_text
+            gather_date_t = Math.round(Date.parse(new Date(gatherDate)) / 1000)
+            if (t_date) {
+                var today_time = Math.round(Date.parse(new Date(t_date)) / 1000)
+            } else {
+                var today_time = Math.round(new Date().getTime() / 1000)
+
+            }
+            console.log(gather_date_t, today_time, gatherDate, t_date)
+            if (gather_date_t < today_time) {
+                overdue_text = Math.round(Math.abs(gather_date_t - today_time) / 60 / 60 / 24)
+            }
+            return overdue_text
+        },
+        upd_js(){
+            if(!this.show)return false
+            this.gathering.side_taxed_currency = this.gathering.delivery_currency
+            this.get_deducting_tax()
+            setTimeout(function(){
+                vm.gathering.deducting_tax_currency = vm.gathering.po_currency
+                var tax_point = ''
+                if(vm.gathering.tax_point in vm.initdata.tax_point){
+                    tax_point = vm.initdata.tax_point[vm.gathering.tax_point].CD_VAL
+                }
+                var all_moneys = ((parseFloat(vm.gathering.all_money) + parseFloat(vm.gathering.actual_payment_amount)).toFixed(2))
+                if (vm.gathering.DELIVERY_METHOD == '一般 贸易' || vm.gathering.DELIVERY_METHOD == 'N001530500') {
+                    vm.gathering.side_taxed = (vm.gathering.cost_delivery * tax_point / 100).toFixed(2)
+                    vm.gathering.deducting_tax = ((all_moneys - vm.gathering.cost_delivery * vm.deducting_tax) * tax_point / 100).toFixed(2)
+                }
+                if (vm.gathering.DELIVERY_METHOD == 'KR DOMESTIC' || vm.gathering.DELIVERY_METHOD == 'N001530700') {
+                    vm.gathering.side_taxed = (vm.gathering.cost_delivery - (vm.gathering.cost_delivery / (1 + (tax_point / 100)))).toFixed(2)
+                    vm.gathering.deducting_tax = ((all_moneys - (all_moneys / (1 + (tax_point / 100)))) - (vm.gathering.cost_delivery * vm.deducting_tax - ((vm.gathering.cost_delivery * vm.deducting_tax) / (1 + (tax_point / 100))))).toFixed(2)
+                }
+            },300)
+
+        },
+        get_deducting_tax() {
+            var currency = this.gathering.side_taxed_currency
+            var date = this.gathering.po_time
+            var dst_currency = ''
+            if(this.gathering.deducting_tax_currency in this.initdata.currency) {
+                dst_currency = this.initdata.currency[this.gathering.deducting_tax_currency].CD_VAL
+            }
+            if (!currency || !date || !dst_currency)return false
+            axios.post('/index.php?m=b2b&a=get_currency_backend_gathering', {
+                currency: currency,
+                date: date,
+                dst_currency: dst_currency
+            }).then(function (response) {
+                if (response) {
+                    vm.deducting_tax = response.data
+                    return true
+                }
+            })
+        },
+        returnOrder()
+        {
+            var id = this.gathering.ID
+            this.$prompt(this.$lang('请填写退回原因'), this.$lang('提示'), {
+                confirmButtonText: this.$lang('确认退回'),
+                cancelButtonText: this.$lang('再看看'),
+                inputPattern: /.*/,
+                inputErrorMessage: ''
+            }).then(({value}) => {
+                this.extracted(id, value);
+            }).catch(() => {
+                console.log('')
+            });
+        },
+        extracted(id,value_msg) {
+            var gathering = this.gathering
+            axios.post('/index.php?m=b2b&a=gathering_return', {
+                    id: id,
+                    value: value_msg,
+                    gathering: gathering,
+                }).then(function (response) {
+                    var msg = response.data.msg
+                    vm.$message({
+                        type: 'info',
+                        message: msg
+                    });
+                })
+
+        },
+        changState(e){
+            this.state[e] = !this.state[e]
+        },
+        currencyGetDo(){
+            this.loading_switch  = true
+            var currency = this.gathering.po_currency;
+            var date = this.gathering.actual_receipt_date;
+            axios.post('/index.php?m=b2b&a=get_currency_backend_gathering', {
+                currency: currency,
+                date: date,
+                dst_currency: 'USD'
+            }).then(function (response) {
+                vm.loading_switch  = false
+                if (response) {
+                    vm.deducting_tax_order_this = response.data
+                    return true
+                }
+            })
+        },
+        currencyGet(){
+            this.currencyGetDo()
+            console.log('currencyGet')
+        },
+        completionDateEndClear(){
+            this.gathering.completion_date_end = null
+        },
+        unking(num) {
+            if (isNaN(num) && typeof(num) == 'string') {
+                var x = num.split(',');
+                return parseFloat(x.join(""));
+            } else {
+                return num
+            }
+        },
+       }
+    })
+    setTimeout(vm.upd_js(),300)
+    setTimeout(vm.currencyGet(),100)
+</script>
+</body>
+
+</html>

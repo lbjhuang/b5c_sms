@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+        href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.config.VER_NUM}>">
+    <title>分工配置</title>
+</head>
+<style>
+    .el-tabs__nav-wrap::after {
+        background-color: white;
+    }
+
+    .el-tabs__nav {
+        width: 30%;
+    }
+
+    .el-tabs__nav .el-tabs__item {
+        font-size: 24px;
+        font-weight: 600;
+        color: darkgray;
+        white-space: pre-wrap;
+        height: auto;
+    }
+
+    .el-tabs__item:hover {
+        color: #303133;
+    }
+
+    .el-tabs__item.is-active {
+        color: #303133;
+    }
+
+    .el-tabs__active-bar {
+        background-color: white;
+    }
+
+    .el-button--primary {
+        background-color: #1E7EB4;
+    }
+</style>
+
+<body class="orderList">
+    <div id="rule" class="list-common" v-cloak style="margin-bottom:220px">
+        <el-tabs v-model="activeName" @tab-click="handleClick">
+            <el-tab-pane :label="$lang('按我方公司分工')" name="first">
+                <!-- 搜索查询 start-->
+                <div class="orderList-search search-common">
+                    <div class="search-toggle">
+                        <el-form ref="form" label-width="120px" :label-position="labelPosition">
+                            <el-row>
+                                <el-col :span="6">
+                                    <el-form-item :label="$lang('我方公司')">
+                                        <el-input v-model="ourComForm.our_company" placeholder="请输入内容"></el-input>
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="6">
+                                    <el-form-item :label="$lang('付款负责人')">
+                                        <el-input v-model="ourComForm.payment_manager_by" placeholder="请输入内容">
+                                        </el-input>
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="6">
+                                    <el-form-item :label="$lang('收发票负责人')">
+                                        <el-input v-model="ourComForm.invoice_person_charge_by" placeholder="请输入内容">
+                                        </el-input>
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="6">
+                                    <el-form-item :label="$lang('B2B核销负责人')">
+                                        <el-input v-model="ourComForm.b2b_manager_by" placeholder="请输入内容">
+                                        </el-input>
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="6">
+                                    <el-button type="primary" style="margin:0 20px 0 30px;" @click="getOurComData()">
+                                        {{$lang('查看')}}</el-button>
+                                    <el-button @click="ourComForm = {}">{{$lang('重置')}}</el-button>
+                                </el-col>
+                            </el-row>
+                            <el-row>
+                                
+                            </el-row>
+                        </el-form>
+                    </div>
+                </div>
+                <!-- 搜索查询 end-->
+
+                <!-- 分割线 start-->
+                <div class="orderList-line line-split" style="height: 2px;margin-bottom: 20px"></div>
+                <!-- 分割线 end-->
+
+                <!-- 我方公司表格主体 start-->
+                <div style="margin-top: 24px;font-size: 14px">
+                    <el-row>
+                        <el-col :span="16">
+                            {{$lang('搜索结果')}}：
+                            {{$lang('共')}}
+                            <b>{{ totalCount }}</b>
+                            {{ $lang("条记录") }}
+                        </el-col>
+                        <el-col :span="8" class="text-right" style="padding-right:20px">
+                            <el-button type="primary" v-if="!isShowEdit" @click="ourComEdit()">
+                                {{$lang('编辑')}}
+                            </el-button>
+                            <el-button type="primary" v-else @click="ourComSave()">
+                                {{$lang('保存')}}
+                            </el-button>
+                        </el-col>
+                    </el-row>
+                </div>
+                <div class="orderList-Main list-common-main" style="margin-top: 20px">
+                    <el-table border :data="ourComData" tooltip-effect="dark" style="width: 100%"
+                        class="order-list-table table-common">
+                        <el-table-column prop="our_company_cd_val" :label="$lang('我方公司')"></el-table-column>
+                        <!-- <el-table-column :label="$lang('我方公司')">
+                            <template slot-scope="scope">
+                                <el-input v-if="isShowEdit" placeholder="请输入" :disabled="true"
+                                    v-model="scope.row.our_company_cd_val"> </el-input>
+                                <span class="warp" v-else>{{scope.row.our_company_cd_val}}</span>
+                            </template>
+                        </el-table-column> -->
+                        <el-table-column :label="$lang('付款负责人')">
+                            <template slot-scope="scope">
+                                <el-input v-if="isShowEdit" placeholder="请输入" clearable
+                                    v-model="scope.row.payment_manager_by">
+                                </el-input>
+                                <span class="warp" v-else>{{scope.row.payment_manager_by}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column :label="$lang('收发票负责人')">
+                            <template slot-scope="scope">
+                                <el-input v-if="isShowEdit" placeholder="请输入" clearable
+                                    v-model="scope.row.invoice_person_charge_by">
+                                </el-input>
+                                <span class="warp" v-else>{{scope.row.invoice_person_charge_by}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column :label="$lang('B2B核销负责人')">
+                            <template slot-scope="scope">
+                                <el-input v-if="isShowEdit" placeholder="请输入" clearable
+                                    v-model="scope.row.b2b_manager_by">
+                                </el-input>
+                                <span class="warp" v-else>{{scope.row.b2b_manager_by}}</span>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+
+                    <el-pagination background @size-change="handleSizeChange" @current-change="handleCurrentChange"
+                        :current-page.sync="ourComDataChange.pageIndex" :page-sizes="[10, 30, 50, 100]"
+                        :page-size="ourComDataChange.pageSize" layout="sizes,prev, pager, next, jumper"
+                        :total="totalCount">
+                    </el-pagination>
+
+                </div>
+                <!-- 我方公司表格主体 end-->
+            </el-tab-pane>
+            <el-tab-pane :label="$lang('按客户分工')" name="second">
+                <!-- 搜索查询 start-->
+                <div class="orderList-search search-common">
+                    <div class="search-toggle">
+                        <el-form ref="form" label-width="120px" :label-position="labelPosition">
+                            <el-row>
+                                <el-col :span="6">
+                                    <el-form-item :label="$lang('客户名称')">
+                                        <el-input v-model="clientForm.client_name" placeholder="请输入内容"></el-input>
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="6">
+                                    <el-form-item :label="$lang('销售助理')">
+                                        <el-input v-model="clientForm.sales_assistant_by" placeholder="请输入内容">
+                                        </el-input>
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="6">
+                                    <el-button type="primary" style="margin:0 20px 0 30px;" @click="getClientData()">
+                                        {{$lang('查看')}}</el-button>
+                                    <el-button @click="clientForm = {}">{{$lang('重置')}}</el-button>
+                                </el-col>
+                            </el-row>
+                        </el-form>
+                    </div>
+                </div>
+                <!-- 搜索查询 end-->
+
+                <!-- 分割线 start-->
+                <div class="orderList-line line-split" style="height: 2px;margin-bottom: 20px"></div>
+                <!-- 分割线 end-->
+
+                <!-- 客户表格主体 start-->
+                <div style="margin-top: 24px;font-size: 14px">
+                    <el-row>
+                        <el-col :span="16">
+                            {{$lang('搜索结果')}}：
+                            {{$lang('共')}}
+                            <b>{{ totalCount }}</b>
+                            {{ $lang("条记录") }}
+                        </el-col>
+                        <el-col :span="8" class="text-right" style="padding-right:20px">
+                            <el-button type="primary" v-if="!isShowCusEdit" @click="clientsEdit()">
+                                {{$lang('编辑')}}
+                            </el-button>
+                            <el-button type="primary" v-else @click="clientsSave()">
+                                {{$lang('保存')}}
+                            </el-button>
+                        </el-col>
+                    </el-row>
+                </div>
+                <div class="orderList-Main list-common-main" style="margin-top: 20px">
+                    <el-table border :data="clientData" tooltip-effect="dark" style="width: 100%"
+                        class="order-list-table table-common">
+                        <el-table-column prop="client_name" :label="$lang('客户名称')"></el-table-column>
+                        <!-- <el-table-column prop="client_name" :label="$lang('客户名称')">
+                            <template slot-scope="scope">
+                                <el-input v-if="isShowCusEdit" placeholder="请输入" :disabled="true"
+                                    v-model="scope.row.client_name">
+                                </el-input>
+                                <span class="warp" v-else>{{scope.row.client_name}}</span>
+                            </template>
+                        </el-table-column> -->
+                        <el-table-column :label="$lang('销售助理')">
+                            <template slot-scope="scope">
+                                <el-input v-if="isShowCusEdit" placeholder="请输入" clearable
+                                    v-model="scope.row.sales_assistant_by">
+                                </el-input>
+                                <span class="warp" v-else>{{scope.row.sales_assistant_by}}</span>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+
+                    <el-pagination background @size-change="handleClientSizeChange"
+                        @current-change="handleClientCurrentChange" :current-page.sync="clientDataChange.pageIndex"
+                        :page-sizes="[10, 30, 50, 100]" :page-size="clientDataChange.pageSize"
+                        layout="sizes,prev, pager, next, jumper" :total="totalCount">
+                    </el-pagination>
+
+                </div>
+                <!-- 客户表格主体 end-->
+            </el-tab-pane>
+            <el-tab-pane :label="$lang('按仓库分工')" name="third">
+                <!-- 搜索查询 start-->
+                <div class="orderList-search search-common">
+                    <div class="search-toggle">
+                        <el-form ref="form" label-width="145px" :label-position="labelPosition">
+                            <el-row>
+                                <el-col :span="6">
+                                    <el-form-item :label="$lang('仓库名称')">
+                                        <el-input v-model="warehousesForm.warehouse" placeholder="请输入内容"></el-input>
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="8">
+                                    <el-form-item :label="$lang('仓库所在地')">
+                                        <el-select style="padding: 0" v-model="selectCountry" filterable
+                                            :placeholder="$lang('国家')">
+                                            <el-option v-for="item in country" :key="item.id" :label="item.resName"
+                                                :value="item.id"></el-option>
+                                        </el-select>
+                                        <el-select style="padding: 0" v-model="selectProvince" filterable
+                                            :placeholder="$lang('省/州')">
+                                            <el-option v-for="item in province" :key="item.id" :label="item.resName"
+                                                :value="item.id"></el-option>
+                                        </el-select>
+                                        <el-select style="padding: 0" v-model="selectCounty" filterable
+                                            :placeholder="$lang('市/区')">
+                                            <el-option v-for="item in county" :key="item.id" :label="item.resName"
+                                                :value="item.id"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="5">
+                                    <el-form-item :label="$lang('采购入库负责人')">
+                                        <el-input v-model="warehousesForm.purchase_warehousing_by" placeholder="请输入内容">
+                                        </el-input>
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="5">
+                                    <el-form-item :label="$lang('调拨入库负责人')">
+                                        <el-input v-model="warehousesForm.transfer_warehousing_by" placeholder="请输入内容">
+                                        </el-input>
+                                    </el-form-item>
+                                </el-col>
+                            </el-row>
+                            <el-row>
+                                <el-col :span="6">
+                                    <el-form-item :label="$lang('B2B订单出库负责人')">
+                                        <el-input v-model="warehousesForm.b2b_order_outbound_by" placeholder="请输入内容">
+                                        </el-input>
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="6">
+                                    <el-form-item :label="$lang('调拨出库负责人')">
+                                        <el-input v-model="warehousesForm.transfer_out_library_by" placeholder="请输入内容">
+                                        </el-input>
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="6">
+                                    <el-form-item :label="$lang('采购退货出库负责人')">
+                                        <el-input v-model="warehousesForm.prchasing_return_by" placeholder="请输入内容">
+                                        </el-input>
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="6">
+                                    <el-form-item :label="$lang('作业确认负责人')">
+                                        <el-input v-model="warehousesForm.task_launch_by" placeholder="请输入内容">
+                                        </el-input>
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="6">
+                                    <el-button type="primary" style="margin:0 20px 0 30px;"
+                                        @click="getWarehousesData()">{{$lang('查看')}}</el-button>
+                                    <el-button @click="reset()">{{$lang('重置')}}</el-button>
+                                </el-col>
+                            </el-row>
+                        </el-form>
+                    </div>
+                </div>
+                <!-- 搜索查询 end-->
+
+                <!-- 分割线 start-->
+                <div class="orderList-line line-split" style="height: 2px;margin-bottom: 20px"></div>
+                <!-- 分割线 end-->
+
+                <!-- 仓库表格主体 start-->
+                <div style="margin-top: 24px;font-size: 14px">
+                    <el-row>
+                        <el-col :span="16">
+                            {{$lang('搜索结果')}}：
+                            {{$lang('共')}}
+                            <b>{{ totalCount }}</b>
+                            {{ $lang("条记录") }}
+                        </el-col>
+                        <el-col :span="8" class="text-right" style="padding-right:20px">
+                            <el-button type="primary" v-if="!isShowWarEdit" @click="warehousesEdit()">
+                                {{$lang('编辑')}}
+                            </el-button>
+                            <el-button type="primary" v-else @click="warehousesSave()">
+                                {{$lang('保存')}}
+                            </el-button>
+                        </el-col>
+                    </el-row>
+                </div>
+                <div class="orderList-Main list-common-main" style="margin-top: 20px">
+                    <el-table border :data="warehousesTabData" tooltip-effect="dark" style="width: 100%"
+                        class="order-list-table table-common">
+                        <el-table-column prop="warehouse" :label="$lang('仓库名称')"></el-table-column>
+                        <el-table-column prop="place" :label="$lang('仓库所在地')"></el-table-column>
+                        <el-table-column :label="$lang('采购入库负责人')">
+                            <template slot-scope="scope">
+                                <el-input v-if="isShowWarEdit" placeholder="请输入" clearable
+                                    v-model="scope.row.purchase_warehousing_by">
+                                </el-input>
+                                <span class="warp" v-else>{{scope.row.purchase_warehousing_by}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column :label="$lang('调拨入库负责人')">
+                            <template slot-scope="scope">
+                                <el-input v-if="isShowWarEdit" placeholder="请输入" clearable
+                                    v-model="scope.row.transfer_warehousing_by">
+                                </el-input>
+                                <span class="warp" v-else>{{scope.row.transfer_warehousing_by}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column :label="$lang('B2B订单出库负责人')">
+                            <template slot-scope="scope">
+                                <el-input v-if="isShowWarEdit" placeholder="请输入" clearable
+                                    v-model="scope.row.b2b_order_outbound_by">
+                                </el-input>
+                                <span class="warp" v-else>{{scope.row.b2b_order_outbound_by}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column :label="$lang('调拨出库负责人')">
+                            <template slot-scope="scope">
+                                <el-input v-if="isShowWarEdit" placeholder="请输入" clearable
+                                    v-model="scope.row.transfer_out_library_by">
+                                </el-input>
+                                <span class="warp" v-else>{{scope.row.transfer_out_library_by}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column :label="$lang('采购退货出库负责人')">
+                            <template slot-scope="scope">
+                                <el-input v-if="isShowWarEdit" placeholder="请输入" clearable
+                                    v-model="scope.row.prchasing_return_by">
+                                </el-input>
+                                <span class="warp" v-else>{{scope.row.prchasing_return_by}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column :label="$lang('作业确认负责人')">
+                            <template slot-scope="scope">
+                                <el-input v-if="isShowWarEdit" placeholder="请输入" clearable
+                                          v-model="scope.row.task_launch_by">
+                                </el-input>
+                                <span class="warp" v-else>{{scope.row.task_launch_by}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column :label="$lang('盘点仓库负责人')">
+                            <template slot-scope="scope">
+                                <el-input v-if="isShowWarEdit" placeholder="请输入" clearable
+                                          v-model="scope.row.inventory_by">
+                                </el-input>
+                                <span class="warp" v-else>{{scope.row.inventory_by}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column :label="$lang('盘点财务负责人')">
+                            <template slot-scope="scope">
+                                <el-input v-if="isShowWarEdit" placeholder="请输入" clearable
+                                          v-model="scope.row.inventory_finance_by">
+                                </el-input>
+                                <span class="warp" v-else>{{scope.row.inventory_finance_by}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column :label="$lang('盘点仓库操作人')">
+                            <template slot-scope="scope">
+                                <el-input v-if="isShowWarEdit" placeholder="请输入" clearable
+                                          v-model="scope.row.inventory_operate_by">
+                                </el-input>
+                                <span class="warp" v-else>{{scope.row.inventory_operate_by}}</span>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+
+                    <el-pagination background @size-change="handleWarehouseSizeChange"
+                        @current-change="handleWarehouseChange" :current-page.sync="warehouseDataChange.page"
+                        :page-sizes="[10, 30, 50, 100]" :page-size="warehouseDataChange.pageSize"
+                        layout="sizes,prev, pager, next, jumper" :total="totalCount">
+                    </el-pagination>
+
+                </div>
+                <!-- 仓库表格主体 end-->
+            </el-tab-pane>
+        </el-tabs>
+
+
+    </div>
+    </div>
+    <script type="text/javascript"
+        src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js?v=<{$Think.config.VER_NUM}>">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js">
+    </script>
+    <script>
+        if (getCookie('think_language') !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en)
+        }
+
+        var rule = new Vue({
+            el: '#rule',
+            data: {
+                tableLoading: true,
+                labelPosition: 'center',
+                activeName: 'first',
+                totalCount: 0,
+                isShowEdit: false, //我方公司
+                isShowCusEdit: false, // 客户分工
+                isShowWarEdit: false, // 仓库分工
+                country: [],
+                province: [],
+                county: [],
+                ourComData: [], // 我方公司列表数据
+                clientData: [], // 客戶列表数据
+                warehousesTabData: [], //仓库列表数据
+                ourComForm: {
+                    our_company: '', // 我方公司
+                    payment_manager_by: '', // 付款负责人
+                    invoice_person_charge_by: '', // 收发票负责人
+                    b2b_manager_by: '' // 	b2b核销负责人
+                },
+                ourComDataChange: {
+                    pageIndex: 1,
+                    pageSize: 10
+                },
+                clientForm: {
+                    client_name: '',
+                    sales_assistant_by: ''
+                },
+                clientDataChange: {
+                    pageIndex: 1,
+                    pageSize: 10
+                },
+                selectCountry: '',
+                selectProvince: '',
+                selectCounty: '',
+                warehousesForm: {
+                    warehouse: "",
+                    purchase_warehousing_by: "",
+                    transfer_warehousing_by: "",
+                    b2b_order_outbound_by: "",
+                    transfer_out_library_by: "",
+                    prchasing_return_by: "",
+                    task_launch_by:"",
+                    inventory_by:"",
+                    inventory_finance_by:"",
+                    inventory_operate_by:"",
+                },
+                warehouseDataChange: {
+                    pageIndex: 1,
+                    pageSize: 10
+                }
+            },
+            created: function () {
+                this.getOurComData();
+
+            },
+            methods: {
+                // tab 切换
+                handleClick: function () {
+                    if (this.activeName == 'first') {
+                        this.totalCount = 0;
+                        this.getOurComData();
+                    } else if (this.activeName == 'second') {
+                        this.totalCount = 0;
+                        this.getClientData();
+                    } else {
+                        this.totalCount = 0;
+                        this.warehousesData();
+                        this.getWarehousesData();
+                    }
+
+                },
+                // 我方公司列表
+                getOurComData: function () {
+                    this.tableLoading = true;
+                    var param = {
+                        search: {
+                            our_company: this.ourComForm.our_company,
+                            payment_manager_by: this.ourComForm.payment_manager_by,
+                            invoice_person_charge_by: this.ourComForm.invoice_person_charge_by,
+                            b2b_manager_by: this.ourComForm.b2b_manager_by
+                        },
+                        page: {
+                            per_page: this.ourComDataChange.pageSize,
+                            current_page: this.ourComDataChange.pageIndex
+                        }
+                    };
+                    var _this = this;
+                    axios.post("HOST/index.php?m=DivisionLabor&a=ourCompanysIndex", param)
+                        .then(function (res) {
+                            var result = res.data;
+                            if (result.code == 2000) {
+                                _this.tableLoading = false;
+                                _this.ourComData = result.data.data;
+                                _this.totalCount = Number(result.data.pages.total);
+                            } else {
+                                _this.$message.warning(result.data.msg);
+                            }
+                        });
+                },
+                // 客户列表
+                getClientData: function () {
+                    this.tableLoading = true;
+                    // this.clientForm.sales_assistant_by = this.clientForm.sales_assistant_by.split('')
+                    var param = {
+                        search: {
+                            client_name: this.clientForm.client_name,
+                            sales_assistant_by: this.clientForm.sales_assistant_by
+                        },
+                        page: {
+                            per_page: this.clientDataChange.pageSize,
+                            current_page: this.clientDataChange.pageIndex
+                        }
+                    };
+                    var _this = this;
+                    axios.post("/index.php?m=DivisionLabor&a=clientsIndex", param)
+                        .then(function (res) {
+                            var result = res.data;
+                            if (result.code == 2000) {
+                                _this.tableLoading = false;
+                                _this.totalCount = Number(result.data.pages.total);
+                                if (result.data.data == false) {
+                                    _this.clientData = []
+                                } else {
+                                    _this.clientData = result.data.data;
+                                }
+                            } else {
+                                _this.$message.error(this.$lang(result.msg));
+                            }
+                        });
+                },
+                // 仓库列表
+                getWarehousesData: function () {
+                    this.tableLoading = true;
+                    var param = {
+                        search: {
+                            warehouse: this.warehousesForm.warehouse,
+                            country: this.selectCountry,
+                            province: this.selectProvince,
+                            city: this.selectCounty,
+                            purchase_warehousing_by: this.warehousesForm.purchase_warehousing_by,
+                            transfer_warehousing_by: this.warehousesForm.transfer_warehousing_by,
+                            b2b_order_outbound_by: this.warehousesForm.b2b_order_outbound_by,
+                            transfer_out_library_by: this.warehousesForm.transfer_out_library_by,
+                            prchasing_return_by: this.warehousesForm.prchasing_return_by,
+                            task_launch_by:this.warehousesForm.task_launch_by,
+                            inventory_by:this.warehousesForm.inventory_by,
+                            inventory_finance_by:this.warehousesForm.inventory_finance_by,
+                            inventory_operate_by:this.warehousesForm.inventory_operate_by,
+                        },
+                        page: {
+                            per_page: this.warehouseDataChange.pageSize,
+                            current_page: this.warehouseDataChange.pageIndex
+                        }
+                    };
+                    var _this = this;
+                    axios.post("/index.php?m=DivisionLabor&a=warehousesIndex", param)
+                        .then(function (res) {
+                            var result = res.data;
+                            if (result.code == 2000) {
+                                _this.tableLoading = false;
+                                if (result.data.data == false) {
+                                    _this.warehousesTabData = []
+                                } else {
+                                    _this.warehousesTabData = result.data.data;
+                                }
+                                _this.totalCount = Number(result.data.pages.total);
+                            } else {
+                                _this.$message.error(this.$lang(result.msg));
+                            }
+                        });
+                },
+                // 仓库所在地
+                warehousesData: function () {
+                    var _this = this;
+                    axios.post('index.php?g=oms&m=CommonData&a=commonData', {
+                        data: {
+                            query: {
+                                "area": true
+                            }
+                        }
+                    }).then(function (res) {
+                        if (res.data.code == 2000) {
+                            _this.country = res.data.data.area;
+                        } else {
+                            _this.$message.error(res.data.msg);
+                        }
+                    }).catch(function (err) {
+                        _this.$message.error(err);
+                    });
+                },
+                // 我方公司列表编辑｜保存
+                ourComEdit: function () {
+                    this.isShowEdit = true;
+                },
+                ourComSave: function () {
+                    this.isShowEdit = false;
+                    var param = {
+                        data: []
+                    };
+                    param.data = this.ourComData;
+                    var _this = this;
+                    axios.post("/index.php?m=DivisionLabor&a=ourCompanysUpdate", param)
+                        .then(function (res) {
+                            var result = res.data;
+                            if (result.code == 2000) {
+                                setTimeout(function () {
+                                    _this.getOurComData();
+                                }, 500)
+                            } else {
+                                _this.$message.warning(result.data.msg);
+                            }
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                // 客户列表编辑｜保存
+                clientsEdit: function () {
+                    this.isShowCusEdit = true;
+                },
+                clientsSave: function () {
+                    this.isShowCusEdit = false;
+                    var param = {
+                        data: []
+                    };
+                    param.data = this.clientData;
+                    var _this = this;
+                    axios.post("/index.php?m=DivisionLabor&a=clientsUpdate", param)
+                        .then(function (res) {
+                            var result = res.data;
+                            if (result.code == 2000) {
+                                setTimeout(function () {
+                                    _this.getClientData();
+                                }, 500)
+                            } else {
+                                _this.$message.warning(result.data.msg);
+                            }
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                // 客户列表编辑｜保存
+                warehousesEdit: function () {
+                    this.isShowWarEdit = true;
+                },
+                warehousesSave: function () {
+                    this.isShowWarEdit = false;
+                    var param = {
+                        data: []
+                    };
+                    this.warehousesTabData.forEach((item, index, arr) => {
+                        item.warehouse_cd = item.CD
+                    });
+                    param.data = this.warehousesTabData;
+                    var _this = this;
+                    axios.post("/index.php?m=DivisionLabor&a=warehousesUpdate", param)
+                        .then(function (res) {
+                            var result = res.data;
+                            if (result.code == 2000) {
+                                setTimeout(function () {
+                                    _this.getWarehousesData();
+                                }, 500)
+                            } else {
+                                _this.$message.warning(result.data.msg);
+                            }
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                reset: function () {
+                    this.warehousesForm = {};
+                    this.selectCountry = '';
+                    this.selectProvince = '';
+                    this.selectCounty = '';
+                },
+                // 我方公司分頁
+                handleCurrentChange: function (val) {
+                    this.ourComDataChange.pageIndex = val;
+                },
+                handleSizeChange: function (val) {
+                    this.ourComDataChange.pageSize = val;
+                },
+                handleClientCurrentChange: function (val) {
+                    this.clientDataChange.pageIndex = val;
+                },
+                handleClientSizeChange: function (val) {
+                    this.clientDataChange.pageSize = val;
+                },
+                handleWarehouseChange: function (val) {
+                    this.warehouseDataChange.pageIndex = val;
+                },
+                handleWarehouseSizeChange: function (val) {
+                    this.warehouseDataChange.pageSize = val;
+                },
+            },
+            //监听数据
+            watch: {
+                ourComDataChange: {
+                    handler(newValue, oldValue) {
+                        this.getOurComData(newValue);
+                    },
+                    deep: true
+                },
+                clientDataChange: {
+                    handler(newValue, oldValue) {
+                        this.getClientData(newValue);
+                    },
+                    deep: true
+                },
+                warehouseDataChange: {
+                    handler(newValue, oldValue) {
+                        this.getWarehousesData(newValue);
+                    },
+                    deep: true
+                },
+                selectCountry: function (newVal) {
+                    var _this = this;
+                    if (!newVal) return;
+                    axios.post('index.php?g=oms&m=CommonData&a=commonData', {
+                        data: {
+                            query: {
+                                "area": true,
+                                "parentId": newVal
+                            }
+                        }
+                    }).then(function (res) {
+                        if (res.data.code == 2000) {
+                            _this.province = res.data.data.area;
+                        } else {
+                            _this.$message.error(res.data.msg);
+                        }
+                    }).catch(function (err) {
+                        _this.$message.error(err);
+                    });
+                },
+                selectProvince: function (newVal) {
+                    var _this = this;
+                    if (!newVal || !_this.selectCountry) return;
+
+                    var parentId = _this.selectCountry + ',' + newVal;
+                    axios.post('index.php?g=oms&m=CommonData&a=commonData', {
+                        data: {
+                            query: {
+                                "area": true,
+                                "parentId": parentId
+                            }
+                        }
+                    }).then(function (res) {
+                        if (res.data.code == 2000) {
+                            _this.county = res.data.data.area;
+                        } else {
+                            _this.$message.error(res.data.msg);
+                        }
+                    }).catch(function (err) {
+                        _this.$message.error(err);
+                    });
+                }
+            },
+            //过滤器
+            filters: {
+
+            }
+        });
+    </script>
+</body>
+
+</html>

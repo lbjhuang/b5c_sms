@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="renderer" content="webkit|ie-comp|ie-stand">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport"
+        content="width=device-width,initial-scale=1,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+  <meta http-equiv="Cache-Control" content="no-siteapp"/>
+  <title>法律合同新增</title>
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>">
+
+  <style>
+      html {
+          /*height: 100vh;*/
+      }
+
+      #main {
+          height: 100%;
+          padding-top: 15px;
+
+      }
+
+      .edit__actions {
+          display: flex;
+          justify-content: center;
+          padding: 20px 0px;
+      }
+
+      .button--save {
+          width: 54px;
+          height: 30px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+      }
+
+      .contract__table {
+          width: 100%;
+          empty-cells: show;
+          background-color: transparent;
+          border-collapse: collapse;
+          border-spacing: 0;
+      }
+
+      .el-form-item {
+          margin-bottom: 0 !important;
+      }
+
+      .contract__table-header {
+          height: 38px;
+          text-align: left !important;
+          width: 100%;
+          line-height: 38px;
+          font-size: 16px;
+          color: #FFFFFF !important;
+          background: #546E7A !important;
+          padding: 0px !important;
+          text-indent: 20px;
+      }
+
+      .contract__table .contract__table-tbody td {
+          font-size: 13px;
+          color: #263238;
+          letter-spacing: 0;
+          border-bottom: 1px solid #ECEFF1;
+          border-top: 1px solid #ECEFF1;
+          border-left: 1px solid #CADEE7;
+          border-right: 1px solid #CADEE7;
+          padding: 0.65rem;
+      }
+
+      .contract__table .contract__table-tbody tr td:nth-child(odd) {
+          background: #F7F9FB;
+          color: #546E7A;
+          letter-spacing: 0;
+          text-align: center;
+          width: 10%;
+      }
+
+      .contract__table-required-filed {
+          color: #546E7A;
+      }
+
+      .finalize__contract-form-item {
+          margin-bottom: 20px !important;
+      }
+
+      .finalize__contract {
+          display: flex;
+          align-items: center;
+      }
+
+      .finalize__contract .upload-demo {
+          margin-left: 20px;
+          display: flex;
+      }
+
+      .el-icon-plus {
+          font-weight: bold;
+          margin-left: 20px;
+          font-size: 18px;
+      }
+
+      .el-upload__tip {
+          color: #dddddd;
+          margin-bottom: 10px;
+      }
+
+      .el-icon-minus {
+          font-weight: bold;
+          margin-left: 20px;
+          font-size: 18px;
+      }
+
+      .button--save {
+          width: auto !important;
+          height: 40px;
+      }
+      .getTrademarkInfoTable{
+        margin-top: 20px;
+        border-left: 1px solid #ddd;
+      }
+      .getTrademarkInfoTable .el-table__header th{
+        background-color: rgb(84 110 122);
+        color: #fff;
+        border-right: 1px solid #ddd;
+      }
+      .getTrademarkInfoTable .el-table__body td{
+        border-right: 1px solid #ddd;
+      }
+
+  </style>
+</head>
+<body id="content">
+
+<div id="main">
+  <div class="edit">
+    <div class="edit__fields">
+          <el-form
+              :model="contract"
+              ref="form"
+          >
+            <table class="contract__table">
+              <caption class="contract__table-header">{{$lang('基本信息')}}</caption>
+              <tbody class="contract__table-tbody">
+              <tr>
+                <td>
+                  <span class="contract__table-required-filed">{{$lang('签约人*')}}</span>
+                </td>
+                <td>
+                  <el-form-item
+                      prop="CONTRACTOR"
+                      :rules="[{ required: true, message: $lang('请输入签约人'), trigger: 'blur' }]">
+                    <el-autocomplete
+                        :placeholder="$lang('请输入英文名')"
+                        class="contractor"
+                        :disabled="isDisabled"
+                        class="inline-input"
+                        :fetch-suggestions="onLenovoQuery"
+                        v-model="contract.CONTRACTOR"
+                    />
+                  </el-form-item>
+                </td>
+                <td>
+                  <span class="contract__table-required-filed">{{$lang('合同编号*')}}</span>
+                </td>
+                <td>
+                  <el-form-item
+                      prop="CON_NO"
+                      :rules="[{ required: false, message: $lang('请输入合同编号'), trigger: 'blur' }]">
+                    <el-input
+                        v-model="contract.CON_NO"
+                        disabled
+                        resize="none"
+                        :placeholder="$lang('请输入合同编号')"
+                    />
+                  </el-form-item>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="contract__table-required-filed">{{$lang('我方公司*')}}</span>
+                </td>
+                <td>
+                  <el-form-item
+                      prop="CON_COMPANY_CD"
+                      :rules="[{ required: true, message: $lang('请选择我方公司'), trigger: 'change' }]">
+                    <el-select :disabled="isDisabled" v-model="contract.CON_COMPANY_CD" :placeholder="$lang('请选择')">
+                      <el-option
+                          v-for="(value,key) in ourCompany"
+                          :key="key"
+                          :label="value"
+                          :value="key">
+                      </el-option>
+                    </el-select>
+                  </el-form-item>
+                </td>
+                <td>
+                  {{$lang('我方公司2')}}
+                </td>
+                <td>
+                  <el-form-item
+                      prop="CON_COMPANY_SEC"
+                      :rules="[{ required: false, message: $lang('请选择我方公司2'), trigger: 'change' }]">
+                    <el-select :disabled="isDisabled" v-model="contract.CON_COMPANY_SEC" :placeholder="$lang('请选择')">
+                      <el-option
+                          v-for="(value,key) in ourCompany"
+                          :key="key"
+                          :label="value"
+                          :value="key">
+                      </el-option>
+                    </el-select>
+                  </el-form-item>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="contract__table-required-filed"> {{$lang('对方公司ID*')}}</span>
+                </td>
+                <td>
+                  <el-form-item
+                      prop="supplier_id"
+                      :rules="[{ required: true, message:  $lang('请输入对方公司ID'), trigger: 'blur' },{ validator: contentIsSpace, trigger: 'blur' }]">
+                    <el-input
+                        :disabled="isDisabled"
+                        :placeholder="$lang('请输入对方公司ID')"
+                        resize="none"
+                        v-model="contract.supplier_id"
+                    >
+                      <el-button :disabled="isDisabled" slot="append" icon="el-icon-search"
+                                 @click="onCheckID(true)"></el-button>
+                    </el-input>
+                  </el-form-item>
+                </td>
+                <td>
+                  {{$lang('对方公司名称')}}
+                </td>
+                <td>
+                  <el-form-item
+                      :rules="[{ required: false, message: $lang('请输入对方公司名称'), trigger: 'blur' }]">
+                    <el-input
+                        v-model="contract.SP_NAME"
+                        disabled
+                        resize="none"
+                        :placeholder="$lang('系统自动填充')"
+                    />
+                  </el-form-item>
+
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  {{$lang('对方公司简称')}}
+                </td>
+                <td>
+                  <el-form-item
+                      :rules="[{ required: false, message: $lang('请输入对方公司简称'), trigger: 'blur' }]">
+                    <el-input
+                        v-model="contract.SP_RES_NAME"
+                        disabled
+                        :placeholder="$lang('系统自动填充')"
+                    />
+                  </el-form-item>
+                </td>
+                <td>
+                  {{$lang('对方公司英文名称')}}
+                </td>
+                <td>
+                  <el-form-item
+                      :rules="[{ required: false, message: $lang('请输入对方公司英文名称'), trigger: 'blur' }]">
+                    <el-input
+                        v-model="contract.SP_NAME_EN"
+                        disabled
+                        :placeholder="$lang('系统自动填充')"
+                    />
+                  </el-form-item>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  {{$lang('对方公司英文简称')}}
+                </td>
+                <td>
+                  <el-form-item
+                      :rules="[{ required: false, message: $lang('请输入对方公司英文简称'), trigger: 'blur' }]">
+                    <el-input
+                        v-model="contract.SP_RES_NAME_EN"
+                        disabled
+                        :placeholder="$lang('系统自动填充')"
+                    />
+                  </el-form-item>
+                </td>
+                <td>
+                  {{$lang('对方营业执照/个人证件')}}
+                </td>
+                <td>
+                  <el-form-item
+                      :rules="[{ required: false, message: $lang('请输入对方营业执照/个人证件'), trigger: 'blur' }]">
+                    <el-button v-if="contract.SP_ANNEX_NAME" icon="el-icon-download"
+                               @click="onDownload(contract.supplier_id,contract.DATA_MARKING,'0',contract.SP_ANNEX_NAME)">
+                      {{$lang('下载主体营业执照')}}
+                    </el-button>
+                    <span v-else="contract.SP_ANNEX_NAME" style="color: #C0C4CC">{{$lang('未上传主体营业执照')}}</span>
+
+                    <el-button v-if="contract.SP_ANNEX_NAME2" icon="el-icon-download"
+                               @click="onDownload(contract.supplier_id,contract.DATA_MARKING,'1',contract.SP_ANNEX_NAME2)"
+                               style="margin-left: 20px">
+                      {{$lang('下载关联公司营业执照')}}
+                    </el-button>
+                    <span v-else="contract.SP_ANNEX_NAME2"
+                          style="margin-left: 20px;color: #C0C4CC">{{$lang('未上传关联公司营业执照')}}</span>
+                  </el-form-item>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  {{$lang('对方营业执照号/个人证件号')}}
+                </td>
+                <td>
+                  <el-form-item
+                      :rules="[{ required: false, message: $lang('请输入对方营业执照号/个人证件号'), trigger: 'blur' }]">
+                    <el-input
+                        v-model="contract.SP_CHARTER_NO"
+                        disabled
+                        :placeholder="$lang('系统自动填充')"
+                    />
+                  </el-form-item>
+                </td>
+                <td>
+                  {{$lang('企业类型')}}
+                </td>
+                <td>
+                  <el-form-item
+                      :rules="[{ required: false, message: $lang('请输入企业类型'), trigger: 'blur' }]">
+                    <el-input
+                        v-model="contract.COPANY_TYPE_CD_val"
+                        disabled
+                        :placeholder="$lang('系统自动填充')"
+                    />
+                  </el-form-item>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  {{$lang('年业务规模')}}
+                </td>
+                <td>
+                  <el-form-item
+                      :rules="[{ required: false, message: $lang('请输入年业务规模'), trigger: 'blur' }]">
+                    <el-input
+                        v-model="contract.SP_YEAR_SCALE_CD_val"
+                        disabled
+                        :placeholder="$lang('系统自动填充')"
+                    />
+                  </el-form-item>
+                </td>
+                <td>
+                  {{$lang('采购团队')}}
+                </td>
+                <td>
+                  <el-form-item
+                      :rules="[{ required: false, message: $lang('请输入采购团队'), trigger: 'blur' }]">
+                    <el-input
+                        v-model="contract.SP_TEAM_CD_val"
+                        disabled
+                        :placeholder="$lang('系统自动填充')"
+                    />
+                  </el-form-item>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  {{$lang('销售团队')}}
+                </td>
+                <td>
+                  <el-form-item
+                      :rules="[{ required: false, message: $lang('请输入销售团队'), trigger: 'blur' }]">
+                    <el-input
+                        v-model="contract.SALE_TEAM_val"
+                        disabled
+                        :placeholder="$lang('系统自动填充')"
+                    />
+                  </el-form-item>
+                </td>
+                <td>
+                  {{$lang('介绍团队')}}
+                </td>
+                <td>
+                  <el-form-item
+                      :rules="[{ required: false, message: $lang('请输入介绍团队'), trigger: 'blur' }]">
+                    <el-input
+                        v-model="contract.SP_JS_TEAM_CD_val"
+                        disabled
+                        :placeholder="$lang('系统自动填充')"
+                    />
+                  </el-form-item>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  {{$lang('办公地址')}}
+                </td>
+                <td>
+                  <el-form-item
+                      :rules="[{ required: false, message: $lang('请输入办公地址'), trigger: 'blur' }]">
+                    <el-input
+                        v-model="contract.office_address"
+                        disabled
+                        :placeholder="$lang('系统自动填充')"
+                    />
+                  </el-form-item>
+                </td>
+                <td>
+                  {{$lang('注册地址')}}
+                </td>
+                <td>
+                  <el-form-item
+                      :rules="[{ required: false, message: $lang('请输入注册地址'), trigger: 'blur' }]">
+                    <el-input
+                        v-model="contract.register_address"
+                        disabled
+                        :placeholder="$lang('系统自动填充')"
+                    />
+                  </el-form-item>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  {{$lang('详细地址')}}
+                </td>
+                <td>
+                  <el-form-item
+                      :rules="[{ required: false, message: $lang('请输入详细地址'), trigger: 'blur' }]">
+                    <el-input
+                        v-model="contract.COMPANY_ADDR_INFO"
+                        disabled
+                        :placeholder="$lang('系统自动填充')"
+                    />
+                  </el-form-item>
+                </td>
+                <td>
+                  {{$lang('公司与市场地位简述')}}
+                </td>
+                <td>
+                  <el-form-item
+                      :rules="[{ required: false, message: $lang('请输入公司与市场地位简述'), trigger: 'blur' }]">
+                    <el-input
+                        v-model="contract.COMPANY_MARKET_INFO"
+                        disabled
+                        :placeholder="$lang('系统自动填充')"
+                    />
+                  </el-form-item>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  {{$lang('备注')}}
+                </td>
+                <td>
+                  <el-form-item
+                      :rules="[{ required: false, message: $lang('请输入备注'), trigger: 'blur' }]">
+                    <el-input
+                        v-model="contract.SP_REMARK"
+                        disabled
+                        :placeholder="$lang('系统自动填充')"
+                    />
+                  </el-form-item>
+                </td>
+                <td>
+                  {{$lang('合作评级')}}
+                </td>
+                <td>
+                  <el-form-item
+                      :rules="[{ required: false, message: $lang('请输入合作评级'), trigger: 'blur' }]">
+                    <el-input
+                        v-model="contract.cooperative_rating_val"
+                        disabled
+                        :placeholder="$lang('系统自动填充')"
+                    />
+                  </el-form-item>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  {{$lang('风险评级')}}
+                </td>
+                <td>
+                  <el-form-item
+                      :rules="[{ required: false, message: $lang('请输入风险评级'), trigger: 'blur' }]">
+                    <el-input
+                        v-model="contract.RISK_RATING_val"
+                        disabled
+                        :placeholder="$lang('系统自动填充')"
+                    />
+                  </el-form-item>
+                </td>
+                <td>
+                  <span class="contract__table-required-filed">{{$lang('合同类型*')}}</span>
+                </td>
+                <td>
+                  <el-form-item
+                      prop="CONTRACT_TYPE"
+                      :rules="[{ required: true, message: $lang('请选择合同类型'), trigger: 'change' }]">
+                    <el-select :disabled="isDisabled" @change="contractTypeChange" v-model="contract.CONTRACT_TYPE" :placeholder="$lang('请选择')">
+                      <el-option
+                          v-for="(item,index) in conDateType"
+                          :key="index"
+                          :label="item"
+                          :value="index">
+                      </el-option>
+                    </el-select>
+                  </el-form-item>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="contract__table-required-filed">{{$lang('合同简称*')}}</span>
+                </td>
+                <td>
+                  <el-form-item
+                      prop="CON_NAME"
+                      :rules="[{ required: true, message:$lang('请输入合同简称'), trigger: 'blur' },{ validator: contentIsSpace, trigger: 'blur' }]">
+                    <el-input
+                        :disabled="isDisabled"
+                        resize="none"
+                        :placeholder="$lang('请选择')"
+                        v-model="contract.CON_NAME"
+                    />
+                  </el-form-item>
+                </td>
+                <td>
+                  <span class="contract__table-required-filed">{{$lang('合作类型*')}}</span>
+                </td>
+                <td>
+                  <el-form-item
+                      prop="CON_TYPE"
+                      :rules="[{ required: true, message: $lang('请输入合作类型'), trigger: 'change' }]">
+                    <el-select :disabled="isDisabled" v-model="contract.CON_TYPE" :placeholder="$lang('请选择')">
+                      <el-option
+                          v-for="(item,index) in conType"
+                          :key="index"
+                          :label="item"
+                          :value="index">
+                      </el-option>
+                    </el-select>
+                  </el-form-item>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="contract__table-required-filed">{{$lang('合同描述*')}}</span>
+                </td>
+                <td>
+                  <el-form-item
+                      prop="desc"
+                      :rules="[{ required: true, message: $lang('请输入合同描述'), trigger: 'blur' },{ validator: contentIsSpace, trigger: 'blur' }]">
+                    <el-input
+                        :disabled="isDisabled"
+                        resize="none"
+                        :placeholder="$lang('请输入合同描述')"
+                        v-model="contract.desc"
+                    />
+                  </el-form-item>
+                </td>
+                <td>
+                  <span class="contract__table-required-filed">{{$lang('合同状态*')}}</span>
+                </td>
+                <td>
+                  <el-form-item
+                      prop="CON_STAT"
+                      :rules="[{ required: true, message: $lang('请选择合同状态'), trigger: 'change' }]">
+                    <el-select :disabled="isDisabled" v-model="contract.CON_STAT" :placeholder="$lang('请选择')">
+                      <el-option
+                          v-for="(value,key) in contractState"
+                          :key="key"
+                          :label="value"
+                          :value="key">
+                      </el-option>
+                    </el-select>
+                  </el-form-item>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="contract__table-required-filed">{{$lang('是否自动续约*')}}</span>
+                </td>
+                <td>
+                  <el-form-item
+                      prop="IS_RENEWAL"
+                      :rules="[{ required: true, message: $lang('请输入是否自动续约'), trigger: 'change' }]">
+                    <el-select :disabled="isDisabled" v-model="contract.IS_RENEWAL" :placeholder="$lang('请选择')">
+                      <el-option
+                          v-for="(item,index) in isAutoRenew"
+                          :key="index"
+                          :label="item"
+                          :value="index">
+                      </el-option>
+                    </el-select>
+                  </el-form-item>
+                </td>
+                <td>
+                  <span class="contract__table-required-filed">{{$lang('合同开始日期*')}}</span>
+                </td>
+                <td>
+                  <el-form-item
+                      prop="START_TIME"
+                      :rules="[{ required: true, message: $lang('请输入合同开始日期'), trigger: 'blur' }]">
+                    <el-date-picker
+                        :disabled="isDisabled"
+                        value-format="yyyy-MM-dd"
+                        v-model="contract.START_TIME"
+                        :picker-options="startDatePickerOptions"
+                        type="date"
+                        placeholder="选择日期">
+                    </el-date-picker>
+                  </el-form-item>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="contract__table-required-filed">{{$lang('合同结束日期*')}}</span>
+                </td>
+                <td>
+                  <el-form-item
+                      prop="END_TIME"
+                      :rules="[{ required: true, message: $lang('请输入合同结束日期'), trigger: 'blur' }]">
+                    <el-date-picker
+                        :disabled="isDisabled"
+                        value-format="yyyy-MM-dd"
+                        v-model="contract.END_TIME"
+                        type="date"
+                        :picker-options="endDatePickerOptions"
+                        placeholder="选择日期">
+                    </el-date-picker>
+                  </el-form-item>
+                </td>
+                <td>
+                  <span class="contract__table-required-filed">{{$lang('对方开户行*')}}</span>
+                </td>
+                <td>
+                  <el-form-item
+                      prop="SP_BANK_CD"
+                      :rules="[{ required: true, message: $lang('请输入对方开户行'), trigger: 'blur' },{ validator: contentIsSpace, trigger: 'blur' }]">
+                    <el-input
+                        :disabled="isDisabled"
+                        resize="none"
+                        :placeholder="$lang('请输入对方开户行')"
+                        v-model="contract.SP_BANK_CD"
+                    />
+                  </el-form-item>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="contract__table-required-filed">{{$lang('对方银行账户*')}}</span>
+                </td>
+                <td>
+                  <el-form-item
+                      prop="collection_account_name"
+                      :rules="[{ required: true, message: $lang('请输入对方银行账户'), trigger: 'blur' },{ validator: contentIsSpace, trigger: 'blur' }]">
+                    <el-input
+                        :disabled="isDisabled"
+                        resize="none"
+                        :placeholder="$lang('请输入对方银行账户')"
+                        v-model="contract.collection_account_name"
+                    />
+                  </el-form-item>
+                </td>
+                <td>
+                  <span class="contract__table-required-filed">{{$lang('对方银行账号*')}}</span>
+                </td>
+                <td>
+                  <el-form-item
+                      prop="BANK_ACCOUNT"
+                      :rules="[{ required: true, message: $lang('请输入对方银行账号'), trigger: 'blur' },{ validator: contentIsSpace, trigger: 'blur' }]">
+                    <el-input
+                        :disabled="isDisabled"
+                        resize="none"
+                        :placeholder="$lang('请输入对方银行账号')"
+                        v-model="contract.BANK_ACCOUNT"
+                    />
+                  </el-form-item>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="contract__table-required-filed">{{$lang('对方SWIFT CODE*')}}</span>
+                </td>
+                <td>
+                  <el-form-item
+                      prop="SWIFT_CODE"
+                      :rules="[{ required: true, message: $lang('请输入对方SWIFT CODE'), trigger: 'blur' },{ validator: contentIsSpace, trigger: 'blur' }]">
+                    <el-input
+                        :disabled="isDisabled"
+                        resize="none"
+                        :placeholder="$lang('请输入对方SWIFT CODE')"
+                        v-model="contract.SWIFT_CODE"
+                    />
+                  </el-form-item>
+                </td>
+                <td>
+                  <span class="contract__table-required-filed">{{$lang('对方联系人*')}}</span>
+                </td>
+                <td>
+                  <el-form-item
+                      prop="CONTACT"
+                      :rules="[{ required: true, message: $lang('请输入对方联系人'), trigger: 'blur' },{ validator: contentIsSpace, trigger: 'blur' }]">
+                    <el-input
+                        :disabled="isDisabled"
+                        resize="none"
+                        :placeholder="$lang('请输入对方联系人')"
+                        v-model="contract.CONTACT"
+                    />
+                  </el-form-item>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="contract__table-required-filed">{{$lang('对方电子邮箱*')}}</span>
+                </td>
+                <td>
+                  <el-form-item
+                      prop="CON_EMAIL"
+                      :rules="[{ required: true, message: $lang('请输入对方电子邮箱'), trigger: 'blur' }, { validator: emailValidate, trigger: 'blur' }]">
+                    <el-input
+                        :disabled="isDisabled"
+                        resize="none"
+                        :placeholder="$lang('请输入对方电子邮箱')"
+                        v-model="contract.CON_EMAIL"
+                    />
+                  </el-form-item>
+                </td>
+                <td>
+                  <span class="contract__table-required-filed">{{$lang('对方联系电话*')}}</span>
+                </td>
+                <td>
+                  <el-form-item
+                      prop="CON_PHONE"
+                      :rules="[{ required: true, message: $lang('请输入对方联系电话'), trigger: 'blur' },{ validator: contentIsSpace, trigger: 'blur' }]">
+                    <el-input
+                        :disabled="isDisabled"
+                        resize="none"
+                        :placeholder="$lang('请输入对方联系电话')"
+                        v-model="contract.CON_PHONE"
+                    />
+                  </el-form-item>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="contract__table-required-filed">{{$lang('对方座机号码*')}}</span>
+                </td>
+                <td>
+                  <el-form-item
+                      prop="CON_TEL"
+                      :rules="[{ required: true, message: $lang('请输入对方座机号码'), trigger: 'blur' },{ validator: contentIsSpace, trigger: 'blur' }]">
+                    <el-input
+                        :disabled="isDisabled"
+                        resize="none"
+                        :placeholder="$lang('请输入对方座机号码')"
+                        v-model="contract.CON_TEL"
+                    />
+                  </el-form-item>
+                </td>
+                <td>
+                  <span class="contract__table-required-filed">{{$lang('合同总金额*')}}</span>
+                </td>
+                <td>
+                  <el-form-item
+                      prop="amount"
+                      :rules="[{ required: true, message: $lang('请输入合同总金额'), trigger: 'blur' },{ validator: contentIsSpace, trigger: 'blur' }]">
+                    <el-input
+                        :disabled="isDisabled"
+                        resize="none"
+                        :placeholder="$lang('请输入合同总金额')"
+                        v-model="contract.amount"
+                    />
+                  </el-form-item>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="contract__table-required-filed">{{$lang('发票类型*')}}</span>
+                </td>
+                <td>
+                  <el-form-item
+                      prop="invoice_type_cd"
+                      :rules="[{ required: true, message: $lang('请选择发票类型'), trigger: 'change' }]">
+                    <el-select :disabled="isDisabled" v-model="contract.invoice_type_cd" :placeholder="$lang('请选择')">
+                      <el-option
+                          v-for="(value,key) in invoiceType"
+                          :key="key"
+                          :label="value"
+                          :value="key">
+                      </el-option>
+                    </el-select>
+                  </el-form-item>
+                </td>
+                <td>
+                  <span class="contract__table-required-filed">{{$lang('货币单位*')}}</span>
+                </td>
+                <td>
+                  <el-form-item
+                      prop="currency_cd"
+                      :rules="[{ required: true, message: $lang('请选择货币单位'), trigger: 'change' }]">
+                    <el-select :disabled="isDisabled" v-model="contract.currency_cd" :placeholder="$lang('请选择')">
+                      <el-option
+                          v-for="(value,key) in currencyExtend"
+                          :key="key"
+                          :label="value"
+                          :value="key">
+                      </el-option>
+                    </el-select>
+                  </el-form-item>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="contract__table-required-filed">{{$lang('付款方式与周期*')}}</span>
+                </td>
+                <td>
+                  <el-form-item
+                      prop="pay_content"
+                      :rules="[{ required: true, message: $lang('请输入付款方式与周期'), trigger: 'blur' },{ validator: contentIsSpace, trigger: 'blur' }]">
+                    <el-input
+                        :disabled="isDisabled"
+                        resize="none"
+                        :placeholder="$lang('请输入付款方式与周期')"
+                        v-model="contract.pay_content"
+                    />
+                  </el-form-item>
+                </td>
+                <td>
+                  <span class="contract__table-required-filed">{{$lang('是否含税*')}}</span>
+                </td>
+                <td>
+                  <el-form-item
+                      prop="have_tax"
+                      :rules="[{ required: true, message: $lang('请选择是否含税'), trigger: 'change' }]">
+                    <el-select :disabled="isDisabled" v-model="contract.have_tax" :placeholder="$lang('请选择')">
+                      <el-option
+                          v-for="(item,index) in tax"
+                          :key="index"
+                          :label="item"
+                          :value="index">
+                      </el-option>
+                    </el-select>
+                  </el-form-item>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  {{$lang('费用分配（快递费等）')}}
+                </td>
+                <td>
+                  <el-form-item
+                      prop="distribution"
+                      :rules="[{ required: false, message: $lang('请输入费用分配（快递费等）'), trigger: 'blur' },{ validator: contentIsSpace, trigger: 'blur' }]">
+                    <el-input
+                        :disabled="isDisabled"
+                        resize="none"
+                        :placeholder="$lang('请输入费用分配（快递费等）')"
+                        v-model="contract.distribution"
+                    />
+                  </el-form-item>
+                </td>
+                <td>
+                  <span class="contract__table-required-filed">{{$lang('其他（重大不利条款等）*')}}</span>
+                </td>
+                <td>
+                  <el-form-item
+                      prop="other"
+                      :rules="[{ required: true, message: $lang('请输入其他（重大不利条款等）'), trigger: 'blur' },{ validator: contentIsSpace, trigger: 'blur' }]">
+                    <el-input
+                        :disabled="isDisabled"
+                        resize="none"
+                        :placeholder="$lang('请输入其他（重大不利条款等）')"
+                        v-model="contract.other"
+                    />
+                  </el-form-item>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="contract__table-required-filed">{{$lang('初稿合同文件*')}}</span>
+                </td>
+                <td>
+                  <div slot="tip" class="el-upload__tip">{{$lang('上传的文件不能超过50MB')}}</div>
+                  <template v-for="(item,index) in contract.finalizeContract">
+                    <el-form-item
+                        class="finalize__contract-form-item"
+                        :prop="'finalizeContract.' + index + '.contract_agreement'"
+                        :rules="[{ required: true, message: $lang('请选择'), trigger: 'change' }]">
+                      <div class="finalize__contract">
+                        <el-select :disabled="isDisabled"
+                                   v-model="item.contract_agreement" :placeholder="$lang('请选择')">
+                          <el-option
+                              v-for="(value,key) in contractAgreement"
+                              :key="key"
+                              :label="value"
+                              :value="key">
+                          </el-option>
+                        </el-select>
+                        <el-upload
+                            :disabled="isDisabled"
+                            class="upload-demo"
+                            ref="upload"
+                            action=""
+                            :on-success="onUploadSuccess"
+                            :before-upload="beforeUpload"
+                            :on-remove="onRemove"
+                            :before-remove="onBeforeRemove"
+                            :on-change="onUploadChange"
+                            :auto-upload="false"
+                            multiple
+                            :limit="2">
+                          <el-button size="small" type="primary" @click="onUpload(index)">{{$lang('点击上传')}}</el-button>
+                        </el-upload>
+                        <div class="actions">
+                          <i v-if="contract.finalizeContract.length===1 || index===(contract.finalizeContract.length-1)"
+                             class="el-icon-plus" @click="onAdd"></i>
+                          <i v-if="contract.finalizeContract.length>1" class="el-icon-minus" @click="onMinus(index)"></i>
+                        </div>
+                      </div>
+                    </el-form-item>
+                  </template>
+                </td>
+                <td v-if="trademarkNumIsShow">
+                  <span class="contract__table-required-filed">{{$lang('关联商标编号*')}}</span>
+                </td>
+                <td v-if="trademarkNumIsShow">
+                  <el-form-item
+                      prop="trademark_no"
+                      :rules="[{ required: true, message: $lang('请输入商标编号'), trigger: 'blur' },{ validator: contentIsSpace, trigger: 'blur' }]">
+                      <el-input
+                      @blur="trademarkNumberBlur(contract.trademark_no)"
+                      :disabled="isDisabled"
+                      resize="none"
+                      :placeholder="$lang('请输入商标编号')"
+                      v-model="contract.trademark_no"
+                />
+                  </el-form-item>
+                  
+                </td>
+              </tr>
+              </tbody>
+            </table>
+          </el-form>
+
+
+          <el-table
+          class="getTrademarkInfoTable"
+          :data="getTrademarkInfoData"
+          style="width: 100%">
+          <el-table-column
+            prop="trademark_no"
+            label="商标编号"
+            >
+          </el-table-column>
+           <el-table-column
+            prop="trademark_name"
+            label="商标名称"
+            >
+          </el-table-column>
+          <el-table-column
+            prop="country_name"
+            label="国家"
+            >
+          </el-table-column>
+          <el-table-column
+            prop="company_name"
+            label="公司"
+            >
+          </el-table-column>
+          <el-table-column
+            prop="register_code"
+            label="商标注册号"
+            >
+          </el-table-column>
+          <el-table-column
+            prop="international_type"
+            label="国际分类"
+            >
+          </el-table-column>
+          <el-table-column
+            prop="goods"
+            label="商品/服务"
+            >
+          </el-table-column>
+          <el-table-column
+            prop="trademark_type_name"
+            label="商标类型"
+            >
+          </el-table-column>
+          <el-table-column
+            prop="state_name"
+            label="当前状态"
+            >
+          </el-table-column>
+        </el-table>
+
+
+
+
+
+          <el-row :gutter="20">
+            <el-col :offset="2" :sm="20">
+              <div class="edit__actions">
+                <el-button
+                    v-if="isDraftState"
+                    type="primary"
+                    :loading="saving"
+                    class="button button--save"
+                    @click="onSave('1')"
+                >{{$lang('存草稿')}}
+                </el-button
+                >
+                <el-button
+                    v-else
+                    type="primary"
+                    :loading="saving"
+                    class="button button--save"
+                    @click="onEdit('1')"
+                >{{$lang('编辑合同')}}
+                </el-button
+                >
+                <el-button
+                    type="primary"
+                    :loading="saving"
+                    class="button button--save"
+                    @click="onSave('2')"
+                >{{$lang('提交合同')}}
+                </el-button
+                >
+                <el-button
+                    :loading="saving"
+                    class="button"
+                    @click="onCloseApproval"
+                >{{$lang('取消合同审批')}}
+                </el-button
+                >
+              </div>
+            </el-col>
+          </el-row>
+    </div>
+  </div>
+</div>
+
+
+<script src="/Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.js"></script>
+<a href="javascript:void(0)" class="Hui-iconfont toTop" title="返回顶部" alt="返回顶部"
+   style="width:40px;height:40px;display:none;position:fixed;right:50px;bottom:30px;z-index:999999"><img
+    src="/Application/Tpl/Home/Public/images/top.png" style="width:42px;height:42px;margin-left:-1px;"></a>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js?v=201907011048"></script>
+<script src="./Application/Tpl/Home/Public/js/lodash-4.17.15.js"></script>
+<script type="text/javascript"
+        src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+<script>
+    if (getCookie('think_language') !== "zh-cn") {
+        ELEMENT.locale(ELEMENT.lang.en)
+    }
+</script>
+<script>
+    let vueApp = new Vue({
+        el: '#main',
+        data() {
+            let phoneValidate = (rule, value, callback) => {
+                let reg = /^1[3-9]\d{9}$/;
+                if (!reg.test(value)) {
+                    callback(new Error(this.$lang('请输入正确的手机号码')));
+                } else {
+                    callback();
+                }
+            };
+            let emailValidate = (rule, value, callback) => {
+                let reg = /^[0-9a-zA-Z_.-]+[@][0-9a-zA-Z_.-]+([.][a-zA-Z]+){1,2}$/;
+
+                if (!reg.test(value)) {
+                    callback(new Error(this.$lang('请输入正确的邮箱格式')));
+                } else {
+                    callback();
+                }
+            };
+            let  contentIsSpace = (rule, value, callback) => {
+                let reg = /^[ ]+$/;
+                 console.log("当前内容",value);
+                if (reg.test(value)) {
+                    callback(new Error(this.$lang('内容不允许全部为空格')));
+                } else {
+                    callback();
+                }
+            };
+            return {
+                OPEN_HOST: '<{$OPEN_HOST}>',
+                activeName: 'new',
+                // fileUrl: `${window.AUTH_BASE_URL}files`,
+                saving: false,
+                conDateType: [],
+                conType: [],
+                contractAgreement: {},
+                contractState: {},
+                currencyExtend: {},
+                tax: [],
+                invoiceType: {},
+                isAutoRenew: [],
+                ourCompany: {},
+                contract: {
+                    ID: "",
+                    CONTRACTOR: "",
+                    SP_NAME: "",
+                    SP_RES_NAME: "",
+                    SP_NAME_EN: "",
+                    SP_RES_NAME_EN: "",
+                    COMPANY_ADDR_INFO: "",
+                    COMPANY_MARKET_INFO: "",
+                    SP_CHARTER_NO: "",
+                    SP_REMARK: "",
+                    SP_YEAR_SCALE_CD_val: "",
+                    cooperative_rating_val: "",
+                    RISK_RATING_val: "",
+                    SP_JS_TEAM_CD_val: "",
+                    SALE_TEAM_val: "",
+                    SP_TEAM_CD_val: "",
+                    COPANY_TYPE_CD_val: "",
+                    office_address: "",
+                    register_address: "",
+                    finalizeContract: [{
+                        contract_agreement: "",
+                        SP_ANNEX_ADDR3: ""
+                    }]
+                },
+                startDatePickerOptions: {
+                    disabledDate: date => {
+                        const endDate = this.contract.END_TIME;
+                        return  !isNaN(new Date(endDate).getTime()) && (new Date(date).getTime()+24*60*60*1000) > new Date(endDate).getTime();
+                    }
+                },
+                endDatePickerOptions: {
+                    disabledDate: date => {
+                        const startDate = this.contract.START_TIME;
+                        return !isNaN(new Date(startDate).getTime()) && new Date(date).getTime() < new Date(startDate).getTime();
+                    }
+                },
+                isDraftState: true,
+                isDisabled: false,
+                users: [],
+                emailValidate: emailValidate,
+                contentIsSpace:contentIsSpace,
+                fileList: [],
+                fileListLength: 0,
+                uploadFileIndex: 0,
+                id: null,
+                trademarkNumIsShow:false,
+                getTrademarkInfoData:[]
+            }
+        },
+        watch: {},
+        created() {
+            axios.post('/index.php?m=ContractNew&a=getAuditCommonData').then((res) => {
+                let data = res.data.data;
+                this.conDateType = data.conDateType
+                this.conType = data.conType;
+                this.contractAgreement = data.contractAgreement;
+                this.contractState = data.contractState;
+                this.currencyExtend = data.getCurrencyExtend;
+                this.tax = data.hasTax;
+                this.invoiceType = data.invoiceType;
+                this.isAutoRenew = data.isAutoRenew;
+                this.ourCompany = data.ourCompany;
+            })
+        },
+        mounted() {
+            let createByInput = document.querySelector('.contractor input');
+            createByInput.onkeyup = function (e) {
+                createByInput.value = createByInput.value.replace(/[\u4e00-\u9fa5]/gi, '');
+                createByInput.value = createByInput.value.replace(/[0-9]*/gi, '')
+            };
+        },
+        methods: {
+            onLenovoQuery(value, cb) {
+                axios.post(`/index.php?g=common&m=user&a=search_user`, Qs.stringify({name: this.contract.CONTRACTOR})).then((res) => {
+                    this.users = res.data.data;
+                    this.users.forEach((obj) => {
+                        obj.value = obj.name
+                    })
+                    cb(this.users);
+                })
+            },
+            onCheckID(value) {
+                axios.post(`/index.php?m=Supplier&a=autoload_supplier`, {
+                    supplier_id: this.contract.supplier_id
+                }).then((res) => {
+                    if (res.data.status === 1) {
+                        let data = res.data.info;
+                        if (value) { //如果是手动点击查询的就给提示信息
+                            this.$message.success(this.$lang(res.data.data));
+                        }
+
+                        this.$set(this.contract, "DATA_MARKING", data.DATA_MARKING ? data.DATA_MARKING : " ")
+                        this.$set(this.contract, "SP_ANNEX_NAME", data.SP_ANNEX_NAME ? data.SP_ANNEX_NAME : " ")
+                        this.$set(this.contract, "SP_ANNEX_NAME2", data.SP_ANNEX_NAME2 ? data.SP_ANNEX_NAME2 : " ")
+                        this.$set(this.contract, "SP_NAME", data.SP_NAME ? data.SP_NAME : " ")
+                        this.$set(this.contract, "SP_RES_NAME", data.SP_RES_NAME ? data.SP_RES_NAME : " ")
+                        this.$set(this.contract, "SP_NAME_EN", data.SP_NAME_EN ? data.SP_NAME_EN : " ")
+                        this.$set(this.contract, "SP_RES_NAME_EN", data.SP_RES_NAME_EN ? data.SP_RES_NAME_EN : " ")
+                        this.$set(this.contract, "COMPANY_ADDR_INFO", data.COMPANY_ADDR_INFO ? data.COMPANY_ADDR_INFO : " ")
+                        this.$set(this.contract, "COMPANY_MARKET_INFO", data.COMPANY_MARKET_INFO ? data.COMPANY_MARKET_INFO : " ")
+                        this.$set(this.contract, "SP_CHARTER_NO", data.SP_CHARTER_NO ? data.SP_CHARTER_NO : " ")
+                        this.$set(this.contract, "SP_REMARK", data.SP_REMARK ? data.SP_REMARK : " ")
+                        this.$set(this.contract, "SP_YEAR_SCALE_CD_val", data.SP_YEAR_SCALE_CD_val ? data.SP_YEAR_SCALE_CD_val : " ")
+                        this.$set(this.contract, "SP_TEAM_CD_val", data.SP_TEAM_CD_val ? data.SP_TEAM_CD_val : " ")
+                        this.$set(this.contract, "cooperative_rating_val", data.cooperative_rating_val ? data.cooperative_rating_val : " ")
+                        this.$set(this.contract, "RISK_RATING_val", data.RISK_RATING_val ? data.RISK_RATING_val : " ")
+                        this.$set(this.contract, "SP_JS_TEAM_CD_val", data.SP_JS_TEAM_CD_val ? data.SP_JS_TEAM_CD_val : " ")
+                        this.$set(this.contract, "SALE_TEAM_val", data.SALE_TEAM_val ? data.SALE_TEAM_val : " ")
+                        this.$set(this.contract, "SP_TEAM_CD_val", data.SP_TEAM_CD_val ? data.SP_TEAM_CD_val : " ")
+                        this.$set(this.contract, "COPANY_TYPE_CD_val", data.COPANY_TYPE_CD_val ? data.COPANY_TYPE_CD_val : " ")
+                        this.$set(this.contract, "office_address", data.office_address ? data.office_address : " ")
+                        this.$set(this.contract, "register_address", data.register_address ? data.register_address : " ")
+
+                    } else {
+                        this.$message.error(this.$lang(res.data.data))
+                    }
+                })
+            },
+            onUpload(index) {
+                this.uploadFileIndex = index;
+            },
+            beforeUpload(file) {
+                // if (file.name.substr(-3) !== "apk") {
+                //     this.$message.error(`文件只能上传.apk后缀格式的文件`);
+                //     return false;
+                // }
+            },
+            onUploadChange(file, filelist) {
+                if (file.size > (50 * 1024 * 1024)) {
+                    this.$refs.upload[this.uploadFileIndex].clearFiles();
+                    return this.$message.error(this.$lang('上传的文件大小不能超过50M'));
+                }
+
+                if (file.status === "ready" && filelist.length > 1) {
+                    filelist.splice(0, 1);
+                }
+
+                this.contract.finalizeContract[this.uploadFileIndex].SP_ANNEX_ADDR3 = file.raw;
+                // {name:file.raw.name,url:`/index.php?m=supplier&a=contract_download&ID=${contract.ID}&name=${item.SP_ANNEX_ADDR3}`}
+                this.fileListLength = filelist.length;
+            },
+            onUploadSuccess(response) {
+            },
+            onRemove() {
+
+            },
+            onBeforeRemove() {
+
+            },
+            onAdd() {
+                this.contract.finalizeContract.push({
+                    contract_agreement: null,
+                    SP_ANNEX_ADDR3: []
+                })
+            },
+            onMinus(index) {
+                this.contract.finalizeContract.splice(index, 1);
+            },
+            onSave(type) {
+                let formData = new FormData();
+                this.contract.finalizeContract.forEach((obj) => {
+                    formData.append("contract_agreement[]", obj.contract_agreement);
+                    formData.append("SP_ANNEX_ADDR3[]", obj.SP_ANNEX_ADDR3);
+                });
+
+                formData.append("SP_NAME", this.contract.SP_NAME ? this.contract.SP_NAME : "");
+                formData.append("BANK_ACCOUNT", this.contract.BANK_ACCOUNT ? this.contract.BANK_ACCOUNT : "");
+                formData.append("CONTACT", this.contract.CONTACT ? this.contract.CONTACT : "");
+                formData.append("CONTRACTOR", this.contract.CONTRACTOR ? this.contract.CONTRACTOR : "");
+                formData.append("CONTRACT_TYPE", (this.contract.CONTRACT_TYPE !== null && this.contract.CONTRACT_TYPE !== "" && this.contract.CONTRACT_TYPE !== undefined) ? this.contract.CONTRACT_TYPE : "");
+                formData.append("CON_COMPANY_CD", (this.contract.CON_COMPANY_CD !== null && this.contract.CON_COMPANY_CD !== "" && this.contract.CON_COMPANY_CD !== undefined) ? this.contract.CON_COMPANY_CD : "");
+                formData.append("CON_COMPANY_SEC", (this.contract.CON_COMPANY_SEC !== null && this.contract.CON_COMPANY_SEC !== "" && this.contract.CON_COMPANY_SEC !== undefined) ? this.contract.CON_COMPANY_SEC : "");
+                formData.append("CON_EMAIL", this.contract.CON_EMAIL ? this.contract.CON_EMAIL : "");
+                formData.append("CON_NAME", this.contract.CON_NAME ? this.contract.CON_NAME : "");
+                formData.append("CON_STAT", (this.contract.CON_STAT !== null && this.contract.CON_STAT !== "" && this.contract.CON_STAT !== undefined) ? this.contract.CON_STAT : "");
+                formData.append("CON_PHONE", this.contract.CON_PHONE ? this.contract.CON_PHONE : "");
+                formData.append("CON_TEL", this.contract.CON_TEL ? this.contract.CON_TEL : "");
+                formData.append("CON_TYPE", (this.contract.CON_TYPE !== null && this.contract.CON_TYPE !== "" && this.contract.CON_TYPE !== undefined) ? this.contract.CON_TYPE : "");
+                formData.append("END_TIME", this.contract.END_TIME ? this.contract.END_TIME : "");
+                formData.append("ID", this.contract.ID ? this.contract.ID : "");
+                formData.append("IS_RENEWAL", (this.contract.IS_RENEWAL !== null && this.contract.IS_RENEWAL !== "" && this.contract.IS_RENEWAL !== undefined) ? this.contract.IS_RENEWAL : "");
+                formData.append("SP_BANK_CD", this.contract.SP_BANK_CD ? this.contract.SP_BANK_CD : "");
+                formData.append("START_TIME", this.contract.START_TIME ? this.contract.START_TIME : "");
+                formData.append("SWIFT_CODE", this.contract.SWIFT_CODE ? this.contract.SWIFT_CODE : "");
+                formData.append("amount", this.contract.amount ? this.contract.amount : "");
+                formData.append("collection_account_name", this.contract.collection_account_name ? this.contract.collection_account_name : "");
+                formData.append("currency_cd", (this.contract.currency_cd !== null && this.contract.currency_cd !== "" && this.contract.currency_cd !== undefined) ? this.contract.currency_cd : "");
+                formData.append("desc", this.contract.desc ? this.contract.desc : "");
+                formData.append("distribution", this.contract.distribution ? this.contract.distribution : "");
+                formData.append("have_tax", (this.contract.have_tax !== null && this.contract.have_tax !== "" && this.contract.have_tax !== undefined) ? this.contract.have_tax : "");
+                formData.append("invoice_type_cd", (this.contract.invoice_type_cd !== null && this.contract.invoice_type_cd !== "" && this.contract.have_tax !== undefined) ? this.contract.invoice_type_cd : "");
+                formData.append("other", this.contract.other ? this.contract.other : "");
+                formData.append("trademark_no", this.contract.trademark_no ? this.contract.trademark_no : "");
+                formData.append("pay_content", this.contract.pay_content ? this.contract.pay_content : "");
+                formData.append("supplier_id", this.contract.supplier_id ? this.contract.supplier_id : "");
+                formData.append("type", type)
+
+                if (type === '1') { //存草稿
+                    this.saving = true
+                    axios.post(`/index.php?m=ContractNew&a=createContractInfo`, formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                        .then(res => {
+                            if (res.data.code === 2000) {
+                                this.saving = false;
+                                this.$message.success(this.$lang('存草稿成功'));
+                                // closeTab();
+                                this.isDraftState = false; //显示编辑合同按钮
+                                this.isDisabled = true;
+                                this.id = res.data.data;
+                                this.contract.ID = this.id;
+                                backTab("/index.php?m=contract&a=contract_view&ID=" + this.id, this.$lang('合同审批详情'));
+
+                            } else {
+                                this.$message.error(res.data.msg ? res.data.msg : "");
+                                this.saving = false;
+                            }
+                        }).catch(() => {
+                        this.$message.error(this.$lang('存草稿失败'));
+                        this.saving = false
+                    });
+                } else { //提交合同
+                    this.$refs['form'].validate((valid) => {
+                        if (valid) {
+                            this.saving = true
+                            axios.post(`/index.php?m=ContractNew&a=createContractInfo`, formData, {
+                                headers: {
+                                    'Content-Type': 'multipart/form-data',
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }
+                            })
+                                .then(res => {
+                                    if (res.data.code === 2000) {
+                                        this.saving = false;
+                                        this.$message.success(this.$lang('新增成功'));
+                                        let id = res.data.data;
+
+                                        backTab("/index.php?m=contract&a=contract_view&ID=" + id, this.$lang('合同审批详情'));
+
+                                    } else {
+                                        this.$message.error(res.data.msg ? res.data.msg : "");
+                                        this.saving = false;
+                                    }
+                                }).catch(() => {
+                                this.$message.error(this.$lang('保存失败'));
+                                this.saving = false
+                            });
+                        } else {
+                            return false;
+                        }
+                    });
+                }
+            },
+            onEdit() {
+                this.isDisabled = !this.isDisabled;
+                this.isDraftState = !this.isDraftState;
+            },
+            onCloseApproval() {
+                if(this.contract.ID){
+                    this.$confirm(this.$lang('确认取消此次合同审批申请吗？'), this.$lang('提示')).then(() => {
+                        axios.post(`/index.php?m=ContractNew&a=createContractInfo`, {
+                            type: "3",
+                            ID: this.contract.ID
+                        })
+                            .then(res => {
+                                if (res.data.code === 2000) {
+                                    this.saving = false;
+                                    this.$message.success(this.$lang('取消成功'));
+                                    closeTab();
+                                } else {
+                                    this.$message.error(res.data.msg ? res.data.msg : "");
+                                    this.saving = false;
+                                }
+                            }).catch(() => {
+                            this.$message.success(this.$lang('取消失败'));
+                            this.saving = false
+                        });
+                    })
+                }else {
+                    closeTab();
+                }
+
+            },
+            onDownload(id, type, businessLicenseType, name) {
+                const a = document.createElement('a'); // 创建a标签
+                //区分供应商和采购供应商
+                if (type === '0') { //采购供应商
+                    if (businessLicenseType === '0') { //主体营业执照
+                        a.setAttribute('download', name);// download属性
+                        a.setAttribute('href', `/index.php?m=supplier&a=business_license_download&ID=${id}`);// href链接
+                        a.click();
+                    } else if (businessLicenseType === '1') { //关联营业执照
+                        a.setAttribute('download', name);// download属性
+                        a.setAttribute('href', `/index.php?m=supplier&a=company_file_download&ID=${id}`);// href链接
+                        a.click();
+
+                    }
+
+                } else if (type === '1') { //b2b供应商
+                    if (businessLicenseType === '0') { //主体营业执照
+                        a.setAttribute('download', name);// download属性
+                        a.setAttribute('href', `/index.php?m=b_t_b_customer_management&a=business_license_download&ID=${id}`);// href链接
+                        a.click();
+
+                    } else if (businessLicenseType === '1') { //关联营业执照
+                        a.setAttribute('download', name);// download属性
+                        a.setAttribute('href', `/index.php?m=b_t_b_customer_management&a=company_file_download&ID=${id}`);// href链接
+                        a.click();
+
+                    }
+                }
+
+            },
+            contractTypeChange(val){
+              if(val == 11){
+                this.trademarkNumIsShow = true
+              }else{
+                this.trademarkNumIsShow = false
+              }
+            },
+            trademarkNumberBlur(val){
+              console.log(val);
+              axios.post("/index.php?m=Trademark&a=getTrademarkInfo", {
+                trademark_no:val
+              }).then((res) => {
+                console.log(res);
+                if (res.data.code === 200) {
+                  this.getTrademarkInfoData = res.data.data
+                } else {
+                  this.$message.error(this.$lang(data.msg));
+                }
+              }).catch(err => {
+                console.log(err)
+              });
+            }
+        }
+    });
+</script>
+</body>
+</html>

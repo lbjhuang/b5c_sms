@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>账户详情</title>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>" />
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>" />
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>" />
+</head>
+
+<style>
+    [v-cloak] {
+        display: none;
+    }
+    
+    .wrap {
+        box-sizing: border-box;
+        padding: 20px;
+        margin: 0;
+    }
+    
+    .el-pagination {
+        margin-bottom: 180px;
+    }
+    
+    .export-wrap {
+        white-space: nowrap;
+    }
+    
+    .export-wrap .occupy {
+        display: inline-block;
+        width: 49.5%;
+    }
+    
+    .table-list {
+        border-collapse: collapse;
+        border-spacing: 0;
+        width: 100%;
+        background: #ffffff;
+        border: 1px solid #cadee7;
+    }
+    
+    .table-list tr th {
+        background: #546e7a;
+        height: 40px;
+        text-align: center;
+        font-size: 0.7rem;
+        color: #ffffff;
+        letter-spacing: 0;
+        border: 1px solid #668491;
+        white-space: nowrap;
+    }
+    
+    .table-list tr td {
+        font-size: 0.68rem;
+        color: #263238;
+        letter-spacing: 0;
+        text-align: center;
+        padding: 0.5rem;
+        border: 1px solid #cadee7;
+        font-family: "Microsoft YaHei";
+    }
+    
+    .table-list tr td p {
+        font-size: 0.68rem;
+        text-align: center;
+        padding: 0;
+        margin: 0;
+        font-family: "Microsoft YaHei";
+    }
+    
+    .table-list tr:nth-of-type(even) {
+        background: #f7f9fb;
+        border: 1px solid #cadee7;
+    }
+    
+    .el-col {
+        padding: 0 10px;
+    }
+    
+    .el-select {
+        width: 100%;
+    }
+    
+    .el-date-editor .el-range-input {
+        width: 36%;
+    }
+</style>
+
+<body>
+    <div id="turn" v-cloak class="wrap">
+        <el-form ref="form" :model="form" :label-position="labelPosition" label-width="100px">
+            <el-row>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('流水ID')">
+                        <el-input v-model="form.accountTransferNo" :placeholder="$lang('请填写流水ID')" clearable></el-input>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('流水类型')">
+                        <el-select :filterable="true" :placeholder="$lang('请选择流水类型')" v-model="form.transactionType" clearable>
+                            <el-option :label="$lang('付款')" value="1"></el-option>
+                            <el-option :label="$lang('收款')" value="2"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('我方公司名称')">
+                        <el-select :filterable="true" :placeholder="$lang('请选择公司名称')" v-model="form.companyCode" clearable>
+                            <el-option :key="item.cd" :label="item.cdVal" :value="item.cd" v-for="item in baseData.company"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('对方公司名称')">
+                        <el-input v-model="form.oppCompanyName" :placeholder="$lang('请填写对方公司名称')"></el-input>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('我方银行名称')">
+                        <el-input v-model="form.openBank" :placeholder="$lang('请填写行名')"></el-input>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('对方银行名称')">
+                        <el-input v-model="form.oppOpenBank" :placeholder="$lang('请填写行名')"></el-input>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('我方银行账号')">
+                        <el-input v-model="form.accountBank" :placeholder="$lang('请填写账号')"></el-input>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('对方银行账号')">
+                        <el-input v-model="form.oppAccountBank" :placeholder="$lang('请填写账号')"></el-input>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('币种')">
+                        <el-select :filterable="true" :placeholder="$lang('请选择币种')" v-model="form.currencyCode" clearable>
+                            <el-option :key="item.cd" :label="item.cdVal" :value="item.cd" v-for="item in baseData.currency"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('发生日期')">
+                        <el-date-picker v-model="form.transferTime" style="width: 100%;" type="daterange" align="right" unlink-panels value-format="yyyy-MM-dd" :range-separator="$lang('至')" :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')" :picker-options="pickerOptions">
+                        </el-date-picker>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('创建时间')">
+                        <el-date-picker v-model="form.createTime" style="width: 100%;" type="daterange" align="right" unlink-panels value-format="yyyy-MM-dd" :range-separator="$lang('至')" :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')" :picker-options="pickerOptions">
+                        </el-date-picker>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('收支方向')">
+                        <el-select :filterable="true" :placeholder="$lang('请选择收支方向')" v-model="form.transferType" clearable>
+                            <el-option :key="item.cd" :label="$lang(item.cdVal)" :value="item.cd" v-for="item in baseData.transfer"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('主订单号')">
+                        <el-input v-model="form.orderNo" :placeholder="$lang('请填写单号')"></el-input>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('子订单号')">
+                        <el-input v-model="form.childOrderNo" :placeholder="$lang('请填写单号')"></el-input>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('销售团队')">
+                        <el-select :filterable="true" :placeholder="$lang('请选择销售团队')" v-model="form.saleTeams" clearable>
+                            <el-option :key="val" :label="key" :value="val" v-for="(key,val) in baseData.saleTeams"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('关联人')">
+                        <el-input v-model="form.createdBy" :placeholder="$lang('请填写关联人')"></el-input>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="6">
+                    <el-form-item :label="$lang('银行参考号')">
+                        <el-input v-model="form.bank_reference_no" :placeholder="$lang('')"></el-input>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="24">
+                    <el-button type="primary" @click="search()">{{$lang("查询")}}</el-button>
+                    <el-button @click="reset()">{{$lang("重置")}}</el-button>
+                </el-col>
+            </el-row>
+        </el-form>
+        <div class="baseline"></div>
+        <div class="use-row export-wrap">
+            <div class="col-50 result-num occupy">
+                {{ $lang("搜索结果") }}：&nbsp;&nbsp;{{ $lang("共") }}
+                <b>{{ totalCount }}</b> {{ $lang("条") }}
+                <b> {{ numberFormat(fixedNum(totalAmountMoney, 2)) }}</b>
+            </div>
+            <div class="col-50 text-right occupy">
+                <?php if(ButtonAction::hidden()){ ?>
+                <el-button type="primary" @click="exportTurnOver()"> {{ $lang("导出") }} </el-button>
+                <?php }?>
+            </div>
+        </div>
+        <div class="use-row">
+            <div class="col-100">
+                <table class="table-list" id="dataList">
+                    <thead>
+                        <tr>
+                            <th>{{ $lang("流水ID") }}</th>
+                            <th>{{ $lang("流水类型") }}</th>
+                            <th>{{ $lang("收支方向") }}</th>
+                            <th>{{ $lang("主订单号") }}</th>
+                            <th>{{ $lang("子订单号") }}</th>
+                            <th>{{ $lang("销售团队") }}</th>
+                            <th>{{ $lang("币种") }}</th>
+                            <th>{{ $lang("金额") }}</th>
+                            <th width="150px">{{ $lang("我方信息") }}</th>
+                            <th width="150px">{{ $lang("对方信息") }}</th>
+                            <th>{{ $lang("发生日期") }}</th>
+                            <th>{{ $lang("关联人") }}</th>
+                            <th>{{ $lang("创建时间") }}</th>
+                            <th>{{ $lang("操作") }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="item in dataList">
+                            <td>{{ item.accountTransferNo }}</td>
+                            <td>{{ $lang(item.transactionType) }}</td>
+                            <td>{{ $lang(item.transferName) }}</td>
+                            <td>{{ item.orderNo }}</td>
+                            <td>{{ item.childOrderNo }}</td>
+                            <td>{{ item.saleTeamsName }}</td>
+                            <td>{{ getValue("currency", item.currencyCode) }}</td>
+                            <td>{{ numberFormat(fixedNum(item.claimAmount, 2)) }}</td>
+                            <td>
+                                <p style="margin-bottom:10px;">{{$lang(item.companyName)}}</p>
+                                <p style="margin-bottom:10px;">{{$lang(item.openBank)}}</p>
+                                <p>{{$lang(item.accountBank)}}</p>
+                            </td>
+                            <td>
+                                <p style="margin-bottom:10px;">{{$lang(item.oppCompanyName)}}</p>
+                                <p style="margin-bottom:10px;">{{$lang(item.oppOpenBank)}}</p>
+                                <p>{{$lang(item.oppAccountBank)}}</p>
+                            </td>
+                            <td> {{item.transferTime}} </td>
+                            <td>{{item.createdBy}}</td>
+                            <td>{{ item.createAt}}</td>
+                            <td>
+                                <el-button type="primary" @click="viewDetail(item)">{{$lang('查看详情')}}</el-button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="use-row">
+            <div class="col-100 text-right">
+                <el-pagination v-if="dataList" @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="form.pageIndex" :page-sizes="[20, 50, 100, 200,300]" :page-size="form.pageSize" layout="sizes, prev, pager, next,jumper" :total="totalCount"></el-pagination>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home//Public/lib/jquery.table2excel.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script>
+        if (getCookie("think_language") !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en);
+        }
+        var turn = new Vue({
+            el: "#turn",
+            data: {
+                labelPosition: "left",
+                dataList: [],
+                baseData: {},
+                totalCount: 20,
+                totalAmountMoney: "",
+                totalAmountMoneyCurrency: "",
+                numberFormat: utils.numberFormat.bind(utils),
+                form: {
+                    accountTransferNo: "",
+                    transactionType: "",
+                    companyCode: "",
+                    oppCompanyName: "",
+                    openBank: "",
+                    oppOpenBank: "",
+                    accountBank: "",
+                    currencyCode: "",
+                    transferType: "",
+                    orderNo: "",
+                    childOrderNo: "",
+                    saleTeams: "",
+                    createdBy: "",
+                    transferStartTime: "",
+                    transferEndTime: "",
+                    createStartTime: "",
+                    createEndTime: "",
+                    pageIndex: 1,
+                    pageSize: 20,
+                    transferTime: [],
+                    createTime: [],
+                    bank_reference_no:''
+                },
+                fixedNum: function(param, num) {
+                    num = num || 0;
+                    var floatNum = parseFloat(param);
+                    if (!isNaN(floatNum)) {
+                        return floatNum.toFixed(num);
+                    }
+                },
+                pickerOptions: {},
+                getValue: function(dataName, key) {
+                    var result = "";
+                    for (var i in this.baseData[dataName]) {
+                        if (this.baseData[dataName][i].cd == key) {
+                            result = this.baseData[dataName][i].cdVal;
+                            break;
+                        }
+                    }
+                    return result ? result : "";
+                }
+            },
+            created: function() {
+                this.pickerOptions = {
+                    shortcuts: [{
+                        text: this.$lang("最近一周"),
+                        onClick: function(picker) {
+                            var end = new Date(),
+                                start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+                            picker.$emit("pick", [start, end]);
+                        }
+                    }, {
+                        text: this.$lang("最近一个月"),
+                        onClick: function(picker) {
+                            var end = new Date(),
+                                start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+                            picker.$emit("pick", [start, end]);
+                        }
+                    }, {
+                        text: this.$lang("最近三个月"),
+                        onClick: function(picker) {
+                            var end = new Date(),
+                                start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+                            picker.$emit("pick", [start, end]);
+                        }
+                    }]
+                };
+                this.search();
+            },
+            methods: {
+                search: function() {
+                    var _this = this;
+                    var param = {
+                        data: {
+                            query: {
+                                company: "true",
+                                account: "true",
+                                transfer: "true",
+                                currency: "true",
+                                receiptType: "true",
+                                saleTeams: "true",
+                            }
+                        }
+                    };
+                    axios.post("/index.php?m=finance&a=commonData", param)
+                        .then(function(res) {
+                            if (res.data.code == 2000) {
+                                turn.baseData = res.data.data;
+                                turn.getData();
+                            } else {
+                                _this.$message.warning(_this.$lang("数据查询失败"));
+                            }
+                        });
+                },
+                getData: function() {
+                    var _this = this,
+                        param = {
+                            data: {}
+                        },
+                        createTime = this.form.createTime || [],
+                        transferTime = this.form.transferTime || [];
+
+                    param.data.query = this.form;
+                    param.data.query.createStartTime = createTime[0];
+                    param.data.query.createEndTime = createTime[1];
+                    param.data.query.transferStartTime = transferTime[0];
+                    param.data.query.transferEndTime = transferTime[1];
+
+                    axios.post("/index.php?m=finance&a=getTurnoverRelation", param)
+                        .then(function(res) {
+                            var result = res.data;
+                            if (result.code == 2000) {
+                                turn.dataList = result ? result.data.pageData : [];
+                                turn.totalCount = +result.data.totalCount;
+                                turn.totalAmountMoney = +result.data.totalAmountMoney;
+                                turn.totalAmountMoneyCurrency =
+                                    result.data.totalAmountMoneyCurrency;
+                            } else {
+                                _this.$message.warning(_this.$lang("订单数据查询失败"));
+                            }
+                        });
+                },
+                viewDetail: function(item) {
+                    newTab("/index.php?m=finance&a=billing_detail&turnover_id=" + item.accountTurnoverId, this.$lang('日记账详情'));
+                },
+                handleSizeChange: function(size) {
+                    this.form.pageSize = size;
+                    this.getData();
+                },
+                handleCurrentChange: function(currentPage) {
+                    this.form.pageIndex = currentPage;
+                    this.getData();
+                },
+                reset: function() {
+                    for (var k in this.form) {
+                        switch (k) {
+                            case 'transferTime':
+                                this.form[k] = [];
+                                break;
+                            case 'createTime':
+                                this.form[k] = [];
+                                break;
+                            case 'pageIndex':
+                                this.form[k] = 1;
+                                break;
+                            case 'pageSize':
+                                this.form[k] = 20;
+                                break;
+                            default:
+                                this.form[k] = '';
+                        }
+                    }
+                    this.getData();
+                },
+                //导出模版
+                exportList: function() {
+                    $("#dataList").table2excel({
+                        filename: this.$lang("订单列表") + ".xls", //文件名称
+                        name: "Excel Document Name.xlsx"
+                    });
+                },
+                //导出
+                exportTurnOver: function() {
+                    var _this = this,
+                        param = {
+                            data: {},
+                            export_type: 'relation'
+                        },
+                        createTime = this.form.createTime || [],
+                        transferTime = this.form.transferTime || [];
+
+                    param.data.query = this.form;
+                    param.data.query.createStartTime = createTime[0];
+                    param.data.query.createEndTime = createTime[1];
+                    param.data.query.transferStartTime = transferTime[0];
+                    param.data.query.transferEndTime = transferTime[1];
+                    var tmp = document.createElement("form");
+                    tmp.action = "/index.php?m=Finance&a=exportExcel";
+                    tmp.method = "post";
+                    tmp.style.display = "none";
+                    var opt = document.createElement("input");
+                    opt.name = "post_data";
+                    opt.value = JSON.stringify(param);
+                    tmp.appendChild(opt);
+                    document.body.appendChild(tmp);
+                    tmp.submit();
+                    $(tmp).remove();
+                }
+            },
+            filters: {
+                numberFormat: function(val) {
+                    if (val) {
+                        var num = parseFloat(parseFloat(val).toFixed(2)).toLocaleString();
+                        return num.indexOf('.') > 0 ? num : num + ".00";
+                    }
+                },
+            }
+        });
+    </script>
+</body>
+
+</html>

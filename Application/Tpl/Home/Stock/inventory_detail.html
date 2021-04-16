@@ -1,0 +1,1602 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>盘点详情页</title>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/btn-new.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+</head>
+
+<style>
+    [v-cloak] {
+        display: none;
+    }
+    .baseData ul{
+        display: flex;
+        margin: 0;
+        padding: 0;
+        flex-wrap: wrap;
+        border-top: 1px solid #cadee7;
+        border-left: 1px solid #cadee7;
+    }
+    .baseData ul li{
+        width: 25%;
+        text-align: center;
+        border-bottom: 1px solid #cadee7;
+        border-right: 1px solid #cadee7;
+        box-sizing: border-box;
+        font-size: 14px;
+        padding: 10px;
+    }
+    .baseData ul li:nth-child(odd){
+        color: #546e7a;
+        background: #f7f9fb;
+    }
+    .inputBtn{
+        margin: 50px auto;
+        width: 150px;
+        display: block;
+    }
+    .table_head{
+        background: #546E7A;
+        color: #fff;
+        padding: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 16px;
+        margin-top: 20px;
+    }
+    .table_head .table_head_title{
+        display: flex;
+        align-items: center;
+    }
+    .table_head .table_head_title>div{
+        flex: 1;
+        margin-left: 10px;
+    }
+    .table_pages{
+        margin-top: 20px;
+        text-align: right;
+    }
+    .financialAudit{
+        border: 1px solid #ebeef5;
+    }
+    .financialAudit>div{
+        display: flex;
+        align-items: center;
+    }
+    .financialAudit>div:first-child{
+        border-bottom: 1px solid #ebeef5;
+    }
+    .financialAudit .title{
+        width: 50%;
+        text-align: center;
+        padding: 10px 0;
+    }
+    .financialAudit .content{
+        width: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-left: 1px solid #ebeef5;
+        padding: 10px;
+    }
+    .financialAudit .content .el-input{
+        width: 40%;
+    }  
+    .difference_audit_results span{
+        font-size: 16px;
+    }
+    .difference_audit_results .el-input{
+        flex:1;
+    }
+</style>
+
+<body>
+<div id="inventoryDetail" v-cloak>
+    <!-- 基本信息 -->
+    <div class="baseData">
+        <ul>
+            <li>{{$lang('盘点单号')}}</li>
+            <li>{{baseData.inve_no}}</li>
+            <li>{{$lang('盘点状态')}}</li>
+            <li>{{$lang(baseData.status_cd_val)}}</li>
+            <li>{{$lang('盘点仓库')}}</li>
+            <li>{{baseData.warehouse_cd_val}}</li>
+            <li>{{$lang('盘点发起人')}}</li>
+            <li>{{baseData.created_by}}</li>
+            <li>{{$lang('盘点发起时间')}}</li>
+            <li>{{baseData.created_at}}</li>
+            <li>{{$lang('盘点结束时间')}}</li>
+            <li>{{baseData.end_at}}</li>
+            <li>{{$lang('盘点销售团队')}}</li>
+            <li>{{baseData.sale_team_cd_val}}</li>
+            <li>{{$lang('盘点SKU')}}</li>
+            <li>{{baseData.inve_sku}}</li>
+            <li>{{$lang('盘点商品类型')}}</li>
+            <li>{{baseData.goods_type_cd_val}}</li>
+            <li></li>
+            <li></li>
+        </ul>
+        <el-button v-if="inventory_status == 1" class="inputBtn" @click="enter_inventory_situation" type="primary">{{$lang('录入盘点情况')}}</el-button>
+    </div>
+    <!-- Excel导入数据 -->
+    <div v-if="import_data.length != 0 && inventory_status == 1" class="inventory_product_information">
+        <div class="table_head">
+            <span>{{$lang('Excel导入数据')}}</span>
+        </div>
+        <el-table class="table-list" :data="import_data" border>
+            <el-table-column align="center" :label="$lang('序号')">
+                <template slot-scope="scope">
+                    <span>{{scope.$index + 1}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('货位号')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.location_code}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('商品图片')">
+                <template slot-scope="scope">
+                    <img style="width: 100%;" :src="scope.row.imageUrl">
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('SKU编码')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.sku_id}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('条形码')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.upcId}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('商品名称')">
+                <template slot-scope="scope">
+                    <span>{{$lang(scope.row.gudsName)}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('属性')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.optAttr}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('在库库存')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.amountTotalNum}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('可售库存')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.amountSaleNum}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('占用库存')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.amountOccupiedNum}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('锁定库存')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.amountLockingNum}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('应盘点数量')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.amountTotalNum}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('实际盘点数量')">
+                <template slot-scope="scope">
+                    <!-- <span v-if="!productInformation_edit">{{scope.row.actual_num}}</span> -->
+                    <el-input @change="actual_num_change_excel(scope.row,scope.$index)" v-model="scope.row.actual_num" :placeholder="$lang('请输入内容')"></el-input>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('差异值')">
+                <template slot-scope="scope">
+                    <span>{{Math.abs(Number(scope.row.actual_num) - Number(scope.row.amountTotalNum))}}</span>
+                </template>
+            </el-table-column>
+        </el-table>
+    
+    </div>
+
+    <!-- 盘点商品信息 -->
+    <div class="inventory_product_information">
+        <div class="table_head">
+            <div class="table_head_title">
+                <span>{{$lang('盘点商品信息')}}</span>
+                <el-input @change="search(commodity_screening)" v-if="inventory_status == '1'" prefix-icon="el-icon-search" v-model="commodity_screening"></el-input>
+            </div>
+            <div style="display: flex;" v-if="inventory_status == 1">
+                <el-button style="margin-right: 20px;" @click="downloadExcel" type="primary">EXCEL {{$lang('模板下载')}}</el-button>
+
+                <el-upload action="/index.php?g=warehouse&m=inventory&a=inveImport" :show-file-list="false" :http-request="importExcel"
+                    accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel">
+                    <el-button type="primary">EXCEL {{$lang('导入')}}</el-button>
+                </el-upload>
+
+            </div>
+        </div>
+        <el-table class="table-list" :data="inventoryProductInformationData" border>
+            <el-table-column align="center" :label="$lang('序号')">
+                <template slot-scope="scope">
+                    <span>{{scope.$index + 1}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('货位号')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.location_code}}</span>
+                </template>
+            </el-table-column>
+            <!-- <el-table-column align="center" :label="$lang('正品货位号')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.location_code}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('残次品货位号')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.location_code}}</span>
+                </template>
+            </el-table-column> -->
+            <el-table-column align="center" :label="$lang('商品图片')">
+                <template slot-scope="scope">
+                    <img style="width: 100%;" :src="scope.row.imageUrl">
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('SKU编码')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.skuId}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('商品类型')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.productType}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('条形码')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.upcId}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('商品名称')">
+                <template slot-scope="scope">
+                    <span>{{$lang(scope.row.gudsName)}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('属性')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.optAttr}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('在库库存')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.amountTotalNum}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('可售库存')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.amountSaleNum}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('占用库存')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.amountOccupiedNum}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('锁定库存')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.amountLockingNum}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('应盘点数量')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.origin_num}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('实际盘点数量')">
+                <template slot-scope="scope">
+                    <span v-if="!productInformation_edit">{{scope.row.actual_num}}</span>
+                    <el-input v-if="productInformation_edit" @change="actual_num_change(scope.row,scope.$index)" v-model="scope.row.actual_num" :placeholder="$lang('请输入内容')"></el-input>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('差异值')">
+                <template slot-scope="scope">
+                    <span>{{Math.abs(Number(scope.row.actual_num) - Number(scope.row.amountTotalNum))}}</span>
+                    <!-- <span>{{scope.row.diff_num}}</span> -->
+                </template>
+            </el-table-column>
+        </el-table>
+    
+        <el-pagination class="table_pages" @size-change="handleSizeChange" @current-change="handleCurrentChange" 
+            :current-page.sync="pages.current_page"
+            :page-sizes="[10, 50, 100]" :page-size="pages.per_page"
+            layout="sizes, prev, pager, next,jumper"
+            :total="pages.totalCount">
+        </el-pagination>
+
+        <el-button class="inputBtn" v-if="information_submit_status && inventory_status == 1" @click="inventory_product_information_submit" type="primary">{{$lang('确认')}}</el-button>
+
+    </div>
+
+    <!-- 差异商品信息 -->
+    <div class="inventory_product_information">
+        <div v-if="inventory_product_information_status || inventory_status != 1" class="table_head">
+            <span>{{$lang('差异商品信息')}}</span>
+        </div>
+        <el-table v-if="inventory_product_information_status || inventory_status != 1" class="table-list" :data="differenceProductInformationData" border>
+            <el-table-column align="center" :label="$lang('序号')">
+                <template slot-scope="scope">
+                    <span>{{scope.$index + 1}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('货位号')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.location_code}}</span>
+                </template>
+            </el-table-column>
+            <!-- <el-table-column align="center" :label="$lang('正品货位号')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.location_code}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('残次品货位号')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.location_code}}</span>
+                </template>
+            </el-table-column> -->
+            <el-table-column align="center" :label="$lang('商品图片')">
+                <template slot-scope="scope">
+                    <img style="width: 100%;" :src="scope.row.imageUrl">
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('SKU编码')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.sku_id}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('商品类型')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.goods_type_cd_val}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('条形码')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.upcId}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('商品名称')">
+                <template slot-scope="scope">
+                    <span>{{$lang(scope.row.gudsName)}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('属性')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.optAttr}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('在库库存')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.amountTotalNum}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('可售库存')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.amountSaleNum}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('占用库存')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.amountOccupiedNum}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('锁定库存')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.amountLockingNum}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('应盘点数量')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.origin_num}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('实际盘点数量')">
+                <template slot-scope="scope">
+                    <span>{{scope.row.actual_num}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('差异值')">
+                <template slot-scope="scope">
+                    <span>{{Math.abs(Number(scope.row.actual_num) - Number(scope.row.origin_num))}}</span>
+                    <span>({{scope.row.type == '1' ? $lang('盘盈'):$lang('盘亏')}})</span>
+                    <!-- <span>{{scope.row.diff_num}}</span> -->
+                </template>
+            </el-table-column>
+            <el-table-column align="center" :label="$lang('差异原因')">
+                <template slot-scope="scope">
+                    <el-input v-model="scope.row.remark" :placeholder="$lang('备注')"></el-input>
+                </template>
+            </el-table-column>
+        </el-table>
+        <el-button class="inputBtn" v-if="inventory_status == 1" :disabled="!inventory_product_information_status" @click="initiate_discrepancy_review" type="primary">{{$lang('发起差异审核')}}</el-button>
+    </div>
+    <!-- 差异审核结果 -->
+    <div class="difference_audit_results">
+        <div v-if="inventory_status > 2 && difference_audit_results_2">
+            <div class="table_head">
+                <span>{{$lang('差异审核结果1')}}</span>
+            </div>
+            <div class="results_body">
+                <div style="display: flex;align-items: center;margin: 20px 0;">
+                    <span>{{difference_audit_results_1_name}} {{$lang('差异审核结果1')}}</span>
+                    <span style="color: red;margin-right: 10px;margin:0 10px;">*</span>
+                    <el-input disabled v-model="difference_audit_results_2"></el-input>
+                </div>
+            </div>
+        </div>
+        
+        <div v-if="inventory_status == 2 || inventory_status == 3">
+            <div class="table_head">
+                <span v-if="inventory_status == 2">{{$lang('差异审核结果1')}}</span>
+                <span v-if="inventory_status == 3">{{$lang('差异审核结果2')}}</span>
+            </div>
+            <div class="results_body">
+                <div style="display: flex;align-items: center;margin: 20px 0;">
+                    <span>{{invePerson}}</span>
+                    <span style="color: red;margin-right: 10px;margin:0 10px;">*</span>
+                    <el-input v-model="difference_audit_results" :placeholder="$lang('请输入内容')"></el-input>
+                </div>
+            </div>
+        </div>
+        <div v-if="inventory_status>3">
+            <div class="table_head">
+                <span v-if="!difference_audit_results_1 || (difference_audit_results_1 && !difference_audit_results_2)">{{$lang('差异审核结果1')}}</span>
+                <span v-if="difference_audit_results_1 && difference_audit_results_2">{{$lang('差异审核结果2')}}</span>
+            </div>
+            <div class="results_body">
+                <div style="display: flex;align-items: center;margin: 20px 0;">
+                    <span v-if="!difference_audit_results_1 || (difference_audit_results_1 && !difference_audit_results_2)">{{difference_audit_results_1_name}}</span>
+                    <span v-if="difference_audit_results_1 && difference_audit_results_2">{{difference_audit_results_2_name}}</span>
+                    <span style="color: red;margin-right: 10px;margin:0 10px;">*</span>
+                    <el-input v-if="!difference_audit_results_1" disabled v-model="difference_audit_results_2"></el-input>
+                    <el-input v-if="difference_audit_results_1" disabled v-model="difference_audit_results_1"></el-input>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="inventory_status == 2 || inventory_status == 3" style="text-align: center;">
+            <el-button :disabled="review_status" @click="reviewSubmit('1')" type="primary">{{$lang('审核确认')}}</el-button>
+            <el-button :disabled="review_status" v-if="inventory_status == 2" @click="reviewSubmit('2')" type="primary">{{$lang('待复核')}}</el-button>
+        </div>
+        <div v-if="inventory_status == 4 || (inventory_status > 4 && (difference_audit_results_3 || difference_audit_results_4 || difference_audit_results_5))">
+        <!-- <div> -->
+            <div class="table_head">
+                <span>{{$lang('财务确认结果')}}</span>
+            </div>
+            
+            <div v-if="financial_approval_status == '1'">
+                
+                <div class="results_body">
+                    <div style="display: flex;align-items: center;margin: 20px 0;">
+                        <span v-if="difference_audit_results_3 != '' || inventory_status > '4'">{{$lang('财务')}} {{difference_audit_results_3_name}} {{$lang('确认')}}</span>
+                        <span v-if="difference_audit_results_3 == '' && inventory_status < '5'">{{$lang('财务')}} {{finPerson}} {{$lang('确认')}}</span>
+                        <span style="color: red;margin-right: 10px;margin:0 10px;">*</span>
+                        <el-input v-if="difference_audit_results_3 == '' && inventory_status < '5'" v-model="difference_audit_results" :placeholder="$lang('请输入内容')"></el-input>
+                        <el-input v-if="difference_audit_results_3 != '' || inventory_status > '4'" disabled v-model="difference_audit_results_3"></el-input>
+                    </div>
+                    <div style="text-align: center;">
+                        <el-button :disabled="review_status" v-if="inventory_status == 4" @click="reviewSubmit('3')" type="primary">{{$lang('财务确认')}}</el-button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="financialAudit">
+                <div  v-if="financial_approval_status != '1'">
+                    <div class="title">
+                        <span v-if="difference_audit_results_3 != '' || inventory_status > '4' || financial_approval_status == '3'">{{$lang('财务总监')}} {{difference_audit_results_4_name}} {{$lang('审批意见')}}</span>
+                        <span v-if="difference_audit_results_3 == '' && inventory_status < '5' && financial_approval_status == '2'">{{$lang('财务总监')}} {{finPerson}} {{$lang('审批意见')}}</span>
+                    </div>
+                    <div class="content">
+                        <span style="color: red;margin:0  10px;">*</span>
+                        <el-input style="margin-right: 20px;" v-if="difference_audit_results_3 == '' && inventory_status < '5' && financial_approval_status == '2'" v-model="difference_audit_results" :placeholder="$lang('请输入内容')"></el-input>
+                        <el-input style="margin-right: 20px;" v-if="difference_audit_results_3 != '' || inventory_status > '4' || financial_approval_status == '3'" disabled v-model="difference_audit_results_4"></el-input>
+
+                        <el-button v-if="financial_approval_status == '2'" @click="reviewSubmit('4')" type="primary">{{$lang('审核确认')}}</el-button>
+                    </div>
+                </div>
+                <div v-if="financial_approval_status == '3'">
+                    <div class="title">
+                        <span v-if="difference_audit_results_3 != '' || inventory_status > '4'">{{$lang('高级财务总监')}} {{difference_audit_results_5_name}} {{$lang('审批意见')}}</span>
+                        <span v-if="difference_audit_results_3 == '' && inventory_status < '5'">{{$lang('高级财务总监')}} {{finPerson}} {{$lang('审批意见')}}</span>
+                    </div>
+                    <div class="content">
+                        <span style="color: red;margin:0  10px;">*</span>
+                        <el-input style="margin-right: 20px;" v-if="difference_audit_results_3 == '' && inventory_status < '5'" v-model="difference_audit_results" :placeholder="$lang('请输入内容')"></el-input>
+                        <el-input style="margin-right: 20px;" v-if="difference_audit_results_3 != '' || inventory_status > '4'" disabled v-model="difference_audit_results_5"></el-input>
+
+                        <el-button v-if="difference_audit_results_3 == '' && inventory_status < '5'" @click="reviewSubmit('5')" type="primary">{{$lang('审核确认')}}</el-button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <el-button v-if="inventory_status == 5 && create_diff_need_show=='Y'" :disabled="generate_status" class="inputBtn" @click="generate_adjustment_table" type="primary">{{$lang('生成调整表')}}</el-button>
+
+    </div>
+    <!-- 盘盈商品调整 -->
+    <div v-if="(commodityAdjustmentStatus && inventory_status == 5) || inventory_status == 6 || (inventory_status == 5 && create_diff_need_show=='N')" class="table_head">
+        <span>{{$lang('盘盈商品调整')}}</span>
+    </div>
+    <el-table class="table-list" v-if="(commodityAdjustmentStatus && inventory_status == 5) || inventory_status == 6 || (inventory_status == 5 && create_diff_need_show=='N')" :data="surplusCommodityAdjustmentData" border>
+        <el-table-column align="center" :label="$lang('序号')">
+            <template slot-scope="scope">
+                <span>{{scope.$index + 1}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('货位号')">
+            <template slot-scope="scope">
+                <span>{{scope.row.location_code}}</span>
+            </template>
+        </el-table-column>
+        <!-- <el-table-column align="center" :label="$lang('正品货位号')">
+            <template slot-scope="scope">
+                <span>{{scope.row.location_code}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('残次品货位号')">
+            <template slot-scope="scope">
+                <span>{{scope.row.location_code}}</span>
+            </template>
+        </el-table-column> -->
+        <el-table-column align="center" :label="$lang('商品图片')">
+            <template slot-scope="scope">
+                <img style="width: 100%;" :src="scope.row.imageUrl">
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('SKU编码')">
+            <template slot-scope="scope">
+                <span>{{scope.row.sku_id}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('商品类型')">
+            <template slot-scope="scope">
+                <span>{{scope.row.goods_type_cd_val}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('条形码')">
+            <template slot-scope="scope">
+                <span>{{scope.row.upcId}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('商品名称')">
+            <template slot-scope="scope">
+                <span>{{$lang(scope.row.gudsName)}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('属性')">
+            <template slot-scope="scope">
+                <span>{{scope.row.optAttr}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('在库库存')">
+            <template slot-scope="scope">
+                <span>{{scope.row.amountTotalNum}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('可售库存')">
+            <template slot-scope="scope">
+                <span>{{scope.row.amountSaleNum}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('占用库存')">
+            <template slot-scope="scope">
+                <span>{{scope.row.amountOccupiedNum}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('锁定库存')">
+            <template slot-scope="scope">
+                <span>{{scope.row.amountLockingNum}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('采购单价（USD，不含增值税）')">
+            <template slot-scope="scope">
+                <span v-if="!profitStatus">{{scope.row.tax_free_pur_unit_price}}</span>
+                <el-input v-else v-model="scope.row.tax_free_pur_unit_price"></el-input>
+            </template>
+        </el-table-column>
+
+        <el-table-column align="center" :label="$lang('应盘点数量')">
+            <template slot-scope="scope">
+                <span>{{scope.row.origin_num}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('实际盘点数量')">
+            <template slot-scope="scope">
+                <span>{{scope.row.actual_num}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('盘点结果')">
+            <template slot-scope="scope">
+                <span>{{scope.row.inve_result}}</span>
+            </template>
+        </el-table-column>
+
+        <el-table-column align="center" :label="$lang('差异值')">
+            <template slot-scope="scope">
+                <span>{{scope.row.diff_num}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('差异金额')">
+            <template slot-scope="scope">
+                <span>{{scope.row.diff_amount}}</span>
+            </template>
+        </el-table-column>
+    </el-table>
+    <div v-if="(commodityAdjustmentStatus && inventory_status == 5 && inve_profit_need_show == 'Y') || (inventory_status == 5 && inve_profit_need_show == 'Y' && create_diff_need_show == 'N')"  style="text-align: center;margin: 20px 0;">
+        <!-- <el-button v-if="!profitStatus" @click="enter_price(false)" type="primary">{{$lang('输入价格')}}</el-button> -->
+        <!-- <el-button v-if="profitStatus" @click="enter_price(true)" type="primary">{{$lang('确认')}}</el-button> -->
+        <el-button @click="inveOperate('1')" type="primary">{{$lang('盘盈入库')}}</el-button>
+    </div>
+
+    <!-- 盘亏商品调整 -->
+    <div v-if="(commodityAdjustmentStatus && inventory_status == 5) || inventory_status == 6 || (inventory_status == 5 && create_diff_need_show=='N')" class="table_head">
+        <span>{{$lang('盘亏商品调整')}}</span>
+    </div>
+    <el-table v-if="(commodityAdjustmentStatus && inventory_status == 5) || inventory_status == 6 || (inventory_status == 5 && create_diff_need_show=='N')" class="table-list" @expand-change="viewDetail" :data="losemoneyCommodityAdjustmentData" border>
+        <el-table-column align="center" :label="$lang('序号')">
+            <template slot-scope="scope">
+                <span>{{scope.$index + 1}}</span>
+            </template>
+        </el-table-column>
+        <!-- <el-table-column align="center" type="expand" :label="$lang('批次')">
+            <template slot-scope="scope">
+                <el-table border show-header :data="scope.row.detail"  style="width: 100%;" v-loading="scope.row.tableInnerLoading"  class="child_table">
+                    <el-table-column align="center" :label="$lang('批次号')">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.batchCode}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" :label="$lang('采购公司')">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.ourCompany}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" :label="$lang('SKU编码')">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.skuId}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" :label="$lang('采购入库时间')">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.purStorageDate}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" :label="$lang('在库库存')">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.amountTotalNum}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" :label="$lang('可售库存')">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.amountSaleNum}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" :label="$lang('占用库存')">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.amountOccupiedNum}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" :label="$lang('锁定库存')">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.amountLockingNum}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" :label="$lang('采购团队')">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.purTeam}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" :label="$lang('销售团队')">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.saleTeam}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" :label="$lang('销售小团队')">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.smallSaleTeamVal}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" :label="$lang('采购单价（CNY，含增值税）')">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.unitPrice}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" :label="$lang('采购单价（CNY，不含增值税）')">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.unitPriceNoTax}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" :label="$lang('采购单价（USD，含增值税）')">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.unitPriceUsd}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" :label="$lang('采购单价（USD，不含增值税）')">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.unitPriceUsdNoTax}}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" :label="$lang('调整值')">
+                        <template slot-scope="scope">
+                            <span v-if="!lossStatus">{{scope.row.diffNum}}</span>
+                            <el-input @change="adjustmentEdit(scope.row,scope.$index)" v-else v-model="scope.row.diffNum"></el-input>
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" :label="$lang('差异金额（USD）')">
+                        <template slot-scope="scope">
+                            <span>{{scope.row.amount}}</span>
+                        </template>
+                    </el-table-column>
+
+                </el-table>
+
+
+
+            </template>
+        </el-table-column> -->
+        <el-table-column align="center" :label="$lang('货位号')">
+            <template slot-scope="scope">
+                <span>{{scope.row.location_code}}</span>
+            </template>
+        </el-table-column>
+        <!-- <el-table-column align="center" :label="$lang('正品货位号')">
+            <template slot-scope="scope">
+                <span>{{scope.row.batchCode}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('残次品货位号')">
+            <template slot-scope="scope">
+                <span>{{scope.row.batchCode}}</span>
+            </template>
+        </el-table-column> -->
+        <el-table-column align="center" :label="$lang('商品图片')">
+            <template slot-scope="scope">
+                <img style="width: 100%;" :src="scope.row.imageUrl">
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('SKU编码')">
+            <template slot-scope="scope">
+                <span>{{scope.row.sku_id}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('商品类型')">
+            <template slot-scope="scope">
+                <span>{{scope.row.goods_type_cd_val}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('条形码')">
+            <template slot-scope="scope">
+                <span>{{scope.row.upcId}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('商品名称')">
+            <template slot-scope="scope">
+                <span>{{$lang(scope.row.gudsName)}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('属性')">
+            <template slot-scope="scope">
+                <span>{{scope.row.optAttr}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('在库库存')">
+            <template slot-scope="scope">
+                <span>{{scope.row.amountTotalNum}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('可售库存')">
+            <template slot-scope="scope">
+                <span>{{scope.row.amountSaleNum}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('占用库存')">
+            <template slot-scope="scope">
+                <span>{{scope.row.amountOccupiedNum}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('锁定库存')">
+            <template slot-scope="scope">
+                <span>{{scope.row.amountLockingNum}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('应盘点数量')">
+            <template slot-scope="scope">
+                <span>{{scope.row.origin_num}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('实际盘点数量')">
+            <template slot-scope="scope">
+                <span>{{scope.row.actual_num}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('差异值')">
+            <template slot-scope="scope">
+                <span>{{scope.row.diff_num}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('差异金额')">
+            <template slot-scope="scope">
+                <span>{{scope.row.diff_amount}}</span>
+            </template>
+        </el-table-column>
+    </el-table>
+    <div v-if="((commodityAdjustmentStatus && inventory_status == 5) || (inventory_status == 5 && create_diff_need_show=='N')) && losemoneyCommodityAdjustmentData.length != 0"  style="text-align: center;margin: 20px 0;">
+        <!-- <el-button v-if="!lossStatus" @click="input_btn(false)" type="primary">{{$lang('录入')}}</el-button> -->
+        <!-- <el-button v-if="lossStatus" @click="input_btn(true)" type="primary">{{$lang('确认')}}</el-button> -->
+        <el-button :disabled="lossStatus" @click="inveOperate('2')" type="primary">{{$lang('盘亏出库')}}</el-button>
+    </div>
+
+</div>
+
+<script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.form.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+<script src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script>
+  if (getCookie('think_language') !== "zh-cn") {
+    ELEMENT.locale(ELEMENT.lang.en)
+  }
+  var way = new Vue({
+    el: '#inventoryDetail',
+    data: {
+        inventoryProductInformationData:[],
+        temporaryData:[],
+        import_data:[],
+        differenceProductInformationData:[],
+        surplusCommodityAdjustmentData:[],
+        losemoneyCommodityAdjustmentData:[],
+        pages:{
+            totalCount:0,
+            per_page:10,
+            current_page:1
+        },
+        difference_audit_results:'',
+        difference_audit_results_1:'',
+        difference_audit_results_1_name:'',
+        difference_audit_results_2:'',
+        difference_audit_results_2_name:'',
+        difference_audit_results_3:'',
+        difference_audit_results_3_name:'',
+        difference_audit_results_4:'',
+        difference_audit_results_4_name:'',
+        difference_audit_results_5:'',
+        dialogLosemoneyData:[],
+        productInformation_edit:false,
+        information_submit_status:false,
+        inventory_product_information_status:false,
+        commodityAdjustmentStatus:false,
+        profitStatus:false,
+        lossStatus:false,
+        baseData:{
+            idd:'',
+            warehouse_cd:'',
+            created_at:'',
+            created_by:'',
+            end_at:'',
+            inve_no:'',
+            sec_status_cd:'',
+            sec_status_cd_val:'',
+            status_cd:'',
+            status_cd_val:'',
+            warehouse_cd_val:'',
+        },
+        inventory_status:'',
+        generate_status:false,
+        review_status:false,
+        create_diff_need_show:'',
+        inve_profit_need_show:'',
+        financial_approval_status:'',
+        commodity_screening:'',
+        finPerson:'',
+        invePerson:'',
+    },
+    created: function () {
+      this.getBaseData();
+    },
+    methods: {
+        getBaseData:function(){
+            var _this = this;
+            _this.baseData.idd = _this.getQueryVariable('idd')
+            // _this.baseData.warehouse_cd = _this.getQueryVariable('warehouse_cd')
+
+            var param = {
+                "data":{
+                    "id" : _this.baseData.idd,
+                }
+            };
+            axios.post('/index.php?g=warehouse&m=inventory&a=getInveBaseInfo', param).then(function (res) {
+                if(res.data.code == 2000){
+                   _this.baseData.created_at = res.data.data.created_at
+                   _this.baseData.created_by = res.data.data.created_by
+                   _this.baseData.end_at = res.data.data.end_at
+                   _this.baseData.inve_no = res.data.data.inve_no
+                   _this.baseData.status_cd = res.data.data.status_cd
+                   _this.baseData.status_cd_val = res.data.data.status_cd_val
+                   _this.baseData.sec_status_cd = res.data.data.sec_status_cd
+                   _this.baseData.sec_status_cd_val = res.data.data.sec_status_cd_val
+                   _this.baseData.warehouse_cd = res.data.data.warehouse_cd
+                   _this.baseData.warehouse_cd_val = res.data.data.warehouse_cd_val
+                   _this.baseData.sale_team_cd = res.data.data.sale_team_cd
+                   _this.baseData.sale_team_cd_val = res.data.data.sale_team_cd_val
+                   _this.baseData.goods_type_cd = res.data.data.goods_type_cd == 'N003730001' ? '' : (res.data.data.goods_type_cd == 'N003730002' ? '1' : '2')
+                   _this.baseData.goods_type_cd_val = res.data.data.goods_type_cd_val
+                   _this.baseData.inve_sku = res.data.data.inve_sku
+
+                    if(_this.baseData.status_cd == 'N003520001'){
+                        // 盘点中
+                        _this.inventory_status = 1
+                    }else if(_this.baseData.status_cd == 'N003520002' && _this.baseData.sec_status_cd == 'N003520010'){
+                        // 初审中
+                        _this.inventory_status = 2
+                    }else if(_this.baseData.status_cd == 'N003520002' && _this.baseData.sec_status_cd == 'N003520011'){
+                        // 复核中
+                        _this.inventory_status = 3
+                    }else if(_this.baseData.status_cd == 'N003520003'){
+                        // 财务确认中
+                        _this.inventory_status = 4
+                    }else if(_this.baseData.status_cd == 'N003520004'){
+                        // 调整差异中
+                        _this.inventory_status = 5
+                    }else if(_this.baseData.status_cd == 'N003520005'){
+                        // 已完成
+                        _this.inventory_status = 6
+                    }
+                    if(_this.inventory_status == 1){
+                        _this.getExcelData()
+                    }
+                    if(_this.inventory_status > 1){
+                        _this.getInveGoodsDiff()
+                    }
+                    if(_this.inventory_status == 5){
+                        _this.getInveButtonInfo()
+                    }
+
+                    _this.search();
+
+                }
+            })
+
+            var param2 = {
+                "data":{
+                    "inve_id" : _this.baseData.idd,
+                    "type":"6"
+                }
+            };
+            // var param3 = {
+            //     "data":{
+            //         "inve_id" : _this.baseData.idd,
+            //         "type":"2"
+            //     }
+            // };
+            // var param4 = {
+            //     "data":{
+            //         "inve_id" : _this.baseData.idd,
+            //         "type":"3"
+            //     }
+            // };
+            axios.post('/index.php?g=warehouse&m=inventory&a=getInveAudit', param2).then(function (res) {
+                if(res.data.code == 2000 && res.data.data){
+                    var remarkData = res.data.data
+                    for (var item in remarkData) {
+                        if(remarkData[item].type == '1'){
+                            _this.difference_audit_results_1 = remarkData[item].remark
+                            _this.difference_audit_results_1_name = remarkData[item].name
+                        }
+                        if(remarkData[item].type == '2'){
+                            _this.difference_audit_results_2 = remarkData[item].remark
+                            _this.difference_audit_results_2_name = remarkData[item].name
+                        }
+                        if(remarkData[item].type == '3'){
+                            _this.difference_audit_results_3 = remarkData[item].remark
+                            _this.difference_audit_results_3_name = remarkData[item].name
+                        }
+                        if(remarkData[item].type == '4'){
+                            _this.difference_audit_results_4 = remarkData[item].remark
+                            _this.difference_audit_results_4_name = remarkData[item].name
+                        }
+                        if(remarkData[item].type == '5'){
+                            _this.difference_audit_results_5 = remarkData[item].remark
+                            _this.difference_audit_results_5_name = remarkData[item].name
+
+                        }
+                    }
+                }
+            })
+            axios.post('/index.php?g=warehouse&m=inventory&a=getRolePerson', {
+                "data" : {
+                    "id" : _this.baseData.idd
+                }
+            }).then(function (res) {
+                if(res.data.code == 2000 && res.data.data){
+                    _this.finPerson = res.data.data.finPerson
+                    _this.invePerson = res.data.data.invePerson
+                }
+            })
+
+
+            // axios.post('/index.php?g=warehouse&m=inventory&a=getInveAudit', param4).then(function (res) {
+            //     if(res.data.code == 2000 && res.data.data){
+            //         _this.difference_audit_results_3 = res.data.data.remark
+            //     }
+            // })
+
+
+            axios.post('/index.php?g=warehouse&m=inventory&a=getFinAuditType', {
+                "data":{
+                    "id" : _this.baseData.idd,
+                }
+            }).then(function (res) {
+                if(res.data.code == 2000 && res.data.data){
+                    _this.financial_approval_status = res.data.data
+                }
+            })
+
+
+
+
+            
+        },
+        getQueryVariable:function(variable){
+            var query = window.location.search.substring(1);
+            var vars = query.split("&");
+            for (var i=0;i<vars.length;i++) {
+                    var pair = vars[i].split("=");
+                    if(pair[0] == variable){return pair[1];}
+            }
+            return(false);
+        },
+        search:function(skuId){
+            var _this = this;
+            console.log(_this.baseData);
+            var param = {
+                "search":{
+                    "warehouse_cd" : _this.baseData.warehouse_cd,
+                    "inve_id" : _this.baseData.idd,
+                    "sale_team_cd" : _this.baseData.sale_team_cd,
+                    "inve_sku" : skuId ? skuId : (_this.baseData.inve_sku == '全部SKU' ? '' : _this.baseData.inve_sku),
+                    "goods_type" : _this.baseData.goods_type_cd,
+                },
+                "page": {
+                    "current_page" : _this.pages.current_page,
+                    "per_page" : _this.pages.per_page
+                }
+            };
+            _this.tableLoading = true
+            axios.post('/index.php?g=warehouse&m=inventory&a=getInveGoods', param).then(function (res) {
+                if(res.data.code == 2000){
+                    var informationData = res.data.data.data
+                    
+                    for (var item in informationData) {
+                        _this.temporaryData.findIndex((value,index) => {
+                            if(value.skuId == informationData[item].skuId && value.goods_type_cd == informationData[item].productTypeValue){
+                                informationData[item].actual_num = value.actual_num
+                            }
+                        })
+                    } 
+
+                    _this.inventoryProductInformationData = informationData
+                    _this.pages.totalCount = Number(res.data.data.pages.total)
+                    _this.$forceUpdate()  
+                }
+                _this.tableLoading = false 
+            })
+        },
+        getInveGoodsDiff:function(){
+            var _this = this;
+            var param = {
+                "data":{
+                    "type" : "5",
+                    "id" : _this.baseData.idd
+                }
+            };
+            axios.post('/index.php?g=warehouse&m=inventory&a=getInveGoodsDiff', param).then(function (res) {
+                if(res.data.code == 2000){
+                    console.log(res);
+                    _this.differenceProductInformationData = res.data.data.all
+                    _this.surplusCommodityAdjustmentData = res.data.data.profit
+                    _this.losemoneyCommodityAdjustmentData = res.data.data.loss
+                }
+            })
+
+        },
+        getExcelData:function(){
+            var _this = this;
+            var param = {
+                "data":{
+                    "type" : "4",
+                    "id" : _this.baseData.idd
+                }
+            };
+            axios.post('/index.php?g=warehouse&m=inventory&a=getInveGoodsDiff', param).then(function (res) {
+                if(res.data.code == 2000){
+                    _this.import_data = res.data.data
+                }
+            })
+        },
+        inveCreateAdjustSheet:function(){
+            var _this = this;
+            var param = {
+                "data":{
+                    "id" : _this.baseData.idd
+                }
+            };
+            axios.post('/index.php?g=warehouse&m=inventory&a=inveCreateAdjustSheet', param).then(function (res) {
+                if(res.data.code == 2000){
+                    console.log(res);
+                }
+            }) 
+        },
+        getInveButtonInfo:function(){
+            var _this = this;
+            var param = {
+                "data":{
+                    "id" : _this.baseData.idd
+                }
+            };
+            axios.post('/index.php?g=warehouse&m=inventory&a=getInveButtonInfo', param).then(function (res) {    
+                if(res.data.code == 2000){
+                    console.log(res);
+                    _this.create_diff_need_show = res.data.data.create_diff_need_show
+                    _this.inve_profit_need_show = res.data.data.inve_profit_need_show
+                }
+            })
+        },
+        enter_inventory_situation:function(){
+            this.productInformation_edit = true
+            this.information_submit_status = true
+            // this.search()
+        },
+        inventory_product_information_submit: async function(){
+            var _this = this
+            
+            var param = {
+                "data":{
+                    "base_data" : {
+                        "inve_id" : _this.baseData.idd,
+                        "warehouse_cd" : _this.baseData.warehouse_cd,
+                    },
+                    "goods_data": {
+                        "data": _this.temporaryData,
+                        "import_data": _this.import_data
+                    }
+                }
+            };
+            console.log('param',param);
+            await axios.post('/index.php?g=warehouse&m=inventory&a=saveInveGoods', param).then(function (res) {
+                console.log(res);
+                if(res.data.code == 2000){
+                    _this.$message({
+                        message: _this.$lang('确认成功'),
+                        type: 'success'  
+                    });
+                    _this.information_submit_status = false
+                }else{
+                    _this.$message({
+                        message: res.data.msg,
+                        type: 'warning'
+                    }); 
+                }
+            })
+            await _this.getInveGoodsDiff()
+            await _this.getBaseData()
+
+            _this.inventory_product_information_status = true
+            
+        },
+        initiate_discrepancy_review:function(){
+            var _this = this;
+            console.log('differenceProductInformationData',_this.differenceProductInformationData);
+            var remarkArr = []
+            _this.inventory_product_information_status = false
+      
+            _this.differenceProductInformationData.forEach(item => {
+                var obj = {}
+                obj.id = item.id
+                obj.remark = item.remark
+                remarkArr.push(obj)
+            })
+            
+            axios.post('/index.php?g=warehouse&m=inventory&a=saveInveGoodsDiffRemark', {
+                "data":remarkArr
+            }).then(function (res) {
+                console.log(res);
+                if(res.data.code == 2000){
+                    inveAuditApply()
+                    // _this.$message({
+                    //     message: _this.$lang('发起差异审核成功'),
+                    //     type: 'success'
+                    // });
+                    // setTimeout(() => {
+                    //     _this.getBaseData()
+                    //     window.location.reload();
+                    // }, 2000);
+                }else{
+                    _this.inventory_product_information_status = true
+                    _this.$message({
+                        message: res.data.msg,
+                        type: 'warning'
+                    }); 
+                }
+            })
+
+
+            function inveAuditApply() {
+                var param = {
+                    "data":{
+                        "inve_id" : _this.baseData.idd,
+                    },
+                };
+                axios.post('/index.php?g=warehouse&m=inventory&a=inveAuditApply', param).then(function (res) {
+                    console.log(res);
+                    if(res.data.code == 2000){
+                        _this.$message({
+                            message: _this.$lang('发起差异审核成功'),
+                            type: 'success'
+                        });
+                        setTimeout(() => {
+                            _this.getBaseData()
+                            window.location.reload();
+                        }, 2000);
+                    }else{
+                        _this.$message({
+                            message: res.data.msg,
+                            type: 'warning'
+                        }); 
+                        _this.inventory_product_information_status = true
+                    }
+                })
+            }
+
+
+
+        },
+        handleSizeChange: function (size) {
+            this.pages.per_page = size;
+            this.search();
+        },
+        handleCurrentChange: function (currentPage) {
+            this.pages.current_page = currentPage;
+            this.search();
+        },
+        actual_num_change_excel:function(val,index){
+            this.$set(this.import_data[index], 'diff_num', Math.abs(Number(val.actual_num) - Number(val.amountTotalNum)));
+        },
+        actual_num_change:function(val,index){
+            console.log('obj',val);
+            var obj = {}
+            var ret = false
+            obj.actual_num = val.actual_num
+            obj.amountLockingNum = val.amountLockingNum
+            obj.amountOccupiedNum = val.amountOccupiedNum
+            obj.amountSaleNum = val.amountSaleNum
+            obj.amountTotalNum = val.amountTotalNum
+            obj.goods_type_cd = val.productTypeValue
+            // obj.goods_type_cd = val.productType == '全品类' ? '' : (val.productType == '正品' ? '1' : '2')
+            // obj.diff_num = val.diff_num
+            obj.gudsName = val.gudsName
+            obj.imageUrl = val.imageUrl
+            obj.location_code = val.location_code
+            obj.optAttr = val.optAttr
+            obj.skuId = val.skuId
+            obj.upcId = val.upcId
+            obj.id = val.id
+            obj.origin_num = val.amountTotalNum
+            obj.diff_num = Math.abs(Number(val.actual_num) - Number(val.amountTotalNum))
+            
+            // this.temporaryData.findIndex((value,index) => {
+            //     if(value.skuId == val.skuId){
+            //         this.temporaryData[index].actual_num = val.actual_num
+            //         return true
+            // }
+                
+            var ret = this.temporaryData.findIndex((value,index) => {
+                if(value.skuId == val.skuId && val.productTypeValue == value.goods_type_cd){
+                    this.temporaryData[index].actual_num = val.actual_num
+                    this.temporaryData[index].id = val.id
+                    return true
+                }
+            })
+            console.log('ret',ret);
+            if(ret == -1){
+                this.temporaryData.push(obj)
+            }
+            console.log('temporaryData',this.temporaryData);
+        },
+        downloadExcel:function(){
+            var a = document.createElement('a')
+            a.href = '/index.php?m=Stock&a=download&name=inventory_in.xlsx'
+            document.body.appendChild(a)
+            a.click()
+            document.body.removeChild(a)
+        },
+        importExcel:function(params){
+            var _this = this
+            var form = new FormData();
+            form.append('file', params.file);
+            form.append('warehouse_cd', _this.baseData.warehouse_cd);
+            form.append('sale_team_cd', _this.baseData.sale_team_cd);
+            form.append('inve_sku', _this.baseData.inve_sku == '全部SKU' ? '' : _this.baseData.inve_sku);
+            form.append('goods_type', _this.baseData.goods_type_cd);
+            form.append('inve_id', _this.baseData.idd);
+            
+
+            axios.post('/index.php?g=warehouse&m=inventory&a=inveImport', form).then((res) => {
+                if (res.data.code == 2000) {
+                    var importData = res.data.data.data
+                    for (var item in importData) {
+                        importData[item].origin_num = importData[item].amountTotalNum
+                        importData[item].goods_type_cd = importData[item].goods_type_cd == 'N003730001' ? '' : (importData[item].goods_type_cd == 'N003730002' ? '1' : '2')
+                        
+                        importData[item].diff_num = Math.abs(Number(importData[item].actual_num) - Number(importData[item].amountTotalNum))
+                        _this.import_data.push(importData[item])
+                    }
+                    console.log(_this.import_data);
+
+
+                    _this.$message.success(_this.$lang('导入成功'));
+                } else {
+                _this.$message.error(_this.$lang(res.data.msg));
+                }
+            }).catch(function (err) {
+                console.log(err);
+            });
+        },
+        reviewSubmit:function(type){
+            var _this = this;
+            _this.review_status = true
+            if(type == '3' || type == '4' || type == '5'){
+                var _url = 'inveFinConfirm '
+            }else{
+                var _url = 'inveAuditConfirm '
+            }
+            var param = {
+                "data":{
+                    "inve_id" : _this.baseData.idd,
+                    "type" : type,
+                    "remark" : _this.difference_audit_results,
+                },
+            };
+            axios.post('/index.php?g=warehouse&m=inventory&a='+_url, param).then(function (res) {
+                console.log(res);
+                if(res.data.code == 2000){
+                    _this.$message({
+                        message: _this.$lang('提交成功'),
+                        type: 'success'
+                    });
+                    setTimeout(() => {
+                        _this.getBaseData()
+                        window.location.reload();
+                    }, 2000);
+                }else{
+                    _this.$message({
+                        message: res.data.msg,
+                        type: 'warning'
+                    }); 
+                    _this.review_status = false
+                }
+                
+            })
+        },
+  
+        generate_adjustment_table:function(){
+            this.commodityAdjustmentStatus = true
+            this.generate_status = true
+            this.getInveGoodsDiff()
+            this.inveCreateAdjustSheet()
+        },
+
+        enter_price:function(type){
+            var _this = this
+            if(type){
+                var data = []
+                var saveInveGoodsDiff = _this.surplusCommodityAdjustmentData
+                for (var item in saveInveGoodsDiff) {
+                    var obj = {}
+                    obj.id = saveInveGoodsDiff[item].id
+                    obj.price = saveInveGoodsDiff[item].tax_free_pur_unit_price
+                    data.push(obj)
+                }
+                var param = {
+                    "data":data
+                };
+                console.log(param);
+                axios.post('/index.php?g=warehouse&m=inventory&a=saveInveGoodsDiff', param).then(function (res) {
+                    console.log(res);
+                    if(res.data.code == 2000){
+                        _this.$message({
+                            message: _this.$lang('价格修改成功'),
+                            type: 'success'
+                        });
+                        _this.profitStatus = false
+                        _this.getInveGoodsDiff()
+                    }else{
+                        _this.$message({
+                            message: res.data.msg,
+                            type: 'warning'
+                        }); 
+                    }
+                    
+                })
+            }else{
+                _this.profitStatus = true
+            }
+            
+        
+            
+        },
+        inveOperate:function(type){
+            var _this = this;
+            var prompt = ''
+
+            if(type == '1'){
+                prompt = '是否价格输入正确?'
+            }else{
+                prompt = '是否要盘亏出库?'
+            }
+            var param = {
+                "data":{
+                    "id" : _this.baseData.idd,
+                    "type" : type,
+                },
+            };
+
+            _this.$confirm(_this.$lang(prompt), _this.$lang('提示'), {
+                confirmButtonText: _this.$lang('确定'),
+                cancelButtonText: _this.$lang('取消'),
+                type: 'warning'
+            }).then(() => {
+                axios.post('/index.php?g=warehouse&m=inventory&a=inveOperate', param).then(function (res) {
+                    if(res.data.code == 2000){
+                        _this.$message.success(_this.$lang('操作成功'))
+                        setTimeout(() => {
+                            _this.getBaseData()
+                            window.location.reload();
+                        }, 2000);
+                    }else{
+                        _this.$message.error(res.data.msg)
+                    }
+                })
+            }).catch(() => {
+                _this.$message({
+                    type: 'info',
+                    message: _this.$lang('已取消')
+                });          
+            });
+
+        },
+    
+        adjustmentEdit:function(val,index){
+            console.log(val);
+            console.log(val.batchCode);
+            console.log(val.skuId);
+            console.log(index);
+        },
+        input_btn:function(type){
+            var _this = this
+            if(type){
+                var inveGoodsBatchDiff = {}
+                var adjustmentArr = _this.losemoneyCommodityAdjustmentData
+                var status = true
+                for (var item in adjustmentArr) {
+                    if(adjustmentArr[item].detail){
+                        var detailArr = adjustmentArr[item].detail
+                        var detailArr2 = []
+                        var sum = 0
+                        for (var item2 in detailArr) {
+                            var obj = {}
+                            obj.id = detailArr[item2].inveGudsBatchId
+                            obj.inve_guds_id = adjustmentArr[item].id
+                            obj.diff_num = detailArr[item2].diffNum
+                            obj.batch_id = detailArr[item2].batchId
+                            obj.price = detailArr[item2].unitPriceUsdNoTax
+                            
+                            if(detailArr[item2].diffNum > detailArr[item2].amountSaleNum){
+                                _this.$message({
+                                    message: _this.$lang('批次调整值不能大于可售库存'),
+                                    type: 'warning'
+                                });
+                                status = false
+                                return;
+                            }
+                            sum += Number(detailArr[item2].diffNum)
+
+
+                            detailArr2.push(obj)
+                        }
+                        if(sum>adjustmentArr[item].diff_num){
+                            _this.$message({
+                                message: _this.$lang('每个sku下的所有批次调整值之和不能大于此sku的差异值'),
+                                type: 'warning'
+                            });
+                            status = false
+                        }
+                        inveGoodsBatchDiff[adjustmentArr[item].id] = detailArr2
+                    }
+                }
+                if(status){
+                    var param = {
+                        "data":inveGoodsBatchDiff
+                    };
+                    console.log(param);
+                    axios.post('/index.php?g=warehouse&m=inventory&a=saveInveGoodsBatchDiff', param).then(function (res) {
+                        console.log(res);
+                        if(res.data.code == 2000){
+                            _this.$message({
+                                message: _this.$lang('调整值修改成功'),
+                                type: 'success'
+                            });
+                            _this.lossStatus = false
+                            _this.getInveGoodsDiff()
+                        }else{
+                            _this.$message({
+                                message: res.data.msg,
+                                type: 'warning'
+                            }); 
+                        }
+
+                    })
+                }
+                
+                
+            }else{
+                _this.lossStatus = true
+            }
+        },
+        
+        viewDetail:function(row){
+            console.log(row);
+            var _this = this
+            
+
+            if(!row.detail){
+                var param = {
+                    "search":{
+                        "warehouse_cd" : _this.baseData.warehouse_cd,
+                        "sku_id" : row.sku_id,
+                        "inve_guds_id":row.id,
+                        "sale_team_cd":_this.baseData.sale_team_cd,
+                        "goods_type":_this.baseData.goods_type_cd,
+                    }
+                };
+                _this.$set(row, 'tableInnerLoading', true);
+                axios.post('/index.php?g=warehouse&m=inventory&a=getInveGoodsBatch', param).then(function (res) {
+                    console.log(res);
+                    if(res.data.code == 2000){
+                        _this.$set(row, 'detail', res.data.data.data)
+                    }
+                    _this.$set(row, 'tableInnerLoading', false);
+
+                })
+            }
+        }
+    
+  
+    },
+
+  })
+</script>
+</body>
+
+</html>

@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title><{$Think.lang.货位档案}></title>
+    <link href="../Public/css/H-ui-3.1.min.css" rel="stylesheet" type="text/css" >
+    <link rel="stylesheet" href="../Public/css/stock.css">
+    <link rel="stylesheet" href="../Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" type="text/css" href="../Public/css/style.css" />
+    <link rel="stylesheet" type="text/css" href="../Public/css/default.css" />
+</head>
+<style>
+    .col-sm-4 {padding: 0;}
+    .title-left {width: 25%;float: left;}
+    .input-text, .textarea{width: 60%;}
+    .select {width: 60%;}
+    .row {margin-top: 10px;height:38px;}
+    span {line-height: 31px;}
+    table {margin-top: 10px;}
+    table thead th{text-align: center;}
+    .select-box{border: solid 1px #ddd;}
+    .btn-upload{position: relative; display:inline-block;height:31px; *display:inline;overflow:hidden;vertical-align:middle;cursor:pointer}
+    .upload-url{cursor: pointer}
+    .input-file{position:absolute; right:0; top:-2; cursor: pointer; z-index:1; font-size:30em; *font-size:30px;opacity:0;filter: alpha(opacity=0)}
+    .btn-upload .input-text{ width:auto}
+    .form-group .upload-btn{ margin-left:-1px}
+    .table-bg thead th {
+        background-color: #537a8c;
+        color: white;
+    }
+    [v-cloak]{
+        display: none;
+    }
+    .table-custome{    empty-cells: show;
+        background-color: transparent;
+        border-collapse: collapse;
+        border-spacing: 0;}
+    .customer-width {
+        min-width: 364px;
+    }
+    .thumbnail-wrap {
+        position: relative;
+        z-index: 999;
+    }
+
+    .thumbnail-wrap .img-wrap {
+        position: absolute;
+        top: -60px;
+        left: 120px;
+        width: 300px;
+        height: 300px;
+        border: 1px solid #eef5f9;
+    }
+
+    .thumbnail-wrap img {
+        box-shadow: 4px 4px 20px #242525;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+    .el-select{
+        padding: 0;
+    }
+    .el-input__inner{
+        border: none;
+        height: 30px;
+    }
+    .pagination{
+        margin-bottom: 200px;
+    }
+</style>
+<body>
+    <div id="content" v-cloak>
+        <div class="ck-wrap">
+            <!--search-->
+            <div>
+                <header>
+                    <div class="row">
+                        <div class="col-sm-4">
+                            <div class="title-left">
+                                <span><{$Think.lang.仓库}>：</span>
+                            </div>
+                            <div>
+                                <el-select placeholder="<{$Think.lang.请选择}>" filterable  class="select select-box" v-model="params.warehouse_code">
+                                    <el-option value=""><{$Think.lang.请选择仓库}></el-option>
+                                    <el-option v-for="(r, k) in warehouses" :value="k" :label="r.warehouse"></el-option>
+                                </el-select>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="title-left">
+                                <span><{$Think.lang.SKU}>：</span>
+                            </div>
+                            <div>
+                                <input type="text" class="input-text" v-model="params.sku"/>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="title-left">
+                                <span><{$Think.lang.商品名称}>：</span>
+                            </div>
+                            <div>
+                                <input type="text" class="input-text" v-model="params.guds_nm"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-4">
+                            <div class="title-left">
+                                <span><{$Think.lang.正品货位编码}>：</span>
+                            </div>
+                            <div>
+                                <input type="text" class="input-text" v-model="params.location_code"/>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <div class="title-left">
+                                <span><{$Think.lang.残次品货位编码}>：</span>
+                            </div>
+                            <div>
+                                <input type="text" class="input-text" v-model="params.defective_location_code"/>
+                            </div>
+                        </div>
+                        
+                        <div class="col-sm-4">
+                            <div class="title-left">
+                                <span><{$Think.lang.备用货位编码}>：</span>
+                            </div>
+                            <div>
+                                <input type="text" class="input-text" v-model="params.location_code_back"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-4">
+                            <button class="btn btn-secondary" @click="search"><{$Think.lang.查询}></button>
+                            <button class="btn btn-default" @click="reset"><{$Think.lang.重置}></button>
+                        </div>
+                    </div>
+                    <!--<span class="btn btn-success" onclick="opennewtab(this,'新增货位')" _href="/index.php?m=stock&a=position_import"><{$Think.lang.新增货位}></span>-->
+                </div>
+            </header>
+            <div style="height: 10px;"></div>
+            <hr />
+            <div style="height: 10px;"></div>
+            <div class="row" style="-webkit-box-flex: 0;flex: 0 0 100%;display: flex;flex-wrap: wrap;">
+                <div style="position: absolute;">
+                    <span>{{$lang('搜索结果')}}：{{$lang('共')}}<span> {{count}} </span>{{$lang('条记录')}}</span>
+                </div>
+                <div style="text-align: right; width: 100%;">
+                    <form method="post" id="location_form">
+                        <button class="btn btn-secondary" type="button" @click="download_template()"><{$Think.lang.模板下载}></button>
+                            <span class="btn-upload form-group">
+                                <input class="input-text upload-url"  type="text" name="uploadfile-1" id="uploadfile-1" readonly="" style="width: 260px;display:none">
+                                <a onclick="$(this).next().click()" class="btn btn-primary upload-btn"><{$Think.lang.导入货位}></a>
+                                <input type="file" multiple="" name="file" class="input-file" onchange="document.getElementById('uploadfile-1').value = this.value;vm.import_file()"   style="width: 260px;display:none">
+                            </span>
+                        <button class="btn btn-secondary" type="button" @click="exportData()"><{$Think.lang.导出}></button>
+                    </form>
+                </div>
+            </div>
+            <!--content-->
+            <div>
+                <table class="table table-border table-bordered table-bg" style="width: 100%;">
+                    <thead>
+                        <th><{$Think.lang.序号}></th>
+                        <th><{$Think.lang.仓库}></th>
+                        <th><{$Think.lang.SKU编码}></th>
+                        <th><{$Think.lang.商品名称}></th>
+                        <th><{$Think.lang.SKU属性}></th>
+                        <th><{$Think.lang.商品图片}></th>
+                        <!--<th><{$Think.lang.货位编码}></th>-->
+                        <th><{$Think.lang.正品货位编码}></th>
+                        <th><{$Think.lang.残次品货位编码}></th>
+                        <th><{$Think.lang.备用货位编码}></th>
+                        <th><{$Think.lang.操作}></th>
+                    </thead>
+                    <tbody>
+                        <tr class="text-c" v-for="(r, k) in ret" >
+                            <td>{{k+1}}</td>
+                            <td>
+                                <span v-if="warehouses[r.warehouse_id]">{{$lang(warehouses[r.warehouse_id].warehouse)}}</span>
+                                <span v-else>-</span>
+                            </td>
+                            <td>{{r.sku}}</td>
+                            <td>{{$lang(r.GUDS_NM)}}</td>
+                            <td>{{r.govm}}</td>
+                            <td style="position: relative;">
+                                <img v-if="r.img" :src="r.img" width="60" height="60" @mouseover="showImgFn(r,true)" @mouseout="showImgFn(r,false)">
+                                <div v-if="r.isShowImg && r.img" class="thumbnail-wrap">
+                                    <div class="img-wrap" >
+                                        <img :src="r.img" width="300" height="300"/>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span v-if="r.edit == true"><input type="text" class="input-text" v-model="r.location_code"/></span>
+                                <span v-else>{{r.location_code}}</span>
+                            </td>
+                            <td>
+                                <span v-if="r.edit == true"><input type="text" class="input-text" v-model="r.defective_location_code"/></span>
+                                <span v-else>{{r.defective_location_code }}</span>
+                            </td>
+                            <td>
+                                <span v-if="r.edit == true"><input type="text" class="input-text" v-model="r.location_code_back"/></span>
+                                <span v-else>{{r.location_code_back}}</span>
+                            </td>
+                            <td>
+                                  <?php if(ButtonAction::hidden()){ ?>
+                                <span v-if="!r.edit" class="btn btn-primary" @click="edit(k, r)"><{$Think.lang.编辑}></span>
+                                <span v-else class="btn btn-primary" @click="save(k, r);"><{$Think.lang.保存}></span>
+                                <?php } ?>
+                                 <?php if(ButtonAction::hidden()){ ?>
+                                <span v-if="!r.edit" class="btn btn-danger" @click="del(k, r);"><{$Think.lang.删除}></span>
+                                <span v-else class="btn btn-success" @click="cancel(k, r);"><{$Think.lang.取消}></span>
+                                 <?php } ?>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-100 text-right">
+                <ul class="pagination" v-html="page"></ul>
+            </div>
+        </div> 
+    </div>
+</body>
+
+<link rel="stylesheet" href="../Public/css/existing_extend.css">
+<script src="../Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="../Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="../Public/lib/layer-v3.0.3/layer/layer.js"></script>
+<script type="text/javascript" src="../Public/js/jquery.form.min.js"></script>
+<script type="text/javascript" src="../Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" >
+    var vm = new Vue({
+        el: '#content',
+            data:{
+                ret:<{$ret}>,
+                warehouses: <{$warehouses}>,
+                page: <{$page}>,
+                count: <{$count}>,
+                params: {
+                    warehouse_code: '',
+                    sku: '',
+                    guds_nm: '',
+                    location_code: '',
+                    defective_location_code:'',
+                    location_code_back: '',
+                    p: ''
+                }
+            },
+            methods: {
+                search: function () {
+                    var params = vm.params;
+                    console.log(params)
+                    var url = '<{:U("Location/index")}>';
+                    this.sendRequest(url, params, true, 'post');
+                },
+                reset: function () {
+                    vm.params = {
+                        warehouse_code: '',
+                        sku: '',
+                        guds_nm: '',
+                        location_code: '',
+                        defective_location_code:'',
+                        location_code_back: ''
+                    };
+                    var url = '<{:U("Location/index")}>';
+                    this.sendRequest(url, vm.params, true, 'post');
+                },
+                download_template: function() {
+                    var url = '<{:U("Location/validate_template")}>';
+                    var downloadUrl = '<{:U("Location/download_location_template")}>';
+                    var fileName = 'template.xlsx';
+                    var params = {'data': fileName};
+                    $.post(url, params,
+                        function(str){
+                        if (str.status == 1) {
+                                window.location.href = downloadUrl + '&name=' + fileName;
+                            } else {
+                                layer.msg(str.info);
+                            }
+                        }
+                    );
+                },
+                flip: function (index) {
+                    var params = vm.params;
+                    params.p = index;
+                    var url = '<{:U("Location/index")}>';
+                    this.sendRequest(url, params, true, 'post');
+                },
+                import_file: function() {
+                    var url = '<{:U("location/import_location")}>';
+                    var index = 0;
+                    var title = '<{$Think.lang.导入详情}>';
+                    var options = {
+                        url: url,
+                        beforeSubmit: vm.validate,
+                        beforeSend: function () {
+                            index = layer.load(2, {
+                                shade: [0.5,'#fff'] //0.1透明度的白色背景
+                            });
+                        },
+                        success: function(data, status, xhr) {
+                            layer.close(index);
+                            if (data.status == 1) {
+                                layer.msg(data.info);
+                            } else {
+                                layer.open({
+                                    title: title,
+                                    area: ['310px', '200px'],
+                                    type: 1,
+                                    skin: 'demo-class',
+                                    content: data //注意，如果str是object，那么需要字符拼接。
+                                });
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            var context = options.context || this;
+                            layer.msg(error);
+                        },
+                    };
+                    $('#location_form').ajaxSubmit(options);
+                },
+                validate: function() {
+                    if ($('input[name="file"]').val() == '') {
+                        layer.msg('<{$Think.lang.请选择文件}>');
+                        return false;
+                    } else
+                        return true;
+                },
+                exportData: function() {
+                    var url = '<{:U("Location/generate_export_file")}>';
+                    var downloadUrl = '<{:U("Location/download_file")}>';
+                    var params = this.params;
+                    $.ajax({
+                        type: "post",
+                        async: true,
+                        url: url,
+                        data: params,
+                        beforeSend: function () {
+                            showIndex = layer.load(2, {
+                                shade: [0.5,'#fff']
+                            });
+                        },
+                        success:function(response){
+                            layer.close(showIndex);
+                            if (response.status == 1) {
+                                window.location.href = downloadUrl + '&name=' + response.data;
+                            } else {
+                                layer.msg(response.info);
+                            }
+                        },
+                        error:function(){
+                            layer.close(showIndex);
+                            layer.msg('<{$Think.lang.请求异常}>');
+                        }
+                    });
+                },
+                edit: function(index, e) {
+                    e.edit = true;
+                    e.edit_location_code = e.location_code;
+                    e.edit_location_code_back = e.location_code_back;
+                    this.ret.splice(index, 0);
+                },
+                save: function(index, e) {
+                    if (e.location_code  == e.location_code_back) {
+//                        layer.msg('<{$Think.lang.货位编码与备用货位编码重复}>');
+//                        return;
+                    }
+                    if (e.location_code == e.edit_location_code && e.location_code_back == e.edit_location_code_back) {
+                        e.edit = false;
+                        this.ret.splice(index, 0);
+                        layer.msg('<{$Think.lang.修改成功}>');
+                        return;
+                    }
+                    var confirmIndex = layer.confirm("<{$Think.lang.是否确认修改}>", {
+                        btn: ["<{$Think.lang.确认}>","<{$Think.lang.取消}>"], //按钮
+                        title: "<{$Think.lang.提示}>"
+                    }, function(){
+                        layer.close(confirmIndex);
+                        var params = e;
+                        var url = '<{:U("Location/update")}>';
+                        var showIndex;
+                        $.ajax({
+                            type: "post",
+                            async: true,
+                            url: url,
+                            data: params,
+                            beforeSend: function () {
+                                showIndex = layer.load(2, {
+                                    shade: [0.5,'#fff']
+                                });
+                            },
+                            success:function(response){
+                                layer.close(showIndex);
+                                if (response.status == 1) {
+                                    console.log('aaa');
+                                    e.edit = false;
+                                    vm.ret.splice(index, 0);
+                                }
+                                console.log(e);
+                                layer.msg(response.info);
+                            },
+                            error:function(){
+                                layer.close(showIndex);
+                                layer.msg('<{$Think.lang.请求异常}>');
+                            }
+                        });
+                    }, function(){
+                        layer.close(confirmIndex);
+                        return false;
+                    });
+                },
+                cancel: function(index, e) {
+                    if (e.location_code != e.edit_location_code || e.location_code_back != e.edit_location_code_back) {
+                        var confirmIndex = layer.confirm("<{$Think.lang.值已改变是否撤销修改}>?", {
+                            btn: ["<{$Think.lang.确认}>","<{$Think.lang.取消}>"], //按钮
+                            title: "<{$Think.lang.提示}>"
+                        }, function(){
+                            layer.close(confirmIndex);
+                            e.edit = false;
+                            e.location_code = e.edit_location_code;
+                            e.location_code_back = e.edit_location_code_back;
+                            this.ret.splice(index, 0);
+                        }, function(){
+                            layer.close(confirmIndex);
+                            return false;
+                        });
+                    } else {
+                        e.edit = false;
+                        e.location_code = e.edit_location_code;
+                        e.location_code_back = e.edit_location_code_back;
+                        this.ret.splice(index, 0);
+                    }
+                },
+                del: function(index, e) {
+                    var confirmIndex = layer.confirm("<{$Think.lang.是否确认删除}>", {
+                        btn: ["<{$Think.lang.确认}>","<{$Think.lang.取消}>"], //按钮
+                        title: "<{$Think.lang.提示}>"
+                    }, function(){
+                        layer.close(confirmIndex);
+                        var params = e;
+                        var url = '<{:U("Location/delete")}>';
+                        var showIndex;
+                        $.ajax({
+                            type: "post",
+                            async: true,
+                            url: url,
+                            data: params,
+                            beforeSend: function () {
+                                showIndex = layer.load(2, {
+                                    shade: [0.5,'#fff']
+                                });
+                            },
+                            success:function(response){
+                                layer.close(confirmIndex);
+                                layer.close(showIndex);
+                                layer.msg(response.info);
+                                if (response.status == 1) {
+                                    setTimeout(function() {
+                                        location.reload();
+                                    }, 2000);
+                                }
+                            },
+                            error:function(){
+                                layer.close(showIndex);
+                                layer.msg('<{$Think.lang.请求异常}>')
+                            }
+                        });
+                    }, function(){
+                        layer.close(confirmIndex);
+                        return false;
+                    });
+                },
+                sendRequest: function(url, requestParams, async, type) {
+                    var showIndex = 0;
+                    $.ajax({
+                        type: type,
+                        async: async,
+                        url: url,
+                        data: requestParams,
+                        beforeSend: function () {
+                            showIndex = layer.load(2, {
+                                shade: [0.5,'#fff']
+                            });
+                        },
+                        success:function(response){
+                            layer.close(showIndex);
+                            vm.ret = response.data.ret;
+                            vm.page = response.data.page;
+                            vm.count = response.data.count;
+                        },
+                        error:function(){
+                            layer.close(showIndex);
+                            layer.msg('<{$Think.lang.请求异常}>')
+                        }
+                    });
+                },
+                showImgFn: function (e,type) {
+                    Vue.set(e,'isShowImg',type)
+                }
+            }
+    });
+    function flip(pageInex)
+    {
+        vm.flip(pageInex);
+    }
+</script>
+</html>

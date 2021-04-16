@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>退货列表</title>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+          href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+          href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+          href="./Application/Tpl/Home/Public/../Hr/hrstyle.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+          href="./Application/Tpl/Home/Public/css/btn-new.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+          href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+</head>
+
+<style>
+    [v-cloak] {
+        display: none;
+    }
+
+    .btns {
+        margin: 0px 0px 0px 20px;
+    }
+
+    .show-list .search-table tr td {
+        padding: 1rem 1rem 1rem 0;
+    }
+
+    .btn-right .btn-right-item {
+        float: right;
+    }
+
+    .el-row + .el-row {
+        margin-top: 15px;
+    }
+
+    .el-pagination {
+        margin-bottom: 180px;
+    }
+
+    .normal {
+        white-space: normal !important;
+        word-wrap: break-word;
+        word-break: break-all;
+    }
+
+    .create-wrap {
+        white-space: nowrap;
+    }
+
+    .create-wrap .occupy {
+        display: inline-block;
+        width: 49.5%;
+    }
+
+    .show-list .el-form-item__label {
+        padding: 0px 10px 0px 0px;
+    }
+
+    .utils-btn {
+        margin-left: 30px;
+        color: #409EFF;
+        text-decoration: underline;
+    }
+
+    .show-list .table-list tr th {
+        padding: 0px 6px;
+    }
+
+    .show-list .table-list tr td {
+        white-space: normal;
+    }
+
+    .el-radio-button {
+        margin: 0px 10px;
+    }
+
+    .el-radio-button.is-active .el-radio-button__inner {
+        background: #1e7eb4 none repeat scroll 0 0;
+        border: none;
+        border-radius: 20px;
+
+    }
+
+    .el-radio-button__orig-radio:checked + .el-radio-button__inner {
+        background: #1e7eb4 none repeat scroll 0 0;
+        border: none;
+        border-radius: 20px;
+    }
+
+    .el-radio-button__inner {
+        border: none !important;
+        transition: 0s all;
+        padding: 8px 18px;
+        box-shadow: none !important;
+    }
+
+    .el-radio-button.is-active {
+        border: none;
+        background: #1e7eb4 none repeat scroll 0 0;
+        text-align: center;
+        padding: 0;
+        margin: 0px 10px;
+        line-height: 30px;
+        border-radius: 20px;
+        color: #fff;
+    }
+
+    .sort-item {
+        display: flex;
+        justify-content: center;
+    }
+
+    .sort-item span {
+        line-height: 30px;
+    }
+
+    .caret-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin-left: 10px;
+    }
+
+    .caret-wrapper i {
+        cursor: pointer;
+        font-size: 18px;
+    }
+
+    .caret-wrapper i.active {
+        color: #409eff;
+    }
+
+    .descending {
+        margin-top: -8px;
+    }
+
+    .td-item-25 {
+        width: 25%;
+    }
+
+    .el-table tr > th {
+        background-color: #546e7a;
+        color: #ffffff;
+    }
+
+    .isGreen {
+        color: #50d850;
+    }
+
+    .isRed {
+        color: red;
+    }
+
+    a.file_type {
+        line-height: 16px;
+        font-size: 13px;
+        margin-bottom: 8px;
+    }
+
+    a:hover {
+        text-decoration: underline;
+    }
+    .balanceTransferFrom>div{
+      margin-bottom: 20px;
+    }
+    .balanceTransferDialog .el-dialog{
+      width: 30%;
+    }
+    .balanceTransferDialog .dialog-footer{
+      text-align: center;
+    }
+</style>
+
+<body>
+<div id="crmList" class="show-list" v-cloak>
+    <el-form ref="formSearch" :model="form" :label-position="labelPosition" label-width="100px">
+        <div class="use-row">
+            <div class="col-100">
+                <table class="search-table">
+                    <tbody>
+                    <tr>
+                        <td class="td-item-25">
+                            <el-form-item :label="$lang('供应商名称')">
+                                <el-select :filterable="true"
+                                           remote
+                                           :remote-method="remoteMethod"
+                                           reserve-keyword
+                                           :placeholder="$lang('请选择供应商')"
+                                           v-model="form.search.supplier_id">
+                                    <el-option :key="item.supplier_id" :label="item.supplier_name"
+                                               :value="item.supplier_id"
+                                               v-for="item in baseData.supplier"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </td>
+                        <td class="td-item-25">
+                            <el-form-item :label="$lang('我方公司')">
+                                <el-select :filterable="true" :placeholder="$lang('全部')"
+                                           v-model="form.search.our_company_cd">
+                                    <el-option :key="item.CD" :label="item.CD_VAL" :value="item.CD"
+                                               v-for="item in baseData.our_company"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </td>
+                        <td class="td-item-25">
+                            <el-form-item :label="$lang('币种')">
+                                <el-select :filterable="true" :placeholder="$lang('全部')"
+                                           v-model="form.search.deduction_currency_cd">
+                                    <el-option :key="item.CD" :label="item.CD_VAL" :value="item.CD"
+                                               v-for="item in baseData.currency"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="btns">
+                                <button type="button" class="btn-search" @click="search">
+                                    {{$lang('查询')}}
+                                </button>
+                                <button type="button" class="btn-reset" @click="reset">{{$lang('重置')}}</button>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </el-form>
+    <div class="baseline"></div>
+    <div class="use-row create-wrap">
+        <div class="col-50 result-num occupy">
+            {{$lang('搜索结果')}}：&nbsp;&nbsp;{{$lang('共')}}
+            <b>{{totalCount}}</b> {{$lang('条')}}
+        </div>
+        <div class="col-50 btn-right">
+          <el-button class="btn-right-item" type="primary" size="small" @click="deductionExport('2')">{{$lang('明细导出')}}</el-button>
+          <el-button style="margin-right: 10px;" class="btn-right-item" type="primary" size="small" @click="deductionExport('1')">{{$lang('余额导出')}}</el-button>
+        </div>
+
+
+
+
+        <!--<div class="col-50 btn-right">-->
+        <!--<el-button class="btn-right-item" type="primary" size="small" @click="initiateReturn">{{$lang('发起退货')}}-->
+        <!--</el-button>-->
+        <!--</div>-->
+    </div>
+    <div class="use-row">
+        <div class="col-100">
+            <table class="table-list" v-loading="tableLoading">
+                <thead>
+                <tr>
+                    <th>{{$lang('供应商ID')}}</th>
+                    <th>{{$lang('供应商名称')}}</th>
+                    <th>{{$lang('供应商名称')}} (EN)</th>
+                    <th>{{$lang('我方公司')}}</th>
+                    <th>{{$lang('币种')}}</th>
+                    <th>{{$lang('采购余额')}}</th>
+                    <th style="width:200px">{{$lang('操作')}}</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="(item,index) in dataList">
+                    <td>{{item.supplier_id}}</td>
+                    <td>{{item.supplier_name_cn}}</td>
+                    <td>{{item.supplier_name_en}}</td>
+                    <td>{{$lang(item.our_company_name)}}</td>
+                    <td>{{item.deduction_currency_cd_val}}</td>
+                    <td>{{item.deduction_currency_cd_val}} {{item.over_deduction_amount | separatNum}}</td>
+                    <td>
+                        <el-button @click="showDetail('item',item)" type="primary" size="small">{{$lang('查看')}}</el-button>
+                        <el-button @click="balanceTransfer(item)" type="primary" size="small">{{$lang('余额转账')}}</el-button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="use-row">
+        <div class="col-100 text-right">
+            <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange"
+                           :current-page.sync="form.pages.current_page"
+                           :page-sizes="[20, 50, 100, 200,300]" :page-size="form.pages.per_page"
+                           layout="sizes, prev, pager, next,jumper"
+                           :total="totalCount"></el-pagination>
+        </div>
+    </div>
+    <el-dialog :title="dialogTitle" :visible.sync="dialogTableVisible" width="70%">
+        <div class="col-50 result-num occupy">
+            {{$lang('总计进账')}}：&nbsp;{{totalDetail.deduction_currency_cd_val }}
+            <b>{{totalDetail.unused_deduction_amount | separatNum}}</b> &nbsp;&nbsp;
+            {{$lang('总计出账')}}：&nbsp;&nbsp;{{totalDetail.deduction_currency_cd_val }}
+            <b>{{totalDetail.used_deduction_amount | separatNum}}</b>
+        </div>
+        <el-table :data="detailList" border v-loading="tableLoadingDetail">
+            <el-table-column align="center" :label="$lang('序号')" width="50px">
+                <template slot-scope="scope">
+                    {{scope.$index + 1 +(detail.current_page -1) * detail.per_page}}
+                </template>
+            </el-table-column>
+            <el-table-column align="center" property="deduction_amount" :label="$lang('金额')">
+                <template slot-scope="scope">
+                    <span :class="{isGreen: +scope.row.turnover_type ==2,
+                                     isRed: +scope.row.turnover_type ==1}">{{totalDetail.deduction_currency_cd_val }} {{+scope.row.turnover_type ==2 ? '+' : '-'}}{{scope.row.deduction_amount |separatNum}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" property="order_no" :label="$lang('采购单号')"></el-table-column>
+            <el-table-column align="center" property="remark" :label="$lang('备注')"></el-table-column>
+            <el-table-column align="center" property="action_type_cd_val" :label="$lang('触发操作')">
+              <template slot-scope="scope">{{$lang(scope.row.action_type_cd_val)}}</template>
+            </el-table-column>
+            <el-table-column align="center" property="clause" :label="$lang('适用条款')">
+              <template slot-scope="scope">{{$lang(scope.row.clause)}}</template>
+            </el-table-column>
+            <el-table-column align="center" property="bill_no" :label="$lang('关联单据号')">
+              <template slot-scope="scope">{{$lang(scope.row.bill_no)}}</template>
+            </el-table-column>
+            <el-table-column property="deduction_voucher" :label="$lang('抵扣凭证')">
+                <template slot-scope="scope">
+                    <a class="file_type" style="display: block"
+                       v-for="item in scope.row.deduction_voucher"
+                       target="_blank"
+                       :href="'/index.php?m=order_detail&a=download&file='+item.savename">{{item.name}}</a>
+                </template>
+            </el-table-column>
+            <el-table-column align="center" property="created_by" :label="$lang('确认人')"></el-table-column>
+            <el-table-column align="center" property="created_at" :label="$lang('确认时间')"></el-table-column>
+        </el-table>
+        <div class="col-100 text-right">
+            <el-pagination style="margin:16px 0 40px 0;" @size-change="handleSizeChangeDetail"
+                           @current-change="handleCurrentChangeDetail"
+                           :current-page.sync="detail.current_page"
+                           :page-sizes="[10, 20, 50]" :page-size="detail.per_page"
+                           layout="sizes, prev, pager, next,jumper"
+                           :total="totalCountDetail"></el-pagination>
+        </div>
+    </el-dialog>
+
+    <el-dialog class="balanceTransferDialog" :title="$lang('提示')" @close="balanceTransferClose" :visible.sync="dialogBalanceTransfer">
+      <el-form class="balanceTransferFrom" :model="balanceTransferData">
+        <div>
+          {{$lang('账号采购余额')}} {{balanceTransferData.currency}} {{balanceTransferData.over_deduction_amount | separatNum}}
+        </div>
+        <div>{{$lang('请输入需要转入赔偿、返利账户的金额')}} </div>
+        <div>
+          <span>{{$lang('采购单号')}}</span>
+          <el-select filterable
+                    style="width: 200px;"
+                    :placeholder="$lang('请输入采购单号')"
+                    v-model="balanceTransferData.purchaseOrderNo">
+            <el-option :key="key" :label="value"
+                        :value="value"
+                        v-for="(value,key) in balanceTransferData.restaurants"></el-option>
+          </el-select>
+
+        </div>
+        <div style="position: relative;height: 40px;line-height: 40px;">
+          <span>{{balanceTransferData.currency}}</span>
+          <el-input style="position: absolute;left: 58px;width: 200px;" v-model="balanceTransferData.amount" :placeholder="$lang('请输入金额')"></el-input>
+        </div>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button type="primary" @click="BalanceTransferSubmit">{{$lang('确定')}}</el-button>
+        <el-button @click="dialogBalanceTransfer = false">{{$lang('取消')}}</el-button>
+      </div>
+    </el-dialog>
+
+</div>
+
+<script type="text/javascript"
+        src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript"
+        src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.form.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+<script src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript"
+        src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script>
+  if (getCookie('think_language') !== "zh-cn") {
+    ELEMENT.locale(ELEMENT.lang.en)
+  }
+  var way = new Vue({
+    el: '#crmList',
+    data: {
+      baseData: {},
+      dialogTableVisible: false,
+      tableLoadingDetail: false,
+      totalCountDetail: 0,
+      dialogTitle: '',
+      detailList: [],
+      totalDetail: {},
+      searchData: {
+        customerType: [],
+        authEmail: [],
+        statusList: [],
+        platformFrom: [],
+        platform: [],
+        options: []
+      },
+      detail: {
+        per_page: 10,
+        current_page: 1
+      },
+      form: {
+        search: {
+          supplier_id:'',
+          our_company_cd: '',
+          deduction_currency_cd: '',
+        },
+        pages: {
+          per_page: 20,
+          current_page: 1
+        }
+      },
+      labelPosition: 'right',
+      totalCount: 0,
+      tableLoading: false,
+      dataList: [],
+      currentId: '',
+      balanceTransferData:{
+        over_deduction_amount:'',
+        purchaseOrderNo:'',
+        restaurants:[],
+        amount:'',
+        currency:''
+      },
+      dialogBalanceTransfer:false
+    },
+    created: function () {
+      this.getBaseData();
+      this.search();
+    },
+    methods: {
+      /**
+       * 获取基本数据
+       */
+      getBaseData: function () {
+        var _this = this;
+        // 获取url参数
+        function getQueryVariable(name) {
+          var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+          var r = window.location.search.substr(1).match(reg);
+          if (r != null) return unescape(r[2]); return null;
+        }
+        if(getQueryVariable('supplier_new_id')){
+          _this.form.search.supplier_id = getQueryVariable('supplier_new_id')
+          _this.form.search.our_company_cd = getQueryVariable('our_company')
+          _this.form.search.deduction_currency_cd = getQueryVariable('currency')
+        }
+
+        var param = {
+          "cd_type": {
+            our_company: false,
+            purchase_team: true,
+            currency: true
+          }
+        };
+        axios.post('/index.php?g=common&m=index&a=get_cd', param).then(function (res) {
+          var data = res.data;
+          if (data.code == 2000) {
+            _this.baseData = data.data;
+          } else {
+            _this.$message({
+              message: _this.$lang('获取数据失败'),
+              type: 'warning'
+            });
+          }
+        })
+      },
+      remoteMethod: function (query) {
+        var _this = this;
+        var param = {
+          "search": {
+            "supplier_name": query
+          }
+        };
+        axios.post('/index.php?m=order_detail&a=searchSuppliers', param).then(function (res) {
+          var data = res.data;
+          if (data.code == 200) {
+            _this.$set(_this.baseData, 'supplier', data.data);
+          } else {
+            // _this.$message({
+            //   message: _this.$lang('获取数据失败'),
+            //   type: 'warning'
+            // });
+          }
+        })
+
+      },
+      /**
+       * 跳转至 发起退货
+       */
+      initiateReturn: function () {
+        var dom = document.createElement('a');
+        var _href = "/index.php?m=order_detail&a=initiate_return";
+        dom.setAttribute("onclick", "opennewtab(this,'" + this.$lang('发起退货') + "')");
+        dom.setAttribute("_href", _href);
+        dom.click();
+      },
+      // 导出
+      deductionExport: function (type) {
+            var _this = this;
+
+            var param = {
+              deduction_currency_cd: _this.form.search.deduction_currency_cd,
+              our_company_cd: _this.form.search.our_company_cd,
+              supplier_id: _this.form.search.supplier_id,
+              type: type
+            }
+
+            var tmep = document.createElement('form');
+            tmep.action = '/index.php?m=order_detail&a=deduction_sup_export';
+            tmep.method = "post";
+            tmep.style.display = "none";
+            var opt = document.createElement("input");
+            opt.name = 'export_params';
+            opt.value = JSON.stringify(param);
+            tmep.appendChild(opt);
+            document.body.appendChild(tmep);
+            tmep.submit();
+            $(tmep).remove();
+            tmep = null
+            
+      },
+    
+      BalanceTransferSubmit(){
+        var _this = this
+        console.log(this.balanceTransferData);
+        if(!Number.isFinite(Number(_this.balanceTransferData.amount)) || Number(_this.balanceTransferData.amount) <= 0 || _this.balanceTransferData.amount === ''){
+            _this.$message({
+              type: 'warning',
+              message: _this.$lang('请输入大于0的金额')
+            });
+            return;
+        }
+        if(!_this.balanceTransferData.purchaseOrderNo){
+          _this.$message({
+              type: 'warning',
+              message: _this.$lang('请输入采购单号')
+          });
+          return;
+        }
+        axios.post('/index.php?g=purchase&m=deduction&a=transfer', {
+          "order_no" : _this.balanceTransferData.purchaseOrderNo,
+          "amount_deduction" : _this.balanceTransferData.amount
+        }).then(function (res) {
+          console.log(res);
+          if(res.data.code == 200){
+            _this.$message({
+              message: _this.$lang('余额转账成功'),
+              type: 'success'
+            });
+            _this.dialogBalanceTransfer = false
+            _this.search()
+          }else{
+            _this.$message({
+              message: _this.$lang(res.data.msg),
+              type: 'warning'
+            });
+          }
+        })
+      },
+      
+      
+  
+      /**
+       * 列表查询
+       */
+      search: function () {
+        var _this = this;
+        this.tableLoading = true;
+        axios.post('/index.php?m=order_detail&a=deductionList', _this.form).then(function (res) {
+          var data = res.data;
+          _this.tableLoading = false;
+          if (data.code == 200) {
+            _this.dataList = data.data.data;
+            _this.totalCount = +data.data.pages.total;
+          } else {
+            _this.$message({
+              message: _this.$lang('获取数据失败'),
+              type: 'warning'
+            });
+          }
+        })
+      },
+      /**
+       * 修改一页显示数量，进行查询
+       * @param size 一页展示数量
+       */
+      handleSizeChange: function (size) {
+        this.form.pages.per_page = size;
+        this.search();
+      },
+      /**
+       * 修改页码
+       * @param currentPage 当前页码
+       */
+      handleCurrentChange: function (currentPage) {
+        this.form.pages.current_page = currentPage;
+        this.search();
+      },
+      /**
+       * 重置查询
+       */
+      reset: function () {
+        this.form = {
+          search: {
+            supplier_id: '',
+            our_company_cd: '',
+            deduction_currency_cd: '',
+          },
+          pages: {
+            per_page: 20,
+            current_page: this.form.pages.current_page
+          }
+        }
+
+      },
+
+      handleSizeChangeDetail: function (size) {
+        this.detail.per_page = size;
+        this.showDetail('id', this.currentId);
+
+      },
+      handleCurrentChangeDetail: function (currentPage) {
+        this.detail.current_page = currentPage;
+        this.showDetail('id', this.currentId);
+      },
+      /**
+       * 跳转至退货详情
+       * @param custId 要跳转的详情id
+       * @param isDo 是否直接进入理货状态
+       */
+      showDetail: function (type, item) {
+        var _this = this;
+        if (type === 'item') {
+          _this.currentId = item.id;
+          this.dialogTitle = this.$lang(item.supplier_name_cn) + ' —— ' + this.$lang(item.our_company_name) + this.$lang('抵扣金账户明细') +'(' + item.deduction_currency_cd_val + ')';
+        }
+        var param = {
+          "search": {
+            "deduction_id": type === 'item' ? item.id : item
+          },
+          "pages": this.detail
+        };
+        
+        this.tableLoadingDetail = true;
+        this.dialogTableVisible = true;
+        axios.post('/index.php?m=order_detail&a=deductionDetail', param).then(function (res) {
+            var data = res.data;
+            _this.tableLoadingDetail = false;
+            if (data.code == 200) {
+              _this.detailList = [];
+              _this.totalCountDetail = +data.data.pages.total;
+              for (var key in data.data.data) {
+                if (key !== 'deduction_count') {
+                    $voucher = data.data.data[key].deduction_voucher;
+                    if ($voucher) {
+                        data.data.data[key].deduction_voucher = JSON.parse($voucher);
+                    } else {
+                        data.data.data[key].deduction_voucher = "";
+                    }
+                  _this.detailList.push(data.data.data[key])
+                } else {
+                  _this.totalDetail = data.data.data[key];
+                }
+              }
+            } else {
+              _this.$message({
+                message: _this.$lang('获取数据失败'),
+                type: 'warning'
+              });
+            }
+          }
+        )
+      },
+      balanceTransferClose:function(){
+        this.balanceTransferData.purchaseOrderNo = ''
+        this.balanceTransferData.amount = ''
+        this.balanceTransferData.over_deduction_amount = ''
+      },
+      balanceTransfer:function(val){
+        console.log(val);
+        var _this = this
+        
+        _this.balanceTransferData.currency = val.deduction_currency_cd_val
+        _this.balanceTransferData.over_deduction_amount = val.over_deduction_amount
+        var param = {
+          "supplier_id" : val.supplier_id,
+          "amount_currency" : val.deduction_currency_cd,
+          "our_company" : val.our_company_cd
+        }
+        axios.post('/index.php?g=purchase&m=deduction&a=getPurOrderNum', param).then(function (res) {
+          console.log(res);
+          if(res.data.code == 200){
+            _this.balanceTransferData.restaurants = res.data.data
+          }
+        })
+        _this.dialogBalanceTransfer = true
+      },
+      trimStr: function (str) {
+        return str.replace(/(^\s*)|(\s*$)/g, "");
+      },
+      getValue: function (obj, index) {
+        var result = ''
+        for (var key in obj) {
+          if (obj[key].value == index) {
+            result = obj[key].name;
+            return result
+
+          }
+        }
+      }
+    },
+    filters: {
+      separatNum: function (num) { //千分位方法
+        var num = Number(num).toFixed(2);
+        num = num + "";
+        var _arr = num.split(".");
+        return _arr[1] === "00" ? (num - 0).toLocaleString() + ".00" : (num - 0).toLocaleString();
+      },
+      percentage: function (num) {
+        return num ? ((num * 100).toFixed(2) + "%") : '';
+      },
+    },
+    watch: {
+      form: {
+        handler: function handler(newValue, oldValue) {
+          this.search();
+        },
+        deep: true
+      }
+    },
+    // mounted() {
+      
+    // }
+  })
+</script>
+</body>
+
+</html>

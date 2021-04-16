@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="../Public/css/bootstrap.min.css">
+    <!-- <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>"> -->
+    <link rel="stylesheet" href="../Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="../Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="../Public/icon/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../Public/css/send.css"/>
+    <link rel="stylesheet" href="../Public/utils/css/public.style.css">
+    <title><{$Think.lang.发货详情}></title>
+    <script type="text/javascript">
+        var url = window.location.href;
+    </script>
+    <style>
+        .wrap {
+            box-sizing: border-box;
+            padding: 20px;
+            margin: 0;
+        }
+        .row {
+            margin: 0;
+        }
+
+        .row + .row {
+            margin-top: 20px;
+        }
+        [class*="col-"]{
+            padding: 0;
+        }
+        .thumbnail-wrap {
+            position: relative;
+            z-index: 999;
+        }
+
+        .thumbnail-wrap .img-wrap {
+            position: absolute;
+            top: -80px;
+            left: 180px;
+            width: 300px;
+            height: 300px;
+            border: 1px solid #eef5f9;
+        }
+
+        .thumbnail-wrap img {
+            box-shadow: 4px 4px 20px #242525;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .sign-over,.WithdrawEnd{
+            cursor: pointer;
+            height: 1.6rem;
+            border-radius: 0.2rem;
+            text-align: center;
+            font-size: 0.7rem;
+            font-family: "Arial", "Microsoft YaHei", "黑体", "宋体", sans-serif;
+            padding: 0.28rem 0.75rem;
+            text-decoration: none;
+            margin-left: 2rem;
+        }
+        .sign-over{
+            background: #fff;
+            border: 1px solid #898989;
+        }
+        .WithdrawEnd{
+            color: #e6a23c;
+            background: #fdf6ec;
+            border: 1px solid #f5dab1;
+        }
+    </style>
+</head>
+<body>
+<div id="ssst" v-cloak class="wrap">
+    <div class="row">
+        <div class="col-lg-12 col-md-12">
+            <span class="use-title"><{$Think.lang.发货详情}></span>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-12 col-md-12">
+            <table class="b2b-table-one">
+                <caption>{{$lang('基础信息')}}</caption>
+                <tbody class="use-body">
+                <tr>
+                    <!-- <td><label>{{$lang('发货子单号')}}</label></td>
+                    <td>{{doship.ID}}</td> -->
+                    <td><label>{{$lang('B2B订单号')}}</label></td>
+                    <td>{{doship.PO_ID}}</td>
+                    <td><label>{{$lang('PO单号')}}</label></td>
+                    <td>{{doship.THR_PO_ID}}</td>
+                </tr>
+                <tr>
+                    <!-- 需修改值 -->
+                    <td><label>{{$lang('发货状态')}}</label></td>
+                    <td>{{$lang(doship.shipping_status_nm)}}</td>
+                    <td><label>{{$lang('我方公司')}}</label></td>
+                    <td>{{$lang(doship.our_company)}}</td>
+                </tr>
+                <tr>
+                    <td><label>{{$lang('客户名称')}}</label></td>
+                    <td>{{$lang(doship.CLIENT_NAME)}}</td>
+                    <td><label>{{$lang('目的地')}}</label></td>
+                    <td>{{join_ares(doship.target_port)}}</td>
+                </tr>
+                <tr>
+                    <td><label>{{$lang('PO发起人')}}</label></td>
+                    <td>{{doship.PO_USER}}</td>
+                    <td><label>{{$lang('交货方式')}}</label></td>
+                    <td><span
+                            v-if="doship.DELIVERY_METHOD in initdata.shipping">{{initdata.shipping[doship.DELIVERY_METHOD].CD_VAL}}</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td><label>{{$lang('PO时间')}}</label></td>
+                    <td>{{doship.po_time}}</td>
+                    <td><label>{{$lang('订单备注')}}</label></td>
+                    <td>{{$lang(doship.REMARKS)}}</td>
+                </tr>
+                <tr>
+                    <td><label>{{$lang('预计发货日期')}}</label></td>
+                    <td>{{$lang(doship.delivery_time)}}</td>
+                    <td><label>{{$lang('发货成本(含增值税)')}}</label></td>
+                    <td>CNY {{king(doship.sum_shipping_cost)}}</td>
+                </tr>
+                <tr>
+                    <td><label>{{$lang('发货成本(不含增值税)')}}</label></td>
+                    <td>CNY {{king(doship.sum_shipping_cost_excludeing_tax)}}</td>
+                    <td><label>{{$lang('发货收入(含增值税)')}}</label></td>
+                    <td>{{doship.po_currency_val}} {{king(doship.sum_shipping_revenue)}}</td>
+                </tr>
+                <tr>
+                    <td><label>{{$lang('发货收入(不含增值税)')}}</label></td>
+                    <td>{{doship.po_currency_val}} {{king(doship.sum_shipping_revenue_excludeing_tax)}}</td>
+                    <td><label>{{$lang('物流成本')}}</label></td>
+                    <td>
+                        <span v-if="doship.LOGISTICS_CURRENCY in initdata.currency">{{initdata.currency[doship.LOGISTICS_CURRENCY].CD_VAL}}</span>
+                        {{king(doship.logistics_costs_sum)}}
+                    </td>
+                </tr>
+                <tr>
+                    <td><label>{{$lang('订单创建时间')}}</label></td>
+                    <td>{{doship.SUBMIT_TIME}}</td>
+                    <td><label>{{$lang('更新时间')}}</label></td>
+                    <td>{{doship.update_time}}</td>
+                </tr>
+                <tr v-if="doship.make_send_by">
+                    <td>
+                        <label>{{$lang('标记完结人')}}</label>
+                    </td>
+                    <td>
+                        <span>{{doship.make_send_by}}</span>
+                    </td>
+                    <td><label>{{$lang('标记完结时间')}}</label></td>
+                    <td style="border-right: 1px solid #CADEE7;">{{doship.make_send_at}}</td>
+                    <!-- <td v-if="doship.make_send_by"><label>{{$lang('标记完结人')}}</label></td> -->
+                    <!-- <td v-if="doship.make_send_by">{{doship.make_send_by}}</td> -->
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+        <div class="row" style="margin-top: 20px;">
+            <div class="col-lg-12 col-md-12">
+                <table class="b2b-table-three">
+                    <caption>{{$lang('商品信息')}}</caption>
+                    <thead class="use-head">
+                    <tr >
+                        <th><{$Think.lang.SKUID}></th>
+                        <th><{$Think.lang.BarCode}></th>
+                        <th>{{$lang('商品名称')}}</th>
+                        <th>{{$lang('SKU信息')}}</th>
+                        <th>{{$lang('商品图片')}}</th>
+                        <th>{{$lang('订单数量')}}</th>
+                        <th>{{$lang('已发货')}}</th>
+                        <th>{{$lang('待发货')}}</th>
+                    </tr>
+                    </thead>
+                    <tbody class="use-body">
+                    <tr v-if="doship_goods" v-for="(g,key) in doship_goods" >
+                        <td >{{g.sku_show}}</td>
+                        <td style="white-space: pre-line">{{g.bar_code}}</td>
+                        <td>{{g.goods_title}}</td>
+                        <td>{{g.goods_info}}</td>
+                        <td v-if="g.guds_img_cdn_addr" @mouseover="showThumbnail($event,g.guds_img_cdn_addr)">
+                                <img width="60" height="60" :src="g.guds_img_cdn_addr" alt=""> </span>
+                            <!-- <span>
+                            <img @mouseover="showThumbnail(key,'act',doship_goods)" @mouseout="showThumbnail(key,'close',doship_goods)" width="60"
+                                 height="60" :src="g.guds_img_cdn_addr" alt=""> </span>
+                                <div v-if="g.show_img" class="thumbnail-wrap">
+                                    <div class="img-wrap">
+                                        <img :src="g.guds_img_cdn_addr" alt="" width="300" height="300">
+                                    </div>
+                                </div> -->
+                        </td>
+                        <td v-else=""></td>
+                        <td>{{king(g.required_quantity)}}</td>
+                        <td>{{king(g.SHIPPED_NUM)}}</td>
+                        <!-- <td>{{king(g.TOBE_DELIVERED_NUM | zero)}}</td> -->
+                         <td>{{g.TOBE_DELIVERED_NUM}}</td>
+                    </tr>
+                    <tr class="table_bg">
+                        <td>{{$lang('合计')}}: {{doship_goods.length}} SKU</td>
+                        <td></td>                   
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td>{{king(need_sum)}}</td>
+                        <td>{{king(slip_sum)}}</td>
+                        <td>{{king(all_df())}}</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    <div v-for="(l,key) in ship_list">
+        <div class="row" style="margin-top: 20px;    ">
+            <div class="col-lg-12 col-md-12">
+                <table class="b2b-table-three">
+                    <caption  style="">{{$lang('发货信息')}}({{key+1}}/{{ship_list.length}})</caption>
+                    <tbody  class="use-body">
+                    <tr>
+                        <td>{{$lang('发货单号')}}</td>
+                        <td>{{l.ID}}</td>
+                        <td>{{$lang('提单号')}}</td>
+                        <td>{{l.BILL_LADING_CODE}}</td>
+                        
+                    </tr>
+                    <tr>
+                        <td>{{$lang('发货仓库')}}</td>
+                        <td v-if="l.warehouse in warehouses">{{$lang(warehouses[l.warehouse].warehouse)}}</td>
+                        <td v-else></td>
+                        <!-- 值待修改 -->
+                        <td>{{$lang('发货数量')}}</td>
+                        <td>{{l.SHIPMENTS_NUMBER}}</td>
+                        
+                       
+                    </tr>
+                    <tr>
+                        <td>{{$lang('发货人')}}</td>
+                        <td>{{l.AUTHOR}}</td>
+                        <td>{{$lang('操作时间')}}</td>
+                        <td>{{l.SUBMIT_TIME}}</td>
+                        
+                       
+                        
+                    </tr>
+                    <tr>
+                        <td>{{$lang('发货时间')}}</td>
+                        <td>{{l.DELIVERY_TIME}}</td>
+                        <td>{{$lang('预计到货时间')}}</td>
+                        <td>{{l.Estimated_arrival_DATE}}</td>
+                        
+                    </tr>
+                    <tr>
+                        <td>{{$lang('出库成本（含增值税）')}}</td>
+                        <td>CNY {{king(l.power_all)}}</td>
+                        <td>{{$lang('出库成本（不含增值税）')}}</td>
+                        <td>CNY {{king(parseFloat(l.power_no_tax_all).toFixed(2))}}</td>
+                        
+                    </tr>
+                    <tr>
+                        <td>
+                            <{$Think.lang.物流成本}>
+                        </td>
+                        <td><span
+                                v-if="l.LOGISTICS_CURRENCY in initdata.currency">{{initdata.currency[l.LOGISTICS_CURRENCY].CD_VAL}}</span>
+                            {{king(l.LOGISTICS_COSTS)}}</td>
+                        <!-- 值待修改 -->
+                        <td>{{$lang('出库单号')}}</td>
+                        <td>{{l.order_batch_id}}</td>
+                        
+                    </tr>
+                    <tr>
+                        <td>{{$lang('发货备注')}}</td>
+                        <td style="border-right: 1px solid #CADEE7;">{{$lang(l.REMARKS)}}</td>
+                    </tr>
+                    </tbody>
+                </table>
+
+            </div>
+        </div>
+        <div class="row" style="margin-top: -8px;">
+            <div class="col-lg-12 col-md-12">
+                <table class="b2b-table-three">
+                    <caption>{{$lang('已发货商品')}}</caption>
+                    <thead class="use-head">
+                    <tr v-if="l.goods">
+                        <th><{$Think.lang.SKUID}></th>
+                        <th><{$Think.lang.BarCode}></th>
+                        <th>{{$lang('商品名称')}}</th>
+                        <th>{{$lang('商品图片')}}</th>
+                        <th>{{$lang('SKU信息')}}</th>
+                        <th>{{$lang('发货数')}}</th>
+                        <th>{{$lang('单件成本（含增值税）')}}</th>
+                        <th>{{$lang('单件成本（不含增值税）')}}</th>
+                        <th>{{$lang('商品成本（含增值税）')}}</th>
+                        <th>{{$lang('商品成本（不含增值税）')}}</th>
+                    </tr>
+                    </thead>
+                    <tbody class="use-body">
+                    <tr v-if="l.goods" v-for="(g,gkey) in l.goods" >
+                        <td >{{g.sku_show}}</td>
+                        <td>{{g.bar_code}}</td>
+                        <td>{{g.goods_title}}</td>
+                        <td v-if="g.guds_img_cdn_addr">
+                        <span>
+                        <img @mouseover="showThumbnail($event,g.guds_img_cdn_addr)" width="60"
+                             height="60" :src="g.guds_img_cdn_addr" alt=""> </span>
+                            <div v-if="g.show_img" class="thumbnail-wrap">
+                                <div class="img-wrap">
+                                    <img :src="g.guds_img_cdn_addr" alt="" width="300" height="300">
+                                </div>
+                            </div>
+                        </td>
+                        <td v-else=""></td>
+                        <td>{{g.goods_info}}</td>
+                        <td>{{g.DELIVERED_NUM}}</td>
+                        <td> <span v-if="g.unit_price">CNY {{king(parseFloat(g.unit_price).toFixed(2))}} </span> </td>
+                        <td> <span v-if="g.unit_price">CNY {{king(parseFloat(g.unit_price_no_tax).toFixed(2))}} </span> </td>
+                        <td>CNY {{king((parseFloat(g.power)).toFixed(2))}}</td>
+                        <td>CNY {{king((parseFloat(g.power_no_tax)).toFixed(2))}}</td>
+                    </tr>
+                    <tr class="table_bg">
+                        <td v-if="l.goods"><{$Think.lang.合计}>: {{l.goods.length}} SKU</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td>{{king(cal_sum('DELIVERED_NUM',true,key))}}</td>
+                        <td></td>
+                        <td></td>
+                        <td>CNY {{king(parseFloat(l.power_all).toFixed(2))}}</td>
+                        <td>CNY {{king(parseFloat(l.power_no_tax_all).toFixed(2))}}</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="row"></div>
+    <div class="row">
+            <a style="margin-left: 40%;" href="<{:U('do_ship_list')}>"><button type="button" class="btn-pub btn-default mg-l-10">{{$lang('返回列表')}}</button></a>
+            <button class="sign-over" v-if="doship.shipping_status != 3" @click="signSendOver">{{$lang('标记发货完成')}}</button>
+            <button v-if="doship.shipping_status == 3  && need_sum!=slip_sum" class="WithdrawEnd" @click="WithdrawEnd">{{$lang('撤回发货完结')}}</button>
+    </div>
+</div>
+<script src="../Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="../Public/js/stock/alert.js"></script>
+<!-- <script type="text/javascript" src="../Public/js/vue.js"></script> -->
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="../Public/js/axios.min.js"></script>
+<script type="text/javascript" src="../Public/utils/utils.js"></script>
+<script type="text/javascript" src="../Public/js/axios.min.js"></script>
+<script type="text/javascript" src="../Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript">
+    var vm = new Vue({
+        el: '#ssst',
+        data: {
+            doship: <{$doship}>,
+            ship_list: <{$ship_list}>,
+            doship_goods: <{$doship_goods}>,
+            warehouses: <{$all_warehouse}>,
+            currency: <{$currency}>,
+            this_sum: 0,
+            initdata:<{$initdata}>,
+            sku_arr:[]
+        },
+        created: function () {
+                // console.log(this)
+        },
+        computed:{
+            need_sum: function(){
+                return this.cal_sum('required_quantity','')
+            },
+            slip_sum: function() {
+                return this.cal_sum('SHIPPED_NUM','')
+            }
+        },
+        filters:{
+            zero:function(v){
+                if(!v || v<0) return 0
+                return v
+            }
+        },
+        methods: {
+            signSendOver: function signSendOver () {
+                this.$confirm(this.$lang('该订单实际发货数量没有达到PO数量，是否确认发货完成?'), this.$lang('提示'), {
+                    cancelButtonText: this.$lang('取消'),
+                    confirmButtonText: this.$lang('确定'),
+                    type: 'warning',
+                    center: true
+                }).then(() => {
+                    axios.post('/index.php?m=B2b&a=signSendOut',{
+                        "order_id": this.doship.ORDER_ID
+                    }).then(function (res) {
+                        console.log(res.data)
+                        if (res.data.code == 400000) {
+                            vm.$message({
+                                type: 'warn',
+                                message: vm.$lang(res.data.msg)
+                            });
+                            return;
+                        }
+                        if (res.data.code === 200000) {
+                            vm.$message({
+                                type: 'success',
+                                message: vm.$lang('标记发货成功!')
+                            });
+                            setTimeout(function () {
+                                location.reload();
+                            }, 1000)
+                        }
+                    })
+                  
+                }).catch(() => {
+                    vm.$message({
+                        type: 'info',
+                        message: vm.$lang('已取消标记发货')
+                    });
+                });
+                // console.log(this.doship)
+                // axios.post('/index.php?m=B2b&a=signSendOut',{
+                //         "order_id": this.doship.ORDER_ID
+                //     }).then(function (res) {
+                //     console.log(res)
+                // })
+            },
+            WithdrawEnd:function(){
+                // vm.$message.warning(this.$lang('请撤回应收状态到待提交，再撤回标记完结'));
+                // window.location.reload();
+                // orderId = Number(_this.doship.order_id) 
+                axios.post('/index.php?m=B2b&a=withdrawEndShipment',{
+                    "order_id": this.doship.ORDER_ID
+                }).then(function (res) {
+                    console.log(res.data)
+                    if (res.data.code == 200) {
+                        window.location.reload();
+                    }else if(res.data.code != 200){
+                        vm.$message({
+                            type: 'warn',
+                            message: vm.$lang(res.data.msg)
+                        });
+                    }
+                })
+            },
+            zero:function(v){
+                if(!v || v<0) return 0
+                return v
+            },
+            join_ares(e){
+                if(e != null){
+                    e_data = JSON.parse(e)
+                    var initdata = this.initdata
+                    var area = ''
+                    if (e_data.country) area = initdata.area[e_data.country]
+                    if (e_data.stareet) area += '-'+initdata.area[e_data.stareet]
+                    if (e_data.city) area += '-'+initdata.area[e_data.city]
+                    if (e_data.targetCity) area += '-'+e_data.targetCity
+                    return area
+                }
+                return e
+            },
+            all_df(){
+                var all_df = 0
+                for(var dg in this.doship_goods){
+                    var delivered_num  = this.doship_goods[dg].DELIVERED_NUM
+                    var tobe_delivered_num = this.doship_goods[dg].TOBE_DELIVERED_NUM
+                    if(!delivered_num || delivered_num < 0 )delivered_num = 0
+                    var df = tobe_delivered_num  - delivered_num
+                    if(!df || df < 0 )df = 0
+                    all_df += df
+                    console.log(delivered_num)
+                    console.log(tobe_delivered_num)
+                }
+                return all_df
+            },
+            cal_sum: function(k,data,key){
+                var t = 0
+                if(data){
+                    var doship_goods = this.ship_list
+                    for(d in doship_goods[key].goods){
+                        if(doship_goods[key].goods[d][k])t += parseInt(doship_goods[key].goods[d][k])
+                    }
+                }else{
+                    var doship_goods = this.doship_goods
+                    for(d in doship_goods){
+                        if(doship_goods[d][k])t += parseInt(doship_goods[d][k])
+                    }
+                }
+                t = isNaN(t)?0:t
+                return t;
+            },
+            king:function(e){
+                // if(!e)return null
+                if(typeof(e) != 'string'  && typeof(e) != 'number' && !e){
+                    return null
+                }
+                var k = e.toString().split('.')
+                if(e.toString().indexOf('.') > 0){
+                    var s = '.'+k[1]
+                }else{
+                    var s = ''
+                }
+                return k[0].toString().replace(/\d{1,3}(?=(\d{3})+(\.\d*)?$)/g, '$&,')+s;
+            },
+            unking(num) {
+                if (isNaN(num) && typeof(num) == 'string') {
+                    var x = num.split(',');
+                    return parseFloat(x.join(""));
+                } else {
+                    return num
+                }
+            },
+            showThumbnail (key, type,data_event) {
+                if(key.target.nodeName == 'TD'){
+                    utils.picView(key.target,type)
+                }else{
+                    utils.picView(key.target.parentNode,type)
+                }
+            }
+        }
+
+    })
+</script>
+</body>
+
+</html>

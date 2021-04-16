@@ -1,0 +1,329 @@
+</html>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Hr/hrstyle.css?v=20170922">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <title>{{$lang('批量派单结果页')}}</title>
+</head>
+<style>
+    .tag-wrap {
+        position: relative;
+        margin-bottom: 50px;
+    }
+
+    .tag-wrap span:nth-child(2) {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .tag-wrap span:last-child {
+        right: 0;
+        position: absolute;
+    }
+
+    .el-tag {
+        width: 30%;
+        height: 160px;
+        text-align: center;
+        vertical-align: middle;
+        font-size: 20px;
+    }
+
+    .el-tag .title {
+        margin-top: 50px;
+        margin-bottom: 10px;
+    }
+
+    .table-list td {
+        white-space: normal !important;
+        word-break: break-all;
+    }
+</style>
+
+<body>
+    <div id="result" class="list-common" v-cloak style="margin-bottom:220px">
+        <div v-if="result == 'showResult'">
+            <div class="tag-wrap">
+                <el-tag>
+                    <div class="title">{{$lang('预派单数量')}}</div>
+                    <div>{{orderNums.orderlist_num}}</div>
+                </el-tag>
+                <el-tag type="success">
+                    <div class="title">{{$lang('成功订单数')}}</div>
+                    <div>{{orderNums.orderlist_success}}</div>
+                </el-tag>
+                <el-tag type="danger">
+                    <div class="title">{{$lang('失败订单数')}}</div>
+                    <div>{{orderNums.orderlist_false}}</div>
+                </el-tag>
+            </div>
+            <div style="text-align:right;margin-bottom:20px;">
+                <el-button type="primary" plain @click="downResult">{{$lang('下载结果页')}}</el-button>
+            </div>
+            <el-table id="resultList" :data="orderNums.message_orders" border style="width: 100%" class="order-list-table table-common">
+                <el-table-column type="index" label="No." width="60">
+                </el-table-column>
+                <el-table-column prop="orderId" :label="$lang('平台订单号')">
+                </el-table-column>
+                <!-- <el-table-column prop="msg" :label="$lang('失败原因')">
+                </el-table-column> -->
+                <el-table-column :label="$lang('失败原因')">
+                    <template scope=scope>
+                        {{$lang(scope.row.msg)}}
+                    </template>
+                </el-table-column>
+            </el-table>
+        </div>
+        <div v-else class="show-list">
+            <div class="text-right" style="margin-bottom:15px">
+                <el-button @click="cancel">{{$lang('取消')}}</el-button>
+                <?php if(ButtonAction::hidden()){ ?>
+                <el-button type="primary" @click="submit">{{$lang('提交')}}</el-button>
+                <?php } ?>
+            </div>
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" class="table-list">
+                <colgroup>
+                    <col width="100">
+                    <col width="160">
+                    <col width="120">
+                    <col width="80">
+                    <col width="80">
+                    <col width="">
+                    <col width="80">
+                    <col width="80">
+                    <col width="160">
+                    <col width="100">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>{{$lang('子订单ID')}}</th>
+                        <th width="180">{{$lang('下发仓库')}}</th>
+                        <th>{{$lang('商品名称')</th>
+                        <th>{{$lang('单个体积')</th>
+                        <th>{{$lang('单个重量')</th>
+                        <th>{{$lang('商品特性')</th>
+                        <th>{{$lang('需求数量')</th>
+                        <th>{{$lang('可售数量')</th>
+                        <th width="120">{{$lang('拆分数量')}}</th>
+                        <th><{$Think.lang.操作}></th>
+                    </tr>
+                </thead>
+                <tbody v-for="(take,index) in takeOrder">
+                    <tr v-for="item in take">
+                        <td :rowspan="item.rowSpan" v-if="item.id">{{item.id}}</td>
+                        <td :rowspan="item.rowSpan" v-if="item.id">
+                            <el-select v-model="item.recom_warehouse_cd" placeholder="<{$Think.lang.请选择仓库}>" @change="selectHouse(take,index)" style="width:90%">
+                                <el-option v-for="(key,val) in item.all_warehouse_data" :key="val" :label="key" :value="val"> </el-option>
+                            </el-select>
+                        </td>
+                        <td>{{$lang(item.item_name)}}</td>
+                        <td>{{item.volume}}</td>
+                        <td>{{item.weight}}</td>
+                        <td>{{item.guds_features}}</td>
+                        <td>{{item.need_count}}</td>
+                        <td>{{$lang(item.inventory)}}</td>
+                        <td>
+                            <el-input v-model="item.take" :placeholder="$lang('请输入内容')"></el-input>
+                        </td>
+                        <td :rowspan="item.rowSpan" v-if="item.id">
+                            <?php if(ButtonAction::hidden()){ ?>
+                            <el-button type="success" @click="addTake(index)" v-if="index == 0">{{$lang('新增')}}</el-button>
+                            <?php } ?>
+                            <el-button type="danger" @click="delTake(index)" v-else>{{$lang('删除')}}</el-button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery.table2excel.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script>
+        vm = new Vue({
+            el: '#result',
+            data: {
+                etst: 3,
+                result: 'showResult',
+                orderNums: {},
+                takeOrder: []
+            },
+            created: function created() {
+                var search = window.location.search.split("=");
+                this.result = search[search.length - 1];
+                this.result == 'showResult' ? this.getResult() : this.getData();
+            },
+            methods: {
+                /**
+                 *  getData 获取订单数据
+                 *  addTake 新增拆单
+                 *  delTake 删除拆单
+                 *  submit  提交拆单
+                 *  cancel  取消拆单
+                 *  selectHouse  选择仓库
+                 **/
+                backList: function backList() {
+                    setTimeout(function () {
+                        var route = document.createElement("a");
+                        route.setAttribute("style", "display: none");
+                        route.setAttribute("onclick", "backNewtab(this,'<{$Think.lang.预派单}>')");
+                        route.setAttribute("_href", '/index.php?g=oms&m=order_present&a=OrderPresentList');
+                        route.onclick();
+                    }, 1000);
+                },
+                getData: function getData() {
+                    this.takeOrder = [];
+                    var takeData = JSON.parse(sessionStorage.getItem('preTakeOrders'));
+                    if (takeData.guds) {
+                        data = takeData.guds;
+                    } else {
+                        vm.$message.warning(this.$lang('没有可拆单数据'));
+                        return false;
+                    }
+                    data[0].id = takeData.child_order_id;
+                    data[0].rowSpan = takeData.guds.length;
+                    data[0].parent_order_id = takeData.parent_order_id;
+                    data[0].plat_cd = takeData.plat_cd;
+                    this.takeOrder.push(data);
+                },
+                getResult: function getResult() {
+                    this.orderNums = JSON.parse(sessionStorage.getItem('assginPreResult'));
+                },
+                addTake: function addTake(index) {
+                    var takedata = this.takeOrder[this.takeOrder.length - 1],
+                        data = [];
+                    for (var i = 0; i < takedata.length; i++) {
+                        var obj = {};
+                        for (var key in takedata[i]) {
+                            switch (key) {
+                                case 'id':
+                                    var ids = takedata[i][key].split('_');
+                                    ++ids[ids.length - 1];
+                                    obj[key] = ids.join('_');
+                                    break;
+                                case 'take':
+                                    obj[key] = '';
+                                    break;
+                                default:
+                                    obj[key] = takedata[i][key];
+                            }
+                        }
+                        data.push(obj);
+                    }
+                    this.takeOrder.push(data);
+                },
+                delTake: function delTake(index) {
+                    this.takeOrder.splice(index, 1);
+                },
+                submit: function submit() {
+                    var param = {
+                        condition: [],
+                        order_id: this.takeOrder[0][0].parent_order_id,
+                        plat_cd: this.takeOrder[0][0].plat_cd
+                    },
+                        obj = {},
+                        takeCount = [];
+                    for (var i = 0; i < this.takeOrder.length; i++) {
+                        var arr = [];
+                        for (var j = 0; j < this.takeOrder[i].length; j++) {
+                            if (takeCount[j]) {
+                                takeCount[j] += +this.takeOrder[i][j].take;
+                            } else {
+                                takeCount[j] = +this.takeOrder[i][j].take;
+                            }
+                            if (!this.takeOrder[i][j].take) {
+                                vm.$message.error(this.$lang('拆分数量不可为空'));
+                                return false;
+                            }
+                            /* if (this.takeOrder[i][j].inventory < this.takeOrder[i][j].take) {
+                                vm.$message.error('<{$Think.lang.拆分数量不可大于可售数量}>');
+                                return false;
+                            } */
+
+                            arr.push({
+                                sku_id: this.takeOrder[i][j].sku_id,
+                                item_name: this.takeOrder[i][j].item_name,
+                                item_count: this.takeOrder[i][j].take,
+                                inventory: this.takeOrder[i][j].inventory,
+                                need_items: this.takeOrder[i][j].need_count
+                            });
+                        }
+                        param.condition.push({
+                            child_order_id: this.takeOrder[i][0].id,
+                            warehouse: this.takeOrder[i][0].recom_warehouse_cd,
+                            guds: arr,
+                            order_id: this.takeOrder[i][0].parent_order_id,
+                            plat_cd: this.takeOrder[i][0].plat_cd
+                        });
+                    }
+                    for (var t = 0; t < takeCount.length; t++) {
+                        if (takeCount[t] != this.takeOrder[0][t].need_count) {
+                            vm.$message.error(this.$lang('拆分数量总和需等于需求数量'));
+                            return false;
+                        }
+                    }
+                    var _this = this;
+                    axios.post("/index.php?g=OMS&m=OrderPresent&a=submit_split_order", param).then(function (res) {
+                        if (res.data.code == 2000) {
+                            vm.$message.success(_this.$lang(res.data.msg));
+                            vm.backList();
+                        } else {
+                            vm.$message.error(_this.$lang(res.data.msg));
+                        }
+                    });
+                },
+                cancel: function cancel() {
+                    this.backList();
+                },
+                selectHouse: function selectHouse(take, index) {
+                    var skuID = [];
+                    for (var i = 0; i < take.length; i++) {
+                        skuID.push(take[i].sku_id);
+                    }
+                    var param = {
+                        condition: {
+                            saleTeamCode: take[0].saleTeamCode,
+                            sku_id: skuID,
+                            recom_warehouse_cd: take[0].recom_warehouse_cd
+                        }
+                    };
+                    var _this = this;
+                    axios.post("/index.php?g=Oms&m=OrderPresent&a=split_choose_warehouse", param).then(function (res) {
+                        if (res.data.code == 2000) {
+                            var data = res.data.data;
+                            for (var j = 0; j < take.length; j++) {
+                                take[j].inventory = data[take[j].sku_id];
+                            }
+                        } else {
+                            vm.$message.error(_this.$lang(res.data.msg));
+                        }
+                    });
+                },
+                downResult: function downResult() {
+                    $("#resultList").table2excel({
+                        filename: this.$lang('派单结果列表') + ".xls" //文件名称
+                    });
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

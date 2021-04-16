@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <title>周报</title>
+    <style>
+        #edit {
+            width: 80%;
+            height: 550px;
+        }
+        .w-e-text-container {
+            height: 500px !important;
+            font-size: large;
+        }
+        .el-dialog__wrapper {
+            z-index: 10002 !important;
+        }
+        .el-dialog__header {
+            display: block;
+        }
+        .w-e-text-container::-webkit-scrollbar {
+            display: none !important;
+        }
+        .w-e-text-container {
+            z-index: 50 !important;
+        }
+        .w-e-text ol li {
+            list-style: decimal !important;
+        }
+        .w-e-text ul li {
+            list-style: disc !important;
+        }
+        .w-e-text {
+            overflow-y: auto !important;
+        }
+
+        .el-button--primary {
+            color: #fff;
+            background-color: #1E7EB4;
+            border-color: #1E7EB4;
+        }
+        .el-button--primary.is-plain:focus, .el-button--primary.is-plain:hover {
+            background: #4F94CD;
+            border-color: #4F94CD;
+        }
+        .el-button--primary.is-plain:focus, .el-button--primary:hover {
+            background: #4F94CD;
+            border-color: #4F94CD;
+        }
+    </style>
+</head>
+<body>
+    <div id="rkWrap" v-cloak class="list-common">
+        <el-form ref="form" label-width="140px" :label-position="labelPosition">
+            <el-row style="height: 40px;">
+                <el-col :span="4" style="line-height: 40px;">
+                    <label class="el-form-item__label">当前时间：{{thisNowY}}年第{{thisNowW}}周</label>
+                </el-col>
+                <el-col :span="20">
+                    <el-form-item label="选择周报对应周">
+                        <el-select style="width: 200px;" placeholder="周数" v-model="form.week">
+                            <el-option v-for="(item, index) in weekList" :key="index" :label="item" :value="item" :disabled="new Date().getDay() == 1 && item == weekList[0]"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-col>
+            </el-row>
+        </el-form>
+        
+        <!-- 富文本 start -->
+        
+        <div id="edit">
+
+        </div>
+
+        <!-- 富文本 end -->
+        <div style="width: 80%;text-align: center">
+            <el-button @click="cancel" type="info" style="margin-right: 20px;" plain>取消</el-button>
+            <el-button @click="submit" type="primary" style="margin-left: 20px;" >提交</el-button>
+        </div>
+
+        <el-dialog title="提交" :visible.sync="dialogSubmitVisible" width="30%">
+            <span style="line-height: 60px; padding: 20px 20px 10px; text-align: center;">确认提交周报内容吗？</span>
+            <span slot="footer" class="dialog-footer">
+                <el-button @click="dialogCancel">取 消</el-button>
+                <el-button type="primary" @click="dialogConfig">确 定</el-button>
+            </span>
+        </el-dialog>
+
+        <el-dialog title="取消" :visible.sync="dialogCancelVisible" width="30%">
+            <span style="line-height: 60px; padding: 20px 20px 10px; text-align: center;">确认取消周报内容吗（取消后不保存）？</span>
+            <span slot="footer" class="dialog-footer">
+                <el-button @click="dialogCancelVisible = false">取 消</el-button>
+                <el-button type="primary" @click="dialogCancelConfig">确 定</el-button>
+            </span>
+        </el-dialog>
+    </div>
+
+    
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.nopoint.js?v=<{$Think.config.VER_NUM}>1"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js?<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/wangEditor.min.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script>
+        var OPTION = {
+            lock: true
+        };
+        
+        var nowYear = new Date().getFullYear();		
+        var nowWeek = getWeekNumber();
+		var nowDay = new Date().getDate();
+		if(2019 == nowYear && 1 == nowWeek && nowDay < 4){
+			nowWeek = 53;
+			nowYear = 2018;
+		}
+        var _ID = getQueryString("_id");
+        // 富文本编辑器初始化
+        var E = window.wangEditor;
+        var editor = new E('#edit');
+        editor.customConfig.menus = [
+            'head',
+            'bold',
+            'list',
+            'fontSize',  // 字号
+            'fontName',
+            'underline',
+            'image'
+            
+        ];
+        editor.customConfig.fontSize = 'large';
+
+        var vm = new Vue({
+            el: '#rkWrap',
+            data: {
+                labelPosition: 'left',
+                dialogSubmitVisible: false,
+                dialogCancelVisible: false,
+                thisNowY: nowYear,
+                thisNowW: nowWeek,
+                weekList: [],
+                form: {
+                    week: new Date().getDay() == 1 ? nowWeek - 1 : nowWeek,
+                    content_html: ''
+                }
+            },
+            created: function () {
+                setTimeout(function () {
+                    editor.customConfig.uploadImgServer = '/index.php?g=common&m=file&a=editor_file_upload';
+                    editor.customConfig.showLinkImg = false;
+                    editor.create();
+                }, 0);
+                this.showContent();
+                this.getWeekList(nowWeek);
+            },
+            methods: {
+                showContent: function () {
+                    var _this= this;
+                    console.log(_ID);
+                    if (_ID === "undefined") {
+                        return;
+                    };
+                    
+                    this.$set(this.form, "id", _ID);
+                    this.$loading(OPTION);
+                    var param = {
+                        url: '/index.php?g=work&m=report&a=weekly_report_detail',
+                        method: 'post',
+                        data: {
+                            id: _ID
+                        }
+                    };
+
+                    ajax(param, this).then(function (res) {
+                        _this.$loading(OPTION).close();
+                        var _data = res.data;
+                        if (_data.code === 2000) {
+                            _this.form.week = _data.data.week;
+                            _this.form.content_html =  _data.data.content_html;
+                            editor.txt.html(_data.data.content_html);
+                        };
+                        
+                    });
+
+                },
+                cancel: function () {
+                    this.dialogCancelVisible = true;
+                },
+                submit: function () {
+                    this.dialogSubmitVisible = true;
+                },
+                dialogCancel: function () {
+                    this.dialogSubmitVisible = false;
+                },
+                dialogConfig: function () {
+                    var _this = this;
+                    var _htmlStr = editor.txt.html();
+                    var _text = editor.txt.text();
+                    
+                    var nbsp = _text.replace(/&nbsp;/g, "");
+                    this.form.content_html = trim(editor.txt.html());
+
+                    if (_htmlStr.indexOf("<img") == -1 && (!this.form.content_html || !trim(nbsp))) {
+                        _this.$message.warning("周报内容为空，提交失败");
+                        return
+                    };
+                    
+
+                    this.dialogSubmitVisible = false;
+                    var param = {
+                        url: '/index.php?g=work&m=report&a=weekly_report_save',
+                        method: 'post',
+                        data: this.form
+                    };
+                    
+                    this.$loading(OPTION);
+                    ajax(param, this).then(function (res) {
+                        _this.$loading(OPTION).close();
+                        var _data = res.data;
+                        if (_data.code === 2000) {
+                            _this.$message.success("恭喜你，提交成功");
+                            backTab("/index.php?g=work&m=display&a=weekly", "晨会周报");
+                        };
+                    });
+                },
+                dialogCancelConfig: function () {
+                    this.dialogCancelVisible = false;
+                    editor.txt.html("");
+                    backTab("/index.php?g=work&m=display&a=weekly", "晨会周报");
+                },
+                getWeekList: function (wl) {
+                    var _arr = [];
+                    for (var i = 1; i <= wl; i++) {
+                        _arr.push(i);
+                    };
+                    this.weekList = _arr.reverse();
+                }
+            }
+        });
+        
+        /**
+         * 去掉前后空格
+        */
+        function trim(str){   
+            return str.replace(/^(\s|\u00A0)+/,'').replace(/(\s|\u00A0)+$/,'');   
+        }
+
+        /**
+         *获取某年某月某天是第几周
+        *第一天为周日
+        */
+        function getWeekNumber(y, m, d) {
+            var targetDay = y ? new Date(y, m - 1, d) : new Date();
+            var year = targetDay.getFullYear();
+            var month = targetDay.getMonth() + 1;
+            var days = targetDay.getDate();
+            //那一天是那一年中的第多少天
+            for (var i = 1; i < month; i++) {
+                days += getMonthDays(year, i);
+            }
+            //那一年第一天是星期几
+            var yearFirstDay = new Date(year, 0, 1).getDay() + 1;
+            //计算是第几周
+            days += yearFirstDay;
+            var week = Math.ceil(days / 7);
+            return week;
+        }
+
+        /**
+        *判断年份是否为润年
+        */
+        function isLeapYear(year) {
+            return (year % 400 == 0) || (year % 4 == 0 && year % 100 != 0);
+        };
+
+        /**
+        *获取某年某月的天数
+        */
+        function getMonthDays(year, month) {
+            return [31, (isLeapYear(year) ? 29 : 28), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1];
+        };
+
+
+        /*
+        *js函数方法
+        */
+
+        //判断数据类型
+        function type (o) {
+            var s = Object.prototype.toString.call(o);
+            return s.slice(s.indexOf(" ") + 1, s.length - 1).toLowerCase();
+        };
+
+        //获取连接参数
+        function getQueryString (name) {
+            var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i"); 
+            var r = window.location.search.substr(1).match(reg); 
+            if (r != null) return unescape(r[2]); return null; 
+        };
+        
+        /**
+         * 对axios的简单二次封装
+         * @param _data 必传  请求参数 
+         * @param v     必传  vue实例对象
+         * @param flag  可传  是否开启table加载loading
+         * @returns {*}
+         */
+        function ajax (_data, v, flag) {
+            if (type(_data) !== "object") {
+                return;
+            };
+            
+            if (flag) {
+                v.tableLoading = true;
+            };
+            var errData = "服务器开小差了-_-!";
+
+            // 添加返回拦截器
+            axios.interceptors.response.use(
+                function (res) {
+                    if (flag) {
+                        v.tableLoading = false;
+                    };
+                    var _re = res && res.data;
+                    if (_re.code !== 2000) {
+                        v.$message.error(_re.msg);
+                    };
+                    return res;
+                },
+                function (error) {
+                    console.log(errData);
+                }
+            );
+            
+            // 对象赋值,兼容ie
+            if (_data.data) {
+                var data_ =  _data.data;
+                _data.data = Qs.stringify(data_);
+            };
+            _data.timeout = 2000;
+            _data.responsetype = 'json';
+            _data.headers = {'Content-Type': 'application/x-www-form-urlencoded'};
+            _data.validateStatus = function (status) {
+                if (status < 200 || status >= 300) {
+                    console.log(errData);
+                };
+                return status >= 200 && status < 300;
+            };
+            return axios(_data);
+        };
+    </script>
+</body>
+</html>

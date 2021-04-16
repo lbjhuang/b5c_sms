@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>供应商对账</title>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <style>
+        [v-cloak]{
+            display: none;
+        }
+        #supplierReconciliation{
+            padding: 10px 20px;
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+        }
+        .filter_input{
+            display: flex;
+            align-items: center;
+        }
+        .filter_input span{
+            margin-right: 10px;
+        }
+        .ourcompany_input>div{
+            display: flex;
+            flex: 1;
+        }
+        .filter_btn{
+            margin: 20px 0;
+        }
+        .baseline{
+            width: 100%;
+            height: 1px;
+            background: #999;
+            margin-bottom: 20px;
+        }
+        .supplier_record{
+            margin-bottom: 20px;
+        }
+        .el-table__header thead th{
+            background: #546E7A;
+            color: #fff;
+            border-bottom: 1px solid #668491;
+            border-right: 1px solid #668491;
+        }
+        .el-table__body tbody tr td{
+            border-right: 1px solid #668491;
+            border-bottom: 1px solid #668491;
+        }
+        .el-table__body tbody tr td:last-child{
+            border-right: none;
+        }
+        .el-table__body tbody tr:last-child td{
+            border-bottom: none;
+        }
+        .el-table--border, .el-table--group{
+            border-left: 1px solid #668491;
+            border-right: 1px solid #668491;
+            border-bottom: 1px solid #668491;
+        }
+        .company_table_pagination{
+            margin-top: 20px;
+            text-align: right;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="supplierReconciliation" v-cloak>
+        <!-- 筛选条件 -->
+        <div class="header">
+            <el-row type="flex" :gutter="20">
+                <el-col :span="6" class="filter_input">
+                    <span>{{$lang('计算日期')}}</span>
+                    <el-date-picker v-model="form.acountTime"  style="width: 100%;" type="daterange" align="right" unlink-panels value-format="yyyy-MM-dd" :range-separator="$lang('至')"
+                            :start-placeholder="$lang('起始日期')" :end-placeholder="$lang('截止日期')" :picker-options="pickerOptions">
+                        </el-date-picker>
+                </el-col>
+                <el-col :span="6" class="filter_input">
+                    <span>{{$lang('供应商名称')}}</span>
+                    <el-input :placeholder="$lang('多个供应商请用 | 隔开')" style="width: 250px" v-model="form.vendorName"></el-input>
+                </el-col>
+            </el-row>
+            <el-row style="margin-top: 20px;" type="flex" :gutter="20">
+                <el-col :span="11" class="filter_input ourcompany_input">
+                    <span>{{$lang('我方公司')}}</span>
+                    <el-select @change="ourCompanyChangeForm(form.ourCompany_cd)" collapse-tags filterable multiple v-model="form.ourCompany_cd">
+                        <el-option v-for="(item,index) in form.ourCompany" :key="index"
+                                    :label="$lang(item.CD_VAL)"
+                                    :value="item.CD">
+                        </el-option>
+                    </el-select>
+                </el-col>
+            </el-row>
+            <el-row type="flex" :gutter="20" class="filter_btn">
+                <el-col :span="8">
+                    <el-button @click="search()" type="primary">{{$lang('搜索')}}</el-button>
+                    <el-button @click="reset()">{{$lang('重置')}}</el-button>
+                </el-col>
+            </el-row>
+        </div>
+        <div class="baseline"></div>
+        <!-- 记录 -->
+        <div class="supplier_record">
+            <el-row type="flex" class="row-bg" align="middle">
+                <el-col :span="24">
+                    <div style="display: flex;justify-content: space-between;align-items: center;">
+                        <span>{{$lang('搜索结果')}}：{{$lang('共')}}<span> {{page.count}} </span>{{$lang('条')}}</span>
+                        <div style="display: flex;">
+                            <?php if(ButtonAction::hidden('Finance/importAccount')){ ?>
+                            <el-upload
+                                    style="display: flex;margin-right: 10px;flex-direction: row-reverse;"
+                                    action="/index.php?m=Finance&a=importAccount"
+                                    :on-success="handleSuccessReconciliation"
+                                    :on-remove="handleRemoveReconciliation"
+                                    :before-upload="beforeUpload"
+                                    :limit="1"
+                                    :file-list="file_list">
+                                <el-button type="primary">{{$lang('导入对账备注')}}</el-button>
+                            </el-upload>
+                            <?php }?>
+                            <el-button @click="exportAllBills()">{{$lang('导出')}}</el-button>
+                        </div>
+                    </div>
+                   
+
+                </el-col>
+            </el-row>
+        </div>
+        <!-- 表单内容 -->
+        <div class="supplier_table">
+            <el-table :data="tableData" border style="width: 100%" v-loading="tableLoading">
+                <el-table-column align="center" :label="$lang('供应商名称')">
+                    <template slot-scope="scope">
+                        <span v-html="scope.row.vendorName">{{$lang(scope.row.vendorName)}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center" :label="$lang('我方公司名称')">
+                    <template slot-scope="scope">
+                        <span>{{$lang(scope.row.ourCompanyName)}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center" :label="$lang('合同金额（USD）')">
+                    <template slot-scope="scope">
+                        <span>{{scope.row.contractAmount}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center" :label="$lang('付款金额（USD）')">
+                    <template slot-scope="scope">
+                        <span>{{scope.row.paymentAmount}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center" :label="$lang('入库金额（USD）')">
+                    <template slot-scope="scope">
+                        <span>{{scope.row.storageAmount}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center" :label="$lang('余额（USD）')">
+                    <template slot-scope="scope">
+                        <span>{{scope.row.amount}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center" :label="$lang('采购团队')">
+                    <template slot-scope="scope">
+                        <span>{{scope.row.purchasingTeam}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center" width="180" :label="$lang('操作')">
+                    <template slot-scope="scope">
+                        <el-button size="mini" @click="operating('search',scope.row)" type="primary">{{$lang('查询明细')}}</el-button>
+                        <el-button size="mini" @click="operating('export',scope.row)">{{$lang('导出')}}</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+                    <!-- 分页 -->
+            <div v-show="paginationStatus" class="company_table_pagination">
+                <el-pagination
+                        background
+                        @current-change="handleCurrentChange"
+                        @size-change="handleSizeChange"
+                        :current-page.sync="page.this_page"
+                        :page-size="page.page_count"
+                        :page-sizes="[10, 30, 50, 100]"
+                        layout="total, sizes, prev, pager, next, jumper"
+                        :total="page.count">
+                </el-pagination>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script>
+            if(getCookie('think_language') !== "zh-cn" ){
+                ELEMENT.locale(ELEMENT.lang.en)
+            }
+            var VM = new Vue({
+                el: '#supplierReconciliation',
+                data: {
+                    form: {
+                        acountTime: [],
+                        vendorName:'',
+                        ourCompany_cd:[],
+                        ourCompany:[]
+                    },
+                    page:{
+                        count:0,
+                        this_page:1,
+                        page_count:10,
+                    },
+                    tableData: [],
+                    tableLoading: false,
+                    pickerOptions: {
+                        disabledDate: (time) => {
+                            var setDate = new Date()
+                            setDate.setFullYear(2018,6,31)
+                            return time.getTime() <  setDate || time.getTime() > Date.now()
+                        }
+                    },
+                    paginationStatus:true,
+                    endDate:'',
+                    file_list:[]
+                },
+                created:function() {
+                    this.ourCompany()
+                    this.getTabledata()
+                },
+                methods: {
+                    ourCompany:function(){
+                        var _this = this;
+                        axios.post('/index.php?g=common&m=index&a=get_cd', {
+                        cd_type:{
+                            our_company:false
+                        }
+                        }).then(function (response) {
+                            if(response.data.code === 2000){
+                                _this.form.ourCompany = response.data.data.our_company
+                            }
+                        })
+                    },
+                    getTabledata:function(){
+                        var _this = this;
+                        _this.tableLoading = true;
+                        var acountTime = _this.form.acountTime || [];
+
+                        axios.post("index.php?m=finance&a=reconciliationDataList",{
+                            // "end_date" : _this.dateFormatCn(_this.form.date),
+                            "start_date" : acountTime[0],
+                            "end_date" : acountTime[1],
+                            "supplier_name" : _this.form.vendorName,
+                            "our_company" : _this.form.ourCompany_cd,
+                            "page" : _this.page.this_page,
+                            "pageSize" : _this.page.page_count
+                        }).then(function (response) {
+                            console.log(response);
+                            if(response.status == 200){
+                                _this.page.count = Number(response.data.total)
+                                _this.page.page_count = Number(response.data.pageSize)
+                                var data=response.data.list;
+                                var basisDataArry=[];
+                                for(let key in data){
+                                    
+                                    var basisDataObj={};
+                                    // basisDataObj.vendorName = data[key].supplier_id;
+                                    basisDataObj.vendorName = data[key].supplier_id.replace(/\s/g,'&nbsp;')
+                                    basisDataObj.ourCompanyName = data[key].our_company_name;
+                                    basisDataObj.ourCompanyCd = data[key].our_company;
+                                    basisDataObj.contractAmount = data[key].contract_amount;
+                                    basisDataObj.paymentAmount = data[key].payment_amount;
+                                    basisDataObj.storageAmount = data[key].warehouse_amount;
+                                    basisDataObj.amount = data[key].surplus_amount;
+                                    basisDataObj.purchasingTeam = data[key].payment_company;
+
+                                    basisDataArry.push(basisDataObj);
+
+                                }
+                                if(basisDataArry.length == 0){
+                                    _this.paginationStatus = false
+                                }else{
+                                    _this.paginationStatus = true
+                                }
+                                _this.tableData = basisDataArry;
+                                
+                                _this.endDate = response.data.end_date;
+                                _this.tableLoading = false;
+                            }
+                        })
+                    },
+                    search:function(){
+                        this.getTabledata();
+                    },
+                    reset:function(){
+                        this.ourCompany()
+                        this.form.acountTime = []
+                        this.form.vendorName = ''
+                        this.form.ourCompany_cd = []
+                        this.page.this_page = 1
+                        this.page.page_count = 10
+                        this.getTabledata();
+                        console.log(this.form)
+                    },
+                    ourCompanyChangeForm:function(val){
+                        this.form.ourCompany_cd = val
+                    },
+                    operating:function(type,data){
+                        console.log(data)
+                        // var endDate = this.dateFormatCn(this.form.date)
+                        var endDate = this.endDate
+
+                        var our_company = []
+                        var supplier = ''
+                        if(data.vendorName){
+                            supplier = (data.vendorName).replace(/&nbsp;/ig," ")
+                        }else{
+                            supplier = ''
+                        }
+                        
+                        if(data.ourCompanyCd){
+                            our_company = data.ourCompanyCd
+                        }else{
+                            our_company = []
+                        }
+                        // 查询明细
+                        if(type == 'search'){
+                            var onway_date = ["2018-08-01", endDate]
+                            var po_date = ["2018-08-01", endDate]
+
+                            var dom = document.createElement('a');
+                            var _href = "/index.php?g=report&m=onway&a=onway_list&onway_date=" + onway_date + "&our_company=" + our_company + "&po_date=" + po_date + "&supplier=" + supplier;
+                            dom.setAttribute("onclick", "opennewtab(this,'" + this.$lang('在途报表') + "')");
+                            dom.setAttribute("_href", _href);
+                            dom.click();
+                            dom.remove();
+                            dom = null;
+                        }else if(type == 'export'){
+                        // 导出
+                            var acountTime = this.form.acountTime || [];
+                            var param = {
+                                supplier_name: supplier,
+                                our_company:our_company,
+                                start_date: acountTime[0],
+                                end_date: acountTime[1],
+                                // end_date:endDate
+                            };
+                            
+                            console.log(param);
+
+                            var tmep = document.createElement('form');
+                            tmep.action = '/index.php?m=finance&a=reconciliationDataExport';
+                            tmep.method = "post";
+                            tmep.style.display = "none";
+                            var opt = document.createElement("input");
+                            opt.name = 'post_data';
+                            opt.value = JSON.stringify(param);
+                            tmep.appendChild(opt);
+                            document.body.appendChild(tmep);
+                            tmep.submit();
+                            tmep.remove();
+                            tmep = null;
+                        }
+                    },
+                    // 日期格式
+                    dateFormatCn:function(val){
+                        if(val == '' || val == null ){
+                            return('')
+                        }else{
+                            var myMonth = val.getMonth() + 1
+                            var myDate = val.getDate()
+                            if(myMonth<10){
+                                myMonth = "0" + myMonth
+                            }
+                            if(myDate<10){
+                                myDate = "0" + myDate
+                            }
+                            return(val.getFullYear()+'-'+myMonth+'-' +myDate)
+                        }
+
+                    },
+                    //翻页切换不同页面
+                    handleCurrentChange:function(val) {
+                        // console.log(val)
+                        this.page.this_page = val;
+                        this.getTabledata()
+                    },
+                    //切换每页展示的数目
+                    handleSizeChange:function (val) {
+                        this.page.this_page = 1;
+                        this.page.page_count = val;
+                        this.getTabledata()
+                    },
+                    exportAllBills:function(){
+                        var acountTime = this.form.acountTime || [];
+                        window.location = '/index.php?m=finance&a=reconciliationDataAllExport&start_date=' + this.acountTime[0]+'&end_date=' + this.acountTime[1]+'&supplier_name='+this.form.vendorName+'&our_company='+this.form.ourCompany_cd
+                    },
+                    // 导入对账备注
+                    handleSuccessReconciliation: function(res, file, fileList) {
+                        this.file_list = fileList;
+                        console.log(res);
+                        if(res.code == 2000){
+                            this.$message({
+                                message: this.$lang('上传成功'),
+                                type: 'success'
+                            });
+                            setTimeout(() => {
+                                this.file_list = []
+                                this.reset()
+                                // window.location.reload()
+                            }, 1000);
+                        }else{
+                            this.$message({
+                                dangerouslyUseHTMLString: true,
+                                message: '<span style="line-height: 18px;">'+res.msg+'</span>',
+                                type: 'error'
+                            });  
+                            this.file_list = []
+                        }
+                    },
+                    handleRemoveReconciliation: function(file, fileList) {
+                        this.file_list = fileList;
+                        // console.log(fileList);
+                        // this.writeOff_attachment = fileList;
+                    },
+                    // 过滤同名文件
+                    beforeUpload: function(file) {
+                        console.log(file);
+                        // if (file.type != 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+                        //     this.$message.error('上传核销只能是 xlsx 格式');
+                        //     return false;
+                        // }
+                    },
+
+
+
+                },
+            })
+        </script>
+</body>
+</html>

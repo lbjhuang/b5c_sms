@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <title>拼柜详情</title>
+    <style>
+        body{
+            padding: 20px;
+        }
+        .combine_cabinets_detail .el-tabs__nav-wrap::after, .el-tabs__active-bar {
+            height: 0;
+        }
+
+        .combine_cabinets_detail .el-tabs__nav div {
+            font-size: 26px;
+            font-weight: 600;
+        }
+        .combine_cabinets_detail .el-input{
+            width: 100%;
+        }
+        .combine_cabinets_detail .el-select{
+            width: 100%;
+        }
+        [v-cloak] {
+            display: none;
+        }
+        .main-basic-info{
+            
+            margin-bottom: 20px;
+        }
+        .main-basic-info .header{
+            font-size: 16px;
+            line-height: 40px;
+            height: 40px;
+            padding-left: 20px;
+            text-align: left;
+            letter-spacing: 0;
+            color: #fff;
+            background: #546e7a;
+        }
+
+        .main-basic-info .goods-title {
+            display: flex;
+            justify-content: space-between;
+        }
+        .main-basic-info .entry-info{
+            width: 100%;
+            text-align: center;
+            border-left: 1px solid #E0E0E0;
+            border-bottom: 1px solid #E0E0E0;
+            font-size: 15px;
+        }
+        .main-basic-info .entry-info .disabled-active{
+            background: #f5f7fa;
+        }
+        .main-basic-info .entry-info .select-disabled .el-input.is-disabled .el-input__inner{
+            background: #ffffff;
+        }
+        .main-basic-info .entry-info tr td {
+            border-right: 1px solid #E0E0E0;
+            border-top: 1px solid #E0E0E0;
+            padding: 10px 15px;
+            font-size: 14px;
+        }
+        .operating-btn-box{
+            text-align: center;
+        }
+        .file-btn-box{
+            float: right;
+            padding-right: 20px;
+        }
+        .page-box{
+            text-align: right;
+        }
+        .main-basic-info-table .el-input__suffix{
+            right: 0;
+        }
+        .main-basic-info-table .el-input--suffix .el-input__inner{
+            padding-right: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="combine_cabinets_detail" id="combineCabinets" v-if="detail" v-cloak v-loading="detailLoading">
+        <el-tabs v-model="activeName">
+            <el-tab-pane :label="$lang('拼柜详情')" name="first">
+                <div class="main-basic-info">
+                    <table class="entry-info" border="0" cellpadding="0" cellspacing="0">
+                        <tbody>
+                        <tr>
+                            <td>{{$lang('拼柜单号')}}</td>
+                            <td>{{detail.quote_lcl.lcl_no}}</td>
+                            <td>{{$lang('运输渠道')}}</td>
+                            <td>{{detail.quote_lcl.transportation_channel_cd_val}}</td>
+                        </tr>
+                        <tr>
+                            <td>{{$lang('拼柜关联报价单号')}}</td>
+                            <td>{{detail.quote_lcl.relation_quote_nos}}</td>
+                            <td>{{$lang('拼柜操作人')}}</td>
+                            <td>{{detail.quote_lcl.created_by}}</td>
+                        </tr>
+                        <tr>
+                            <td>{{$lang('拼柜关联调拨单号')}}</td>
+                            <td>{{detail.quote_lcl.relation_allo_nos}}</td>
+                            <td>{{$lang('拼柜发起时间')}}</td>
+                            <td>{{detail.quote_lcl.created_at}}</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="main-basic-info">
+                    <div class="header goods-title">
+                        <span>{{$lang('商品信息')}}</span>
+                        <!-- 已完成，并且商品物流单价计算过则提供更新操作 -->
+                        <el-button
+                            :loading="bLoading"
+                            icon="el-icon-refresh"
+                            v-if="detail.quote_lcl.status_cd === 'N003580004' && (detail.goods.length > 0 ? detail.goods[0].execute_status >= '1' : false)"
+                            style="margin: 5px; margin-right: 20px;" type="primary" size="small" @click="handleUpdate">
+                        </el-button>
+                    </div>
+                    <table class="entry-info" border="0" cellpadding="0" cellspacing="0">
+                        <tbody>
+                        <tr>
+                            <td>{{$lang('序号')}}</td>
+                            <td>{{$lang('SKU条码')}}</td>
+                            <td>{{$lang('商品名称')}}</td>
+                            <td>{{$lang('数量')}}</td>
+                            <td>{{$lang('物流单价（USD）')}}</td>
+                        </tr>
+                        <tr v-for="(item,index) in detail.goods" :key="index">
+                            <td>{{index + 1}}</td>
+                            <td>{{item.sku_id | format}}</td>
+                            <td>{{item.good_name}}</td>
+                            <td>{{item.good_number}}</td>
+                            <td>
+                                <div v-if="detail.quote_lcl.status_cd === 'N003580004' && item.execute_status === '1'">{{item.logistics_price}}</div>
+                                <div v-else>{{item.remark}}</div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="main-basic-info" v-for="(item,index) in detail.inquiries_packs" :key="index">
+                    <div class="header">{{$lang('询价信息')}}{{item.quote_no}}</div>
+                    <table class="entry-info" border="0" cellpadding="0" cellspacing="0">
+                        <tbody>
+                        <tr>
+                            <td>{{$lang('偏好运输公司')}}</td>
+                            <td>{{item.transport_supplier_id_val | format}}</td>
+                            <td>{{$lang('报价类型')}}</td>
+                            <td>{{$lang(item.quote_type_name)}}</td>
+                        </tr>
+                        <tr>
+                            <td>{{$lang('计划运输渠道')}}</td>
+                            <td>{{item.planned_transportation_channel_cd_val}}</td>
+                            <td>{{$lang('报价意向')}}</td>
+                            <td>{{item.quote_intention_type_name}}</td>
+                        </tr>
+                        <tr>
+                            <td>{{$lang('期望出库日期')}}</td>
+                            <td>{{item.expected_delivery_date}}</td>
+                            <td>{{$lang('期望入库日期')}}</td>
+                            <td>{{item.expected_warehousing_date}}</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <div class="header">{{$lang('装箱信息')}}{{item.quote_no}}</div>
+                    <table class="entry-info" border="0" cellpadding="0" cellspacing="0">
+                        <tbody>
+                        <tr>
+                            <td>{{$lang('总箱数（箱）')}}<span class="required"></span></td>
+                            <td>{{$lang('总体积（立方米）')}}<span class="required"></span></td>
+                            <td>{{$lang('总重量（千克）')}}<span class="required"></span></td>
+                            <td>{{$lang('调出仓库')}}<span class="required"></span></td>
+                            <td>{{$lang('调入仓库')}}<span class="required"></span></td>
+                            <td>{{$lang('报关方式')}}<span class="required"></span></td>
+                            <td>{{$lang('带电')}}<span class="required"></span></td>
+                        </tr>
+                        <tr v-for="(packInfo,key) in item.quote_lcl_pack_info" :key="key">
+                            <td>{{packInfo.total_box_num}}</td>
+                            <td>{{packInfo.total_volume}}</td>
+                            <td>{{packInfo.total_weight}}</td>
+                            <td>{{packInfo.allo_out_warehouse_val}}</td>
+                            <td>{{packInfo.allo_in_warehouse_val}}</td>
+                            <td>{{packInfo.declare_type_cd_val}}</td>
+                            <td>{{packInfo.is_electric_cd_val}}</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="main-basic-info">
+                    <div class="header">{{$lang('装箱数据-总')}}</div>
+                    <el-table :data="detail.pack_total_info" border show-summary :summary-method="getSummaries">
+                        <el-table-column :label="$lang('报价单号')" align="center" prop="quote_no"></el-table-column>
+                        <el-table-column :label="$lang('关联调拨单号')" align="center">
+                            <template slot-scope="scope">
+                                <span>{{scope.row.allo_nos | format}}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column :label="$lang('总箱数（箱）')" align="center" prop="all_total_box_num"></el-table-column>
+                        <el-table-column :label="$lang('总体积（立方米）')" align="center" prop="all_total_volume"></el-table-column>
+                        <el-table-column :label="$lang('总重量（千克）')" align="center" prop="all_total_weight"></el-table-column>
+                    </el-table>
+                </div>
+                <div class="main-basic-info main-basic-info-table" v-if="templateRadio == 4">
+                    <div v-for="(schemeDetail,index) in detail.quote_lcl_schemes">
+                        <div class="header">
+                            {{$lang('报价信息')}}--
+                            {{$lang('方案')}}
+                            {{index + 1}}
+                        </div>
+                        <table class="entry-info" border="0" cellpadding="0" cellspacing="0">
+                            <tbody>
+                            <tr :class="{'disabled-active': detail.quote_lcl.status_cd == 'N003580004' && schemeDetail.audit_status != '2','select-disabled': detail.quote_lcl.status_cd == 'N003580004' && schemeDetail.audit_status == '2'}">
+                                <td style="min-width: 30px;">{{$lang('序号')}}</td>
+                                <td>{{$lang('运输公司')}}<span class="required"></span></td>
+                                <td>{{$lang('运输渠道')}}<span class="required"></span></td>
+                                <td>{{$lang('物流费用')}}<span class="required"></span></td>
+                                <td>{{$lang('保险费用')}}<span class="required"></span></td>
+                                <td>{{$lang('预计费用')}}<span class="required"></span></td>
+                                <td style="min-width: 135px;">{{$lang('出库时间')}}<span class="required"></span></td>
+                                <td style="min-width: 135px;">{{$lang('航行时间')}}<span class="required"></span></td>
+                                <td style="min-width: 140px;">{{$lang('选择报价单号')}}</td>
+                                <td style="min-width: 80px;">{{$lang('装柜类型')}}</td>
+                                <td style="min-width: 80px;">{{$lang('备注')}}</td>
+                            </tr>
+                            <tr v-for="(item,key) in schemeDetail.scheme_detail" :key="key" :class="{'disabled-active': detail.quote_lcl.status_cd == 'N003580004' && schemeDetail.audit_status != '2','select-disabled': detail.quote_lcl.status_cd == 'N003580004' && schemeDetail.audit_status == '2'}">
+                                <td>
+                                    {{key + 1}}
+                                </td>
+                                <td>
+                                    <el-select filterable disabled v-model="item.transport_supplier_id" :placeholder="$lang('请选择')" clearable>
+                                        <el-option v-for="(item,index) in logisticsSupplier" :key="index" :label="$lang(item.SP_RES_NAME_EN)" :value="index"></el-option>
+                                    </el-select>
+                                </td>
+                                <td>
+                                    <el-select filterable disabled v-model="item.transportation_channel_cd" :placeholder="$lang('请选择')" clearable>
+                                        <el-option v-for="(item,index) in planned_transportation_channel_cds" :key="index" :label="$lang(item.cdVal)" :value="item.cd"></el-option>
+                                    </el-select>
+                                </td>
+                                <td>
+                                    <div style="display: flex;">
+                                        <el-select filterable disabled v-model="item.logistics_currency_cd" :placeholder="$lang('请选择')" clearable>
+                                            <el-option v-for="(item,index) in currency" :key="index" :label="$lang(item.cdVal)" :value="item.cd"></el-option>
+                                        </el-select>
+                                        <el-input disabled v-model="item.logistics_cost" type="number" :placeholder="$lang('请输入')"></el-input> 
+                                    </div>
+                                </td>
+                                <td>
+                                    <div style="display: flex;">
+                                        <el-select filterable disabled v-model="item.insurance_currency_cd" :placeholder="$lang('请选择')" clearable>
+                                            <el-option v-for="(item,index) in currency" :key="index" :label="$lang(item.cdVal)" :value="item.cd"></el-option>
+                                        </el-select>
+                                        <el-input disabled v-model="item.insurance_cost" type="number" :placeholder="$lang('请输入')"></el-input> 
+                                    </div>
+                                    
+                                </td>
+                                <td>
+                                    <div style="display: flex;">
+                                        <el-select filterable disabled v-model="item.predict_currency_cd" :placeholder="$lang('请选择')" clearable>
+                                            <el-option v-for="(item,index) in currency" :key="index" :label="$lang(item.cdVal)" :value="item.cd"></el-option>
+                                        </el-select>
+                                        <el-input disabled v-model="item.predict_cost" type="number" disabled :placeholder="$lang('请输入')"></el-input>
+                                    </div> 
+                                </td>
+                                <td>
+                                    <el-date-picker :id="'delivery_date' + index + key" disabled v-model="item.delivery_date" type="date" value-format="yyyy-MM-dd" :placeholder="$lang('请选择')" ></el-date-picker>
+                                </td>
+                                <td>
+                                    <el-date-picker :id="'hours_underway_date' + index + key" disabled v-model="item.hours_underway_date" type="date" value-format="yyyy-MM-dd" :placeholder="$lang('请选择')" ></el-date-picker>
+                                </td>
+                                <td>
+                                    <el-select filterable disabled v-model="item.quotation_ids" :placeholder="$lang('请选择')" multiple collapse-tags>
+                                        <el-option v-for="(item,index) in quotationIds" :key="index" :label="item" :value="item"></el-option>
+                                    </el-select>
+                                </td>
+                                <td>
+                                    <el-select filterable disabled v-model="item.stuffing_type_cd" :placeholder="$lang('请选择')"  clearable>
+                                        <el-option :label="$lang('整柜')" value="N003570001"></el-option>
+                                        <el-option :label="$lang('拼柜')" value="N003570003"></el-option>
+                                    </el-select>
+                                </td>
+                                <td>
+                                    <el-input type="textarea" disabled :placeholder="$lang('备注')" v-model="item.remark" :maxlength="100" :rows="1">
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="main-basic-info main-basic-info-table" v-if="templateRadio == 5">
+                    <div class="header">
+                        {{$lang('报价信息')}}
+                    </div>
+                    <table class="entry-info" border="0" cellpadding="0" cellspacing="0">
+                        <tbody>
+                        <tr>
+                            <td style="min-width: 30px;">{{$lang('方案')}}</td>
+                            <td>{{$lang('运输公司')}}<span class="required"></span></td>
+                            <td>{{$lang('运输渠道')}}<span class="required"></span></td>
+                            <td>{{$lang('物流费用')}}<span class="required"></span></td>
+                            <td>{{$lang('保险费用')}}<span class="required"></span></td>
+                            <td>{{$lang('预计费用')}}<span class="required"></span></td>
+                            <td style="min-width: 135px;">{{$lang('出库时间')}}<span class="required"></span></td>
+                            <td style="min-width: 135px;">{{$lang('航行时间')}}<span class="required"></span></td>
+                            <td style="min-width: 150px;">{{$lang('选择报价单号')}}<span class="required"></span></td>
+                            <td style="min-width: 60px;">{{$lang('装柜类型')}}</td>
+                            <td style="min-width: 80px;">{{$lang('备注')}}</td>
+                        </tr>
+                        <tr v-for="(item,index) in detail.quote_lcl_schemes" :key="index" :class="{'disabled-active': detail.quote_lcl.status_cd == 'N003580004' && item.audit_status != '2','select-disabled': detail.quote_lcl.status_cd == 'N003580004' && item.audit_status == '2'}">
+                            <td>
+                                {{index + 1}}
+                            </td>
+                            <td>
+                                <el-select filterable disabled v-model="item.scheme_detail[0].transport_supplier_id" :placeholder="$lang('请选择')" clearable>
+                                    <el-option v-for="(item,index) in logisticsSupplier" :key="index" :label="$lang(item.SP_RES_NAME_EN)" :value="index"></el-option>
+                                </el-select>
+                            </td>
+                            <td>
+                                <el-select filterable disabled v-model="item.scheme_detail[0].transportation_channel_cd" :placeholder="$lang('请选择')" clearable>
+                                    <el-option v-for="(item,index) in planned_transportation_channel_cds" :key="index" :label="$lang(item.cdVal)" :value="item.cd"></el-option>
+                                </el-select>
+                            </td>
+                            <td>
+                                <div style="display: flex;">
+                                    <el-select filterable disabled v-model="item.scheme_detail[0].logistics_currency_cd" :placeholder="$lang('请选择')" clearable>
+                                        <el-option v-for="(item,index) in currency" :key="index" :label="item.cdVal" :value="item.cd"></el-option>
+                                    </el-select>
+                                    <el-input disabled v-model="item.scheme_detail[0].logistics_cost" type="number" :placeholder="$lang('请输入')"></el-input>
+                                </div>
+                            </td>
+                            <td>
+                                <div style="display: flex;">
+                                    <el-select filterable disabled v-model="item.scheme_detail[0].insurance_currency_cd" :placeholder="$lang('请选择')" clearable>
+                                        <el-option v-for="(item,index) in currency" :key="index" :label="item.cdVal" :value="item.cd"></el-option>
+                                    </el-select>
+                                    <el-input disabled v-model="item.scheme_detail[0].insurance_cost" type="number" :placeholder="$lang('请输入')"></el-input> 
+                                </div>
+                                
+                            </td>
+                            <td>
+                                <div style="display: flex;">
+                                    <el-select filterable disabled v-model="item.scheme_detail[0].predict_currency_cd" :placeholder="$lang('请选择')" clearable>
+                                        <el-option v-for="(item,index) in currency" :key="index" :label="item.cdVal" :value="item.cd"></el-option>
+                                    </el-select>
+                                    <el-input v-model="item.scheme_detail[0].predict_cost" disabled type="number" :placeholder="$lang('请输入')"></el-input> 
+                                </div> 
+                            </td>
+                            <td>
+                                <el-date-picker :id="'delivery_date' + index" disabled v-model="item.scheme_detail[0].delivery_date" value-format="yyyy-MM-dd" type="date" :placeholder="$lang('请选择')" ></el-date-picker>
+                            </td>
+                            <td>
+                                <el-date-picker :id="'hours_underway_date' + index" disabled v-model="item.scheme_detail[0].hours_underway_date" value-format="yyyy-MM-dd" type="date" :placeholder="$lang('请选择')" ></el-date-picker>
+                            </td>
+                            <td>
+                                {{item.scheme_detail[0].quotation_ids}}
+                            </td>
+                            <td>{{$lang('拼柜')}}</td>
+                            <td>
+                                <el-input type="textarea" disabled :placeholder="$lang('备注')" v-model="item.remark" :maxlength="100" :rows="1">
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="main-basic-info" v-if="detail.quote_lcl.status_cd == 'N003580003' || detail.quote_lcl.status_cd == 'N003580004'">
+                    <div class="header">
+                        {{$lang('价格确认结果')}}
+                    </div>
+                    <table class="entry-info" border="0" cellpadding="0" cellspacing="0">
+                        <tbody>
+                        <tr v-for="(item,index) in detail.scheme_confirm_data" :key="index">
+                            <td style="min-width: 120px;">{{item.checked_by}}</td>
+                            <td>
+                                <div style="display: flex;">
+                                    <el-select filterable style="width: 240px;" v-model="item.quotation_scheme_id" :placeholder="$lang('请选择')" clearable disabled>
+                                        <el-option v-for="(offter,key) in detail.schemes_options" :label="$lang(offter.val)" :value="offter.scheme_id"></el-option>
+                                    </el-select>
+                                    <el-input v-model="item.remark" :placeholder="$lang('备注')" disabled></el-input>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </el-tab-pane>
+            
+            <el-tab-pane :label="$lang('操作日志')" name="second">
+                <div class="main-basic-info">
+                    <div class="header">
+                        {{$lang('操作日志')}}
+                    </div>
+                    <el-table :data="logTable" border>
+                        <el-table-column :label="$lang('时间')" align="center" prop="created_at"></el-table-column>
+                        <el-table-column :label="$lang('提交人')" align="center" prop="created_by"></el-table-column>
+                        <el-table-column :label="$lang('详细信息')" align="center" prop="operation_detail"></el-table-column>
+                    </el-table>
+                    <div class="page-box">
+                        <el-pagination @size-change="logSizeChange" @current-change="logCurrentChange" :current-page="page" :page-sizes="[10, 20, 50, 100]" :page-size="size" layout="total, sizes, prev, pager, next, jumper" :total="logTotal">
+                        </el-pagination>
+                    </div>
+                </div>
+            </el-tab-pane>
+        </el-tabs>
+    </div>
+</body>
+</html>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+<script>
+    if (getCookie('think_language') !== "zh-cn") {
+        ELEMENT.locale(ELEMENT.lang.en)
+    }
+    var VM = new Vue({
+        el: '#combineCabinets',
+        data() {
+            return {
+                id: '',
+                activeName: 'first',
+                detail: null,
+                templateRadio: '',
+                templateVisible: false,
+                logisticsSupplier: [], // 物流供应商
+                planned_transportation_channel_cds: [], // 运输渠道
+                currency: [], // 币种
+                stuffingType: [], // 装柜类型
+                quotationIds: [], // 可选报价单
+                detailLoading: false,
+                size: 10,
+                page: 1,
+                logTotal: 0,
+                logTable: [],
+                bLoading: false,
+            }
+        },
+        created() {
+            console.log(window.location)
+            let query = window.location.href.split('?')[1].split('&')[2];
+            this.id = query.split('=')[1];
+            this.getOptions();
+            this.getDetailData();
+            this.getLog();
+        },
+        filters: {
+            format :function format(val) {
+                if(val === undefined || val === null || val === "") {
+                    return '/';
+                } else {
+                    return val;
+                }
+            },
+        },
+        methods: {
+            handleUpdate() {
+                const url = window.location.host === 'erp.gshopper.com' ?  window.location.protocol + '//data.gshopper.com' :
+                window.location.protocol + '//data.gshopper.stage.com';
+                if (this.id) {
+                    this.bLoading = true;
+                    axios.post(url + '/quote/quoteLclExecuteLogisticsPrice', {quote_lcl_id: this.id}).then(res => {
+                        this.bLoading = false;
+                        if (res.data.code === 200) {
+                            this.getDetailData();
+                        }
+                    })
+                }
+            },
+            getSummaries(param) {
+                const { columns, data } = param;
+                const sums = [];
+                columns.forEach((column, index) => {
+                if (index === 0) {
+                    sums[index] = '合计';
+                    return;
+                }
+                const values = data.map(item => Number(item[column.property]));
+                if (!values.every(value => isNaN(value))) {
+                    sums[index] = values.reduce((prev, curr) => {
+                    const value = Number(curr);
+                    if (!isNaN(value)) {
+                        return prev + curr;
+                    } else {
+                        return prev;
+                    }
+                    }, 0);
+                    sums[index];
+                } else {
+                    sums[index] = '';
+                }
+                });
+
+                return sums;
+            },
+            getOptions() {
+                const param = {
+                    "data": {
+                        "query": {
+                            "logisticsSupplier": true, // 物流供应商 
+                            "planned_transportation_channel_cds": true, // 运输渠道
+                            "currency": true, // 币种
+                            "stuffingType": true, // 装柜类型
+                        }
+                    }
+                }
+                axios.post('/index.php?g=oms&m=CommonData&a=commonData',param).then(res => {
+                    console.log(res);
+                    if(res.status == 200 && res.data.code == 2000) {
+                        this.warehouses = res.data.data.warehouses;
+                        this.isElectric = res.data.data.isElectric;
+                        this.declareType = res.data.data.declareType;
+                        this.logisticsSupplier = res.data.data.logisticsSupplier;
+                        this.planned_transportation_channel_cds = res.data.data.planned_transportation_channel_cds;
+                        this.currency = res.data.data.currency;
+                        this.stuffingType = res.data.data.stuffingType;
+                    }
+                }).catch(err => {
+                    console.log(err);
+                })
+            },
+            logSizeChange(size) {
+                this.size = size;
+            },
+            logCurrentChange(page) {
+                this.page = page;
+            },
+            getLog() {
+                let param = {
+                    object_name: 'quote_lcl',
+                    object_id: this.id,
+                    p: this.page,
+                    size: this.size
+                }
+                axios.get('/index.php?m=quote&a=quote_log_list',{params:param}).then(res => {
+                    if(res.status == 200 && res.data.code == 2000) {
+                        this.logTable = res.data.data.data;
+                        this.logTotal = Number(res.data.data.page.total);
+                    }
+                })
+            },
+            getDetailData() {
+                const param = {
+                    id: this.id
+                }
+                this.detailLoading = true;
+                axios.get('/index.php?&m=quote&a=quote_lcl_detail',{params:param}).then(res => {
+                    console.log(res);
+                    this.detailLoading = false;
+                    if(res.status == 200 && res.data.code == 2000) {
+                        let detail = res.data.data;
+                        this.detail = detail;
+                        if(detail.quote_lcl_schemes && detail.quote_lcl_schemes.length> 0) {
+                            this.templateRadio = detail.quote_lcl_schemes[0].scheme_type
+                        }
+                        this.quotationIds = detail.quote_lcl.relation_quote_nos.split(',');
+                        console.log(this.detail)
+                    } else {
+                        this.$message.error(this.$lang(res.data.msg))
+                    }
+                }).catch(err => {
+                    console.log(err)
+                })
+            },
+        },  
+    })
+</script>

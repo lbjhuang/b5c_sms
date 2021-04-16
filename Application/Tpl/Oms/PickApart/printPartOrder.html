@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Picking/pickingList.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <title>{{$lang('打印分拣单')}}</title>
+</head>
+<style>
+    [v-cloak] {
+        display: none;
+    }
+    .wrap{
+        padding: 25px;
+    }
+</style>
+
+<body>
+    <div id="part-order" v-cloak>
+        <div class="wrap">
+            <div class="content" v-for="item in dataList" style=" width: 378px; margin: 0 auto; box-shadow: 3px 3px 20px #333; margin-bottom: 10px; padding-bottom: 15px;">
+                <div style="white-space: nowrap;padding: 0 5px;" class="left">
+                     <div style=" display: inline-block; vertical-align: top;" v-if="item.is_qoo == '0' && item.trackingNumber">
+                        <svg :jsbarcode-text="item.trackingNumber" class="barcode" jsbarcode-format="code128" :jsbarcode-value="item.trackingNumber"
+                            jsbarcode-fontoptions="bold" jsbarcode-height="60" jsbarcode-fontSize="16" jsbarcode-textMargin="3"
+                            jsbarcode-width="1">
+                        </svg>
+                    </div>
+                    <div style=" display: inline-block; vertical-align: top;" v-if="item.is_qoo == '1' && item.packing_no">
+                        <svg :jsbarcode-text="item.packing_no" class="barcode" jsbarcode-format="code128" :jsbarcode-value="item.packing_no"
+                            jsbarcode-fontoptions="bold" jsbarcode-height="60" jsbarcode-fontSize="16" jsbarcode-textMargin="3"
+                            jsbarcode-width="1">
+                        </svg>
+                    </div>
+                    <div style=" display: inline-block; box-sizing: border-box; font-size: 13px;" class="right">
+                        <p style="white-space:normal" v-if="showText"> {{$lang('店铺单号')}} : {{item.orderNo}} </p>
+                        <p style="white-space:normal" v-if="showText"> {{$lang('物流方式')}} : {{$lang(item.logisticModelIdNm)}} </p>
+                        <p style="white-space:normal" v-if="showText && item.is_qoo == '1'"> {{$lang('收货人姓名')}} : {{$lang(item.addressUserName)}} </p>
+                    </div>
+                </div>
+                <div style="padding: 0 5px;">
+                    <table width="100%" class="text-center" cellpadding="0" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th style="width:34px;padding: 5px 0; border:1px solid gray;">{{$lang('库位')}}</th>
+                                <th style="padding: 5px 0; border-right: 1px solid gray;border-bottom: 1px solid gray;border-top: 1px solid gray;">条形码</th>
+                                <th style="padding: 5px 0; border-right: 1px solid gray;border-bottom: 1px solid gray;border-top: 1px solid gray;">{{$lang('商品名称')}}</th>
+                                <th style="padding: 5px 0; border-right: 1px solid gray;border-bottom: 1px solid gray;border-top: 1px solid gray;">{{$lang('属性')}}</th>
+                                <th style="width:34px;padding: 5px 0; border-right: 1px solid gray;border-bottom: 1px solid gray;border-top: 1px solid gray;">{{$lang('数量')}}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="k in item.goodsInfo">
+                                <td style="font-size:12px;padding: 5px 3px; border:1px solid gray;border-top:none"> {{k.locationCode}} </td>
+                                <td style="font-size:12px;padding: 5px 3px; border-right: 1px solid gray;border-bottom: 1px solid gray;"> 
+                                    <!-- {{k.skuId}}  -->
+                                    <span v-if="k.gudsOptUpcId">{{k.gudsOptUpcId}}</span>
+                                </td>
+                                <td style="font-size:12px;padding: 5px 3px; border-right: 1px solid gray;border-bottom: 1px solid gray;"> {{$lang(k.gudsNm)}} </td>
+                                <!-- <td style="padding: 5px 0; border-right: 1px solid gray;border-bottom: 1px solid gray;"> {{getValue(k.occupyNum)}} </td> -->
+                                <td style="font-size:12px;padding: 5px 3px; border-right: 1px solid gray;border-bottom: 1px solid gray;"> {{k.gudsOpt}} </td>
+                                <td style="padding: 5px 0;text-align: center; border-right: 1px solid gray;border-bottom: 1px solid gray;"> {{k.total}} </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div style="text-align: center;margin:35px 0;">
+            <el-button type="primary" @click="printFace()">{{$lang('打印')}}</el-button>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js?v=<{$Think.const.V}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/LodopFuncs.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Oms/PickApart/jsBarcode.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script>
+        var part = new Vue({
+            el: '#part-order',
+            data: {
+                dataList: [],
+                showText: false,
+                getValue: function (obj) {
+                    for (var i in obj) {
+                        return obj[i]
+                    }
+                }
+            },
+            created: function () {
+                this.query();
+            },
+            methods: {
+                query: function () {
+                    setTimeout(function () {
+                        JsBarcode(".barcode").init();
+                        // 动态设置左右宽度
+                        $(".content").each(function (k, e) {
+                            var width = $(e).find("svg").width() || 0;
+                            $(e).find('.left').width(width);
+                            $(e).find('.right').width(368 - width);
+                        })
+                        part.showText = true;
+                    }, 1000)
+
+                    var partOrderData = JSON.parse(sessionStorage.getItem('partOrderData')),
+                        param = {
+                            data: {
+                                query: {
+                                    ordId: [],
+                                    isExternal: true
+                                }
+                            }
+                        };
+                    partOrderData.forEach(function (e) {
+                        param.data.query.ordId.push(e.b5cOrderNo);
+                    });
+
+                    axios.post("/index.php?g=oms&m=picking&a=previewOrder", param).then(function (res) {
+                        console.log(res)
+                        var resData = res.data.data;
+                        var obj = {};
+                        for (var k in resData) {
+                            var arr = [];
+                            for (var j in resData[k]) {
+                                resData[k][j].skuId = j;
+                                arr.push(resData[k][j])
+                            }
+                            resData[k] = arr
+                        }
+                        var dataList = [];
+                        partOrderData.reduce(function (res, item) {
+                            for (var k in resData) {
+                                if (k == item.b5cOrderNo) {
+                                    item.goodsInfo = resData[k];
+                                    res.push(item);
+                                }
+                            }
+                            return res;
+                        }, dataList)
+
+                        var sortList = [];
+                        param.data.query.ordId.forEach(function(item,key){
+                            dataList.forEach(function(e){
+                                if(item == e.b5cOrderNo){
+                                   sortList[key] = e;
+                                }
+                            })
+                        })
+                        var sum = 0;
+                        sortList.forEach(function (val, index) {
+                            val.goodsInfo.forEach(function (value, key) {
+                                for (var k in value.occupyNum) {
+                                    sum += value.occupyNum[k];
+                                }
+                                part.$set(value, 'total', sum);
+                                sum = 0;
+                            })
+                        })
+                        part.dataList = sortList;
+                        console.log(part.dataList)
+                    })
+                },
+                printFace: function () {
+                    var LODOP = getLodop();
+                    LODOP.PRINT_INIT();
+                    LODOP.On_Return = function (TaskID, Value) { 
+                        if (typeof Value == 'string' && Value >= 0) {
+                            part.printing() 
+                        }
+                    };
+                    LODOP.SELECT_PRINTER();
+                    $('script').last().next().css({position:'fixed',top:window.parent.document.body.clientHeight/3})
+                },
+                printing: function () {
+                    var htmlText = document.querySelectorAll(".content") || [],
+                        LODOP = getLodop();
+                    htmlText.forEach(function (item, index) {
+                        LODOP.PRINT_INIT();
+                        LODOP.ADD_PRINT_HTM(0, 3, "100%", "100%", item.outerHTML);
+                        LODOP.PRINT();
+                    })
+                }
+            }
+        })
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link href="../Public/css/H-ui-3.1.min.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="../Public/css/stock.css">
+    <link rel="stylesheet" type="text/css" href="../Public/css/style.css"/>
+    <link rel="stylesheet" type="text/css" href="../Public/css/default.css"/>
+    <link rel="stylesheet" type="text/css" href="../Public/lib/Hui-iconfont/1.0.7/iconfont.css"/>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" type="text/css" href="../Public/css/NewAllocate.css"/>
+    <style>
+        #main {
+            padding: 20px;
+        }
+        [v-cloak]{
+            display: none;
+        }
+        .is-leaf{
+            background: #f5f7fa !important;
+        }
+        .dailogTable{
+            width: 100%;
+            border-left: 1px solid #eee;
+            border-top: 1px solid #eee;;
+        }
+        .dailogTable tr td:nth-child(odd){
+            width: 15%;
+            background: #f5f7fa;
+            text-align: center;
+        }
+        .dailogTable tr td:nth-child(even){
+            width: 35%;
+        }
+        .dailogTable td{
+            border-bottom: 1px solid #eee;
+            border-right: 1px solid #eee;
+            padding: 6px;
+        }
+        .dailogTable .el-input__inner{
+            height: 32px;
+        }
+
+        .dailogTableList{
+            width: 100%;
+            border-left: 1px solid #eee;
+            border-top: 1px solid #eee;
+            margin-top:20px;
+        }
+        .dailogTableList th{
+            white-space: nowrap;
+            border-bottom: 1px solid #eee;
+            border-right: 1px solid #eee;
+            padding: 6px;
+            background: #f5f7fa;
+            text-align: center;
+        }
+
+        .dailogTableList td{
+            border-bottom: 1px solid #eee;
+            border-right: 1px solid #eee;
+            padding: 6px;
+            text-align: center;
+        }
+
+        table .el-icon-d-arrow-left {
+            -webkit-transform: rotate(270deg);
+            transform: rotate(270deg);
+            transition: .5s all;
+        }
+
+        table .el-icon-d-arrow-left:before {
+            font-size: 24px;
+            color: #1E7EB4;
+            cursor: pointer;
+        }
+        .finance-data {
+            margin: 15px 0;
+        }
+        .finance-data .finance-data-title {
+            width: 100%;
+            text-align: left;
+            background: #f5f7fa;
+            padding: 15px 0;
+            border-bottom: 1px solid #ebeef5;
+        }
+        .finance-data .finance-data-title span {
+            padding-left: 10px;
+        }
+        .finance-item {
+            display: flex;
+            text-align: center;
+            align-items: center;
+            border-left: 1px solid #ebeef5;
+            background: #f5f7fa;
+            border-bottom: 1px solid #ebeef5;
+        }
+        .finance-item .finance-aside {
+            width: 30%;
+        }
+        .finance-item .finance-item-table {
+            text-align: center;
+            width: 70%;
+        }
+        .finance-table-title {
+            display: flex;
+        }
+        .finance-table-title div {
+            flex: 1;
+            padding: 19px 0;
+            background: #f5f7fa;
+            border-left: 1px solid #ebeef5;
+            border-right: 1px solid #ebeef5;
+            border-bottom: 1px solid #ebeef5;
+        }
+        .finance-table-column {
+            display: flex;
+            background: #fff;
+        }
+        .finance-table-column div {
+            flex: 1;
+            padding: 19px 0;
+            border-left: 1px solid #ebeef5;
+            border-right: 1px solid #ebeef5;
+            border-bottom: 1px solid #ebeef5;
+        }
+        .no-title {
+            padding: 30px;
+            background: #fff;
+        }
+        .no-data {
+            border-left: 1px solid #ebeef5;
+            border-right: 1px solid #ebeef5;
+            border-bottom: 1px solid #ebeef5;
+            padding: 19px;
+            background: #fff;
+        }
+        .to-detail-page {
+            color: #06c;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+<div id="main" v-cloak v-loading="loading">
+    <el-row style="display: flex;align-items: center;">
+        Product Key：
+        <el-input
+                placeholder=""
+                size="small"
+                v-model="form.key"
+                style="width: 180px"
+        >
+        </el-input>
+        <div style="margin-left: 20px">
+            <el-button type="primary"  size="mini" @click="getData">{{$lang('查询')}}</el-button>
+            <el-button size="mini" @click="re">{{$lang('重置')}}</el-button>
+        </div>
+    </el-row>
+    <div style="background: #cccccc;margin: 10px 0; height: 1px"></div>
+    <el-table
+            :data="product"
+            border
+            style="width: 100%">
+            <template slot="empty">
+                {{$lang('暂无数据')}}
+            </template>
+        <el-table-column
+                prop="product"
+                label="Product Key"
+                width="180">
+        </el-table-column>
+        <el-table-column
+                prop="sku_id"
+                :label="$lang('SKU编码')"
+                width="180">
+        </el-table-column>
+        <el-table-column
+                prop="upc_id"
+                :label="$lang('条形码')">
+        </el-table-column>
+        <el-table-column
+                prop="spu_name"
+                :label="$lang('商品名称')">
+        </el-table-column>
+        <el-table-column
+                prop="product_attr"
+                :label="$lang('商品属性')">
+        </el-table-column>
+        <el-table-column
+                prop="thumbnail"
+                :label="$lang('商品图片')">
+            <template slot-scope="scope">
+                <el-popover placement="right" title="" trigger="hover">
+                    <img :src="scope.row.thumbnail" style="max-height: 300px;max-width: 300px"/>
+                    <img slot="reference" :src="scope.row.thumbnail" :alt="scope.row.thumbnail" style="max-height: 100px;max-width: 130px">
+                </el-popover>
+            </template>
+        </el-table-column>
+
+    </el-table>
+    <!-- finance data -->
+    <!-- <el-table :data="finance" style="width: 100%;margin-top: 20px"> -->
+    <div class="finance-data">
+        <div class="finance-data-title">
+            <span>{{$lang('财务信息')}}</span>
+        </div>
+                <div class="finance-item">
+                    <div class="finance-aside">{{$lang('成本(USD)')}}</div>
+                    <div class="finance-item-table">
+                        <div class="finance-table-title">
+                            <div>{{$lang('采购单')}}</div>
+                            <div>{{$lang('不含税成本')}}</div>
+                            <div>{{$lang('进项增值税额')}}</div>
+                        </div>
+                        <div class="finance-table-column">
+                            <div v-if="cost_info.purchase_order_no && cost_info.purchase_order_no !== '暂无数据'">
+                                <a class="to-detail-page" href="javascript:;" @click="openPurchaseDetail(cost_info.relevance_id)">{{cost_info.purchase_order_no}}</a>
+                            </div>
+                            <div v-else>{{$lang('暂无数据')}}</div>
+                            <div>{{amountFormat(cost_info.no_tax_cost)}}</div>
+                            <div>{{amountFormat(cost_info.input_vat_amount)}}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="finance-item">
+                    <div class="finance-aside">收入(USD)</div>
+                    <div class="finance-item-table">
+                        <div class="finance-table-title">
+                            <div>{{$lang('销售单类型')}}</div>
+                            <div>{{$lang('销售单号')}}</div>
+                            <div>{{$lang('不含税收入')}}</div>
+                            <div>{{$lang('销售项增值税额')}}</div>
+                        </div>
+                        <div class="finance-table-column">
+                            <div>{{income_info.sales_order_type || $lang('暂无数据')}}</div>
+                            <div>{{income_info.sales_order_no || $lang('暂无数据')}}</div>
+                            <div>{{income_info.no_tax_income_amount || $lang('暂无数据')}}</div>
+                            <div>{{income_info.output_vat_amount || $lang('暂无数据')}}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="finance-item">
+                    <div class="finance-aside">{{$lang('毛利(USD)')}}</div>
+                    <div class="finance-item-table">
+                        <div class="finance-table-title">
+                            <div>{{$lang('毛利')}}</div>
+                            <div>{{$lang('毛利率')}}</div>
+                        </div>
+                        <div class="finance-table-column">
+                            <div>{{amountFormat(profit_info.profit_amount)}}</div>
+                            <div>{{profit_info.profit_rate}}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="finance-item">
+                    <div class="finance-aside">{{$lang('费用(关联到单据,USD)')}}</div>
+                    <div class="finance-item-table">
+                        <div class="finance-table-title">
+                            <div>{{$lang('费用类型')}}</div>
+                            <div>{{$lang('费用细分类型')}}</div>
+                            <div>{{$lang('单据类型')}}</div>
+                            <div>{{$lang('单据号')}}</div>
+                            <div>{{$lang('Payment Key')}}</div>
+                            <div>{{$lang('分摊费用')}}</div>
+                        </div>
+                        <div class="no-data" v-if="fee_has_bill_info.length === 0">{{$lang('暂无数据')}}</div>
+                        <div class="finance-table-column" v-for="info in fee_has_bill_info">
+                            <div>{{info.fee_type}}</div>
+                            <div>{{info.fee_subdivision_type}}</div>
+                            <div>{{info.bill_type}}</div>
+                            <div>
+                                <span v-for="bill_no in info.bill_no.split(',')" style="display: inline-block;">
+                                    {{bill_no}}
+                                    <!-- <a class="to-detail-page" href="" @click="openPurchaseDetail(bill_no, info.bill_type)">{{bill_no}}</a> -->
+                                </span>
+                            </div>
+                            <div>
+                                <a class="to-detail-page" href="javascript:;" @click="openPaymentDetail(info.payment_audit_id, info.source_cd)">{{info.payment_key}}</a>
+                            </div>
+                            <div>{{info.share_fee | format}}</div>
+                        </div>
+                        <div>
+                            <div class="finance-table-column" v-if="fee_has_bill_info.length > 0">
+                                <div>{{$lang('合计')}}</div>
+                                <div></div>
+                                <div></div>
+                                <div></div>
+                                <div></div>
+                                <div>{{total_share_fee | format}}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="finance-item">
+                    <div class="finance-aside">{{$lang('费用(未关联到单据)')}}</div>
+                    <div class="finance-item-table">
+                        <!-- <div class="finance-table-title no-title"></div>
+                        <div class="finance-table-column"></div> -->
+                        <div class="no-data">{{$lang('暂无数据')}}</div>
+                    </div>
+                </div>
+    </div>
+    <!-- </el-table> -->
+    <el-table
+            :data="record"
+            style="width: 100%;margin-top: 20px">
+            <template slot="empty">
+                {{$lang('暂无数据')}}
+            </template>
+        <el-table-column :label="$lang('商品流转流程')">
+
+                <el-table-column
+                        type="index"
+                        :label="$lang('序号')">
+                </el-table-column>
+                <el-table-column
+                        prop="zd_date"
+                        :label="$lang('时间')"
+                        >
+                </el-table-column>
+                <el-table-column
+                        :label="$lang('操作人')"
+                        >
+                    <template slot-scope="scope">{{ scope.row.bbm_admin.user_name }}</template>
+                </el-table-column>
+                <el-table-column
+                        prop="bill_type_val"
+                        :label="$lang('操作名称')"
+                        >
+                </el-table-column>
+                <el-table-column
+                        :label="$lang('操作完SKU类型')"
+                        >
+                    <template slot-scope="scope"><span>{{ scope.row.batchs.sku_type }}</span></template>
+                </el-table-column>
+            <el-table-column
+                    prop="goods_type"
+                    :label="$lang('操作完商品类型')"
+            >
+                <template slot-scope="scope"><span >{{ scope.row.batchs.goods_type }}</span></template>
+            </el-table-column>
+                <el-table-column
+                        :label="$lang('操作完所在仓库')"
+                        >
+                    <template slot-scope="scope" ><span :style="checkcolor(scope.$index,'warehouse_cd_val',scope.$index)">{{ scope.row.warehouse_cd_val}}</span></template>
+                </el-table-column>
+                <el-table-column
+                        prop="zip"
+                        :label="$lang('操作完归属销售团队')"
+                        >
+                    <template slot-scope="scope"><span >{{ scope.row.batchs.sale_team_cd_val }}</span></template>
+                </el-table-column>
+                <el-table-column
+                        prop="zip"
+                        :label="$lang('操作完归属店铺')"
+                        >
+                    <template slot-scope="scope"><span >{{ scope.row.store.store_name }}</span></template>
+                </el-table-column>
+                <el-table-column
+                        :label="$lang('其他相关信息')"
+                        >
+                    <template slot-scope="scope">
+                        <div v-for="(v,k) in scope.row.other_info.show_info">
+                            <span>{{v.name}}</span> <span style="color:blue;cursor: pointer" @click="openCheck(v,scope.row.other_info,scope.row)">{{v.value}}</span>
+                        </div>
+                    </template>
+                </el-table-column>
+            </el-table-column>
+    </el-table>
+    <!-- <el-table
+            :data="payment"
+            style="width: 100%;margin-top: 20px">
+            <template slot="empty">
+                {{$lang('暂无数据')}}
+            </template>
+        <el-table-column :label="$lang('关联Payment Key')">
+            <el-table-column
+                    prop="payment_key"
+                    label="Payment Key"
+            >
+            </el-table-column>
+            <el-table-column
+                    prop="source_name"
+                    :label="$lang('来源')"
+            >
+            </el-table-column>
+            <el-table-column
+                    prop="created_at"
+                    :label="$lang('创建时间')"
+            >
+            </el-table-column>
+            <el-table-column
+                    prop="created_by"
+                    :label="$lang('创建人')"
+            >
+            </el-table-column>
+            <el-table-column
+                    prop="trigger_action"
+                    :label="$lang('触发操作')"
+            >
+            </el-table-column>
+            <el-table-column
+                    :label="$lang('本单分摊扣款金额')"
+            >
+                <template slot-scope="scope">{{ scope.row.amount_currency_val+' ' +  scope.row.amount}}</template>
+            </el-table-column>
+            <el-table-column
+                    :label="$lang('操作')"
+            >
+                <template slot-scope="scope"><el-button size="mini" @click="paymentAlert(scope.row)"> {{$lang('查看')}}</el-button></template>
+            </el-table-column>
+        </el-table-column>
+    </el-table> -->
+    <!-- 订单表格主体 end-->
+    <el-dialog :title="baleType?'打包单详情':'拆包单详情'" :visible.sync="dialogVisible" width="800px" :before-close="handleClose">
+        <div>
+            <table class="dailogTable" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td>组合SKU ID</td>
+                    <td>
+                        <span v-if="baleAudit">{{dailogForm.group_sku_id}}</span>
+                        <el-input v-else :placeholder="$lang('请输入SKU ID')" v-model="dailogForm.group_sku_id" @blur="getGroupSkuNum()"></el-input>
+                    </td>
+                    <td>仓库名称</td>
+                    <td>
+                        <span v-if="baleAudit">{{dailogForm.warehouse_cd_val}}</span>
+                        <el-select v-else :popper-append-to-body=false filterable @change="getGroupSkuNum()" clearable size="small" v-model="dailogForm.warehouse_cd"  :placeholder="$lang('仓库')" style="width:90%">
+                            <el-option v-for="item in baseData.warehouses" :key="item.CD" :label="$lang(item.CD_VAL)" :value="item.CD"> </el-option>
+                        </el-select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>商品名称</td>
+                    <td>{{groupSku.skuName}}</td>
+                    <td>销售团队</td>
+                    <td>
+                        <span v-if="baleAudit">{{dailogForm.sale_team_cd_val}}</span>
+                        <el-select v-else :popper-append-to-body=false filterable @change="getGroupSkuNum()" clearable size="small"v-model="dailogForm.sale_team_cd" :placeholder="$lang('销售团队')" style="width:90%">
+                            <el-option v-for="(item,key) in baseData.saleTeams" :key="key" :label="$lang(item)" :value="key"> </el-option>
+                        </el-select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>归属店铺</td>
+                    <td>
+                        <span v-if="baleAudit">{{ascription_store_val}}</span>
+                        <el-select v-else :popper-append-to-body=false filterable @change="getGroupSkuNum()" clearable size="small"v-model="dailogForm.ascription_store" :placeholder="$lang('归属店铺')" style="width:90%">
+                            <el-option v-for="(item,key) in ascriptionstore_list" :key="key" :label="item.nickname" :value="item.realName"> </el-option>
+                        </el-select>
+                    </td>
+                </tr>
+            </table>
+            <table class="dailogTableList" v-if="groupSku.list.length" cellpadding="0" cellspacing="0">
+                <tr>
+                    <th>SKU ID</td>
+                    <th style="width: 200px">商品名称</td>
+                    <th style="width: 100px" v-if="!baleAudit && baleType">可售</td>
+                    <th style="width: 100px">组合件数</td>
+                    <th v-if="!baleAudit && !baleType">剩余组合库存</th>
+                    <th v-if="baleType">组合入库</th>
+                    <th v-else>取消组合</th>
+                </tr>
+                <tr v-for="(item,index) in groupSku.list">
+                    <td>{{item.sku_id}}</td>
+                    <td>{{item.spu_name}}</td>
+                    <td v-if="!baleAudit && baleType">{{item.num}}</td>
+                    <td>{{item.coefficient}}</td>
+                    <td :rowspan="groupSku.list.length" v-if="!index && !baleType && !baleAudit">{{groupSku.isCancelNum}}</td>
+                    <td :rowspan="groupSku.list.length" v-if="!index">
+                        <span v-if="baleAudit">{{groupSku.maxNum}}</span>
+                        <el-input v-else :disabled="groupSku.isCancelNum == 0" v-model="groupSku.maxNum" :placeholder="$lang('请输入数量')"></el-input>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <span slot="footer" class="dialog-footer">
+                <div v-if="dailogForm.audit_status == 'N002470100'">
+                    <el-button @click="audit(false)">驳 回</el-button>
+                    <el-button type="primary" @click="audit(true)">通 过</el-button>
+                </div>
+                <div  v-else-if="dailogForm.audit_status == 'N002470200'">
+                    <span class="auditColor">已通过</span>
+                </div>
+                <div v-else-if="dailogForm.audit_status == 'N002470300'">
+                    <span class="rejectColor">已驳回</span>
+                </div>
+                <!--<div v-else>
+                    <div v-if="groupSku.isCancelNum!== 0">
+                        <el-button @click="handleClose">取 消</el-button>
+                        <el-button type="primary" @click="createGroupOrder">确 定</el-button>
+                    </div>
+                </div>-->
+            </span>
+    </el-dialog>
+</div>
+</body>
+<script src="../Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script src="../Public/lib/layer-v3.0.3/layer/layer.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript"
+        src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript"
+        src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script>
+    var vueApp = new Vue({
+        el: '#main',
+        data: {
+            baseData:{},
+            //是否是审核状态
+            baleAudit:false,
+            groupSkuDedailList:[],
+            loading:false,
+            //是否是打包状态
+            baleType:false,
+            ascription_store_val:'',
+            ascriptionstore_list: [], // 归属店铺列表
+            url:location.host === 'erp.gshopper.com'? '//data.gshopper.com/search/productKeyRecord':'//data.gshopper.stage.com/search/productKeyRecord',
+            dialogVisible:false,
+            //组合查询条件
+            dailogForm:{
+                group_sku_id:'',
+                warehouse_cd:'',
+                sale_team_cd:'',
+                sale_team_cd_val:'',
+                warehouse_cd_val:'',
+                ascription_store: '', // 归属店铺
+                ascription_store_val:'',
+            },
+            finance: [{
+                amount: 0,
+                purchase_key: '',
+                vat_amount: 0,
+            }],
+            //组合sku列表
+            groupSku:{
+                list:[],
+                skuName:'',
+                maxNum:0,
+                isCancelNum:0
+            },
+            form: {
+                key: ''
+            },
+            bool:false,
+            product:[],
+            record:[],
+            payment:[],
+            fee_has_bill_info: [],
+            profit_info: {
+                profit_amount: '暂无数据',
+                profit_rate: '暂无数据'
+            },
+            income_info: {
+                sales_order_type: '',
+                sales_order_no: '',
+                no_tax_income_amount: '',
+                output_vat_amount: ''
+            },
+            cost_info: {
+                purchase_order_no: '',
+                no_tax_cost: '暂无数据',
+                input_vat_amount: '暂无数据'
+            },
+            data:{
+
+            },
+            info:{
+
+            },
+            profit_analysis:{},
+            purchasing_information:{},
+            sales_information:[],
+            related_payment_keys:{},
+            table: []
+        },
+        mounted: function () {
+        },
+        created: function () {
+            this.getCd()
+        },
+        computed: {
+            total_share_fee() {
+                var total = 0;
+                this.fee_has_bill_info.forEach(fee => {
+                    total += parseFloat(fee.share_fee);
+                });
+                return total.toFixed(2);
+            }
+        },
+        filters: {
+            // 数字加上千分位
+            format(amount) {
+                if (typeof amount === 'number') {
+                    amount = String(amount)
+                }
+                var isLessZero = amount.indexOf('-');
+                amount = amount.replace('-', '');
+                var num1 = amount.split('.')[0] + ''; //数字转字符串
+                var str = ""; //字符串累加
+                for (var i = num1.length - 1, j = 1; i >= 0; i--, j++) {
+                    if (j % 3 == 0 && i != 0) { //每隔三位加逗号，过滤正好在第一个数字的情况
+                        str += num1[i] + ","; //加千分位逗号
+                        continue;
+                    }
+                    str += num1[i]; //倒着累加数字
+                }
+                var num = str.split('').reverse().join("") + '.' + (amount.split('.')[1] || '00'); //字符串=>数组=>反转=>字符串
+                // 补回-符号
+                return isLessZero === -1 ? num : '-' + num;
+            },
+        },
+        methods: {
+            amountFormat(amount) {
+                const number = parseFloat(amount);
+                const isNumber = isNaN(number) ? '' : number;
+                // 该页面主要显示暂无数据，所以走翻译
+                // !number 不能正确识别0
+                if (!isNumber && isNumber !== 0) return this.$lang(amount);
+                amount = String(amount);
+                var isLessZero = amount.indexOf('-');
+                amount = amount.replace('-', '');
+                var num1 = amount.split('.')[0] + ''; //数字转字符串
+                var str = ""; //字符串累加
+                for (var i = num1.length - 1, j = 1; i >= 0; i--, j++) {
+                    if (j % 3 == 0 && i != 0) { //每隔三位加逗号，过滤正好在第一个数字的情况
+                        str += num1[i] + ","; //加千分位逗号
+                        continue;
+                    }
+                    str += num1[i]; //倒着累加数字
+                }
+                var num = str.split('').reverse().join("") + '.' + (amount.split('.')[1] || '00'); //字符串=>数组=>反转=>字符串
+                // 补回-符号
+                return isLessZero === -1 ? num : '-' + num;
+            },
+            paymentAlert:function(row){
+                if(row.source_name === '调拨应付'){
+                    this.orderDetal("/index.php?g=logistics&m=Expensebill&a=fee_detail&fee_id="+row.payment_id,'费用单列表')
+                }else{
+                    this.orderDetal('/index.php?m=order_detail&a=payable_detail&id='+row.payment_id,'应付详情页')
+                }
+
+            },
+            openPurchaseDetail(relevance_id) {
+                newTab('/index.php?m=order_detail&a=purchase_order_detail&relevance_id=' + relevance_id, this.$lang('订单详情'))
+            },
+            openPaymentDetail(payment_id, cd) {
+                if (cd === 'N003010004') {
+                    newTab(`/index.php?m=finance&a=general_payment_detail&payment_audit_id=${payment_id}&source_cd=N003010004`, this.$lang('一般付款单详情'))
+                } else {
+                    newTab(`/index.php?m=finance&a=pay_order_detail&payment_audit_id=${payment_id}&source_cd=N003010005`, this.$lang('付款单详情'))
+                }
+            },
+            shouGroupDetail:function(item){
+                this.dialogVisible = true;
+                //审核或创建状态
+                this.baleAudit = true;
+                //打包或拆包状态
+                console.log(item)
+                this.baleType = !item.group_type;
+                this.groupSku.list = JSON.parse(item.sku_json);
+                this.groupSku.maxNum = item.num;
+                this.dailogForm = {
+                    group_sku_id:item.sku_id,
+                    warehouse_cd:item.warehouse_cd,
+                    sale_team_cd:item.sale_team_cd,
+                    warehouse_cd_val:item.warehouse_cd_val,
+                    sale_team_cd_val:item.sale_team_cd_val,
+                    id:item.id,
+                    audit_status:item.audit_status,
+                    ascription_store: item.ascription_store,
+                    ascription_store_val:  this.ascriptionstore_list.find(res => {
+                        return item.ascription_store === res.realName
+                    }) ? this.ascriptionstore_list.find(res => {
+                        return item.ascription_store === res.realName
+                    }).nickname : '',
+
+                };
+                this.getGroupSkuNum(item.num);
+
+            },
+            checkcolor:function(index,data,$index){
+                if(index === 0){
+                    return''
+                }
+                var arr = data.split('.')
+                var value = this.record[$index];
+                var valueOld= this.record[index - 1]
+                for(var x = 0;x<arr.length;x++){
+                    value = value[arr[x]]
+                    valueOld = valueOld[arr[x]]
+                }
+                if(this.record[index -1] && index>=0){
+                     if(valueOld === value){
+                         return ''
+                     }else{
+                         return {color:'red'}
+                     }
+                }else{
+                    return ''
+                }
+            },
+            getGroupSkuDetail:function(item,value){
+                var _this = this;
+                axios.post('/index.php?m=GroupSku&a=getGroupSkuDetaileds', {
+                    group_sku_id: item.param.group_sku_id,
+                    warehouse_cd: item.param.warehouse_cd,
+                    sale_team_cd: item.param.sale_team_cd,
+                    list_search:{
+                        dateRange: [],
+                        warehouse_cd: [],
+                        warehouse_type: [],
+                        sale_team_cd: [],
+                        date_type: "created_at",
+                        search_type: "group_bill_code",
+                        search_value: value,
+                    }
+                })
+                    .then(function (res) {
+                        _this.groupSkuDedailList = res.data.data || [];
+                        _this.shouGroupDetail(_this.groupSkuDedailList[0])
+                    })
+            },
+            getCd: function () {
+                var _this = this;
+                var param = {
+                    data: {
+                        query: {
+                            warehouses: "true",
+                            saleTeams: "true",
+                            inventory_type: "true",
+                        },
+                        type: "sorting"
+                    }
+                }
+                axios.post('/index.php?g=oms&m=CommonData&a=commonData', param)
+                    .then(function (res) {
+                        _this.baseData = res.data.data;
+                    })
+            },
+            getGroupSkuNum:function(num){
+                if (!num && num !== 0) {
+
+                    var searchParam = this.dailogForm.group_sku_id.length && this.dailogForm.sale_team_cd && this.dailogForm.warehouse_cd;
+                    var searchCreate = this.dailogForm.group_sku_id.length && this.dailogForm.sale_team_cd && this.dailogForm.warehouse_cd && this.dailogForm.ascription_store;
+                    if (this.baleType) {
+                        if(!searchCreate) return false;
+                    } else {
+                        if(!searchParam) return false;
+                    }
+                }
+
+                var _this = this,
+                    // param = this.dailogForm;
+                    param = {
+                        group_sku_id:this.dailogForm.group_sku_id,
+                        warehouse_cd:this.dailogForm.warehouse_cd,
+                        sale_team_cd:this.dailogForm.sale_team_cd,
+                        warehouse_cd_val:this.dailogForm.warehouse_cd_val,
+                        sale_team_cd_val:this.dailogForm.sale_team_cd_val,
+                        id:this.dailogForm.id,
+                        audit_status:this.dailogForm.audit_status,
+                        ascription_store: this.dailogForm.ascription_store,
+                        is_cancel: this.baleType ? 0:1
+                    }
+                // param.is_cancel = this.baleType ? 0:1;
+                axios.post('/index.php?m=GroupSku&a=getGroupSkuNum',param)
+                    .then(function(res){
+                        var data = res.data.data;
+                        if(res.data.code == 200){
+                            _this.groupSku.list = data.child_sku;
+                            _this.groupSku.skuName = data.group_sku_name;
+                            _this.groupSku.maxNum = num || data.max_num || 0;
+                            _this.groupSku.isCancelNum = data.max_num || 0;
+                        }else{
+                            _this.$message.error(_this.$lang(res.data.msg));
+                        }
+                    })
+            },
+            handleClose:function(){
+                this.dialogVisible = false;
+                this.dailogForm = {
+                    group_sku_id: '',
+                    warehouse_cd: '',
+                    sale_team_cd: '',
+                    sale_team_cd_val: '',
+                    warehouse_cd_val: '',
+                    ascription_store: ''
+                };
+                this.groupSku = {
+                    list: [],
+                    skuName: '',
+                    maxNum: 0,
+                };
+            },
+            openCheck:function(v,info,row){
+                var _this = this;
+                switch (v.name){
+                    case '采购单号':
+                        this.orderDetal('/index.php?m=order_detail&a=purchase_order_detail&relevance_id='+info.param.relevance_id,'订单详情')
+                        break;
+                    case '附件':
+                        var url = "/index.php?m=order_detail&a=download&path=excel&file="+v.value
+                        var a = document.createElement("a");
+                        a.download = v.value;
+                        a.href = url;
+                        a.click();
+                        break
+                    case '调拨单号':
+                        this.orderDetal('/index.php?m=allocation_extend_new&a=transportation&id='+info.param.allo_id,'调拨单详情')
+                        break;
+                    case 'B2C订单号':
+                        this.orderDetal('/index.php?g=OMS&m=Order&a=orderDetail&order_no='+info.param.order_id+'&thrId='+info.param.order_id+'&platCode='+info.param.plat_cd,'订单详情')
+                        break;
+                    case '平台订单号':
+                        this.orderDetal('/index.php?g=OMS&m=Order&a=orderDetail&order_no='+info.param.order_id+'&thrId='+info.param.order_id+'&platCode='+info.param.plat_cd,'订单详情')
+                        break;
+                    case '库存归属变更单号':
+                        this.orderDetal('/index.php?m=allocation_extend_attribution&a=info&id='+info.param.attribution_id,'库存归属变更详情')
+                        break;
+                    case '组合打包单':
+                        this.dialogVisible = true
+                        //this.getGroupSkuNum(info.param,row)
+                        this.getGroupSkuDetail(info,v.value)
+                        _this.ascription_store_val = row.store.store_name
+                        break;
+                    case '组合拆包单':
+                        this.dialogVisible = true
+                        //this.getGroupSkuNum(info.param,row)
+                        this.getGroupSkuDetail(info,v.value)
+                        _this.ascription_store_val = row.store.store_name
+                        break;
+                    case '转换单号':
+                        this.orderDetal("/index.php?g=scm&m=display&a=positive_show&type="+info.param.conversion_id,'正次品转换详情')
+                        break;
+                    case '售后单号':
+                        axios.post('/index.php?g=OMS&m=afterSale&a=lists',{
+                            search:{
+                                platform_cd: [],
+                                after_sale_no: v.value,
+                                after_sale_status: {},
+                                sku_id: "",
+                                order_no: "",
+                                after_sale_type: "",
+                                created_at: {start: "", end: ""},
+                                platform_country_code: []
+                            },
+                            pages: {
+                                per_page: 10,
+                                current_page: 1
+                            }
+                        })
+                            .then(function(res){
+                                if (res.data.code == 200 ) {
+                                    _this.tableData = res.data.data.data;
+                                    if(_this.tableData[0]){
+                                        _this.toDetail(_this.tableData[0].after_sale_no,_this.tableData[0].order_no,_this.tableData[0].type_name,_this.tableData[0])
+                                    }
+                                } else {
+                                    _this.$message.error(_this.$lang(res.data.info));
+                                }
+                            })
+                        break
+                }
+            },
+            router: function router(title, _html, after_sale_no, order_no) {
+                var dom = document.createElement('a');
+                var _href = "/index.php?g=OMS&m=AfterSale&a=" + _html + "&after_sale_no=" + after_sale_no + "&order_no=" + order_no;
+                dom.setAttribute("onclick", "opennewtab(this,'" + title + "')");
+                dom.setAttribute("_href", _href);
+                dom.click();
+            },
+            toDetail: function (after_sale_no, order_no, type_name,val) {
+                // console.log(val.order_id);
+                // console.log(val.platform_country_code);
+
+                // sessionStorage.setItem("aftersalelistOffsetTop", document.documentElement.scrollTop);
+                if (type_name == '退货') {
+                    this.router(this.$lang('退货详情'), 'return_detail', after_sale_no, order_no)
+                }
+                else if (type_name == '补发') {
+                    this.router(this.$lang('补发详情'), 'reissue_detail', after_sale_no, order_no)
+                }
+                else if(type_name == '退款'){
+                    var dom = document.createElement('a');
+                    var _href = "/index.php?g=OMS&m=AfterSale&a=refund_detail&after_sale_no=" + after_sale_no + "&order_no=" + order_no + "&order_id=" + val.order_id + "&platform_country_code=" + val.platform_country_code;
+                    dom.setAttribute("onclick", "opennewtab(this,'" + this.$lang('退款详情') + "')");
+                    dom.setAttribute("_href", _href);
+                    dom.click();
+                }
+
+            },
+            orderDetal: function (href, title) {
+                var dom = document.createElement('a');
+                dom.setAttribute("onclick", "opennewtab(this,'"+this.$lang(title) + "')");
+                dom.setAttribute("_href", href);
+                dom.click();
+            },
+            open:function(url){
+                this.orderDetal(url,'Payment Key详情')
+            },
+            querySearch(queryString, cb) {
+                var restaurants = this.arr;
+                var results = queryString ? restaurants.filter(this.createFilter(queryString)) : restaurants;
+                // 调用 callback 返回建议列表的数据
+                cb(results);
+            },
+            createFilter(queryString) {
+                return (restaurant) => {
+                    return (restaurant.value.toLowerCase().indexOf(queryString.toLowerCase()) === 0);
+                };
+            },
+            re: function () {
+                this.form = {
+                    "key": "",
+                }
+                window.location.reload()
+            },
+            handleSizeChange: function (e) {
+
+            },
+            handleCurrentChange: function () {
+
+            },
+            getData: function (type) {
+                var _this = this;
+                this.loading = true
+                axios.post(this.url, {
+                    "search":{
+                        "product_key":this.form.key
+                    }
+                }).then(function (response) {
+                    _this.loading = false
+                    if (response.data.code === 200) {
+                        _this.product = []
+                        _this.product.push(response.data.data.product)
+                        _this.record = response.data.data.record;
+                        _this.payment = response.data.data.payment;
+                        _this.cost_info = response.data.data.cost_info;
+                        _this.income_info = response.data.data.income_info;
+                        _this.profit_info = response.data.data.profit_info;
+                        _this.fee_has_bill_info = response.data.data.fee_has_bill_info;
+                    }else{
+                        _this.$message({
+                            message: response.data.msg,
+                            type: 'error'
+                        });
+                    }
+                })
+            }
+        }
+    });
+</script>
+</html>

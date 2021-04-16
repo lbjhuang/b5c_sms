@@ -1,0 +1,617 @@
+<!DOCYPTE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="../Public/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../Public/icon/css/font-awesome.min.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="../Public/css/send.css"/>
+    <link rel="stylesheet" href="../Public/utils/css/public.style.css">
+    <link rel="stylesheet" href="../Public/css/new-button.css">
+    <link href="/Application/Tpl/Home/Public/lib/My97DatePicker/skin/WdatePicker.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <title><{$Think.lang.退货列表}></title>
+    <script type="text/javascript">
+        var url = window.location.href;
+    </script>
+    <style>
+        .wrap {
+            box-sizing: border-box;
+            padding: 20px;
+            margin: 0;
+        }
+        .row {
+            margin: 0;
+        }
+
+        .row + .row {
+            margin-top: 20px;
+        }
+        [class*="col-"]{
+            padding: 0;
+        }
+        .pagination > li > a{
+            letter-spacing: 0;
+            font-size: 0.6rem;
+        }
+        .b2b-form label{
+            width: 200px;
+        }
+        .text-left {
+            width: 250px !important;
+            overflow: auto;
+            text-align: center !important;
+            overflow: auto !important;
+            white-space: normal !important;
+        }
+        .select_item{
+            margin-top:-32px;
+        }
+        .filter_input{
+            position: relative;
+            z-index: 9999;
+        }
+        .use-btn{
+            width: 104px;
+        }
+        .input-box{
+            margin-left: 30px;
+            display: flex;
+            align-items: center;
+            width: 500px;
+        }
+        .input-box:first-child{
+            margin-left: 0;
+        }
+        .element-new input{
+            padding: 0.1rem 0.3rem;
+            font-size: 0.7rem;
+            color: #263238;
+            border-radius: 0.2rem;
+            border: 1px solid #D7DADD;
+            width: 127px !important;
+             height: auto !important;
+             box-sizing: border-box;
+             min-width: auto !important;
+        }
+        .element-new .el-range-separator {
+            width: 29px !important;
+        }
+        .search-btn-group button {
+            font-family: MicrosoftYaHei-Bold;
+            font-size: 14px;
+            letter-spacing: 0;
+            text-shadow: 0 1px 1px rgba(0,0,0,0.10);
+            border-radius: 4px;
+            padding: 6px 22px;
+            border: none;
+            outline: none;
+            margin-right: 32px;
+            cursor: pointer;
+        }
+        .textarea {
+            font-size: 0.7rem;
+            border-radius: 0.2rem;
+            border: 1px solid #D7DADD;
+            width: 300px;
+            height: 2.5rem;
+            margin-bottom: -10px;
+        }
+    </style>
+</head>
+<body>
+<div id="collist" v-cloak class="wrap">
+    <form :action="action_str" method="post">
+        <div>
+            <!--<div class="payable_title"><{$Think.lang.发货列表}></div>-->
+            <div class="row">
+                <div class="col-lg-12 col-md-12">
+                    <div class="new-btn-group">
+                        <label class="label-name ng-binding">{{$lang('退货状态')}}：</label>
+                        <button v-for="s in ship_state" @click="go(s.CD,'status_cd')" type="button"  :class="s.CD == formData.status_cd?'active':''">{{$lang(s.CD_VAL)}}</button>
+                        <input type="hidden" name="shipping_status" :value="formData.status_cd">
+                    </div>
+                </div>
+            </div>
+            <div class="row b2b-form">
+                <div class="input-box">
+                    <!-- <select name="orderId" v-model="formData.po_type" style="width: 100px;min-width: 100px;">
+                        <option value="1">{{$lang('PO单号')}}</option>
+                        <option value="0">{{$lang('B2B订单号')}}</option>
+                    </select> -->
+                    <label class="text-left"  style="width: 200px">{{$lang('B2B订单号/销售PO单号')}} </label>
+                    <textarea type="textarea" class="textarea" id="textarea" @input="handleOrderInput" :placeholder="$lang('支持英文逗号/换行符/空格分割')" v-model="formData.PO_ID" name="PO_ID"></textarea>
+                </div>
+                <div class="input-box">
+                    <label class="text-left"  style="width: 100px">{{$lang('B2B退货单号')}} </label>
+                    <input type="text" placeholder=""   v-model="formData.return_no">
+                </div>
+                <!--<input type="text" placeholder="" name="delivery_warehouse_code" v-model="action.delivery_warehouse_code">-->
+                <div  class="input-box">
+                    <label class="text-left" style="width: 70px">{{$lang('退入仓库')}} </label>
+                    <el-select v-model="formData.warehouse_cd" filterable :placeholder="$lang('请选择退入仓库')" >
+                        <el-option
+                                v-for="item in warehouses"
+                                :key="item.CD"
+                                :label="$lang(item.CD_VAL)"
+                                :value="item.CD">
+                        </el-option>
+                    </el-select>
+                </div>
+            </div>
+            <div class="row b2b-form">
+                <div class="input-box">
+                    <label class="text-left"  style="width: 100px">{{$lang('物流单号')}} </label>
+                    <input type="text" placeholder=""  v-model="formData.logistics_number">
+                </div>
+                <div class="input-box">
+                    <label class="text-left" style="width: 100px">{{$lang('退货发起人')}} </label>
+                    <input type="text" placeholder="" v-model="formData.created_by">
+                </div>
+                <div class="input-box element-new">
+                    <label class="text-left" style="width: 100px;text-align: center !important;">{{$lang('退货发起时间')}} </label>
+                    <el-date-picker value-format="yyyy-MM-dd" name="SUBMIT_TIME" size="small" v-model="created_time" type="daterange" align="right" unlink-panels
+                                    :range-separator="$lang('至')" :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')">
+                    </el-date-picker>
+                </div>
+            </div>
+            <div class="row b2b-form">
+                <div class="input-box">
+                    <label class="text-left" style="width: 100px">{{$lang('SKU/条形码')}} </label>
+                    <input type="text" placeholder=""   v-model="formData.sku_or_barcode">
+                </div>
+                <div class="input-box">
+                    <label class="text-left" style="width: 70px">{{$lang('销售团队')}} </label>
+                    <el-select v-model="formData.sale_team" filterable :placeholder="$lang('请选择销售团队')" >
+                        <el-option
+                                v-for="item in sell_team"
+                                :key="item.CD"
+                                :label="$lang(item.CD_VAL)"
+                                :value="item.CD">
+                        </el-option>
+                    </el-select>
+                </div>
+                <div class="input-box">
+                    <label class="text-left" style="width: 100px">{{$lang('客户')}} </label>
+                    <input type="text" placeholder="" v-model="formData.client_name">
+                </div>
+            </div>
+            <div class="row b2b-form">
+                <div class="col-lg-12 col-md-12 search-btn-group">
+                </div>
+            </div>
+        </div>
+    </form>
+    <div class="baseline"></div>
+    <div class="row">
+        <div class="col-lg-12 search-btn-group">
+            <button  @click="getList" class="search-btn" size="">{{$lang('查询')}}</button>
+            <button  @click="reload" class="reset-btn">{{$lang('重置')}}</button>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-10 col-md-10 result-num">
+            <span> {{$lang('搜索结果')}}</span>:{{$lang('共')}}&nbsp;&nbsp;<b>{{pageList}}</b>&nbsp;&nbsp;{{$lang('条记录')}}
+            <!-- <{$Think.lang.结果}>:<{$Think.lang.共}>&nbsp;&nbsp;<b>{{count}}</b>&nbsp;&nbsp;<{$Think.lang.条记录}> -->
+        </div>
+    </div>
+    <div class="row">
+        <div class="table-responsive">
+            <table class="b2b-table">
+                <thead class="use-head">
+                <tr class="text-center">
+                    <th>{{$lang('B2B退货单号')}}</th>
+                    <th>{{$lang('B2B订单号/PO号')}}</th>
+                    <th>{{$lang('物流单号')}}</th>
+                    <th>{{$lang('退货状态')}}</th>
+                    <th>{{$lang('客户')}}</th>
+                    <th>{{$lang('销售团队')}}</th>
+                    <th>{{$lang('退入仓库')}}</th>
+                    <th>{{$lang('预计入仓日期')}}</th>
+                    <th>{{$lang('退货发起人')}}</th>
+                    <th>{{$lang('退货发起时间')}}</th>
+                    <th>{{$lang('操作')}}</th>
+                </tr>
+                </thead>
+                <tbody class="use-body">
+                <tr :key="k" v-for="(v,k) in list">
+                    <td>{{v.return_no}}</td>
+                    <td>{{v.PO_ID}}</td>
+                    <td>{{v.logistics_number}}</td>
+                    <td>{{$lang(v.warehouse_status)}}</td>
+                    <td>{{$lang(v.CLIENT_NAME)}}</td>
+                    <td>{{v.sale_team}}</td>
+                    <td>{{v.warehouse}}</td>
+                    <td>{{v.expected_arrival_date}}</td>
+                    <td>{{v.created_by}}</td>
+                    <td>{{v.created_at}}</td>
+                    <td class="use-btn no-wrap">
+                        <a class="btn-pub btn-green" style="color: white;" @click="orderDetal(v.id,'B2B退货详情')">{{$lang('查看')}}</a>
+                        <a v-if="v.warehouse_status === '待入库'" class="btn-pub btn-blue mg-l-10" style="color: white;"  @click="orderDetal(v.id,'退货入库')">{{$lang('入库')}}</a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div clas="row" style="overflow: hidden">
+            <el-pagination
+                    v-if="Number(pageList) !== 0"
+                    @size-change="handleSizeChange"
+                    @current-change="handleCurrentChange"
+                    :current-page="1"
+                    :page-sizes="[10, 50, 100]"
+                    :page-size="formData.rows"
+                    layout="total, sizes, prev, pager, next, jumper"
+                    :total="Number(pageList)"
+                    style="float: right"
+            >
+            </el-pagination>
+    </div>
+</div>
+<script src="../Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<!-- <script type="text/javascript" src="../Public/js/vue.js"></script> -->
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script src="/Application/Tpl/Home/Public/lib/My97DatePicker/WdatePicker.js"></script>
+<script type="text/javascript" src="../Public/lib/bootstrap/js/tether.min.js"></script>
+<script type="text/javascript" src="../Public/lib/bootstrap/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="../Public/js/axios.min.js"></script>
+<script type="text/javascript" src="../Public/utils/utils.js?v=1123"></script>
+<script type="text/javascript">
+    if (getCookie('think_language') !== "zh-cn") {
+        ELEMENT.locale(ELEMENT.lang.en)
+    }
+    var vm = new Vue({
+        el: '#collist',
+        data: {
+            user:[],
+            pageList:0,
+            sell_team:[],
+            warehouses:[],
+            created_time:[],
+            list:[],
+            filterKey:'',
+            isExpend:false,
+            ship_state:[
+            ],
+            formData:{
+                return_no:'',//退货单号
+                status_cd:'',
+                warehouse_cd:'',//仓库code
+                logistics_number:'',//物流单号
+                sale_team:'',//销售团队code
+                created_by:'',//创建人
+                created_at_start:'',//创建时间（开始）
+                created_at_end:'',//创建时间（结束）
+                sku_or_barcode:'',//sku/条形码
+                po_type:'0',//B2B单号类型 0.B2B订单号 1.PO单号
+                PO_ID:'',//B2B单号
+                client_name:'',//客户名称
+                p:1,
+                rows:10
+            },
+            doship_list: [],
+            action: {"shipping_status":0,"CLIENT_NAME":"","PO_ID":"","delivery_warehouse_code":"","sales_team_code":"","orderId":"THR_PO_ID","lately_time_action":null,"lately_time_end":null,"warehouse":""},
+            count: 270,
+            initdata: [],
+            all_warehouse: [],
+            action_str:'/index.php?m=b2b&a=do_ship_list',
+            orderNum: [],
+            deliverTime: '',
+            delivery_warehouse_code: ''
+        },
+        created () {
+            this.getList()
+            this.getWarehouse()
+            this.getTeam()
+            this.getStatus()
+            this.getUser()
+        },
+        methods: {
+            reload:function(){
+                this.created_time = ''
+                this.formData = {
+                    return_no:'',//退货单号
+                        status_cd:'',
+                        warehouse_cd:'',//仓库code
+                        logistics_number:'',//物流单号
+                        sale_team:'',//销售团队code
+                        created_by:'',//创建人
+                        created_at_start:'',//创建时间（开始）
+                        created_at_end:'',//创建时间（结束）
+                        sku_or_barcode:'',//sku/条形码
+                        po_type:'0',//B2B单号类型 0.B2B订单号 1.PO单号
+                        PO_ID:'',//B2B单号
+                        client_name:'',//客户名称
+                        p:1,
+                        rows:10
+                }
+                this.getList()
+            },
+            handleSizeChange:function(val){
+                this.formData.rows = val
+                this.getList()
+            },
+            handleCurrentChange:function(val){
+                this.formData.p = val
+                this.getList()
+            },
+            /**
+             * 获取B2B订单退货状态
+             */
+            getStatus:function(){
+                var _this = this;
+                axios.post('/index.php?g=common&m=index&a=get_cd', {
+
+                    cd_type:{
+                        b2b_return_goods_status:true
+                    }
+
+                }).then(function (response) {
+                    if(response.data.code === 2000){
+                        response.data.data.b2b_return_goods_status.splice(0, 0,
+                            {CD: "",
+                            CD_VAL: "全部",
+                            ETC: "",
+                            ETC2: ""});
+                        _this.ship_state = response.data.data.b2b_return_goods_status
+                    }
+                })
+            },
+            /**
+             * 获取仓库
+             */
+            getWarehouse:function(){
+                var _this = this;
+                axios.post('/index.php?g=common&m=index&a=get_cd', {
+
+                    cd_type:{
+                        warehouse:true
+                    }
+
+                }).then(function (response) {
+                    if(response.data.code === 2000){
+                        _this.warehouses = response.data.data.warehouse
+                    }
+                })
+            },
+            /**
+             * 获取员工（退货发起人）
+             */
+            getUser:function(){
+                var _this = this;
+                axios.post('/index.php?g=common&m=user&a=search_user', {
+
+                    name:''
+
+                }).then(function (response) {
+                    if(response.data.code === 2000){
+                        _this.user = response.data.data
+                    }
+                })
+            },
+            /**
+             * 获取销售团队
+             */
+            getTeam:function(){
+                var _this = this;
+                axios.post('/index.php?g=common&m=index&a=get_cd', {
+
+                    cd_type:{
+                        sell_team:true
+                    }
+
+                }).then(function (response) {
+                    if(response.data.code === 2000){
+                        _this.sell_team = response.data.data.sell_team
+                    }
+                })
+            },
+            getList:function(){
+                var _this = this;
+                if(_this.created_time){
+                    _this.formData.created_at_start =(_this.created_time.length>0?_this.created_time[0]:'')
+                    _this.formData.created_at_end = (_this.created_time.length === 2?_this.created_time[1]:'')
+                }else{
+                    _this.formData.created_at_start = ''
+                    _this.formData.created_at_end = ''
+                }
+                var form = Object.assign({}, this.formData);
+                form.PO_ID = form.PO_ID.replaceAll('，', ',');
+                axios.post('/index.php?m=b2b&a=return_goods_list',
+                    form
+                ).then(function (response) {
+                    if(response.data.code === 2000){
+                        _this.list = response.data.data.list
+                        _this.pageList = response.data.data.page.total_rows
+                    }
+                })
+            },
+            orderDetal: function (orderId, title) {
+                var dom = document.createElement('a');
+                var _href;
+                // window.location.href = "'<{:U('b2b/do_ship_show')}>&order_id='"+orderId;
+                // var _href = "/index.php?g=OMS&m=Order&a=orderDetail&thrId=" + title + "&platCode=" + result;
+                if (title === '退货入库') {
+                    _href = "/index.php?m=b2b&a=sales_return_storage&order_id="+orderId;
+                }
+                if (title === 'B2B退货详情') {
+                    _href = "/index.php?m=b2b&a=sales_return&order_id="+orderId;
+                }
+                dom.setAttribute("onclick", "opennewtab(this,'"+this.$lang(title) + "')");
+                dom.setAttribute("_href", _href);
+                dom.click();
+            },
+            ship: function(e){
+                var url = "<{:U('b2b/do_ship')}>" +'&order_id='
+                window.location.href = url + e
+            },
+            go:function (e,type) {
+                this.formData[type] = e
+                this.getList()
+            },
+            king:function(e){
+                if(!e) return null
+                var k = e.toString().split('.')
+                if(e.toString().indexOf('.') > 0){
+                    var s = '.'+k[1]
+                }else{
+                    var s = ''
+                }
+                return k[0].toString().replace(/\d{1,3}(?=(\d{3})+(\.\d*)?$)/g, '$&,')+s;
+            },
+            resetdata () {
+                this.action = {"shipping_status":0,"CLIENT_NAME":"","PO_ID":"","delivery_warehouse_code":"","sales_team_code":"", 'orderId': "THR_PO_ID"}
+            },
+            msg (e) {
+                utils.modal(true, {width:500,title: this.$lang('提示'),btnClass:'btn-primary',content:e});
+            },
+            join_ares(e){
+                if(e != null){
+                    e_data = JSON.parse(e)
+                    var initdata = this.initdata
+                    var area = ''
+                    if (e_data.country) area = initdata.area[e_data.country]
+                    if (e_data.stareet) area += '-'+initdata.area[e_data.stareet]
+                    if (e_data.city) area += '-'+initdata.area[e_data.city]
+                    return area
+                }
+                return e
+            },
+            downloadExcel(){
+                this.action_str = '/index.php?m=b2b&a=patch_data_excel'
+                setTimeout(function () {
+                    $("#submit_button").click()
+                    vm.action_str = '/index.php?m=b2b&a=do_ship_list'
+                }, 500)
+                setTimeout(function () {
+                    vm.action_str = '/index.php?m=b2b&a=do_ship_list'
+                }, 1000)
+            },
+            customerNameChange: function (value) {
+                this.action.CLIENT_NAME = this.action.CLIENT_NAME.replace(/\s+/g,"");
+            },
+            handleOrderInput: function () {
+                var ele = document.getElementById('textarea');
+                var height = calcTextareaHeight(ele);
+                ele.style.height = height.height;
+                ele.style['min-height'] = '50px';
+            }
+        }
+
+    })
+</script>
+<script>
+    let hiddenTextarea;
+    const HIDDEN_STYLE = `
+        height:0 !important;
+        visibility:hidden !important;
+        overflow:hidden !important;
+        position:absolute !important;
+        z-index:-1000 !important;
+        top:0 !important;
+        right:0 !important
+    `;
+
+    const CONTEXT_STYLE = [
+        'letter-spacing',
+        'line-height',
+        'padding-top',
+        'padding-bottom',
+        'font-family',
+        'font-weight',
+        'font-size',
+        'text-rendering',
+        'text-transform',
+        'width',
+        'text-indent',
+        'padding-left',
+        'padding-right',
+        'border-width',
+        'box-sizing'
+    ];
+
+    function calculateNodeStyling(targetElement) {
+        const style = window.getComputedStyle(targetElement);
+
+        const boxSizing = style.getPropertyValue('box-sizing');
+
+        const paddingSize = (
+            parseFloat(style.getPropertyValue('padding-bottom')) +
+            parseFloat(style.getPropertyValue('padding-top'))
+        );
+
+        const borderSize = (
+            parseFloat(style.getPropertyValue('border-bottom-width')) +
+            parseFloat(style.getPropertyValue('border-top-width'))
+        );
+
+        const contextStyle = CONTEXT_STYLE
+            .map(name => `${name}:${style.getPropertyValue(name)}`)
+            .join(';');
+
+        return { contextStyle, paddingSize, borderSize, boxSizing };
+    }
+
+    function calcTextareaHeight(
+        targetElement,
+        minRows = 1,
+        maxRows = null
+    ) {
+        if (!hiddenTextarea) {
+            hiddenTextarea = document.createElement('textarea');
+            document.body.appendChild(hiddenTextarea);
+        }
+
+        let {
+            paddingSize,
+            borderSize,
+            boxSizing,
+            contextStyle
+        } = calculateNodeStyling(targetElement);
+
+        hiddenTextarea.setAttribute('style', `${contextStyle};${HIDDEN_STYLE}`);
+        hiddenTextarea.value = targetElement.value || targetElement.placeholder || '';
+
+        let height = hiddenTextarea.scrollHeight;
+        const result = {};
+
+        if (boxSizing === 'border-box') {
+            height = height + borderSize;
+        } else if (boxSizing === 'content-box') {
+            height = height - paddingSize;
+        }
+
+        hiddenTextarea.value = '';
+        let singleRowHeight = hiddenTextarea.scrollHeight - paddingSize;
+
+        if (minRows !== null) {
+            let minHeight = singleRowHeight * minRows;
+            if (boxSizing === 'border-box') {
+                minHeight = minHeight + paddingSize + borderSize;
+            }
+            height = Math.max(minHeight, height);
+            result.minHeight = `${minHeight}px`;
+        }
+        if (maxRows !== null) {
+            let maxHeight = singleRowHeight * maxRows;
+            if (boxSizing === 'border-box') {
+                maxHeight = maxHeight + paddingSize + borderSize;
+            }
+            height = Math.min(maxHeight, height);
+        }
+        result.height = `${height}px`;
+        hiddenTextarea.parentNode && hiddenTextarea.parentNode.removeChild(hiddenTextarea);
+        hiddenTextarea = null;
+        return result;
+    };
+</script>
+</body>
+
+</html>

@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <title>佣金规则列表</title>
+</head>
+<style>
+    .head_title {
+      font-size: 24px;
+      font-weight: 600;
+    }
+    .rule {
+        padding-left: 50px;
+    }
+    .rule_content {
+        padding-left: 75px;
+    }
+    .rule_content .el-select {
+        width: 180px;
+    }
+    .save .el-form-item__content {
+        text-align: center;
+        margin-left: 0;
+        margin-top: 20px;
+    }
+    .el-message-box__content , .el-message-box__btns {
+        text-align: center
+    }
+    .salesprice{
+        margin-left: 10px;
+        font-size: 20px;
+        cursor: pointer;
+    }
+    .configuration .el-table__body-wrapper{
+        overflow: initial;
+    }
+</style>
+
+<body class="orderList">
+    <div id="rule" class="list-common" v-cloak style="margin-bottom:220px">
+        <div class="head_title">
+            {{ $lang("佣金规则列表") }}
+        </div>
+        <!-- 搜索查询 start-->
+        <div class="orderList-search search-common">
+            <div class="search-toggle">
+                <el-form ref="form" label-width="120px" :label-position="labelPosition">
+                    <el-row>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('平台')">
+                                {{storeInfo.plat_name}}
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('店铺')">
+                                {{storeInfo.store_name}}
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('运营状态')">
+                                {{storeInfo.store_status_name}}
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('更新时间')">
+                                <el-date-picker style="width:100%;height: 40px;float: right;" value-format="yyyy-MM-dd"
+                                    size="small" :clearable=false v-model="form.dateRange" type="daterange" align="right"
+                                    unlink-panels :range-separator="$lang('至')" :start-placeholder="$lang('开始日期')"
+                                    :end-placeholder="$lang('结束日期')" :picker-options="pickerOptions">
+                                </el-date-picker>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('状态')">
+                                <el-select :filterable="true" :placeholder="$lang('All')" v-model="form.is_enable"
+                                    clearable style="width:100%;padding:0;">
+                                    <el-option label="All" value=""></el-option>
+                                    <el-option :label="$lang('启用')" value="1"></el-option>
+                                    <el-option :label="$lang('停用')" value="0"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                </el-form>
+            </div>
+            <!-- 搜索查询 end-->
+        </div>
+        <!-- 分割线 start-->
+        <div class="orderList-line line-split" style="height: 2px;margin-bottom: 20px"></div>
+        <!-- 分割线 end-->
+
+        <!-- 店铺表格主体 start-->
+        <div style="margin-top: 24px;font-size: 14px">
+            <el-row>
+                <el-col :span="16">
+                    {{$lang('共')}}
+                    <b>{{ totalCount }}</b>
+                    {{ $lang("条记录") }}
+                </el-col>
+                <el-col :span="8" class="text-right" style="padding-right:20px">
+                    <el-button type="primary" @click="addRule()">
+                        {{$lang('新增佣金规则')}}
+                    </el-button>
+                    <el-button type="success" @click="viewHandleLog()">
+                        {{$lang('查看操作日志')}}
+                    </el-button>
+                </el-col>
+            </el-row>
+        </div>
+        <div class="orderList-Main list-common-main" style="margin-top: 20px">
+            <el-table border :data="ruleData" tooltip-effect="dark" style="width: 100%" class="order-list-table table-common"
+                v-loading="tableLoading">
+                <el-table-column prop="rule_no" :label="$lang('#')"></el-table-column>
+                <el-table-column :label="$lang('规则')">
+                    <template slot-scope="scope">
+                        {{scope.row.dimension_name}} {{scope.row.judge_cd_name}} {{scope.row.value_name}}
+                        {{scope.row.dimension_name == null ? '': ' , '}}
+                    
+                        {{scope.row.rate_percentage == null ? '': $lang('佣金费率: ')}}
+                        {{scope.row.rate_percentage == null ? '': scope.row.rate_percentage}}
+                        {{scope.row.rate_percentage == null || scope.row.lowest_commission == null ? '': $lang(' 且')}}
+                    
+                        {{scope.row.lowest_commission == null ? '' : $lang(' 最低佣金: ')}}
+                        {{scope.row.lowest_commission == null ? '': scope.row.lowest_commission}} 
+                        {{scope.row.lowest_currency_cd_name == null ? '':scope.row.lowest_currency_cd_name }}
+                        {{scope.row.lowest_commission == null || scope.row.highest_commission == null ? '': $lang('且')}}
+                    
+                        {{scope.row.highest_commission == null ? '' : $lang(' 最高佣金: ')}}
+                        {{scope.row.highest_commission == null ? '' : scope.row.highest_commission }}
+                        {{scope.row.highest_currency_cd_name == null ? '': scope.row.highest_currency_cd_name}}
+                    
+                        {{scope.row.start_time == null && scope.row.end_time == null ? '': ' , '}}
+                        {{scope.row.start_time == null ? '': $lang('开始时间: ')}}
+                        {{scope.row.start_time == null ? '': scope.row.start_time | changeData}}
+                        {{scope.row.end_time != null && scope.row.start_time != null ? $lang('且') : ''}}
+                        {{scope.row.end_time == null ? '': $lang('结束时间: ')}}
+                        {{scope.row.end_time == null ? '': scope.row.end_time | changeData}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="updated_at" :label="$lang('更新时间')"></el-table-column>
+                <el-table-column :label="$lang('状态')">
+                    <template slot-scope="scope">
+                        <el-switch @change="switchChange(scope.row)" style="display: block" v-model="scope.row.is_enable"
+                            active-color="#13ce66" inactive-color="#ff4949" :inactive-text="$lang('停用')" :active-text="$lang('启用')">
+                        </el-switch>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('操作')">
+                    <template slot-scope="scope">
+                        <el-button type="primary" @click="edit(scope.row)">{{ $lang("编辑") }}</el-button>
+                        <el-button type="danger" @click="deleteRule(scope.row)">{{ $lang("删除") }}</el-button>
+                        <!-- <el-button type="success" @click="listLogData(scope.row)">{{ $lang("查看操作日志") }}</el-button> -->
+                    </template>
+                </el-table-column>
+            </el-table>
+
+            <el-pagination background @size-change="handleSizeChange" @current-change="handleCurrentChange"
+                :current-page.sync="form.pageIndex" :page-sizes="[10, 30, 50, 100]" :page-size="form.pageSize" layout="sizes,prev, pager, next, jumper"
+                :total="totalCount">
+            </el-pagination>
+
+        </div>
+        <!-- 店铺表格主体 end-->
+
+        <!-- B2C 分成明細彈出框 -->
+        <el-dialog title="提示" :visible.sync="isShowRule" width="55%" @close="closeModel()">
+            <div style="padding: 20px 20px">
+                <div style="font-size: 16px;margin-bottom: 50px">
+                    {{$lang('佣金规则配置')}}
+                    <i class="el-icon-close" style="position: absolute; right: 25px; cursor: pointer;" @click="exit"></i>
+                </div>
+                <el-form ref="form" :model="form" label-width="80px">
+                    <el-row class="rule">
+                        <el-col :span="24">
+                            {{$lang('佣金配置')}}
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="8">
+                            <el-form-item :label="$lang('佣金费率')">
+                                <el-input v-model="ruleForm.rate"></el-input>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="8">
+                            <el-form-item :label="$lang('最低佣金')">
+                                <el-input v-model="ruleForm.lowest_commission"></el-input>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="8">
+                            <el-form-item :label="$lang('币种')">
+                                <el-select v-model="ruleForm.lowest_currency_cd" :placeholder="$lang('请选择')">
+                                    <el-option v-for="item in baseData.currency" :label="item.cdVal" :value="item.cd"
+                                        :key="item.cd"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="8">
+                            <el-form-item :label="$lang('最高佣金')">
+                                <el-input v-model="ruleForm.highest_commission"></el-input>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="8">
+                            <el-form-item :label="$lang('币种')">
+                                <el-select v-model="ruleForm.highest_currency_cd" :placeholder="$lang('请选择')">
+                                    <el-option v-for="item in baseData.currency" :label="item.cdVal" :value="item.cd"
+                                        :key="item.cd"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule">
+                        <el-col :span="24">
+                            {{$lang('生效时间')}}
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="8">
+                            <el-form-item :label="$lang('开始日期')">
+                                <el-date-picker v-model="ruleForm.start_time" :editable="false" type="date" value-format="yyyy-MM-dd">
+                                </el-date-picker>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="8">
+                            <el-form-item :label="$lang('结束日期')">
+                                <el-date-picker v-model="ruleForm.end_time" :editable="false" type="date" value-format="yyyy-MM-dd">
+                                </el-date-picker>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule">
+                        <el-col style="display:flex;align-items: center;" :span="24">
+                            {{$lang('条件配置')}}
+                            <i @click="salespriceAdd()" v-if="salespriceStatus" class="salesprice el-icon-circle-plus-outline"></i>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule configuration" style="padding-right: 50px">
+                        <el-table border :data=salespriceData style="width: 100%">
+                        <!-- <el-table border :data=[''] style="width: 100%"> -->
+                            <el-table-column v-if="!salespriceStatus" :label="$lang('维度')" >
+                                <template slot-scope="scope">
+                                    <el-select v-model="ruleForm.dimension_cd" clearable :placeholder="$lang('请选择')"
+                                        style="width:100%;padding:0;" @change="change()">
+                                        <el-option v-for="item in baseData.dimension" :label="item.cdVal" :value="item.cd"
+                                            :key="item.cd"></el-option>
+                                    </el-select>
+                                </template>
+                            </el-table-column>
+
+                            <el-table-column v-if="salespriceStatus" :label="$lang('维度')">
+                                <template slot-scope="scope">
+                                    <el-select v-model="scope.row.dimension_cd" clearable :placeholder="$lang('请选择')"
+                                        style="width:100%;padding:0;" @change="change(scope.row)">
+                                        <el-option v-for="item in baseData.dimension" :label="item.cdVal" :value="item.cd"
+                                            :key="item.cd"></el-option>
+                                    </el-select>
+                                </template>
+                            </el-table-column>
+                            
+
+                            <el-table-column v-if="!salespriceStatus" :label="$lang('计算')" width="180">
+                                <template slot-scope="scope">
+                                    <el-select v-model="ruleForm.judge_cd" clearable :placeholder="$lang('请选择')" style="width:100%;padding:0;">
+                                        <el-option v-for="item in baseData.judge" :label="item.cdVal" :value="item.cd"
+                                            :key="item.cd"></el-option>
+                                    </el-select>
+                                </template>
+                            </el-table-column>
+
+                            <el-table-column v-if="salespriceStatus"  :label="$lang('计算')" width="180">
+                                <template slot-scope="scope">
+                                    <el-select v-model="scope.row.judge_cd" @change="changeVal(scope.row)" clearable :placeholder="$lang('请选择')" style="width:100%;padding:0;">
+                                        <el-option v-for="item in baseData.judge2" :label="item.cdVal" :value="item.cd"
+                                            :key="item.cd"></el-option>
+                                    </el-select>
+                                </template>
+                            </el-table-column>
+
+                            <el-table-column width="300" :label="$lang('值')" v-if="salespriceStatus">
+                                <template  slot-scope="scope">
+                                    <el-select v-model="scope.row.currency" @change="changeVal(scope.row)" :placeholder="$lang('币种')">
+                                        <el-option v-for="item in baseData.currency" :label="item.cdVal" :value="item.cd"
+                                            :key="item.cd"></el-option>
+                                    </el-select>
+                                    <el-input style="width: 120px" v-model="scope.row.value"></el-input>
+                                    <!-- <el-input style="width: 120px" @change="watchNum(scope.row.value)" v-model="scope.row.value"></el-input> -->
+                                    <i @click="shareholderDel(scope)" v-show="salespriceLen" class="salesprice el-icon-remove-outline"></i>
+                                </template>
+                            </el-table-column>
+
+
+                            <el-table-column width="300" :label="$lang('值')" v-if="!isShowInput && !salespriceStatus">
+                                <template slot-scope="scope">
+                                    <el-select v-model="ruleForm.value" filterable clearable :placeholder="$lang('请选择')"
+                                        style="width:100%;padding:0;">
+                                        <el-option v-for="item in baseData.rule_val" :label="item.cat_name" :value="item.id"
+                                            :key="item.id"></el-option>
+                                    </el-select>
+                                </template>
+                            </el-table-column>
+                            <el-table-column width="300" :label="$lang('值')" v-if="isShowInput">
+                                <template slot-scope="scope">
+                                    <el-input v-model="ruleForm.value"></el-input>
+                                </template>
+                            </el-table-column>
+
+
+
+                        </el-table>
+                    </el-row>
+                    <el-form-item class="save">
+                        <el-button type="primary" @click="onSubmit" v-if="isShowExit">{{ $lang("保存") }}</el-button>
+                        <el-button type="primary" @click="onSubmit" v-if="!isShowExit">{{ $lang("保存") }}</el-button>
+                        <el-button @click="exit">{{ $lang("取消") }}</el-button>
+                    </el-form-item>
+                </el-form>
+            </div>
+        </el-dialog>
+        <!-- 操作日志彈出框 -->
+        <el-dialog title="提示" :visible.sync="isShowLog" width="50%">
+            <div class="orderList-Main list-common-main" style="padding: 50px 50px 80px 50px">
+                <el-table border :data="logData" tooltip-effect="dark" style="width: 100%" class="order-list-table table-common"
+                    v-loading="tableLoading">
+                    <el-table-column prop="update_time" :label="$lang('时间')"></el-table-column>
+                    <el-table-column prop="update_user" :label="$lang('提交人')"></el-table-column>
+                    <el-table-column :label="$lang('详细信息')">
+                        <template slot-scope="scope">
+                            {{scope.row.content | changeContent}}
+                        </template>
+                    </el-table-column>
+                </el-table>
+                <el-pagination background @size-change="handleLogSizeChange" @current-change="handleLogCurrentChange"
+                    :current-page.sync="logForm.page" :page-sizes="[10, 30, 50, 100]" :page-size="logForm.page_size"
+                    layout="sizes,prev, pager, next, jumper" :total="logTotalCount">
+                </el-pagination>
+            </div>
+        </el-dialog>
+    </div>
+    </div>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script>
+        if (getCookie('think_language') !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en)
+        }
+        var rule = new Vue({
+            el: '#rule',
+            data: {
+                tableLoading: true,
+                labelPosition: 'center',
+                isShowRule: false,
+                isShowExit: false,
+                isShowInput: false,
+                isShowLog: false, // 展示操作日志
+                ruleData: [],
+                logData: [],
+                totalCount: 10,
+                logTotalCount: 10,
+                baseData: {},
+                storeInfo: {}, // 店铺信息
+                form: {
+                    is_enable: "", // 状态(停用、启用)
+                    store_id: "", // 店铺id
+                    dateRange: [],
+                    update_start_time: "", // 更新开始时间
+                    update_end_time: "", // 更新结束时间
+                    pageIndex: 1,
+                    pageSize: 10
+                },
+                ruleForm: {
+                    rate: "", // 佣金费率
+                    lowest_commission: "", // 低佣金
+                    lowest_currency_cd: "", // 低佣金 币种
+                    highest_commission: "", // 高佣金
+                    highest_currency_cd: "", // 高佣金 币种
+                    dimension_cd: "", // 维度
+                    judge_cd: "", // 計算
+                    value: "", // 值
+                    start_time: '',
+                    end_time: '',
+                    dimension_type:'1',
+                    rule_detail:[]
+                },
+                logForm: {
+                    store_id: '',
+                    update_time: [],
+                    page: 1,
+                    page_size: 10
+                },
+                pickerOptions: {},
+                salespriceData:[''],
+                salespriceStatus:false,
+                salespriceLen:false
+            },
+            created: function () {
+                this.pickerOptions = {
+                        shortcuts: [{
+                            text: this.$lang("最近一周"),
+                            onClick: function (picker) {
+                                const end = new Date();
+                                const start = new Date();
+                                start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+                                picker.$emit('pick', [start, end]);
+                            }
+                        }, {
+                            text: this.$lang("最近一个月"),
+                            onClick: function (picker) {
+                                const end = new Date();
+                                const start = new Date();
+                                start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+                                picker.$emit('pick', [start, end]);
+                            }
+                        }, {
+                            text: this.$lang("最近三个月"),
+                            onClick: function (picker) {
+                                const end = new Date();
+                                const start = new Date();
+                                start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+                                picker.$emit('pick', [start, end]);
+                            }
+                        }],
+                        disabledDate(time) {
+                            return time.getTime() > Date.now();
+                        }
+                    },
+                    this.form.store_id = window.location.href.substring(window.location.href.lastIndexOf(
+                        "=") + 1);
+                this.logForm.store_id = window.location.href.substring(window.location.href.lastIndexOf(
+                    "=") + 1);
+                this.getData()
+
+            },
+            methods: {
+                // 筛选条件
+                search: function () {
+                    var param = {
+                        data: {
+                            query: {
+                                currency: "true",
+                                dimension: "true",
+                                judge: "true",
+                                judge2:"true"
+                            }
+                        }
+                    };
+                    var _this = this;
+                    axios.post("/index.php?&m=commission&a=commonData", param)
+                        .then(function (res) {
+                            var result = res.data;
+                            if (result.code == 2000) {
+                                _this.baseData = result.data;
+                            } else {
+                                this.$message.error(this.$lang(result.msg));
+                            }
+                        });
+                },
+                // 店铺列表
+                getData: function () {
+                    this.tableLoading = true;
+                    var param = {
+                            data: {}
+                        },
+                        updateTime = this.form.dateRange || [];
+                    param.data.query = this.form;
+                    param.data.query.update_start_time = updateTime[0];
+                    param.data.query.update_end_time = updateTime[1];
+                    axios.post("/index.php?&m=commission&a=getStoreRules", param)
+                        .then(function (res) {
+                            var result = res.data;
+                            if (result.code == 2000) {
+                                rule.tableLoading = false;
+                                for (k in result.data.pageData) {
+                                    if (result.data.pageData[k]['is_enable'] === '0') {
+                                        result.data.pageData[k]['is_enable'] = false;
+                                    } else {
+                                        result.data.pageData[k]['is_enable'] = true;
+                                    }
+                                }
+                                rule.ruleData = result.data.pageData;
+                                rule.storeInfo = result.data.store_info;
+                                rule.totalCount = Number(result.data.totalCount)
+                            } else {
+                                rule.$message.warning(result.data.msg);
+                            }
+                        });
+                },
+                // 添加规则配置
+                submitRule: function () {
+                    // this.tableLoading = true;
+                    var param = {};
+
+                    param = this.ruleForm;
+                    param.store_id = this.form.store_id;
+                    if(param.dimension_type == '2'){
+                        var ruledetailArr = param.rule_detail
+                        var reg=/^\d+(\.\d+)?$/;
+                        var verification = true
+                        for(let i=0;i<ruledetailArr.length;i++){
+                            if(ruledetailArr[i].dimension_cd == ''){
+                                this.$alert('请选择商品销售单价', '提示', {
+                                    confirmButtonText: '确定',
+                                });
+                                verification = false
+                            }else if(ruledetailArr[i].judge_cd == ''){
+                                this.$alert('请选择计算方式', '提示', {
+                                    confirmButtonText: '确定',
+                                });
+                                verification = false
+                            }else if(ruledetailArr[i].currency == ''){
+                                this.$alert('请选择商品销售单价币种', '提示', {
+                                    confirmButtonText: '确定',
+                                });
+                                verification = false
+                            }else if(ruledetailArr[i].value == ''){
+                                this.$alert('请录入商品销售单价', '提示', {
+                                    confirmButtonText: '确定',
+                                });
+                                verification = false
+                            }else if(reg.test(ruledetailArr[i].value)==false){
+                                this.$alert('请录入有效数字', '提示', {
+                                    confirmButtonText: '确定',
+                                });
+                                verification = false
+                            }
+                        }
+                        if(verification){
+                            axios.post("/index.php?&m=commission&a=addCommissionRule", param)
+                            .then(function (res) {
+                                console.log(res)
+                                var result = res.data;
+                                if (result.code == 2000) {
+                                    rule.isShowRule = false;
+                                    rule.getData();
+                                    rule.ruleForm = {};
+                                } else {
+                                    rule.$confirm(result.msg, '提示', {
+                                        confirmButtonText: '确定',
+                                        showCancelButton: false
+                                    }).then(() => {}).catch(action => {});
+                                }
+                            }).catch(function (err) {
+                                console.log(err);
+                            });
+                        }
+                    }else{
+                        axios.post("/index.php?&m=commission&a=addCommissionRule", param)
+                            .then(function (res) {
+                                console.log(res)
+                                var result = res.data;
+                                if (result.code == 2000) {
+                                    rule.isShowRule = false;
+                                    rule.getData();
+                                    rule.ruleForm = {};
+                                } else {
+                                    rule.$confirm(result.msg, '提示', {
+                                        confirmButtonText: '确定',
+                                        showCancelButton: false
+                                    }).then(() => {}).catch(action => {});
+                                }
+                            }).catch(function (err) {
+                                console.log(err);
+                        });
+                    }
+
+                },
+                // 編輯规则配置
+                exitAddRule: function () {
+                    this.tableLoading = true;
+                    var param = {};
+                    param = this.ruleForm;
+                    param.store_id = this.form.store_id;
+                    if(param.dimension_type == '2'){
+                        var ruledetailArr = param.rule_detail
+                        var reg=/^\d+(\.\d+)?$/;
+                        var verification = true
+                        for(let i=0;i<ruledetailArr.length;i++){
+                            if(ruledetailArr[i].dimension_cd == ''){
+                                this.$alert('请选择商品销售单价', '提示', {
+                                    confirmButtonText: '确定',
+                                });
+                                verification = false
+                            }else if(ruledetailArr[i].judge_cd == ''){
+                                this.$alert('请选择计算方式', '提示', {
+                                    confirmButtonText: '确定',
+                                });
+                                verification = false
+                            }else if(ruledetailArr[i].currency == ''){
+                                this.$alert('请选择商品销售单价币种', '提示', {
+                                    confirmButtonText: '确定',
+                                });
+                                verification = false
+                            }else if(ruledetailArr[i].value == ''){
+                                this.$alert('请录入商品销售单价', '提示', {
+                                    confirmButtonText: '确定',
+                                });
+                                verification = false
+                            }else if(reg.test(ruledetailArr[i].value)==false){
+                                this.$alert('请录入有效数字', '提示', {
+                                    confirmButtonText: '确定',
+                                });
+                                verification = false
+                            }
+                        }
+                        if(verification){
+                            axios.post("/index.php?&m=commission&a=updateCommissionRule", param)
+                            .then(function (res) {
+                                var result = res.data;
+                                if (result.code == 2000) {
+                                    rule.isShowRule = false;
+                                    rule.getData();
+                                    rule.ruleForm = {};
+                                } else {
+                                    rule.$confirm(result.msg, '提示', {
+                                        confirmButtonText: '确定',
+                                        showCancelButton: false
+                                    })
+                                }
+                            }).catch(function (err) {
+                                console.log(err);
+                            });
+                        }
+                    }else{
+                        axios.post("/index.php?&m=commission&a=updateCommissionRule", param)
+                        .then(function (res) {
+                            var result = res.data;
+                            if (result.code == 2000) {
+                                rule.isShowRule = false;
+                                rule.getData();
+                                rule.ruleForm = {};
+                            } else {
+                                rule.$confirm(result.msg, '提示', {
+                                    confirmButtonText: '确定',
+                                    showCancelButton: false
+                                })
+                            }
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+                    }
+
+                },
+                // 列表状态
+                switchChange: function (item) {
+                    var param = {
+
+                    };
+                    param.id = item.id;
+                    param.is_enable = item.is_enable ? '1' : '0';
+                    param.store_id = item.store_id;
+                    axios.post("/index.php?&m=commission&a=changeRuleStatus", param)
+                        .then(function (res) {
+                            var result = res.data;
+                            if (result.code == 2000) {
+                                rule.getData();
+                            } else {
+                                rule.$confirm(result.msg, '提示', {
+                                    confirmButtonText: '确定',
+                                    showCancelButton: false,
+                                    showClose: false
+                                }).then(() => {
+                                    rule.getData();
+                                }).catch(action => {
+                                    rule.getData();
+                                });
+                            }
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+
+                },
+                // 新增
+                addRule: function () {
+                    this.isShowRule = true;
+                    this.isShowExit = true; // 是否编辑
+                    // this.isShowExit = true;
+                    this.ruleForm = {};
+                    this.ruleForm.rule_detail = [
+                        {
+                            "dimension_cd":"",
+                            "judge_cd":"",
+                            "currency":"",
+                            "value":""
+                        }
+                    ]
+                    this.salespriceData = ['']
+                    console.log(this.salespriceData)
+                    this.salespriceStatus = false
+                    this.isShowInput = false
+                    this.search();
+                },
+                // 编辑
+                edit: function (item) {
+                    this.isShowExit = false;
+                    if (item.is_enable) {
+                        rule.$confirm('规则启用中 , 无法编辑', '提示', {
+                            confirmButtonText: '确定',
+                            showCancelButton: false,
+                            showClose: false
+                        }).then(() => {
+                            // rule.getData();
+                        }).catch(action => {
+                            // rule.getData();
+                        });
+                    } else {
+                        this.isShowRule = true;
+                        this.isShowExit = false;
+                        // this.change(item.dimension_cd);
+                        var param = {
+                            data: {
+                                query: {}
+                            }
+                        };
+                        param.data.query.id = item.id;
+                        var _this = this;
+                        axios.post("/index.php?&m=commission&a=getCommissionRule", param)
+                            .then(function (res) {
+                                
+                                var result = res.data;
+                                if (result.code == 2000) {
+                                    _this.ruleForm = result.data;
+                                    if(result.data.dimension_cd == 'N002600501'){
+                                        _this.salespriceData = result.data.rule_detail
+                                        if(_this.salespriceData.length > 1){
+                                            _this.salespriceLen = true
+                                        }else{
+                                            _this.salespriceLen = false
+                                        }
+                                    }else{
+                                        _this.salespriceData = ['']
+                                    }
+                                    _this.change(item.value);
+                                } else {
+                                    rule.$message.warning(result.msg);
+                                }
+                            }).catch(function (err) {
+                                console.log(err);
+                            });
+                            _this.search();
+                    }
+
+                },
+                //刪除
+                deleteRule: function (item) {
+                    if (item.is_enable) {
+                        rule.$confirm("规则启用中，无法删除", '提示', {
+                            showCancelButton: false,
+                            confirmButtonText: '确定',
+                            showClose: false
+                        }).then(() => {}).catch(action => {});
+                    } else {
+                        rule.$confirm("确认删除该条规则吗?", '提示', {
+                            showCancelButton: "取消",
+                            confirmButtonText: '确定',
+                            showClose: false
+                        }).then(() => {
+                            var param = {};
+                            param.id = item.id;
+                            param.store_id = item.store_id;
+                            axios.post("/index.php?&m=commission&a=deleteRule", param)
+                                .then(function (res) {
+                                    var result = res.data;
+                                    if (result.code == 2000) {
+                                        rule.getData()
+                                    } else {
+                                        rule.$confirm(result.msg, '提示', {
+                                            confirmButtonText: '确定',
+                                            showCancelButton: false,
+                                            showClose: false
+                                        }).then(() => {}).catch(action => {});
+                                    }
+                                }).catch(function (err) {
+                                    console.log(err);
+                                });
+                        }).catch(action => {});
+                    }
+
+                },
+                // 弹出框 保存
+                onSubmit: function () {
+                    this.isShowRule = true;
+                    if (dealDateFuc(this.ruleForm.start_time) > dealDateFuc(this.ruleForm.end_time)) {
+                        rule.$confirm('开始日期不能晚于结束日期', '提示', {
+                            confirmButtonText: '确定',
+                            showCancelButton: false,
+                            showClose: false
+                        }).then(() => {}).catch(action => {});
+                    } else {
+                        this.isShowExit ? this.submitRule() : this.exitAddRule();
+                    }
+                },
+                exit: function () {
+                    this.ruleForm = {};
+                    this.isShowRule = false;
+                    this.tableLoading = false;
+                },
+                // 弹出框 根据 维度 获取 value 值
+                change: function (item) {
+                    console.log(item)
+                    console.log(this.ruleForm)
+                    if(item){
+                        if(item.dimension_cd){
+                            this.ruleForm.dimension_cd = item.dimension_cd 
+                        }
+                    }
+                    if (this.ruleForm.dimension_cd == "N002600500") {
+                        this.isShowInput = true;
+                        this.salespriceStatus = false
+                        this.ruleForm.rule_detail = ['']
+                        this.salespriceData = this.ruleForm.rule_detail
+                        // 佣金类型
+                        this.ruleForm.dimension_type = '1'
+                    } else if (this.ruleForm.dimension_cd == "N002600501") {
+                        console.log(this.ruleForm.rule_detail)
+                        this.isShowInput = false;
+                        this.salespriceStatus = true
+                        // item.dimension_cd = 'N002600501'
+                        this.ruleForm.dimension_type = '2'
+                        
+                        if(this.ruleForm.rule_detail[0].dimension_cd == ''  || this.ruleForm.rule_detail[0] == ''){
+                            this.ruleForm.rule_detail = [
+                                {
+                                    "dimension_cd":"N002600501",
+                                    "judge_cd":"N002610100",
+                                    "currency":"",
+                                    "value":""
+                                }
+                            ]
+                            this.salespriceLen = false
+                        }
+
+                        this.salespriceData = this.ruleForm.rule_detail
+                    }else {
+                        this.salespriceStatus = false
+                        this.isShowInput = false;
+                        this.ruleForm.rule_detail = ['']
+                        this.salespriceData = this.ruleForm.rule_detail
+                        this.ruleForm.dimension_type = '1'
+                        var param = {
+                            data: {
+                                query: {}
+                            }
+                        };
+                        // rule.ruleForm.value = item || "";
+                        // rule.$set(rule.ruleForm, 'value', item || "");
+                        param.data.query.dimension_cd = rule.ruleForm.dimension_cd;
+                        axios.post("/index.php?&m=commission&a=getPmsCategories", param)
+                            .then(function (res) {
+                                var result = res.data;
+                                if (result.code == 2000) {
+                                    // rule.ruleForm.value = "";
+                                    rule.$set(rule.baseData, 'rule_val', result.data);
+                                } else {
+                                    this.$message.error(this.$lang(result.msg));
+                                }
+                            }).catch(function (err) {
+                                console.log(err);
+                        });
+                    }
+                },
+                changeVal:function(item){
+                    console.log(item)
+                    var ruleDetail =  this.ruleForm.rule_detail
+                    for(var i=0;i<ruleDetail.length;i++){
+                        ruleDetail[i].currency = item.currency
+                    }
+                },
+                // 查看操作日志
+                viewHandleLog: function () {
+                    this.isShowLog = true;
+                    this.logForm.page = 1;
+                    this.logForm.page_size = 10;
+                    this.showLogFunc();
+                },
+                // 查看操作日志函数
+                showLogFunc: function () {
+                    var param = {
+
+                    };
+                    param = this.logForm;
+                    var _this = this;
+                    axios.get('/index.php?&m=commission&a=getLog&' + Qs.stringify(param)).then(function (
+                        res) {
+                        if (res.data.code == 2000) {
+                            _this.logData = res.data.data.list;
+                            _this.logTotalCount = +res.data.data.total;
+                        } else {
+                            this.$message.error(this.$lang(res.data.msg));
+                        }
+                    });
+                },
+                // 查看表格列表的操作日志
+                // listLogData: function(item) {
+                //     console.log(item.id);
+                // },
+                closeModel: function () {
+                    this.getData();
+                },
+                handleSizeChange: function (val) {
+                    this.form.pageSize = val;
+                },
+                handleCurrentChange: function (val) {
+                    this.form.pageIndex = val;
+                },
+                handleLogSizeChange: function (val) {
+                    this.logForm.pageSize = val;
+                },
+                handleLogCurrentChange: function (val) {
+                    this.logForm.page = val;
+                },
+                // 销售单价新增
+                salespriceAdd:function(){
+                    if(this.ruleForm.rule_detail.length == 3){
+                        this.$alert('已达可添加条件数量限制', '提示', {
+                            confirmButtonText: '确定',
+                        });
+                    }else{
+                        var rule_detailArr = this.ruleForm.rule_detail
+                        var currencyStatus = true
+                        var currencyVal = ''
+                        for(var i=0;i<rule_detailArr.length;i++){
+                            if(rule_detailArr[i].currency){
+                                currencyStatus = false
+                                currencyVal = rule_detailArr[i].currency
+                                for(var j = 0;j<rule_detailArr.length;j++){
+                                    rule_detailArr[j].currency = currencyVal
+                                }
+                            }
+                        }
+                        var obj ={}
+                        obj.dimension_cd = 'N002600501'
+                        obj.judge_cd = 'N002610100'
+                        if(currencyStatus){
+                            obj.currency = ''
+                        }else{
+                            obj.currency = currencyVal
+                        }
+                        
+                        obj.value = ''
+                        this.ruleForm.rule_detail.push(obj)
+                        if(this.ruleForm.rule_detail.length > 1){
+                            this.salespriceLen = true
+                        }else{
+                            this.salespriceLen = false
+                        }
+                    }
+                },
+                shareholderDel:function(item){
+                    this.ruleForm.rule_detail.splice(item.$index,1);
+                    if(this.ruleForm.rule_detail.length > 1){
+                        this.salespriceLen = true
+                    }else{
+                        this.salespriceLen = false
+                    }
+                },
+                watchNum:function(value){
+                    var reg=/^(\-|\+)?\d+(((\.\d+)?)|((\.)?))$/;
+                    if(reg.test(value)==false){
+                        this.$alert('请录入有效数字', '提示', {
+                            confirmButtonText: '确定',
+                        });
+                    }
+                }
+            },
+            //监听数据
+            watch: {
+                form: {
+                    handler(newValue, oldValue) {
+                        this.getData(newValue)
+                    },
+                    deep: true
+                },
+                logForm: {
+                    handler(newValue, oldValue) {
+                        this.showLogFunc(newValue)
+                    },
+                    deep: true
+                }
+
+            },
+            //过滤器
+            filters: {
+                changeContent: function (value) { //转换JSON
+                    var arr = JSON.parse(value);
+                    var str = "";
+                    for (var i = 0, len = arr.length; i < len; i++) {
+                        str += arr[i].content + ','
+                    }
+                    str = str.replace(/&quot;/g, '"')
+                    return str;
+
+                },
+                changeData: function (date) { // 切割时间
+                    var str = date.substring(0, 4) + date.substring(5, 7) + date.substring(8, 10);
+                    return str;
+                },
+
+            }
+        });
+
+        function dealDateFuc(date) {
+            if (date) {
+                var str = date.substring(0, 4) + date.substring(5, 7) + date.substring(8, 10);
+                return +str;
+            } else {
+                return
+            }
+
+        }
+    </script>
+</body>
+
+</html>

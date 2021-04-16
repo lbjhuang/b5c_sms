@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>调拨库存</title>
+    <link rel="stylesheet" type="text/css" href="../Public/css/H-ui-3.1.min.css"/>
+    <link rel="stylesheet" type="text/css" href="../Public/css/style.css" />
+    <link rel="stylesheet" type="text/css" href="../Public/css/default.css" />
+    <link rel="stylesheet" type="text/css" href="../Public/lib/layer-v3.0.3/layer/skin/default/layer.css"/>
+    <link rel="stylesheet" type="text/css" href="../Public/icon/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="../Public/utils/css/public.style.css">
+    <link rel="stylesheet" type="text/css" href="../Public/css/allocation.css?v=125">
+    <style>
+        body .demo-class .layui-layer-title{background: white;color: black;border: none;font-size: 18px;font-weight: bold;}
+        .row{margin:0px;}
+        .b2b-form .row  .col-sm-3{padding: 0px}
+        .b2b-form .row  .col-sm-3 label{text-align: left;}
+    </style>
+</head>
+<body>
+<div class="wrap" id="app" v-cloak>
+    <div class="select-line">
+        <form action="" method="post" id="thisform">
+            <div class="row b2b-form">
+                <div class="row">
+                    <div class="col-sm-3">
+                        <label><{$Think.lang.调拨单号}></label>
+                        <input type="text" name="allo_no" :value="allo_no" placeholder="<{$Think.lang.SKU编码}>">
+                    </div>
+                    <div class="col-sm-3">
+                        <label><{$Think.lang.商品名称}></label>
+                        <input type="text" name="allo_guds" :value="allo_guds" placeholder="<{$Think.lang.SKU编码}>">
+                    </div>
+                    <div class="col-sm-3">
+                        <label><{$Think.lang.发起团队}></label>
+                        <select name="launch_team" v-model="launch_team" v-cloak>
+                            <option value=""><{$Think.lang.全部}></option>
+                            <option v-for="(i, v) in teams" :value="i.CD">{{i.CD_VAL}}</option>
+                        </select>
+                    </div>
+                    <div class="col-sm-3">
+                        <label><{$Think.lang.接收团队}></label>
+                        <select name="receive_team" v-model="receive_team" v-cloak>
+                            <option value=""><{$Think.lang.全部}></option>
+                            <option v-for="(i, v) in teams" :value="i.CD">{{i.CD_VAL}}</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="height: 10px;"></div>
+                <div class="row">
+                    <div class="col-sm-3">
+                        <label><{$Think.lang.仓库}></label>
+                        <select name="warehouse_show" v-model="warehouse_show" v-cloak>
+                            <option value=""><{$Think.lang.全部}></option>
+                            <option v-for="(i, v) in warehouses" :value="i.CD">{{i.warehouse}}</option>
+                        </select>
+                    </div>
+                    <div class="col-sm-3">
+                        <label><{$Think.lang.状态}></label>
+                        <select name="state" v-model="state" v-cloak>
+                            <option value=""><{$Think.lang.全部}></option>
+                            <option v-for="(i, v) in states" :value="v">{{i}}</option>
+                        </select>
+                    </div>
+                    <div class="col-sm-3">
+                        <label><{$Think.lang.发起时间}></label>
+                        <input type="text" class="Wdate" id="d4321" v-model="launch_time" :value="launch_time" name="launch_time" onFocus="WdatePicker({maxDate: '#F{$dp.$D(\'d4322\');}' })"/>
+                    </div>
+                    <div class="col-sm-3">
+                        <label><{$Think.lang.至}></label>
+                        <input type="text" class="Wdate" v-model="launch_end_time" id="d4322" :value="launch_end_time" name="launch_end_time" onFocus="WdatePicker({minDate: '#F{$dp.$D(\'d4321\');}' })"/>
+                    </div>
+                </div>
+            </div>
+            <div style="height: 10px;"></div>
+            <div class="use-row">
+                <div class="col-100 use-btn">
+                    <button onclick="submit()" type="button" name="query" class="btn-pub btn-green"><{$Think.lang.查询}></button>
+                    <button type="button" @click="reset()" name="reset" class="btn-pub btn-default mg-l-10"><{$Think.lang.重置}></button>
+                </div>
+            </div>
+            <div class="baseline"></div>
+        </form>
+    </div>
+    <div id="xcl-table" style="margin-top: 15px">
+        <table class="b2b-table">
+            <thead>
+            <tr class="use-head">
+                <th><{$Think.lang.序号}></th>
+                <th width="30"><{$Think.lang.调拨单号}></th>
+                <th><{$Think.lang.发起团队}></th>
+                <th><{$Think.lang.接收团队}></th>
+                <th><{$Think.lang.调拨商品}></th>
+                <th><{$Think.lang.仓库}></th>
+                <th><{$Think.lang.调拨数量}></th>
+                <th><{$Think.lang.发起时间}></th>
+                <th><{$Think.lang.状态}></th>
+                <th><{$Think.lang.操作}></th>
+            </tr>
+            </thead>
+            <tbody class="use-body">
+            <tr v-for="(list,index) in ret" v-cloak class="td-wrap">
+                <td>{{index+1}}</td>
+                <td>{{list.allo_no}}</td>
+                <td>
+                    <span v-if="list.launch_team_cd in teams">{{teams[list.launch_team_cd].CD_VAL}}</span>
+                    <span v-else>-</span>
+                </td><!--发起团队-->
+                <td>
+                    <span v-if="list.receive_team_cd in teams">{{teams[list.receive_team_cd].CD_VAL}}</span>
+                    <span v-else>-</span>
+                </td><!--接收团队-->
+                <td>{{list.allo_guds}}</td><!--挑拨商品-->
+                <td><!--仓库-->
+                    <span v-if="list.warehouse_cd in warehouses">{{warehouses[list.warehouse_cd].warehouse}}</span>
+                    <span v-else>-</span>
+                </td>
+                <td>{{list.allo_all_num}}</td><!--调拨数量-->
+                <td>{{list.launch_time}}</td><!--发起时间-->
+                <td>
+                    <span v-if="list.state in states">{{states[list.state]}}</span>
+                    <span v-else>-</span>
+                </td><!--状态-->
+                <td><!--操作-->
+                    <span v-if="list.state == 1">
+                        <button class="btn btn-danger" @click="recieve_allo(list.id)"><{$Think.lang.撤回}></button>
+                    </span>
+                    <span v-else-if="list.state == 2">
+                        <button class="btn btn-close" @click="out_or_allo(list.id, 1)"><{$Think.lang.查看出库单}></button>
+                        <button class="btn btn-primary" @click="out_or_allo(list.id, 2)"><{$Think.lang.查看入库单}></button>
+                    </span>
+                    <span v-else-if="list.state == 3">
+                        <{$Think.lang.已拒绝}>
+                    </span>
+                    <span v-else-if="list.state == 4">
+                        <{$Think.lang.已作废}>
+                    </span>
+                    <span v-else>
+                        -
+                    </span>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="use-row">
+        <div class="col-100 text-right">
+            <ul class="pagination"> <{$pages}> </ul>
+        </div>
+    </div>
+    <!--出入库单-->
+    <div id="modal-demo" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content radius">
+                <div class="modal-header">
+                    <h3 class="modal-title">对话框标题</h3>
+                    <a class="close" data-dismiss="modal" aria-hidden="true" href="javascript:void();">×</a>
+                </div>
+                <div class="modal-body">
+                    <p><include :file="checkState" />{{checkState}}</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary">确定</button>
+                    <button class="btn" data-dismiss="modal" aria-hidden="true">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="../Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="../Public/js/jquery-ui.min.js"></script>
+<script src="../Public/js/vue.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui-3.1.min.js"></script>
+<script type="text/javascript" src="../Public/js/axios.min.js"></script>
+<script src="../Public/lib/layer-v3.0.3/layer/layer.js"></script>
+<script type="text/javascript" src="../Public/lib/My97DatePicker/WdatePicker.js"></script>
+<script>
+    Vue.filter('timeZone', function (time, self_time) {
+        var self_time = parseInt(self_time);
+        var pdate = new Date(time);
+        var str = '';
+        pdate.setDate(pdate.getDate()+self_time);
+        if (pdate != 'Invalid Date') {
+            year = pdate.getFullYear()
+            month = pdate.getMonth()+1;
+            day = pdate.getDate();
+            str = year + "-" + month + "-" + day;
+        } else {
+            str = "-";
+        }
+        return str;
+    });
+    var vm = new Vue({
+        el: '#app',
+        data:{
+            'warehouses': <{$warehouses}>,
+            'teams': <{$teams}>,
+            'ret': <{$ret}>,
+            'states': <{$states}>,
+            'params': <{$params}>,
+            // search conditions
+            'allo_no': '',
+            'allo_guds': '',
+            'launch_team': '',
+            'receive_team': '',
+            'warehouse': '',
+            'state': '',
+            'launch_time': '',
+            'launch_end_time': '',
+            'checkState': '',
+            // static state code
+            'static_state': 1,
+            'showTime': 2000,
+            'warehouse_show': '',
+            'state': '',
+        },
+        methods: {
+            recieve_allo: function (allo_id) {
+                var data = {"id": allo_id};
+                var url = "/index.php?m=allocation&a=receive";
+                var index = layer.confirm('<{$Think.lang.是否撤回}>？', {
+                    btn: ['<{$Think.lang.是}>','<{$Think.lang.否}>'],
+                    title: '<{$Think.lang.提示}>'
+                }, function(){
+                    layer.close(index);
+                    vm.request_allo(url, data);
+                }, function(){
+                    layer.close(index);
+                });
+                //this.stream_arr.splice(1, 0)
+            },
+            request_allo: function (url, data) {
+                var url = url;
+                var data = data;
+                var loadIndex = null;
+                $.ajax({
+                    type: "POST",
+                    async: true,
+                    url: url,
+                    data: data,
+                    beforeSend: function () {
+                        loadIndex = layer.msg('<{$Think.lang.处理中}>', {icon: 16, shade: 0.3, time: 0});
+                    },
+                    success: function (response) {
+                        layer.close(loadIndex);
+                        $.Huimodalalert(response.info, 2000);
+                        setInterval("window.location.reload()", vm.showTime);
+                    },
+                    error: function () {
+                        $.Huimodalalert('<{$Think.lang.网络繁忙，请重试}>!');
+                    }
+                });
+            },
+            search: function () {
+
+            },
+            reset: function () {
+                vm.allo_no = '';
+                vm.allo_guds = '';
+                vm.receive_team = '';
+                vm.warehouse_show = '';
+                vm.state = '';
+                vm.launch_time = '';
+                vm.launch_end_time = '';
+                vm.launch_team = '';
+            },
+            out_or_allo: function (id, type) {
+                var url = '/index.php?m=allocation&a=out_or_allo';
+                var title = '';
+                if(type == 1) {
+                    title = '<{$Think.lang.调拨出库}>';
+                    localStorage.setItem("out_or_allo_state",'1')
+                } else {
+                    title = '<{$Think.lang.调拨入库}>';
+                    localStorage.setItem("out_or_allo_state",'2')
+                }
+                $.post(url, {
+                        'id' : id,
+                        'type': type
+                    },
+                    function(str){
+                        var sindex = layer.open({
+                            title: title,
+                            area: ['893px', '600px'],
+                            type: 1,
+                            skin: 'demo-class',
+                            content: str //注意，如果str是object，那么需要字符拼接。
+                        });
+                    });
+            }
+//            in_allo: function (id) {
+//                vm.checkState = 'in';
+//                $("#modal-demo").modal("show");
+//                vm.ret.splice(1, 0);
+//            }
+        }
+    });
+    // construct
+    (function(){
+        if (0 != vm.params) {
+            vm.allo_no = vm.params.allo_no;
+            vm.allo_guds = vm.params.allo_guds;
+            vm.receive_team = vm.params.receive_team;
+            vm.warehouse_show = vm.params.warehouse_show;
+            vm.state = vm.params.state;
+            vm.launch_time = vm.params.launch_time;
+            vm.launch_end_time = vm.params.launch_end_time;
+            vm.launch_team = vm.params.launch_team;
+        }
+    })();
+</script>
+<script type="text/javascript" src="../Public/js/common_allo.js"></script>
+</body>
+
+</html>

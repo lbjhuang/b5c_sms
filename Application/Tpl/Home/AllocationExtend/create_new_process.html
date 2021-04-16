@@ -1,0 +1,101 @@
+<html>
+<head></head>
+<link rel="stylesheet" type="text/css" href="../Public/css/NewAllocate.css" />
+<link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+<link rel="stylesheet" href="../Public/css/default.css?v=<{$Think.const.V}>">
+
+<style>
+</style>
+<body>
+<form method="post" enctype="multipart/form-data" id="app" class="create_new_process">
+    <input type="hidden" name="m" value="AllocationExtend">
+    <input type="hidden" name="a" value="show_allo_data">
+    <input type="hidden" name="isNewProcess" value="1">
+    <p class="codeView-title"><{$Think.lang.新建调拨单}>（1/2）</p>
+    <div class="codeView docs-example" style="border-radius: 0px;">
+        <div class="empty"></div>
+        <div class="codeView-row">
+            <div class="Hui-tags-editor cl">
+                <span class="Hui-tags-token"><{$Think.lang.选择调入团队}></span>
+            </div>
+            <div class="Hui-tags-editor-right">
+                <el-select :placeholder="$lang('请选择调入团队')" v-model="transTeamModel" style="width:100%" clearable filterable>
+                    <el-option v-for="item in transTeam" :key="item.CD" :label="item.CD_VAL" :value="item.CD"></el-option>
+                </el-select>
+            </div>
+        </div>
+        <div class="codeView-row">
+            <div class="Hui-tags-editor cl">
+                <span class="Hui-tags-token"><{$Think.lang.选择调入仓库}></span>
+            </div>
+            <div class="Hui-tags-editor-right">
+                <el-select :placeholder="$lang('请选择调入仓库')" v-model="transWarehouseModel" style="width:100%" clearable filterable>
+                    <el-option v-for="(value, key) in transWarehouse" :key="key" :label="value" :value="key"></el-option>
+                </el-select>
+            </div>
+        </div>
+        <div class="row-btn">
+            <input class="btn btn-block btn-primary" type="button" value="<{$Think.lang.下一步}>" @click="create_new_process">
+            <input type="hidden" name="token" v-model="token">
+        </div>
+    </div>
+</form>
+</body>
+<script src="../Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script src="../Public/lib/layer-v3.0.3/layer/layer.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js?<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+
+<script>
+    var vm = new Vue({
+        el: '#app',
+        data:{
+            transTeam: <{$transTeam}>,
+            transWarehouse: <{$transWarehouse}>,
+            transTeamModel: '',
+            transWarehouseModel: '',
+            token: ''
+        },
+        methods: {
+            create_new_process: function () {
+                var url = '<{:U("AllocationExtend/create_new_process")}>';
+                var params = {'into_team': this.transTeamModel, 'into_warehouse': this.transWarehouseModel};
+                if (this.transTeamModel && this.transWarehouseModel)
+                    this.sendRequest(url, params, true, 'post');
+                else {
+                    layer.msg('<{$Think.lang.请同时选择调入团队与调入仓库}>');
+                    return;
+                }
+            },
+            sendRequest: function(url, requestParams, async, type) {
+                var showIndex = 0;
+                $.ajax({
+                    type: type,
+                    async: async,
+                    url: url,
+                    data: requestParams,
+                    beforeSend: function () {
+                        var showIndex = layer.msg('<{$Think.lang.新建流程中}>', {icon: 16});
+                    },
+                    success:function(response){
+                        layer.close(showIndex);
+                        if (response.status == 1) {
+                            vm.token = response.data;
+                            layer.msg(response.info, {icon: 16, time: 1000}, function() {
+                                $('form').submit();
+                            });
+                        } else {
+                            layer.msg(response.info);
+                        }
+                    },
+                    error:function(){
+                        layer.close(showIndex);
+                        layer.msg('<{$Think.lang.请求异常}>')
+                    }
+                });
+            }
+        }
+    });
+</script>
+</html>
+

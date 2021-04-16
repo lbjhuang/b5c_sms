@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- <meta charset="UTF-8"> -->
+    <meta http-equiv="content-type" content="text/html;charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="../Public/css/common.css?v=20180109"/>
+    <link rel="stylesheet" type="text/css" href="../Public/lib/icheck/icheck.css"/>
+    <link rel="stylesheet" href="../Public/lib/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="/Application/Tpl/Home/B2b/css/detail.css?v=<{$Think.const.V}>">
+	<title><{$Think.lang.应付详情页}></title>
+	<script type="text/javascript" src="../Public/lib/My97DatePicker/WdatePicker.js"></script>
+    <style>
+        [v-cloak]{
+            display: none;
+        }
+        .required::after{
+            content: '*';
+            color: red;
+        }
+        .select{
+            min-width: 280px;
+            height: 30px;
+            border-radius: 3px;
+        }
+        .select-input select{
+            width: 80px;
+            height: 30px;
+            border-radius: 3px 0 0 3px;
+        }
+        .select-input input{
+            height: 30px;
+            border-radius: 0 3px 3px 0;
+            border: 1px solid darkgrey;
+            border-left: none;
+            width: 200px;
+        }
+        .input{
+            height: 30px;
+            border-radius:3px;
+            border: 1px solid darkgrey;
+            border-left: none;
+            width: 280px;
+        }
+        .table_box {
+            overflow: auto;
+            height: 400px;
+        }
+
+        .el-tabs__nav-wrap::after, .el-tabs__active-bar {
+            height: 0;
+        }
+
+        .el-tabs__nav div {
+            font-size: 26px;
+            font-weight: 600;
+        }
+
+        .right-btn {
+            float: right;
+            margin-right: 20px;
+        }
+
+        .main-basic-table td, .child-basic-table td {
+            padding: 4px 10px;
+            white-space: normal;
+            line-height: 20px;
+        }
+
+        .el-pagination {
+            margin-top: 20px;
+            margin-bottom: 120px;
+        }
+
+        .child-basic-table th, .child-basic-table td{
+            text-align: center;
+        }
+        
+        .log-table td {
+            padding: 12px 0 !important;
+        }
+
+        .right-btn .el-dialog .el-select, .right-btn .el-dialog .el-input {
+            width: 100%;
+        }
+
+        .right-btn .el-dialog .el-select .el-input {
+            width: 100%;
+        }
+
+        .el-dialog__body {
+            padding: 30px 40px;
+        }
+
+    </style>
+
+</head>
+<body>
+<div class="col-lg-12 col-md-12 col-sm-12 payable_detail" v-cloak id="payment_info">
+    <el-tabs v-model="activeName">
+        <el-tab-pane label="<{$Think.lang.应付单详情}>" name="first">
+        
+            <!-- <div class="row row_title">
+            <a class="active"><{$Think.lang.付款详情}></a>
+            </div> -->
+            <form action="">
+                <div class="detail_form">
+                <!-- 赤练  基础信息 -->
+                <?php if ($info['status'] == 0 && !empty($info['accounting_return_reason'])) {?>
+                <table class="table payment_info">
+                        <thead>
+                            <th width="15%"></th>
+                            <th width="35%"></th>
+                            <th width="15%"></th>
+                            <th width="35%"></th>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="4"> <{$Think.lang.审核信息}> </td>
+                            </tr>
+                            <tr>
+                                <td style="color: red;"> <{$Think.lang.会计审核退回原因}> </td>
+                                <td style="color: red;">【<{$info.accounting_return_reason_val}>】<{$info.supply_note}></td>
+                            </tr>
+                        </tbody>
+                </table>
+                <?php }?>
+
+                <table class="table payment_info">
+                    <thead>
+                        <th width="15%"></th>
+                        <th width="35%"></th>
+                        <th width="15%"></th>
+                        <th width="35%"></th>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="4"> <{$Think.lang.基础信息}> </td>
+                        </tr>
+                        <tr>
+                            <!-- <td> <{$Think.lang.Payment Key}> </td> -->
+                            <td>Payment Key</td>
+                            <td><{$info.payment_no}></td>
+                            <td> <{$Think.lang.应付单状态}> </td>
+                            <td>
+                                <switch name="info.status" >
+                                    <case value="0"><{$Think.lang.待确认}></case>
+                                    <case value="1"><{$Think.lang.待付款}></case>
+                                    <case value="2"><{$Think.lang.待出账}></case>
+                                    <case value="3"><{$Think.lang.已完成}></case>
+                                    <case value="4"><{$Think.lang.待会计审核}></case>
+                                </switch>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td> <{$Think.lang.关联付款单号}> </td>
+                            <td><a onclick="opennewtab(this,'<{$Think.lang.付款单详情}>')" _href="<{:U('finance/pay_order_detail',['payment_audit_id'=>$info['payment_audit_id']])}>"
+                                   class="purchaseLinkHover"><{$info.payment_audit_no}></a>
+                            </td>
+                            <td> <{$Think.lang.采购单号}> </td>
+                            <td><a onclick="opennewtab(this,'<{$Think.lang.订单详情页}>')" _href="<{:U('purchase_order_detail',['relevance_id'=>$order['relevance_id']])}>" 
+                            class="purchaseLinkHover"><{$order.procurement_number}></a><span class="purchase_commonBuy"><{:L($purchase_type[$order['purchase_type']])}></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td> <{$Think.lang.采购PO单号}> </td>
+                            <td><{$order.online_purchase_order_number}></td>
+                            <td> <{$Think.lang.采购总金额}> </td>
+                            <td><{:cdVal($order['amount_currency'])}> <{$order['amount']}></td>
+                        </tr>
+                        <tr>
+                            <td> <{$Think.lang.触发操作}> </td>
+                            <td><{$info.action_type_cd}></td>
+                            <td> <{$Think.lang.适用条款}> </td>
+                            <td><{$info.clause_type}></td>
+                            <!--<td><{:TbPurOrderDetailModel::$payment_type[$order['payment_type']]}>-<{:TbPurOrderDetailModel::$payment_period[$order['payment_period']]}></td>-->
+                        </tr>
+                        <tr>
+                            <td> <{$Think.lang.关联单据号}> </td>
+                            <td><{$info.bill_no}></td>
+                            <td> <{$Think.lang.我方公司}> </td>
+                            <td><{:L(cdVal($order['our_company']))}></td>
+                        </tr>
+                        <tr>
+                            <td> <{$Think.lang.供应商名称}> </td>
+                            <td><{$order.supplier_id}></td>
+                            <td> <{$Think.lang.供应商名称（英文）}> </td>
+                            <td><{$order.supplier_id_en}></td>
+                        </tr>
+                        <tr>
+                            <td> <{$Think.lang.采购网站}> </td>
+                            <td><{:cdVal($order['online_purchase_website'])}></td>
+                            <td> <{$Think.lang.下单账号}> </td>
+                            <td><{$order.online_purchase_account}></td>
+                        </tr>
+                        <tr>
+                            <td> <{$Think.lang.销售团队}> </td>
+                            <td><{:cdVal($order['sell_team'])}></td>
+                            <td> <{$Think.lang.销售同事}> </td>
+                            <td><{$order['seller']}></td>
+                        </tr>
+                        <tr>
+                            <td> <{$Think.lang.采购团队}> </td>
+                            <td><{:cdVal($order['payment_company'])}></td>
+                            <td> <{$Think.lang.采购人}> </td>
+                            <td><{$order.prepared_by}></td>
+                        </tr>
+                        <tr>
+                            <td> <{$Think.lang.备注}> </td>
+                            <td colspan="3"><{$info.confirm_remark}></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <!-- 收款信息 -->
+                <table class="table payment_info">
+                    <thead>
+                        <th width="15%"></th>
+                        <th width="35%"></th>
+                        <th width="15%"></th>
+                        <th width="35%"></th>
+                    </thead>
+                    <tbody>
+                    <?php if ($info['status'] == 0) {?>
+                        <tr>
+                            <td colspan="4"> <{$Think.lang.收款信息}> </td>
+                        </tr>
+                        <tr>
+                            <td> <{$Think.lang.确认前}>-<{$Think.lang.本期应付金额}>-<{$Think.lang.计算公式}> </td>
+                            <td><{$info.formula}></td>
+                            <td> <{$Think.lang.确认前}>-<{$Think.lang.本期应付金额}> </td>
+                            <td>
+                                <?php if($info['amount_payable_split'] === null){ ?>
+                                <span><{:cdVal($order['amount_currency'])}></span>
+                                <span class="payable_amount_confirm_before_span"><{$info['amount_payable']}></span>
+                                <?php }else { ?>
+                                <span>（<{$Think.lang.拆分前}>）<{:cdVal($order['amount_currency'])}></span>
+                                <span class=""><{$info['amount_payable']}></span>
+                                <span>（<{$Think.lang.拆分后}>）<{:cdVal($order['amount_currency'])}></span>
+                                <span class="payable_amount_confirm_before_span"><{$info['amount_payable_split']}></span>
+                                <?php } ?>
+                            </td>
+                        </tr>
+                    <?php } else {?>
+
+                        <tr>
+                            <td colspan="4"> <{$Think.lang.收款信息}> </td>
+                        </tr>
+                        <tr>
+                            <td> <{$Think.lang.支付渠道}> </td>
+                            <td><{$info.payment_channel_cd_val}></td>
+                            <td> <{$Think.lang.支付方式}> </td>
+                            <td><{$info.payment_way_cd_val}></td>
+                        </tr>
+                        <tr>
+                            <td> <{$Think.lang.确认前}>-<{$Think.lang.预计付款日期}> </td>
+                            <td><{$info.payable_date}></td>
+                            <td> <{$Think.lang.确认后}>-<{$Think.lang.预计付款日期}> </td>
+                            <td><{$info.payable_date_after}></td>
+                        </tr>
+                        <?php if (($info['payment_channel_cd'] == 'N001000301' && $info['payment_way_cd'] == 'N003020001')
+                        || (empty($info['payment_channel_cd']) || empty($info['payment_way_cd']))) {?>
+                        <tr>
+                            <td> <{$Think.lang.确认前}>-<{$Think.lang.收款账户名}> </td>
+                            <td><{$supplier_info.collection_account_name}></td>
+                            <td> <{$Think.lang.确认后}>-<{$Think.lang.收款账户名}> </td>
+                            <td><{$info.supplier_collection_account}></td>
+                        </tr>
+                        <tr>
+                            <td> <{$Think.lang.确认前}>-<{$Think.lang.供应商开户行}> </td>
+                            <td><{$supplier_info.SP_BANK_CD}></td>
+                            <td> <{$Think.lang.确认后}>-<{$Think.lang.供应商开户行}> </td>
+                            <td><{$info.supplier_opening_bank}></td>
+                        </tr>
+                        <tr>
+                            <td> <{$Think.lang.确认前}>-<{$Think.lang.银行账号}> </td>
+                            <td><{$supplier_info.BANK_ACCOUNT}></td>
+                            <td> <{$Think.lang.确认后}>-<{$Think.lang.银行账号}> </td>
+                            <td><{$info.supplier_card_number}></td>
+                        </tr>
+                        <tr>
+                            <td> <{$Think.lang.确认前}>-<{$Think.lang.SWIFT CODE}> </td>
+                            <td><{$supplier_info.SWIFT_CODE}></td>
+                            <td> <{$Think.lang.确认后}>-<{$Think.lang.SWIFT CODE}> </td>
+                            <td><{$info.supplier_swift_code}></td>
+                        </tr>
+                    
+                        <!-- 账号信息 -->
+                        <tr>
+                            <td> <{$Think.lang.确认前}>-<{$Think.lang.收款银行本地结算代码}> </td>
+                            <td><{$supplier_info.BANK_SETTLEMENT_CODE}></td>
+                            <td> <{$Think.lang.确认后}>-<{$Think.lang.收款银行本地结算代码}> </td>
+                            <td><{$info.bank_settlement_code}></td>
+                        </tr>
+                        <tr>
+                            <td> <{$Think.lang.确认前}>-<{$Think.lang.收款银行地址}> </td>
+                            <td><{$supplier_info.BANK_ADDRESS}></td>
+                            <td> <{$Think.lang.确认后}>-<{$Think.lang.收款银行地址}> </td>
+                            <td><{$info.bank_address}></td>
+                        </tr>
+                        <tr>
+                            <td> <{$Think.lang.确认前}>-<{$Think.lang.收款账号币种}> </td>
+                            <td><{$supplier_info.account_currency_val}></td>
+                            <td> <{$Think.lang.确认后}>-<{$Think.lang.收款账号币种}> </td>
+                            <td><{$info.account_currency_val}></td>
+                        </tr>
+
+                        <?php } else if ($info['payment_channel_cd'] == 'N001000200' && $info['payment_way_cd'] == 'N003020001') {?>
+                        <tr>
+                            <td> <{$Think.lang.确认前}>-<{$Think.lang.该支付渠道收款账号}> </td>
+                            <td></td>
+                            <td> <{$Think.lang.确认后}>-<{$Think.lang.该支付渠道收款账号}> </td>
+                            <td><{$info.collection_account}></td>
+                        </tr>
+                        <tr>
+                            <td> <{$Think.lang.确认前}>-<{$Think.lang.该支付渠道收款用户名}> </td>
+                            <td></td>
+                            <td> <{$Think.lang.确认后}>-<{$Think.lang.该支付渠道收款用户名}> </td>
+                            <td><{$info.collection_user_name}></td>
+                        </tr>
+                        <?php } else if ($info['payment_channel_cd'] == 'N001000200' && $info['payment_way_cd'] == 'N003020002') {?>
+                        <tr>
+                            <td> <{$Think.lang.确认前}>-<{$Think.lang.平台名称}> </td>
+                            <td><{$info.online_purchase_website_val}></td>
+                            <td> <{$Think.lang.确认后}>-<{$Think.lang.平台名称}> </td>
+                            <td><{$info.platform_cd_val}></td>
+                        </tr>
+                        <tr>
+                            <td> <{$Think.lang.确认前}>-<{$Think.lang.店铺名称}> </td>
+                            <td></td>
+                            <td> <{$Think.lang.确认后}>-<{$Think.lang.店铺名称}> </td>
+                            <td><{$info.store_name}></td>
+                        </tr>
+                        <tr>
+                            <td> <{$Think.lang.确认前}>-<{$Think.lang.平台订单号}> </td>
+                            <td><{$info.online_purchase_order_number}></td>
+                            <td> <{$Think.lang.确认后}>-<{$Think.lang.平台订单号}> </td>
+                            <td><{$info.platform_order_no}></td>
+                        </tr>
+                        <?php }?>
+                        <tr>
+                            <td> <{$Think.lang.确认前}>-<{$Think.lang.本期应付金额}>-<{$Think.lang.计算公式}> </td>
+                            <td><{$info.formula}></td>
+                            <td> <{$Think.lang.是否使用抵扣金额支付}>？ </td>
+                            <td><span><if condition="$info['use_deduction'] eq 1"><{$Think.lang.是}><else/><{$Think.lang.否}></if></span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td> <{$Think.lang.确认前}>-<{$Think.lang.本期应付金额}> </td>
+                            <td>
+                                <?php if($info['amount_payable_split'] === null){ ?>
+                                <span><{:cdVal($order['amount_currency'])}></span>
+                                <span class="payable_amount_confirm_before_span"><{$info['amount_payable']}></span>
+                                <?php }else { ?>
+                                <span>（<{$Think.lang.拆分前}>）<{:cdVal($order['amount_currency'])}></span>
+                                <span class=""><{$info['amount_payable']}></span>
+                                <span>（<{$Think.lang.拆分后}>）<{:cdVal($order['amount_currency'])}></span>
+                                <span class="payable_amount_confirm_before_span"><{$info['amount_payable_split']}></span>
+                                <?php } ?>
+                            </td>
+                            <td> <{$Think.lang.确认后}>-<{$Think.lang.本期应付金额}> </td>
+                            <td><{:cdVal($order['amount_currency'])}> <{$info.amount_confirm}></td>
+                        </tr>
+                        <tr>
+                            <td> <{$Think.lang.应付差额}> </td>
+                            <td><{$info.amount_difference}></td>
+                            
+                            <td> <{$Think.lang.差异原因}> </td>
+                            <td><{:cdVal($info['difference_reason'])}></td>
+                        </tr>
+                        <tr>
+                            <td> <{$Think.lang.下一次付款日期与差额}> </td>
+                            <td>
+                                <?php if($info['amount_difference'] > 0) {?>
+                                <{:cdVal($order['amount_currency'])}> <{$info['amount_difference']}> (<{$Think.lang.预计时间}>:<{$info['next_pay_time']}>)
+                                <?php }?>
+                            </td>
+
+                            <td> <{$Think.lang.提交付款备注}> </td>
+                            <td colspan="3"><{$info.confirm_remark}></td>
+                        </tr>
+                        <tr>
+                            <td> <{$Think.lang.付款需求附件}> </td>
+                            <td colspan="3">
+                                <volist name="info.payment_attachment" id="item">
+                                    <a style="display:block;margin-bottom: 10px;color:blue;cursor: pointer; " href="/index.php?m=order_detail&a=download&file=<{$item['save_name']}>">
+                                        <{$item['original_name']|default=''}>
+                                    </a>
+                                </volist>
+                            </td>
+                        </tr>
+                        <?php if (in_array($info['status'], [2,3])) {?>
+                        <tr>
+                            <td> <{$Think.lang.付款/出账确认备注}> </td>
+                            <td colspan="3"><{$info.confirmation_remark}></td>
+                        </tr>
+                        <?php }?>
+                    <?php }?>
+                    </tbody>
+                </table>
+
+                <!-- 关联应付单信息 -->
+                <notempty name="rel_payable_info">
+                <div class="main-basic-info">
+                    <header>
+                        <{$Think.lang.关联应付单信息}>
+                    </header>
+                    <table border="0" cellspacing="0" cellpadding="0" class="child-basic-table">
+                        <thead>
+                        <tr>
+                            <!-- <th><{$Think.lang.Payment Key}></th> -->
+                            <th>Payment Key</th>
+                            <th><{$Think.lang.采购单号}></th>
+                            <th><{$Think.lang.触发操作}></th>
+                            <th><{$Think.lang.应付确认人}></th>
+                            <th><{$Think.lang.确认后-本期应付金额}></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+
+
+                        <!-- <volist name="rel_payable_info" id="vo">
+                        <tr>
+                            <td>
+                                <a onclick="openPayDetail('<{$vo.id}>')" class="purchaseLinkHover"><{$vo.payment_no}></a>
+                            </td>
+                            <td>
+                                <a onclick="openPurchaseDetail('<{$vo.relevance_id}>')" class="purchaseLinkHover"><{$vo.procurement_number}></a>
+                            </td>
+                            <td><{$vo.action_type_cd}></td>
+                            <td><{$vo.confirm_user}></td>
+                            <td><{$vo.amount_currency_val}>  <{$vo.amount_confirm|default='0.00'}></td>
+                        </tr>
+                        </volist> -->
+
+                        <?php
+                        foreach ($rel_payable_info as $cd => $vo) {
+
+                            $action_type_cd = $vo['action_type_cd'];
+                            
+                                ?>
+
+                            <tr>
+                                <td>
+                                    <a onclick="openPayDetail('<{$vo.id}>')" class="purchaseLinkHover"><{$vo.payment_no}></a>
+                                </td>
+                                <td>
+                                    <a onclick="openPurchaseDetail('<{$vo.relevance_id}>')" class="purchaseLinkHover"><{$vo.procurement_number}></a>
+                                </td>
+                                <td><{$Think.lang.$action_type_cd}></td>
+                                <td><{$vo.confirm_user}></td>
+                                <td><{$vo.amount_currency_val}>  <{$vo.amount_confirm|default='0.00'}></td>
+                            </tr>
+
+                        <?php
+                            }
+                        ?>
+
+                        </tbody>
+
+                    </table>
+                </div>
+                </notempty>
+                <!-- 付款确认信息 -->
+                <if condition="$info.status eq 2 or $info.status eq 3">
+                <table class="table payment_info">
+                    <thead>
+                        <th width="15%"></th>
+                        <th width="35%"></th>
+                        <th width="15%"></th>
+                        <th width="35%"></th>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="4"> <{$Think.lang.付款确认信息}> </td>
+                        </tr>
+                        <tr>
+                            <td> <{$Think.lang.提交付款币种}> </td>
+                            <td><{:cdVal($info['payment_currency_cd'])}></td>
+                            <td> <{$Think.lang.本单分摊提交付款金额}> </td>
+                            <td><{$info.amount_paid|default='0.00'}></td>
+                        </tr>
+                        <tr>
+                            <td> <{$Think.lang.付款凭证}> </td>
+                            <td>
+                                <a style="display:block;margin-bottom: 10px;color:blue;cursor: pointer; " href="/index.php?m=order_detail&a=download&file=<{$info['payment_voucher'][0]['save_name']}>">
+                                    <{$info['payment_voucher'][0]['original_name']|default=''}>
+                                </a>
+                            </td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+                </if>
+                <if condition="$info.status eq 3">
+                <!-- 出账确认信息 -->
+                <table class="table payment_info">
+                    <thead>
+                        <th width="15%"></th>
+                        <th width="35%"></th>
+                        <th width="15%"></th>
+                        <th width="35%"></th>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="4"> <{$Think.lang.出账确认信息}> </td>
+                        </tr>
+                        <tr>
+                            <td> <{$Think.lang.付款币种}> </td>
+                            <td><{:cdVal($info['billing_currency_cd'])}></td>
+                            <td> <{$Think.lang.本单分摊扣款金额}> </td>
+                            <td> <{$info.amount_account|default='0.00'}></td>
+                        </tr>
+                        <tr>
+                            <td> <{$Think.lang.本单分摊手续费|default='0.00'}> </td>
+                            <td> <{$info.expense}></td>
+                            <td> <{$Think.lang.本单分摊扣款总金额}> </td>
+                            <td><{$info.total_average_amount|default='0.00'}></td>
+                        </tr>
+                        <tr>
+                            <td> <{$Think.lang.付款水单}> </td>
+                            <!-- <td>
+                                <a style="display:block;margin-bottom: 10px;color:blue;cursor: pointer; " href="/index.php?m=order_detail&a=download&file=<{$info['billing_voucher'][0]['save_name']}>">
+                                <{$info['billing_voucher'][0]['original_name']|default=''}>
+                                </a>
+                            </td> -->
+                            
+                            <td>
+                                    <!-- <div v-if="detail.submit_payment_info.payment_voucher">
+                                            <div class="attachmentLink"   v-for="item in JSON.parse(detail.submit_payment_info.payment_voucher)">
+                                                <a class="file_type" :href="'/index.php?m=order_detail&a=download&file='+item.save_name">{{item.original_name}}</a>
+                                            </div>
+                                    </div> -->
+
+                                <volist name="info.billing_voucher" id="item">
+                                    <a style="display:block;margin-bottom: 10px;color:blue;cursor: pointer; " href="/index.php?m=order_detail&a=download&file=<{$item['save_name']}>">
+                                        <{$item['original_name']|default=''}>
+                                    </a>
+                                </volist>
+                            </td>
+
+
+
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+                </if>
+                <div class="col-lg-12  col-md-12 col-xs-12 col-lg-12-btn">
+                    <?php if(ButtonAction::hidden()){ ?>
+                    <if condition="$info['status'] eq 0">
+                        <button id="PurchasePayable" type="button" onclick="location='<{:U("payable_confirm",["id"=>$info['id']])}>'" class="btn-sure"><{$Think.lang.应付确认}></button>
+                    <elseif condition="$info['status'] eq 1" />
+                        <!--<button id="purchasePaymentAmount" type="button" onclick="location='<{:U("payable_write_off",["id"=>$info['id']])}>'" class="btn-sure"><{$Think.lang.付款核销}></button>-->
+                        <!-- <button type="button" onclick="location='<{:U("cancel_confirm",["payment_audit_id"=>$info['payment_audit_id']])}>'" class="btn-sure"><{$Think.lang.撤回到待确认}></button> -->
+                    <elseif condition="$info['status'] eq 2" />
+                        <!--<button id="PurchasePayment" type="button" onclick="location='<{:U("payable_write_off",["id"=>$info['id']])}>'" class="btn-sure"><{$Think.lang.出账确认}></button>-->
+                        <if condition="$can_return eq true">
+                            <!--<button type="button" onclick="location='<{:U("purchase_return",["relevance_id"=>$order['relevance_id']])}>'" class="btn-sure"><{$Think.lang.退回}></button>-->
+                            <!--<button type="button" onclick="payBack()" class="btn-sure"><{$Think.lang.退回}></button>-->
+                        </if>
+                    <elseif condition="$info['status'] eq 4" />
+
+                        <button @click="returnBack()" type="button" class="btn-sure"><{$Think.lang.撤回}></button>
+                        
+                    </if>
+                    <?php } ?>
+                    <button type="button" onclick="location='<{:U("payable_list")}>'" class="btn-back"><{$Think.lang.返回列表}></button>
+                    <if condition="$info['status'] egt 2">
+                        <!--<button type="button" class="btn-sure" onclick="payableDialog()"><{$Think.lang.撤回到待付款}></button>-->
+                    </if>
+                </div>
+            </div>
+            </form>
+        </el-tab-pane>
+        <el-tab-pane label="<{$Think.lang.日志信息}>" name="second">
+            <div class="main-basic-info">
+                <header>
+                    <{$Think.lang.操作日志}>
+                </header>
+                <table border="0" cellspacing="0" cellpadding="0" class="child-basic-table">
+                    <thead>
+                    <tr>
+                        <th><{$Think.lang.操作人}></th>
+                        <th><{$Think.lang.操作时间}></th>
+                        <th><{$Think.lang.操作}></th>
+                        <th><{$Think.lang.当前状态}></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr v-for="item in logData">
+                        <td>{{item.created_by}}</td>
+                        <td>{{item.created_at}}</td>
+                        <td>{{item.operation_info}}</td>
+                        <td>{{item.status_name}}</td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div class="use-row">
+                    <div class="col-100 text-right">
+                        <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="logSearch.p" :page-sizes="[10, 20, 50, 100, 200]" :page-size="logSearch.rows" layout="sizes, prev, pager, next,jumper" :total="totalCount"></el-pagination>
+                    </div>
+                </div>
+            </div>
+        </el-tab-pane>
+    </el-tabs>
+</div>
+</body>
+<script type="text/javascript" src="../Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="../Public/lib/bootstrap/js/tether.min.js"></script>
+<script type="text/javascript" src="../Public/lib/bootstrap/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="../Public/utils/utils.js?v=190128"></script>
+<script type="text/javascript" src="../Public/lib/jquery.form.min.js"></script>
+<script type="text/javascript" src="../Public/lib/webuploader/0.1.5/webuploader.js"></script>
+<script src="../Public/lib/layer/1.9.3/layer.js" type="text/javascript"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script>
+    var VM = new Vue({
+        el: '#payment_info',
+        data: {
+            activeName: 'first',
+            logData: [],//日志信息数据
+            logSearch: {//日志分页
+                p: 1,
+                rows: 10
+            },
+            totalCount: 0,//日志总数
+            payment_audit_id:"<{$info['payment_audit_id']}>"
+        },
+        created() {
+            this.getLogData();
+        },
+        methods:{
+            getLogData(){
+                var _this = this;
+                var data = {
+                    search: {
+                        payment_id: "<{$info['id']}>"
+                    },
+                    pages: {
+                        per_page: this.logSearch.rows,
+                        current_page: this.logSearch.p
+                    }
+                    
+                }
+                axios.post("/index.php?m=orderDetail&a=payableBillLog", data)
+                .then(function(res) {
+                    var result = res.data;
+                    if (result.code == 200) {
+                        _this.logData = result.data.data.data;
+                        _this.totalCount = Number(result.data.data.pages.total);
+                    } else {
+                        _this.$message.warning(_this.$lang("日志信息查询失败"));
+                    }
+                });
+            },
+            // 日志分页
+            handleSizeChange: function(size) {
+                this.logSearch.rows = size;
+                this.getLogData();
+            },
+            handleCurrentChange: function(currentPage) {
+                this.logSearch.p = currentPage;
+                this.getLogData();
+            },
+            returnBack:function(){
+                var _this = this;
+                var data = {
+                    payment_audit_id: _this.payment_audit_id,
+                    status:0,
+                    is_return:0,
+                    accounting_return_reason:""
+                }
+                axios.post("/index.php?m=orderDetail&a=accountingAudit", data)
+                .then(function(res) {
+                    console.log(res);
+                    var result = res.data;
+                    if (result.code == 200) {
+                        _this.$message({
+                            message: _this.$lang('撤回成功'),
+                            type: 'success'
+                        });
+                        setTimeout(function(){
+                            window.location.reload()
+                            // var route = document.createElement("a");
+                            // route.setAttribute("style", "display: none");
+                            // route.setAttribute("onclick", "backNewtab(this,'采购应付列表')");
+                            // route.setAttribute("_href", '/index.php?m=order_detail&a=payable_list');
+                            // route.click();
+                        },1000)
+                    } else {
+                        _this.$message({
+                            message: res.data.msg,
+                            type: 'warning'
+                        });
+                    }
+                });
+
+            } 
+        }
+    })
+    window.onload = function(){
+        var openEdit = sessionStorage.getItem("openEdit");
+        console.log(openEdit)
+        if(openEdit == 'PurchasePayable'){
+            document.querySelector('#PurchasePayable').click()
+            sessionStorage.removeItem("openEdit")
+        }else if(openEdit == 'PurchasePayment'){
+            document.querySelector('#PurchasePayment').click()
+            sessionStorage.removeItem("openEdit")
+        }else if(openEdit == 'purchasePaymentAmount'){
+            document.querySelector('#purchasePaymentAmount').click()
+            sessionStorage.removeItem("openEdit")
+        }
+        
+        
+    }
+
+    // 操作前弹框提示用户将生成的应付金额
+    function payableDialog() {
+        $.ajax({
+            type: "POST",
+            url: "/index.php?m=order_detail&a=get_operation_amount",
+            data: {
+                action_type_cd: 'N002870014',
+                money_type: '1',
+                money_id: "<{$info['id']}>"
+            },
+            success: function (res) {
+                const resData = res.data
+                if (res.code == 200) {
+                    if (resData.is_show == '1') {
+                        utils.modal(true, {
+                            width: 500,
+                            content: `本操作将生成应付金额：（${resData.pre_pay_info.currency_type}）${resData.pre_pay_info.amount}`,
+                            btnClass: 'btn-primary',
+                            title: '<{$Think.lang.提示}>',
+                            confirmText: '<{$Think.lang.确认}>',
+                            cancelText: '<{$Think.lang.取消}>',
+                            confirmFn: function () {
+                                payBack()
+                            }
+                        });
+                    } else {
+                        payBack()
+                    }
+                } else {
+                    layer.msg(resData.msg, { icon: 5, area: '180px' });
+                }
+            }
+        });
+    }
+
+    function payBack() {
+        utils.modal(true,{
+            width:500,
+            content:'<div style="margin-bottom:10px;"><i style="color:red;">* </i><{$Think.lang.备注}>：</div><textarea id="finBack" rows="3" maxlength="200" placeholder="<{$Think.lang.请输入退回理由}>" style="width: 95%;border-radius: 3px"></textarea>',
+            btnClass:'btn-primary',
+            title:'<{$Think.lang.提示}>',
+            confirmText:'<{$Think.lang.确认}>',
+            cancelText:'<{$Think.lang.取消}>',
+            confirmFn:function () {
+                var showModal = false,
+                    value = $('#finBack').val();
+                if(value.replace(/\s/g,'').length){
+                    $.ajax({
+                        type: "POST",
+                        url: '/index.php?m=order_detail&a=payable_return_to_payment_confirm',
+                        data: {id:"<{$info['id']}>",reason:value},
+                        dataType: "json",
+                        success: function (res) {
+                            if(res.code == 2000){
+                                layer.msg('退回成功');
+                                setTimeout(function(){
+                                    var route = document.createElement("a");
+                                    route.setAttribute("style", "display: none");
+                                    route.setAttribute("onclick", "backNewtab(this,'采购应付列表')");
+                                    route.setAttribute("_href", '/index.php?m=order_detail&a=payable_list');
+                                    route.click();
+                                },1500)
+                            }else{
+                                layer.msg(res.msg);
+                            }
+                        }
+                    })
+                }else{
+                    layer.msg("<{$Think.lang.请填写退回理由}>");
+                    showModal =  true;
+                }
+                return showModal;
+            }
+        });
+    }
+    function openPayDetail (item) {
+        console.log(item);
+        newTab("/index.php?m=order_detail&a=payable_detail&id=" + item, '<{$Think.lang.应付详情页}>');
+    }
+    function openPurchaseDetail (item) {
+        console.log(item);
+        newTab("/index.php?m=order_detail&a=purchase_order_detail&relevance_id=" + item, '<{$Think.lang.订单详情页}>');
+    }
+</script>
+</html>

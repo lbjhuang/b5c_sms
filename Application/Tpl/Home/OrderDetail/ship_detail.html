@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<link rel="stylesheet" type="text/css" href="../Public/lib/icheck/icheck.css"/>
+	<link rel="stylesheet" href="../Public/lib/bootstrap/css/bootstrap.min.css">
+	<link rel="stylesheet" href="../Public/lib/bootstrap/css/bootstrap-grid.min.css">
+	<link rel="stylesheet" href="../Public/lib/bootstrap/css/bootstrap-reboot.min.css">
+	<link rel="stylesheet" href="../Public/lib/icon/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../Public/lib/webuploader/0.1.5/webuploader.css"/>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+	<title><{$Think.lang.采购信息}></title>
+	<!--<script type="text/javascript" src="../Public/lib/My97DatePicker/WdatePicker.js"></script>-->
+    <link rel="stylesheet" href="../Public/css/purchaseDetail.css?v=1"/>
+    <style>
+        .btn-class{
+            background: #FB8C00;
+            border: 1px solid #f19a1b;
+            padding: 5px 15px;
+            border-radius: 3px;
+            color: white;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<div class="col-lg-12 col-md-12 col-sm-12 purchase_detail" id="shipDetail">
+    <div class="row row_title common_title">
+        <a onclick="opennewtab(this,'<{$Think.lang.订单详情页}>')" _href="<{:U('order_detail',['id'=>$relevance_info['relevance_id']])}>"><{$Think.lang.订单详情}></a>
+        <a onclick="opennewtab(this,'<{$Think.lang.付款详情页}>')" _href="<{:U('payable_info',['id'=>$relevance_info['relevance_id']])}>"><{$Think.lang.付款}></a>
+        <a class="active"><{$Think.lang.发货}></a>
+        <a onclick="opennewtab(this,'<{$Think.lang.入库详情页}>')" _href="<{:U('warehouse_info',['id'=>$relevance_info['relevance_id']])}>"><{$Think.lang.入库}></a>
+        <a onclick="opennewtab(this,'<{$Think.lang.发票详情页}>')" _href="<{:U('invoice_info',['relevance_id'=>$relevance_info['relevance_id']])}>"><{$Think.lang.发票}></a>
+        <a onclick="opennewtab(this,'<{$Think.lang.操作日志页}>')" _href="<{:U('purchase_log',['id'=>$relevance_info['relevance_id']])}>"><{$Think.lang.操作日志}></a>
+    </div>
+    <form method="post" class="shipping_form" action="<{:U('ship')}>" enctype="multipart/form-data" style="display: block;">
+        <table class="table table-bordered table-goodsDetail" >
+            <p class="table-p" style="height: 40px;line-height: 40px;margin-top: 20px !important;"><{$Think.lang.商品信息}></p>
+            <thead>
+            <tr class="tr_th">
+                <th width=""><{$Think.lang.SKU编码}></th>
+                <th width=""><{$Think.lang.条形码}></th>
+                <th width=""><{$Think.lang.商品名称}></th>
+                <th width=""><{$Think.lang.图片}></th>
+                <th width=""><{$Think.lang.SKU信息}></th>
+                <th width=""><{$Think.lang.需求数量}></th>
+                <th width=""><{$Think.lang.已发货}></th>
+                <th width=""><{$Think.lang.剩余待发}></th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php
+                $remainder_total = 0;
+                foreach($goods as $key=>$v){
+            ?>
+            <tr>
+                <td><?php echo $v['search_information'];?></td>
+                <td><{$v.upc_id}></td>
+                <td><?php echo $v['goods_name'];?></td>
+                <td onmouseover="utils.picView(this,'<{$v['goods_image']}>')">
+                    <img src="<{$v['goods_image']}>" style="max-height: 80px;max-width: 80px" />
+                </td>
+                <td><?php echo $v['goods_attribute'];?></td>
+                <td><?php echo number_format($v['goods_number']);?></td>
+                <td><?php echo number_format($v['shipped_number']);?></td>
+                <td class="remainder"><?php echo number_format(($remainder = $v['goods_number']-$v['shipped_number']) >= 0 ? $remainder :  $remainder = 0);?></td>
+            </tr>
+            <?php $remainder_total += $remainder; } ?>
+            <tr class="total">
+                <td><{$Think.lang.合计}></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="number_total"><{:number_format($relevance_info['number_total'])}></td>
+                <td>
+                    <{:number_format($relevance_info['shipped_number'])}>
+                </td>
+                <td class="remainder_total"><{:number_format($remainder_total)}></td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="col-lg-12  col-md-12 col-xs-12 col-lg-12-btn">
+            <if condition="($relevance_info['order_status'] eq 'N001320300') AND ($relevance_info['ship_status'] neq '2')">
+                <span class='deliver-finish'>发货完结</span>
+                <a class="btn-back" id="ship_confirm" onclick="opennewtab(this,'发货操作页')" _href='<{:U("ship",['id'=>$relevance_info['relevance_id']])}>'"><{$Think.lang.发货}></a>
+            </if>
+            <a style="height: 40px;border-radius: 3px; display: inline-block;padding: 0 20px;" class="btn-cancel" id="back_button" onclick="location='<{:U("order_list")}>'" name="goods_detail_1"><{$Think.lang.返回列表}></a>
+        </div>
+        <volist name="ships" id="v" key="k">
+            <table class="table table-bordered table-bg">
+                <tbody class="">
+                <tr>
+                    <td colspan="3" style="padding: 5px 10px;background: #546E7A; color: white; text-align: left;border: none;"><{$Think.lang.发货信息}>(<{$k}>/<{$count_ships}>)</td>
+                    <td colspan="3" style="padding: 5px 10px;background: #546E7A; color: white; text-align: right;border: none;">
+                        <if condition="$v['warehouse_status'] eq 0">
+                            <input type="button" value="撤回" data-id="<{$v.id}>" class='btn-class retract'>
+                        </if>
+                    </td>
+                <tr>
+                    <td width="11%"><{$Think.lang.提单号(或其他有效单据号)}></td>
+                    <td width="23%"><{$v.bill_of_landing}></td>
+                    <td width="11%"><{$Think.lang.发货时间}></td>
+                    <td width="22%" class="td_time"><{$v.shipment_date}></td>
+                    <td width="11%"><{$Think.lang.预计到港/到货时间}></td>
+                    <td width="22%" class="td_time"><{$v.arrival_date}></td>
+                </tr>
+                <tr>
+                    <td><{$Think.lang.本次发货数量}></td>
+                    <td class="ship_number_total_1"><{$v.shipping_number}></td>
+                    <td ><{$Think.lang.是否需要入我方库}></td>
+                    <td class="td_detail_span">
+                        <if condition="$v['need_warehousing'] eq 1">
+                            <{$Think.lang.需要}>
+                            <else />
+                            <{$Think.lang.不需要}>
+                        </if>
+                    </td>
+                    <td><{$Think.lang.我方仓库}></td>
+                    <td><{$warehouses[$v['warehouse']]}></td>
+                </tr>
+                <tr>
+                    <td><{$Think.lang.发货备注}></td>
+                    <td><{$v.remark}></td>
+                    <td><{$Think.lang.操作人}></td>
+                    <td><{$v.create_user}></td>
+                    <td><{$Think.lang.操作时间}></td>
+                    <td><{$v.create_time}></td>
+                </tr>
+                <tr>
+                    <td><{$Think.lang.发货凭证}></td>
+                    <td colspan="5" class="ship_enclosure">
+                        <volist name="v['credential']" id="value">
+                            <a href="<{:U('download',['file'=>$value['name']])}>"><{:cdVal($value['type'])}></a>
+                        </volist>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+
+            <table class="table table-bordered table-goodsDetail" >
+                <p class="table-p" style="height: 40px;line-height: 40px"><{$Think.lang.发货商品}></p>
+                <thead>
+                <tr class="tr_th">
+                    <th width=""><{$Think.lang.SKUID}></th>
+                    <th width=""><{$Think.lang.条形码}></th>
+                    <th width=""><{$Think.lang.商品名称}></th>
+                    <th width=""><{$Think.lang.图片}></th>
+                    <th width=""><{$Think.lang.SKU信息}></th>
+                    <th width=""><{$Think.lang.需求数量}></th>
+                    <th width=""><{$Think.lang.已发货}></th>
+                </tr>
+                </thead>
+                <tbody>
+                    <volist name="ship_goods[$v['id']]" id="value">
+                        <tr>
+                            <td><{$value['sku_id']?$value['sku_id']:$goods[$value['information_id']]['sku_information']}></td>
+                            <td><{$goods[$value['information_id']]['upc_id']}></td>
+                            <td><{$value['goods_name']?$value['goods_name']:$goods[$value['information_id']]['goods_name']}></td>
+                            <td onmouseover="utils.picView(this,'<{$goods[$value['information_id']]['goods_image']}>')">
+                                <img src="<{$goods[$value['information_id']]['goods_image']}>" style="max-height: 80px;max-width: 80px" />
+                            </td>
+                            <td><{$value['goods_attribute']?$value['goods_attribute']:$goods[$value['information_id']]['goods_attribute']}></td>
+                            <td><{$goods[$value['information_id']]['goods_number']}></td>
+                            <td><{$value['ship_number']}></td>
+                        </tr>
+                    </volist>
+                <tr class="total">
+                    <td>合计</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td><{:number_format($v['goods_number'])}></td>
+                    <td><{:number_format($v['shipping_number'])}></td>
+                </tr>
+                </tbody>
+            </table>
+        </volist>
+    </form>
+</div>
+<span class="hidden-item" id="relevance_id"><{$relevance_info['relevance_id']}></span>
+
+<div class="dialog-deliver-finish dialog">
+    <div class="dialog-box">
+        <header>提示</header>
+        <i class="close-btn">×</i>
+        <p>确认不再继续发货，并且收到供应商退款，才可标记完结。标记完结后不可恢复！</p>
+        <div class="btns">
+            <span class='cancel-btn'>取消</span>
+            <span class='yes-btn'>确定</span>
+        </div>
+    </div>
+</div>
+<div id="mask"></div>
+
+</body>
+<script type="text/javascript" src="../Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="../Public/lib/bootstrap/js/tether.min.js"></script>
+<script type="text/javascript" src="../Public/lib/bootstrap/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="../Public/lib/layer-v3.0.3/layer/layer.js"></script>
+<script type="text/javascript" src="../Public/utils/utils.js?v=20180907"></script>
+<script type="text/javascript" src="../Public/lib/jquery.form.min.js"></script>
+<script type="text/javascript" src="../Public/lib/webuploader/0.1.5/webuploader.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script>
+    $(function () {
+        var length=$(".table-bg").length;
+        if(length>0){
+        }else{
+            $(".shipping_form .col-lg-12-btn").css("border-bottom","none")
+        }
+
+
+        $('.dialog-deliver-finish .close-btn').click(function(){
+            $('.dialog-deliver-finish').hide()
+            $('#mask').hide();
+        })
+        $('.dialog-deliver .close-btn').click(function(){
+            $('.dialog-deliver').hide()
+            $('#mask').show();
+        })
+        $('.deliver-finish').click(function(){
+            $('.dialog-deliver-finish').show();
+            $('#mask').show();
+        })
+        $('.cancel-btn').click(function(){
+            $(this).parents('.dialog').hide()
+            $('#mask').hide();
+        })
+        
+        $('.dialog-deliver-finish .yes-btn').click(function(){
+            var id = $('#relevance_id').text();
+            $.ajax({
+               type: "POST",
+               url: "/index.php?m=order_detail&a=ship_end",
+               data: "relevance_id="+id,
+               success: function(data){
+                     $('.dialog-deliver-finish').hide()
+                     $('#mask').hide();
+                      if(data.code == 2000){
+                        layer.msg('操作成功', {icon: 6,area: '180px'});
+                        setTimeout(function(){
+                            window.location.reload();
+                        },1000)
+                      } else{
+                        layer.msg('操作失败', {icon: 5,area: '180px'});
+                      }
+                }
+            });
+        })
+        $(".retract").click(function () {
+            var id = $(this).data('id');
+            $.ajax({
+                type: "POST",
+                url: "/index.php?m=order_detail&a=ship_revoke",
+                data: "id=" + id,
+                success: function (data) {
+                    $('.dialog-deliver-finish').hide()
+                    $('#mask').hide();
+                    if (data.code == 2000) {
+                        layer.msg('操作成功', { icon: 6, area: '180px' });
+                        setTimeout(function () {
+                            window.location.reload();
+                        }, 1000)
+                    } else {
+                        layer.msg('操作失败', { icon: 5, area: '180px' });
+                    }
+                }
+            });
+        })
+    })
+</script>
+</html>

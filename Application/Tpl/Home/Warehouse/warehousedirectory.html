@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>仓库档案</title>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+
+        .warehouse_country .panel-default .tabCon span {
+            border: 1px solid #1E7EB4;
+        }
+
+        .warehouse_country .panel-default .show_warehouse_params_content span {
+            border: 1px solid #1E7EB4;
+        }
+
+        .edit {
+            background: #1E7EB4;
+            cursor: pointer;
+            width: 50px;
+            height: 30px;
+            border: none;
+            border-radius: 4px;
+            margin: 4px;
+            color: #FFFFFF;
+        }
+
+        .margin-left {
+            margin-left: 20px;
+        }
+
+        #dialog .el-form-item__label {
+            width: 140px !important;
+        }
+
+        .el-input_width {
+            width: 70%;
+        }
+
+        .el-button--primary {
+            background: #1E7EB4;
+        }
+
+        .seacher-result {
+            font-size: 14px;
+        }
+
+        .export {
+            margin-left: 20px;
+            color: #349dd9;
+            font-size: 16px;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .el-form-item__content {
+            display: flex;
+            margin-left: 0px !important;
+        }
+
+        .title-left {
+            text-align: right;
+            /* margin-right: 14px; */
+            /* width: 100px; */
+            margin: 0 10px;
+        }
+
+        .principal.title-left {
+            width: 280px;
+        }
+
+        .title-left span {
+            color: #f00;
+            /*padding-right: 14px;*/
+        }
+
+        .principal-select {
+            width: 58%;
+        }
+
+        .el-select__tags{
+            margin-top: 6px;
+            top:0!important;
+            transform:translateY(0) !important;
+        }
+        .el-dialog__title {
+            margin-left: 35px;
+        }
+
+        .absolute {
+            position: absolute !important;
+            top: 500px !important;
+        }
+
+        /*.el-table--border::after{
+             background: #fff !important;
+        }*/
+        .el-table__body, .el-table__header {
+            /*width: 100% !important;*/
+            table-layout: automatic !important;
+        }
+
+        .select {
+            position: absolute !important;
+            top: 310px !important;
+        }
+
+        .send-cargo {
+            position: absolute !important;
+            top: 440px !important;
+        }
+
+        .el-switch {
+            height: 40px;
+        }
+        .el-col-22 .el-select,.el-col-22 .el-input{
+            margin-bottom:8px;
+        }
+        .el-col-22 .el-form-item{
+            display: inline-block;
+        }
+        .deliverySystemSelect{
+          flex: 1;
+        }
+    </style>
+</head>
+<body>
+<div id="content" v-cloak style="padding: 20px 20px 200px;">
+    <div class="wrap">
+        <div class="pickingList-search search-common">
+            <div class='cls' style="height:auto;">
+                <el-row style="position: relative">
+                    <el-col style="margin-bottom:20px;">
+                        <span style="font-size: 16px;margin-right:20px;margin-left:20px;">{{$lang('启用状态')}}</span>
+                        <el-radio-group  v-model="queryParams.data.query.status">
+                            <el-radio-button :label="1">{{$lang('启用')}}</el-radio-button>
+                            <el-radio-button :label="0">{{$lang('停用')}}</el-radio-button>
+                        </el-radio-group>
+                    </el-col>
+                </el-row>
+                <el-row style="position: relative;">
+                    <el-col :span="22" style="margin-bottom:20px;width: 100%;">
+                        <!--<span style="font-size: 16px; ">修改时间</span>-->
+                        <!--<el-date-picker class="margin-left" v-model="queryParams.data.query.update_time_start"-->
+                                        <!--value-format="yyyy-MM-dd" type="date"-->
+                                        <!--placeholder="<{$Think.lang.开始时间}>"></el-date-picker>-->
+                        <!--<span>-</span>-->
+                        <!--<el-date-picker v-model="queryParams.data.query.update_time_end" value-format="yyyy-MM-dd"-->
+                                        <!--type="date" placeholder="<{$Think.lang.结束时间}>"></el-date-picker>-->
+                        <!--  <el-select class="margin-left" collapse-tags v-model="queryParams.data.query.warehouseCode" multiple filterable placeholder="<{$Think.lang.请选择仓库}>">
+                             <el-option v-for="(i, v) in warehouses" :key="v" :label="i.CD_VAL" :value="i.CD"> </el-option>
+                         </el-select> -->
+                        <el-form>
+                        <el-form-item>
+                        <el-select class="margin-left" v-model="queryParams.data.query.search_name" filterable>
+                            <el-option v-for="(i, v) in warehouseType" :key="i.id" :label="$lang(i.val)"
+                                       :value="i.id"></el-option>
+                        </el-select>
+                        <el-input :placeholder="$lang('请输入')" v-model.trim="queryParams.data.query.search_value"
+                                  style="width: 220px;"></el-input>
+                        </el-form-item>
+                        <el-form-item>
+
+                        <span style="font-size: 16px; margin-left:20px;">{{$lang('仓库类型')}}</span>
+                        <el-select class="margin-left" v-model="queryParams.data.query.type_cd" multiple filterable>
+                            <el-option v-for="(i, v) in warehouse_type" :key="i.cd" :label="$lang(i.cdVal)"
+                                       :value="i.cd"></el-option>
+                        </el-select>
+                        </el-form-item>
+                            <el-form-item>
+                        <span style="font-size: 16px; margin-left:20px;">{{$lang('运营方')}}</span>
+                        <el-select class="margin-left" v-model="queryParams.data.query.operator_cds" multiple filterable>
+                            <el-option v-for="(i, v) in warehouse_operator" :key="i.cd" :label="$lang(i.cdVal)"
+                                       :value="i.cd"></el-option>
+                        </el-select>
+                            </el-form-item>
+                            <el-form-item>
+                        <el-select class="margin-left" v-model="queryParams.data.query.contact_name" style="width:120px;" filterable>
+                            <el-option :label="$lang('总负责人')" value="contacts"></el-option>
+                            <el-option :label="$lang('入库负责人')" value="in_contacts"></el-option>
+                            <el-option :label="$lang('出库负责人')" value="out_contacts"></el-option>
+                        </el-select>
+                        <el-input :placeholder="$lang('请输入')" v-model.trim="queryParams.data.query.contact_value"
+                                  style="width: 220px;"></el-input>
+                            </el-form-item>
+                        <el-form-item>
+                          <span style="font-size: 16px; margin-left:20px;">{{$lang('是否保税仓')}}</span>
+                          <el-select multiple clearable class="margin-left" v-model="queryParams.data.query.is_bonded" style="width:120px;">
+                              <el-option :label="$lang('是')" value="1"></el-option>
+                              <el-option :label="$lang('否')" value="0"></el-option>
+                          </el-select>
+                        </el-form-item>
+                        </el-form>
+                    </el-col>
+                    <el-col>
+                        <el-button @click="search" type="primary" class="margin-left"><{$Think.lang.搜索}></el-button>
+                        <el-button @click="reset" plain style="background: #aeaeae;color: #fff;"><{$Think.lang.重置}>
+                        </el-button>
+                    </el-col>
+                </el-row>
+                <!--  <el-row style="margin-top: 20px;">
+                      <el-col :span="16">
+                         <el-button @click="search" type="primary"><{$Think.lang.搜索}></el-button>
+                         <el-button @click="reset" plain style="background: #aeaeae;color: #fff;"><{$Think.lang.重置}></el-button>
+                     </el-col>
+                     <el-col :span="8" class="text-right">
+                         <?php if(ButtonAction::hidden()){ ?>
+                             <el-button @click="create" type="primary"><{$Think.lang.新增仓库}></el-button>
+                         <?php } ?>
+                     </el-col>
+                 </el-row> -->
+            </div>
+            <div style="height: 10px;"></div>
+        </div>
+        <!-- 搜索查询 end -->
+        <!-- 表单数据 start -->
+        <el-row>
+            <el-col :span="16">
+                <div style="display: flex;align-items: center;">
+                    <p class="seacher-result"><{$Think.lang.搜索结果：共}><span>{{totalCount}}</span><{$Think.lang.条记录}></p>
+                    <span class="export" @click="exportOrder">{{$lang('导出')}}</span>
+                </div>
+            </el-col>
+            <el-col :span="8" class="text-right">
+                <?php if(ButtonAction::hidden()){ ?>
+                <el-button @click="create" type="primary"><{$Think.lang.新增仓库}></el-button>
+                <?php } ?>
+            </el-col>
+        </el-row>
+        <div class="data">
+            <template>
+                <el-table v-loading="loading" class="table" :data="tableData" border stripe show-header
+                          style="width: 100%;" :header-cell-style='theadStyle' tooltip-effect="dark">
+                    <el-table-column align="center"  width="50"
+                                     label="<{$Think.lang.编号}>">
+                        <template slot-scope="scope">
+                            {{scope.$index + 1 + queryParams.data.query.pageSize *(currentPage-1)}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" label="<{$Think.lang.仓库名称}>" width="155">
+						<template slot-scope="scope">
+                            {{$lang(scope.row.warehouse)}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" label="<{$Think.lang.负责人}>"
+                                     width="240">
+                        <template slot-scope="scope">
+                            <div>{{$lang('总负责人')}}：{{scope.row.contacts}}</div>
+                            <div>{{$lang('入库负责人')}}：{{scope.row.in_contacts}}</div>
+                            <div>{{$lang('出库负责人')}}：{{scope.row.out_contacts}}</div>
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" label="<{$Think.lang.地理位置}>">
+                        <template slot-scope="scope">
+                            <div v-if="scope.row.default_addr == 1">{{scope.row.place}}-{{scope.row.address}}</div>
+                            <div v-else>{{scope.row.place_en}}{{scope.row.address_en}}</div>
+                        </template>
+                    </el-table-column>
+                    <!-- <el-table-column align="center" prop="systemDockingNm" label="<{$Think.lang.发货管理}>" width="180"></el-table-column> -->
+                    <el-table-column align="center" label="<{$Think.lang.SKU数量}>" width="120">
+                        <template slot-scope="scope">
+                            {{king(scope.row.amountSku, 2)}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" label="<{$Think.lang.库存数量}>" width="120">
+                        <template slot-scope="scope">
+                            {{king(scope.row.amountInventory, 2)}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" label="<{$Think.lang.总库存成本(CNY)}>" width="140">
+                        <template slot-scope="scope">
+                            ¥&nbsp;{{king(scope.row.amountMoney, 2)}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" label="<{$Think.lang.运营方}>" width="140">
+                        <template slot-scope="scope">
+                            {{$lang(scope.row.operator_cds_nm)}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" label="<{$Think.lang.类型}>" width="140">
+                        <template slot-scope="scope">
+                            {{$lang(scope.row.type_cd_nm)}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column align="center" label="<{$Think.lang.是否保税仓}>" width="140">
+                      <template slot-scope="scope">
+                          <span v-if="scope.row.is_bonded == '0'">{{$lang('否')}}</span>
+                          <span v-else-if="scope.row.is_bonded == '1'">{{$lang('是')}}</span>
+                      </template>
+                  </el-table-column>
+                    <!--<el-table-column align="center" label="<{$Think.lang.仓库每日成本(USD)}>" width="150">-->
+                        <!--<template slot-scope="scope">-->
+                            <!--{{scope.row.cost_per_day ? king(scope.row.cost_per_day, 2) : ''}}-->
+                        <!--</template>-->
+                    <!--</el-table-column>-->
+                    <!--<el-table-column align="center" label="<{$Think.lang.合同编号}>" width="188">-->
+                        <!--<template slot-scope="scope">-->
+                            <!--{{scope.row.contract_no}}-->
+                        <!--</template>-->
+                    <!--</el-table-column>-->
+                    <!--<el-table-column align="center" label="<{$Think.lang.合同有效日期}>" width="220">-->
+                        <!--<template slot-scope="scope">-->
+                            <!--{{scope.row.contract_start}} <span-->
+                                <!--v-if="scope.row.contract_start || scope.row.contract_end">-</span>-->
+                            <!--{{scope.row.contract_end}}-->
+                        <!--</template>-->
+                    <!--</el-table-column>-->
+                    <el-table-column align="center" width="100" label="<{$Think.lang.操作}>">
+                        <template align="center" slot-scope="scope">
+                            <!-- <el-col> -->
+                            <button class="edit" @click="handleCommand(scope.row)">{{$lang('编辑')}}</button>
+                            <!--  <el-dropdown trigger="click"  @command="handleCommand">
+                                 <span class="el-dropdown-link" align="center" width="100%">
+                                 <button class="edit">编辑</button>
+                                 </span>
+                                 <el-dropdown-menu slot="dropdown">
+                                     <el-dropdown-item :command='{type:"supportCountries", params: scope.row}'><{$Think.lang.支持的国家}></el-dropdown-item>
+                                     <el-dropdown-item onclick="opennewtab(this,'库存详情页')" v-bind:_href="'/index.php?m=stock&a=existing_extend&house_list_model='+scope.row.warehouseCode"><{$Think.lang.查看库存}> </el-dropdown-item>
+                                     <el-dropdown-item :command='{type:"detail", params: scope.row}'><{$Think.lang.编辑}></el-dropdown-item>
+                                     <el-dropdown-item :command='{type:"delete", params: scope.row}' :disabled="isDisabled(scope.row)"><{$Think.lang.删除}></el-dropdown-item>
+                                 </el-dropdown-menu>
+                             </el-dropdown> -->
+                            <!-- </el-col> -->
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </template>
+        </div>
+        <!-- 表单数据 end -->
+        <!-- 编辑框 start -->
+        <el-dialog  @close="closeDialog" :title="$lang(title.titleText)" id="dialog" :before-close="handleClose" :append-to-body="true" :visible.sync="dialogFormVisible">
+			<el-tabs type="border-card" v-model="infoLog">
+				<el-tab-pane name="info">
+				  <span slot="label">{{$lang('基本信息')}}</span>
+					<el-form ref="form" style="position: relative;" :model="form" label-width="80px">
+						<!--仓库名称-->
+						<el-form-item class="flex;">
+							<label class="title-left">{{$lang('仓库名称')}}<span>*</span></label>
+							<div class="grid-content bg-purple-dark">
+								<el-input v-model = "form.warehouse"></el-input>
+							</div>
+						</el-form-item>
+						<el-tabs v-model="addressType">
+							<el-tab-pane name="cn">
+								<span slot="label">
+									<span>{{$lang('中文地址')}}</span>
+									<span v-show="default_addr_cn">{{$lang('（默认）')}}</span>
+								</span>
+								<!--区域信息-->
+								<el-form-item>
+									<label class="title-left">{{$lang('区域')}}<span>*</span></label>
+									<el-row type="flex" class="row-bg" justify="space-between">
+										<el-col :span="6">
+											<!--省-->
+											<el-select v-model="selectCountry"  filterable :placeholder="$lang('国家')">
+												<el-option v-for="item in country" :key="item.id" :label="$lang(item.resName)"
+												:value="item.id"></el-option>
+											</el-select>
+										</el-col>
+										<el-col :span="6">
+											<!--市-->
+											<el-select  v-model="selectProvince"  filterable :placeholder="$lang('省州')">
+												<el-option v-for="item in province" :key="item.id" :label="$lang(item.resName)"
+												:value="item.id"></el-option>
+											</el-select>
+										</el-col>
+										<el-col :span="6" style="margin-right: 48px;">
+											<!--县-->
+											<el-select  v-model="selectCounty"  filterable :placeholder="$lang('市')">
+												<el-option v-for="item in county" :key="item.id" :label="$lang(item.resName)"
+												:value="item.id"></el-option>
+											</el-select>
+										</el-col>
+									</el-row>
+								</el-form-item>
+								<!--具体地址-->
+								<el-form-item>
+									<label class="title-left">{{$lang('具体地址')}}<span>*</span></label>
+									<el-input v-model="form.address" class="el-input_width"></el-input>
+									<span style="margin: 0 10px;">{{$lang('设为默认地址')}}</span>
+									<el-switch v-model="default_addr_cn" active-color="#13ce66" @change="swichChangeCn"></el-switch>
+								</el-form-item>
+							</el-tab-pane>
+							<el-tab-pane name="en" :disabled="!selectCountry">
+								<span slot="label">
+									<span>{{$lang('英文地址')}}</span>
+									<span v-show="default_addr_en">{{$lang('（默认）')}}</span>
+								</span>
+									<!--区域信息-->
+									<el-form-item>
+									<label class="title-left">{{$lang('区域')}}<span>*</span></label>
+									<el-row type="flex" class="row-bg" justify="space-between">
+										<el-col :span="6">
+											<!--省-->
+											<el-select v-model="selectCountry"  filterable :placeholder="$lang('国家')" disabled>
+												<el-option v-for="item in country" :key="item.id" :label="item.resNameEn"
+												:value="item.id"></el-option>
+											</el-select>
+										</el-col>
+										<el-col :span="6">
+											<!--市-->
+											<el-select  v-model="selectProvince" filterable :placeholder="$lang('省州')" disabled>
+												<el-option v-for="item in province" :key="item.id" :label="item.resNameEn"
+												:value="item.id"></el-option>
+											</el-select>
+										</el-col>
+										<el-col :span="6" style="margin-right: 48px;">
+											<!--县-->
+											<el-select  v-model="selectCounty" filterable :placeholder="$lang('市')" disabled>
+												<el-option v-for="item in county" :key="item.id" :label="item.resNameEn"
+												:value="item.id"></el-option>
+											</el-select>
+										</el-col>
+									</el-row>
+								</el-form-item>
+								<!--具体地址-->
+								<el-form-item>
+									<label class="title-left">{{$lang('具体地址')}}<span>*</span></label>
+									<el-input v-model="form.address_en" class="el-input_width"></el-input>
+									<span style="margin: 0 10px;">{{$lang('设为默认地址')}}</span>
+									<el-switch v-model="default_addr_en" active-color="#13ce66" @change="swichChangeEn"></el-switch>
+								</el-form-item>
+							</el-tab-pane>
+						</el-tabs>
+						<div style="height: 2px; background: #e4e7ed;margin-bottom: 10px;"></div>
+						<el-form-item>
+							<label class="title-left">{{$lang('运营方')}}</label>
+							<el-select v-model="form.operator_cds" filterable multiple default-first-option
+										placeholder="<{$Think.lang.请选择}>">
+								<el-option v-for="(i, v) in warehouse_operator" :key="i.cd" :label="$lang(i.cdVal)"
+											:value="i.cd"></el-option>
+							</el-select>
+							<label class="title-left">{{$lang('类型')}}<span>*</span></label>
+							<el-select  v-model="form.type_cd" filterable
+										placeholder="<{$Think.lang.请选择}>">
+								<el-option v-for="(i, v) in warehouse_type" :key="i.cd" :label="$lang(i.cdVal)"
+											:value="i.cd"></el-option>
+							</el-select>
+							<label class="title-left">{{$lang('是否保税仓')}}<span v-show="!bondedWarehouseStatus">*</span></label>
+							<div class="deliverySystemSelect">
+							<el-select :disabled ="bondedWarehouseStatus" v-model="form.is_bonded">
+								<el-option :label="$lang('是')" value="1"></el-option>
+								<el-option :label="$lang('否')" value="0"></el-option>
+							</el-select>
+							</div>
+						</el-form-item>
+						<!--发货系统-->
+						<el-form-item>
+							<label class="title-left">{{$lang('自动出库')}}<span>*</span></label>
+							<div class="grid-content deliverySystemSelect bg-purple-dark">
+								<el-select  v-model="form.systemDocking" filterable
+											:placeholder="$lang('请选择')" style="min-width: 100px;">
+									<el-option v-for="(i, v) in allSystemDocking" :key="i.cdVal" :label="$lang(i.cdVal)"
+												:value="i.cd"></el-option>
+								</el-select>
+							</div>
+							<label class="title-left">{{$lang('获取单号自动派单')}}<span>*</span></label>
+							<div class="grid-content deliverySystemSelect bg-purple-dark">
+							<el-select v-model="form.auto_dispatch" :placeholder="$lang('请选择')"  style="min-width: 100px;">
+								<el-option :label="$lang('是')" value="1"> </el-option>
+								<el-option :label="$lang('否')" value="0"> </el-option>
+							</el-select>
+							</div>
+							<label class="title-left">{{$lang('组合自动打包')}}<span>*</span></label>
+							<div class="grid-content deliverySystemSelect bg-purple-dark">
+								<el-select  v-model="form.auto_group" filterable
+											:placeholder="$lang('请选择')" style="min-width: 100px;">
+									<el-option v-for="(i, v) in autoGroupList" :key="i.cd" :label="$lang(i.cdVal)"
+												:value="i.cd"></el-option>
+								</el-select>
+							</div>
+						</el-form-item>
+						<!--寄件人-->
+						<el-form-item>
+							<label class="title-left">{{$lang('寄件人')}}</label>
+							<el-input v-model="form.sender" class="el-input_width"></el-input>
+						</el-form-item>
+						<!--寄件电话-->
+						<el-form-item>
+							<label class="title-left">{{$lang('寄件人电话')}}</label>
+							<el-input v-model="form.sender_phone_number" class="el-input_width"></el-input>
+						</el-form-item>
+						<!--邮编-->
+						<el-form-item>
+							<label class="title-left">{{$lang('邮编')}}</label>
+							<el-input v-model="form.sender_zip_code" class="el-input_width"></el-input>
+						</el-form-item>
+						<!--联系人-->
+						<el-form-item>
+							<label class="title-left principal">{{$lang('总负责人')}}<span>*</span></label>
+							<el-select name="contacts" class="principal-select" v-model="form.contacts"  filterable remote default-first-option
+										:placeholder='$lang("请输入拼音花名")' @focus="focusRemote('contacts')" :remote-method="remoteMethod">
+								<el-option v-for="item in contactsList" :key="item.id" :label="item.name"
+											:value="item.name"> </el-option>
+							</el-select>
+							<label class="title-left principal">{{$lang('入库负责人')}}<span>*</span></label>
+							<el-select name="in_contacts" class="principal-select" v-model="form.in_contacts"  multiple filterable remote default-first-option
+										:placeholder='$lang("请输入拼音花名")' @focus="focusRemote('in_contacts')" :remote-method="remoteMethod">
+								<el-option v-for="item in inContactsList" :key="item.id" :label="item.name"
+											:value="item.name"> </el-option>
+							</el-select>
+							<label class="title-left principal">{{$lang('出库负责人')}}<span>*</span></label>
+							<el-select name="out_contacts" class="principal-select" v-model="form.out_contacts"  multiple filterable remote default-first-option
+										:placeholder='$lang("请输入拼音花名")' @focus="focusRemote('out_contacts')" :remote-method="remoteMethod">
+								<el-option v-for="item in outContactsList" :key="item.id" :label="item.name"
+											:value="item.name"> </el-option>
+							</el-select>
+						</el-form-item>
+						<!--电话-->
+						<el-form-item>
+							<label class="title-left">{{$lang('电话')}}</label>
+							<el-input v-model="form.phone" class="el-input_width"></el-input>
+						</el-form-item>
+						<!--备注-->
+						<el-form-item>
+							<label class="title-left">{{$lang('合同编号')}}</label>
+							<el-input v-model="form.contract_no" style="width: 150px;"></el-input>
+							<span style="margin-left: 20px;">{{$lang('合同效期')}}</span>
+							<el-date-picker class="margin-left"  v-model="form.contract_start"
+											style="width: 170px;" value-format="yyyy-MM-dd" type="date"
+											placeholder="<{$Think.lang.开始时间}>"></el-date-picker>
+							<span style="margin-left: 20px;"> - </span>
+							<el-date-picker class="margin-left" v-model="form.contract_end"
+											style="width: 170px;" value-format="yyyy-MM-dd" type="date"
+											placeholder="<{$Think.lang.结束时间}>"></el-date-picker>
+						</el-form-item>
+						<el-form-item>
+							<label class="title-left">{{$lang('仓库每天成本')}}</label>
+							<el-input v-model="form.cost_per_day" style="width: 150px;"></el-input>
+							<span style="margin-left: 10px;">{{$lang('美元')}}</span>
+							<label class="title-left">{{$lang('自动派单延迟')}}</label>
+							<el-input v-model="form.auto_dispatch_delay" @keyup.native="watchNum" style="width: 150px;"></el-input>
+							<span style="margin-left: 10px;">{{$lang('分钟')}}</span>
+						</el-form-item>
+						<el-form-item>
+							<label class="title-left">{{$lang('备注')}}</label>
+							<el-input v-model="form.remarks" type="textarea" class="el-input_width"></el-input>
+						</el-form-item>
+						<!--作业内容-->
+						<el-form-item>
+							<label class="title-left">{{$lang('作业内容')}}</label>
+							<template>
+								<el-checkbox-group v-model="selectJobContent">
+									<el-checkbox v-for="(i, v) in jobContent" :label="i.cd" :key="i.cd" @change="choiceJob">
+										{{$lang(i.cdVal)}}
+									</el-checkbox>
+								</el-checkbox-group>
+							</template>
+						</el-form-item>
+						<el-form-item>
+							<label class="title-left">{{$lang('启动状态')}} <span>*</span></label>
+							<el-switch
+									v-model="form.status"
+									active-text="On"
+									inactive-text="Off"
+									:active-value="1"
+									:inactive-value="0">
+							</el-switch>
+						</el-form-item>
+						<!-- <el-form-item>
+							<el-button type="primary" @click="onSubmit"><{$Think.lang.提交}></el-button>
+							<el-button @click="closeDialog"><{$Think.lang.取消}></el-button>
+						</el-form-item> -->
+					</el-form>
+				</el-tab-pane>
+				<el-tab-pane name="log" v-if="isEditState">
+					<span slot="label">{{$lang('操作日志')}}</span>
+					<el-table :data="logTableData" stripe height="520" v-if="infoLog=='log'">
+						<el-table-column align="center" :label="$lang('序号')" type="index"></el-table-column>
+						<el-table-column align="center" :label="$lang('时间')" prop="update_at"></el-table-column>
+						<el-table-column align="center" :label="$lang('仓库名')">
+              <template slot-scope=scope>
+                <div>{{$lang(scope.row.warehouse_name)}}</div>
+              </template>
+            </el-table-column>
+						<el-table-column align="center" :label="$lang('操作人')" prop="update_by"></el-table-column>
+						<el-table-column align="center" :label="$lang('操作详情')">
+              <template slot-scope=scope>
+                <div>{{$lang(scope.row.info)}}</div>
+              </template>
+            </el-table-column>
+					</el-table>
+				</el-tab-pane>
+			</el-tabs>
+			<span slot="footer" class="dialog-footer" v-if="infoLog =='info'">
+				<el-button type="primary" style="background: #409eff;" @click="onSubmit"><{$Think.lang.提交}></el-button>
+				<el-button @click="closeDialog"><{$Think.lang.取消}></el-button>
+			</span>
+        </el-dialog>
+        <!--编辑单 end-->
+        <div class="block" style="float: right; margin-top: 10px;">
+            <el-pagination background @size-change="handleSizeChange" @current-change="handleCurrentChange"
+                           :current-page.sync="currentPage" :page-sizes="[10, 20, 50, 100]"
+                           :page-size="queryParams.data.query.pageSize" layout="sizes,prev, pager, next, jumper"
+                           :total="totalCount"></el-pagination>
+            <!-- <el-pagination background @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="currentPage"
+                       :page-sizes="[10, 30, 50, 100]" :page-size="20" layout="sizes,prev, pager, next, jumper" :total="totalCount"></el-pagination> -->
+        </div>
+        <a href="javascript:void(0)" class="Hui-iconfont toTop" title="<{$Think.lang.返回顶部}>" alt="<{$Think.lang.返回顶部}>"
+           style="width: 40px; height: 40px; position: fixed; right: 50px; bottom: 30px; z-index: 999999;"><img
+                src="/Application/Tpl/Home/Public/images/top.png" style="width:42px;height:42px;margin-left:-1px;"></a>
+    </div>
+</div>
+</body>
+<script type="text/javascript"
+        src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/jquery.base64.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script src="../Public/lib/layer-v3.0.3/layer/layer.js"></script>
+<script type="text/javascript">
+  if (getCookie('think_language') !== "zh-cn") {
+      ELEMENT.locale(ELEMENT.lang.en)
+  }
+  function _defineProperty(obj, key, value) {
+    if (key in obj) {
+      Object.defineProperty(obj, key, {value: value, enumerable: true, configurable: true, writable: true});
+    } else {
+      obj[key] = value;
+    }
+    return obj;
+  }
+
+  var vm = new Vue({
+    el: '#content',
+    data: (_data = {
+		logTableData:[],
+		infoLog: 'info',
+		addressType: 'cn',
+		default_addr_cn: true,
+		default_addr_en: false,
+		isEditState:false,
+		principal: '',
+		principalMain: [],
+		principalOut: [],
+		principalIn: [],
+		contactsList:[],
+		inContactsList:[],
+		outContactsList:[],
+		warehouse_operator:[],
+		warehouse_type:[],
+		remoteStatus:'',
+		loading: true,
+		remoteLoading:false,
+		selectCountry: '',
+		selectProvince: '',
+		selectCounty: '',
+		startTime: '',
+		endTime: '',
+		selectJobContent: [],
+		dialogFormVisible: false,
+		initArea: 1,
+		detailOrAdd: true,
+		isSelectCountry: false,
+		bondedWarehouseStatus:true,
+		autoGroupList: [{
+		cd: "0",
+		cdVal: '不支持'
+		}, {
+		cd: "1",
+		cdVal: '支持'
+		}],
+    },
+      _defineProperty(_data, 'title', {
+          titleText: ''
+        }
+      ),
+      _defineProperty(_data, 'tableData', []),
+      _defineProperty(_data, 'ware', {}),
+      _defineProperty(_data, 'queryParams', {
+          data: {
+            query: {
+              // warehouseCode: [],
+              // admin: '',
+              contact_name:'contacts',
+              contact_value:'',
+              operator_cds:[],
+              type_cd:[],
+              search_value: '',
+              pageIndex: '1',
+              status:1,
+              pageSize: 10,
+              search_name: 'warehouse',
+              update_time_end: '',
+              update_time_start: ''
+            }
+          }
+        }
+      ),
+      _defineProperty(_data, 'timeSelect', {}),
+      _defineProperty(_data, 'warehouseType', []),
+      _defineProperty(_data, 'warehouses', {}),
+      // _defineProperty(_data, 'admins', {}),
+      _defineProperty(_data, 'currentPage', 1),
+      _defineProperty(_data, 'totalCount', 0),
+      _defineProperty(_data, 'country', {}),
+      _defineProperty(_data, 'province', {}),
+      _defineProperty(_data, 'county', {}),
+      _defineProperty(_data, 'form', {}),
+      _defineProperty(_data, 'allSystemDocking', {}),
+      _defineProperty(_data, 'jobContent', {})
+      , _data),
+    methods: {
+      exportOrder: function exportOrder() {
+        var _this = this
+        var isBonded = _this.queryParams.data.query.is_bonded
+        if(isBonded){
+          isBonded = isBonded.join(",")
+        }else{
+          isBonded = ''
+        }
+        var params = {
+          data:{
+            query:{
+              contact_name:_this.queryParams.data.query.contact_name,
+              contact_value:_this.queryParams.data.query.contact_value,
+              operator_cds:_this.queryParams.data.query.operator_cds,
+              type_cd:_this.queryParams.data.query.type_cd,
+              search_value:_this.queryParams.data.query.search_value,
+              pageIndex:_this.queryParams.data.query.pageIndex,
+              status:_this.queryParams.data.query.status,
+              pageSize:_this.queryParams.data.query.pageSize,
+              search_name:_this.queryParams.data.query.search_name,
+              update_time_end:_this.queryParams.data.query.update_time_end,
+              update_time_start:_this.queryParams.data.query.update_time_start,
+              is_bonded:isBonded,
+            }
+          }
+        }
+        console.log(params);
+        console.log(JSON.stringify(params));
+        
+        // console.log(this.queryParams);
+        // console.log(JSON.stringify(this.queryParams));
+        
+        var tmep = document.createElement('form');
+        tmep.action = '/index.php?m=Warehouse&a=exportXls';
+        tmep.method = "post";
+        tmep.style.display = "none";
+        var opt = document.createElement("input");
+        opt.name = 'post_data';
+        // opt.value = JSON.stringify(this.queryParams);
+        opt.value = JSON.stringify(params);
+        tmep.appendChild(opt);
+        document.body.appendChild(tmep);
+        tmep.submit();
+        tmep.remove();
+      },
+      watchNum:function(){
+        var _this = this
+  　　　 _this.form.auto_dispatch_delay=_this.form.auto_dispatch_delay.replace(/[^\.\d]/g,'');
+        _this.form.auto_dispatch_delay=_this.form.auto_dispatch_delay.replace('.','');
+  　　},
+      warehouseDirectoryData: function (queryParams) {
+        var _this = this;
+        _this.loading = true;
+        var isBonded = _this.queryParams.data.query.is_bonded
+        if(isBonded){
+          isBonded = isBonded.join(",")
+        }else{
+          isBonded = ''
+        }
+        
+        
+        // _this.queryParams.data.query.search_value = _this.queryParams.data.query.search_value.replace(/\s+/g, "");
+        
+
+        // console.log(queryParams);
+        var params = {
+          data:{
+            query:{
+              contact_name:_this.queryParams.data.query.contact_name,
+              contact_value:_this.queryParams.data.query.contact_value,
+              operator_cds:_this.queryParams.data.query.operator_cds,
+              type_cd:_this.queryParams.data.query.type_cd,
+              search_value:_this.queryParams.data.query.search_value,
+              pageIndex:_this.queryParams.data.query.pageIndex,
+              status:_this.queryParams.data.query.status,
+              pageSize:_this.queryParams.data.query.pageSize,
+              search_name:_this.queryParams.data.query.search_name,
+              update_time_end:_this.queryParams.data.query.update_time_end,
+              update_time_start:_this.queryParams.data.query.update_time_start,
+              is_bonded:isBonded,
+            }
+          }
+        }
+        
+        
+        axios.post('/index.php?m=Warehouse&a=warehouseDirectoryData', params).then(function (response) {
+          console.log(response)
+          if (response.data.code == 2000) {
+            _this.tableData = response.data.data.pageData || [];
+            _this.totalCount = parseInt(response.data.data.count);
+          } else {
+            _this.$message.error(response.data.msg);
+          }
+          _this.loading = false;
+        }).catch(function (err) {
+          _this.$message.error(err);
+        });
+      },
+      warehousesData: function () {
+        var _this = this;
+        console.log(_this.queryParams.data.query)
+        axios.post('index.php?g=oms&m=CommonData&a=commonData', {
+          data: {
+            query: {
+              "warehouses": true,
+              'timeSelect': true,
+              'users': true,
+              "area": true,
+              "systemDocking": true,
+              "jobContent": true,
+              'startTime': true,
+              'endTime': true,
+              'search_value': true,
+              'warehouse_operator':true,
+              'warehouse_type':true
+            }
+          }
+        }).then(function (response) {
+          if (response.data.code == 2000) {
+            _this.warehouses = response.data.data.warehouses;
+            // _this.admins           = response.data.data.users;
+            _this.country = response.data.data.area;
+            _this.allSystemDocking = response.data.data.systemDocking;
+            _this.jobContent = response.data.data.jobContent;
+            _this.warehouse_operator = response.data.data.warehouse_operator;
+            _this.warehouse_type = response.data.data.warehouse_type;
+            _this.warehouseType = [{
+              id: 'warehouse',
+              val: '仓库名称'
+            }, {
+              id: 'contract_no',
+              val: '合同编号'
+            }]
+          } else {
+            _this.$message.error(response.data.msg);
+          }
+        }).catch(function (err) {
+          _this.$message.error(err);
+        });
+      },
+      indexMethod: function (index) {
+        return index + 1;
+      },
+      supportCountries: function (row) {
+        this.show_model_demo(row);
+      },
+      create: function () {
+        this.title.titleText = '新增仓库';
+        _this = this;
+        _this.selectCountry = '';
+        _this.isEditState = false;
+        _this.selectProvince = '';
+        _this.contactsList = [];
+        _this.inContactsList = [];
+        _this.outContactsList = [];
+        _this.selectCounty = '';
+        _this.selectJobContent = [];
+        _this.dialogFormVisible = true;
+        _this.detailOrAdd = false;
+        _this.form = {
+          operator_cds:[],
+          in_contacts:[],
+          out_contacts:[],
+          status:1,
+          is_bonded:'0',
+          warehouseCode: ''
+        };
+      },
+      // detail: function(warehouse) {
+      // _this = this;
+      // _this.form = {};
+      // _this.form = warehouse;
+      // console.log(_this.form)
+      // _this.selectJobContent = warehouse.jobContent || [];
+      // _this.dialogFormVisible = true;
+      // if (warehouse.city) {
+      //     area = warehouse.city.split(',');
+      //     _this.selectCountry = area[0] || '';
+      //     _this.selectProvince = area[1] || '';
+      //     _this.selectCounty = area[2] || '';
+      // }
+      // },
+      // delete: function(warehouse) {
+      //     this.$confirm('<?= L("此操作将删除该仓库, 是否继续?") ?>', '<?= L("提示") ?>', {
+      //         confirmButtonText: '<?= L("确定") ?>',
+      //         cancelButtonText: '<?= L("取消") ?>',
+      //         type: 'warning'
+      //     }).then(() => {
+      //         axios.post('/index.php?m=Warehouse&a=deleteWarehouse', warehouse).then(function (response) {
+      //             if (response.data.code == 2000) {
+      //                 _this.$message.success(response.data.msg);
+      //             } else {
+      //                 _this.$message.error(response.data.msg);
+      //             }
+      //             _this.loading = false;
+      //             setTimeout(function() {
+      //                 _this.warehouseDirectoryData(_this.queryParams);
+      //             }, 1000);
+      //         }).catch(function (err) {
+      //             _this.$message.error(err);
+      //         });
+      //     }).catch(() => {
+      //             this.$message({
+      //             type: 'info',
+      //             message: '<?= L("已取消删除") ?>'
+      //         });
+      //     });
+      // },
+      // 获取操作日志
+      getOptionLog(cd) {
+        let param = {
+          warehouse_cd:cd
+        }
+        let _this = this;
+        axios.post('/index.php?m=Warehouse&a=getOperLogInfo', param).then(function (response) {
+          if (response.data.code == 2000) {
+            _this.logTableData = response.data.data;
+          } else {
+            _this.$message.error(response.data.msg);
+          }
+        }).catch(function (err) {
+          _this.$message.error(err);
+        });
+      },
+      handleCommand: function (warehouse) {
+        console.log(warehouse)
+        this.getOptionLog(warehouse.warehouseCode)
+        this.title.titleText = '仓库信息编辑';
+        // switch (command.type) {
+        //     case "supportCountries":
+        //         _this.supportCountries(command.params);
+        //         break;
+        //     case "lookStock":
+        //         _this.lookStock(command.params);
+        //         break;
+        //     case "delete":
+        //         _this.delete(command.params);
+        //         break;
+        //     case "detail":
+        //         _this.detail(command.params);
+        //         break;
+        //     default:
+        //         this.$message.error('Unknown Command');
+
+        // }
+
+        _this = this;
+        _this.form = {};
+        _this.form = JSON.parse(JSON.stringify(warehouse));
+        _this.selectJobContent = warehouse.jobContent || [];
+        _this.isEditState = true;
+        _this.dialogFormVisible = true;
+        // console.log(warehouse);
+        _this.form.operator_cds =  warehouse.operator_cds &&  warehouse.operator_cds[0] ? warehouse.operator_cds : [];
+        _this.form.in_contacts = !!warehouse.in_contacts ? warehouse.in_contacts.split(',') : [];
+        _this.form.out_contacts = !!warehouse.out_contacts ? warehouse.out_contacts.split(',') : [];
+        if (warehouse.city) {
+          area = warehouse.city.split(',');
+          _this.selectCountry = area[0] || '';
+          _this.selectProvince = area[1] || '';
+          _this.selectCounty = area[2] || '';
+	      }
+	      _this.form.warehouse = this.$lang(warehouse.warehouse);
+        _this.form.contract_start = warehouse.contract_start ? warehouse.contract_start.replace(/\./g,'-') : warehouse.contract_start;
+        _this.form.contract_end = warehouse.contract_end ? warehouse.contract_end.replace(/\./g,'-') : warehouse.contract_end;
+        if(warehouse.default_addr == '1') {
+          this.default_addr_cn = true;
+          this.default_addr_en = false;
+          this.addressType = 'cn';
+        } else if(warehouse.default_addr == '2') {
+          
+          this.default_addr_en = true;
+          this.default_addr_cn = false;
+          this.addressType = 'en';
+        }
+        // console.log(_this.selectCountry);
+        // console.log(_this.selectProvince);
+        // console.log(_this.form);
+        
+        // console.log(_this.notConfiguredWarehouse);
+        
+    
+        // if(_this.selectCountry == '1' && _this.selectCountry != '507'){
+        //   _this.bondedWarehouseStatus = false
+        // }
+        
+        // console.log('area' + warehouse.city)
+        // console.log('initArea' + this.initArea)
+        // console.log('After' + _this.selectCountry, _this.selectProvince, _this.selectCounty)
+      },
+      search: function () {
+        _this = this;
+        _this.warehouseDirectoryData(_this.queryParams);
+      },
+      reset: function () {
+        _this = this;
+        _this.queryParams.data.query = {
+          // warehouseCode: [],
+          // admin: [],
+          status:1,
+          type_cd:[],
+          operator_cds:[],
+          contact_name:'contacts',
+          contact_value:'',
+          search_value: '',
+          pageIndex: '1',
+          pageSize: 10,
+          search_name: 'warehouse',
+          is_bonded:[]
+        };
+        this.currentPage = 1;
+        this.warehouseDirectoryData(this.queryParams);
+      },
+      isDisabled: function (row) {
+        if (row.amountSku > 0) {
+          return true;
+        } else {
+          return false;
+        }
+      },
+      theadStyle: function () {
+        return {"background-color": "#546E7A", "color": "#fff"};
+      },
+      handleSizeChange: function (val) {
+        _this = this;
+        _this.queryParams.data.query.pageSize = val;
+        _this.warehouseDirectoryData(_this.queryParams);
+      },
+      handleCurrentChange: function (val) {
+        _this = this;
+        _this.queryParams.data.query.pageIndex = val;
+        _this.warehouseDirectoryData(_this.queryParams);
+      },
+      handleClose: function () {
+        _this = this;
+        // _this.selectJobContent = [];
+        // //_this.form.jobContent = [];
+        // _this.form = {};
+        // _this.selectProvince = '';
+        // _this.selectCounty = '';
+        // _this.selectCountry = '';
+        // _this.initArea = 1;
+        // console.log('Do Close', _this.initArea)
+        // _this.detailOrAdd = true;
+        // _this.dialogFormVisible = false;
+
+        _this.dialogFormVisible = false;
+        _this.warehouseDirectoryData(_this.queryParams);
+	  },
+	  swichChangeCn(staus) { 
+		if(staus) {
+			this.default_addr_en = false;
+		} else {
+			this.default_addr_en = true;
+		}
+	  },
+	  swichChangeEn(staus) {
+      if(staus) {
+        this.default_addr_cn = false;
+      } else {
+        this.default_addr_cn = true;
+      }
+	  },
+      closeDialog: function () {
+        _this.dialogFormVisible = false;
+        this.infoLog = "info";
+        this.addressType = "cn";
+        this.default_addr_cn = true;
+        this.default_addr_en = false;
+        _this.warehouseDirectoryData(_this.queryParams);
+        //if(this.form.id){ this.search() };
+      },
+      focusRemote:function(type){
+        this.remoteStatus = type;
+      },
+
+      remoteMethod(query) {
+        console.log(query)
+        var _this = this;
+        if (query !== '') {
+          axios.post('/index.php?g=common&m=user&a=search_user', Qs.stringify({
+            name: query
+          }))
+            .then(function (res) {
+              switch (_this.remoteStatus) {
+                case 'contacts':
+                  _this.contactsList = res.data.data || [];
+                  break;
+                case 'in_contacts':
+                  _this.inContactsList = res.data.data || [];
+                  break;
+                case 'out_contacts':
+                  _this.outContactsList = res.data.data || [];
+                  break;
+                default:
+                  console.log('error')
+              }
+
+            })
+        } else {
+          this.pucahseColleagues = [];
+        }
+      },
+      onSubmit: function () {
+        if (!this.form.warehouse) {
+          this.$message.warning(this.$lang('请填写仓库名称'));
+          return false;
+        }
+        if (this.isEditState) {
+          if (!this.form.warehouseCode) {
+            this.$message.warning(this.$lang('请选择仓库码表'))
+            return false;
+          }
+        }
+        if (!this.form.type_cd) {
+          this.$message.warning(this.$lang('请选择类型'));
+          return false;
+        }
+        if (!this.form.contacts || !this.form.in_contacts.length || !this.form.out_contacts.length) {
+          this.$message.warning(this.$lang('请填写负责人'));
+          return false;
+        }
+        if (!this.form.address) {
+          this.$message.warning(this.$lang('填写中文具体地址'));
+          return false;
+        }
+        if (!this.form.address_en) {
+          this.$message.warning(this.$lang('填写英文具体地址'));
+          return false;
+        }
+        if (!this.form.systemDocking) {
+          this.$message.warning(this.$lang('请选择发货系统'));
+          return false;
+        }
+        if (!this.form.auto_dispatch) {
+          this.$message.warning(this.$lang('请选择获取单号自动派单'));
+          return false;
+        }
+        if (!this.selectCountry) {
+          this.$message.error(this.$lang('请选择国家'));
+          return false;
+        }
+        if (!this.form.auto_group && this.form.auto_group !== '0') {
+          this.$message.error(this.$lang('请选择是否支持组合自动打包'));
+          return false;
+        }
+        if (!this.form.is_bonded) {
+          this.$message.warning(this.$lang('请选择是否保税仓'));
+          return false;
+        }
+        if (new Date(this.form.contract_start).getTime() > new Date(this.form.contract_end).getTime()) {
+          this.$message({
+            type: 'error',
+            message: this.$lang('结束时间不能大于开始时间')
+          })
+          return false;
+        }
+        _this = this;
+        var place = '';
+        _this.form.city = _this.selectCountry;
+        for (var i = 0; i < _this.country.length; i++) {
+          if (_this.country[i].id == _this.selectCountry) {
+            place = _this.country[i].resName;
+          }
+        }
+        if (_this.selectProvince) {
+          _this.form.city = _this.form.city + ',' + _this.selectProvince;
+          for (var i = 0; i < _this.province.length; i++) {
+            if (_this.province[i].id == _this.selectProvince) {
+              place = place + '-' + _this.province[i].resName;
+            }
+          }
+        }
+        if (_this.selectCounty) {
+          _this.form.city = _this.form.city + ',' + _this.selectCounty;
+          for (var i = 0; i < _this.county.length; i++) {
+            if (_this.county[i].id == _this.selectCounty) {
+              place = place + '-' + _this.county[i].resName;
+            }
+          }
+        }
+        if (place) {
+          _this.form.place = place;
+        }
+        if(this.default_addr_cn) {
+			    this.form.default_addr = '1';
+		    } else if (this.default_addr_en) {
+			    this.form.default_addr = '2';
+		    } else {
+			    this.form.default_addr = '';
+        }
+        axios.post('index.php?m=Warehouse&a=update', {data: {query: {"form": _this.form}}}).then(function (response) {
+          console.log(response)
+          if (response.data.code == 2000) {
+            _this.$message({
+              showClose: true,
+              message: response.data.msg,
+              duration: 3000,
+              type: 'success'
+            });
+            setTimeout(function () {
+              _this.dialogFormVisible = false;
+              _this.warehouseDirectoryData(_this.queryParams);
+            }, 2000);
+          } else {
+            _this.$message({
+              showClose: true,
+              message: response.data.msg,
+              duration: 3000,
+              type: 'error'
+            });
+          }
+        }).catch(function (err) {
+          _this.$message.error(err);
+          console.log(err)
+        });
+      },
+      handleItemChange: function (val) {
+        console.log('active item:', val);
+      },
+      choiceJob: function () {
+        _this.form.jobContent = _this.selectJobContent;
+      },
+      king: function (e, l) {
+        if (!l) l = 4;
+        var k = e.toString().split('.')
+        if (e.toString().indexOf('.') > 0) {
+          if (k [1].length > l) k[1] = k[1].substr(0, l);
+          else {
+            for (var i = k[1].length; i < l; i++) {
+              k[1] += '0';
+            }
+          }
+          var s = '.' + k[1];
+        } else {
+          var s = ''
+        }
+        return k[0].toString().replace(/\d{1,3}(?=(\d{3})+(\.\d*)?$)/g, '$&,') + s;
+      },
+      show_model_demo: function (e) {
+        var title = '<{$Think.lang.仓库配置}>';
+        var url = '<{:U("StockExtend/show_warehouse_params")}>';
+        var id = e.id;
+        var requestParams = {'id': id};
+        $.post(url, requestParams,
+          function (str) {
+            layer.open({
+              title: title,
+              area: ['893px', '600px'],
+              type: 1,
+              skin: 'demo-class',
+              content: str //注意，如果str是object，那么需要字符拼接。
+            });
+          }
+        );
+      },
+      update_warehouse_info: function (e) {
+        var title = '<{$Think.lang.仓库信息编辑}>';
+        var url = '<{:U("StockExtend/update_warehouse_info")}>';
+        var id = e.id;
+        var requestParams = {'id': id};
+        $.get(url, requestParams,
+          function (str) {
+            layer.open({
+              title: title,
+              area: ['510px', '650px'],
+              type: 1,
+              skin: 'demo-class',
+              content: str //注意，如果str是object，那么需要字符拼接。
+            });
+          }
+        );
+      },
+      add_warehouse_info: function (e) {
+        var title = '<{$Think.lang.新增仓库}>';
+        var url = '<{:U("StockExtend/update_warehouse_info")}>';
+        var id = e.id;
+        var requestParams = {'id': id};
+        $.get(url, requestParams,
+          function (str) {
+            layer.open({
+              title: title,
+              area: ['510px', '600px'],
+              type: 1,
+              skin: 'demo-class',
+              content: str //注意，如果str是object，那么需要字符拼接。
+            });
+          }
+        );
+      }
+    },
+    created: function () {
+      this.warehouseDirectoryData(this.queryParams);
+      this.warehousesData();
+    },
+    watch: {
+      selectCountry: function (newVal) {
+        console.log(newVal);
+        
+        var _this = this;
+        if (!newVal) return;
+        axios.post('index.php?g=oms&m=CommonData&a=commonData', {
+          data: {
+            query: {
+              "warehouses": true,
+              'users': true,
+              "area": true,
+              "parentId": newVal
+            }
+          }
+        }).then(function (response) {
+          if (response.data.code == 2000) {
+
+            _this.province = response.data.data.area;
+            if(response.data.data.area == null){
+              _this.selectProvince = '';
+              _this.county = [];
+              _this.selectCounty = '';
+            }else{
+              var provinceAll = response.data.data.area
+              var status = '1'
+              // console.log(JSON.stringify(response.data.data.area))
+              // console.log('省份'+_this.selectProvince)
+              for(var i=0;i<provinceAll.length;i++){
+                if(provinceAll[i].id == _this.selectProvince){
+                  status = '2'
+                }
+              }
+              if(status == '1'){
+                _this.selectProvince = '';
+                _this.county = [];
+                _this.selectCounty = '';
+              }
+            }
+
+            // if (_this.initArea != 1) {
+            //   _this.selectProvince = '';
+            //   _this.county = [];
+            //   _this.selectCounty = '';
+            // }
+            // console.log(_this.initArea)
+      
+          } else {
+            _this.$message.error(response.data.msg);
+          }
+        }).catch(function (err) {
+          _this.$message.error(err);
+        });
+      },
+      selectProvince: function (newVal) {
+        var _this = this;
+        if(_this.selectCountry == '1' && newVal != '507'){
+          _this.bondedWarehouseStatus = false
+          // _this.form.is_bonded = ''
+        }else{
+          _this.bondedWarehouseStatus = true
+          // _this.form.is_bonded = '0'
+        }
+        if (!newVal || !_this.selectCountry) return;
+
+        var parentId = _this.selectCountry + ',' + newVal;
+        axios.post('index.php?g=oms&m=CommonData&a=commonData', {
+          data: {
+            query: {
+              "warehouses": true,
+              'users': true,
+              "area": true,
+              "parentId": parentId
+            }
+          }
+        }).then(function (response) {
+          if (response.data.code == 2000) {
+            _this.county = response.data.data.area;
+            // console.log('Do Select 省份')
+            if(response.data.data.area == null){
+              _this.selectCounty = '';
+            }else{
+              var countyAll = response.data.data.area
+              var status = '1'
+              // console.log(JSON.stringify(response.data.data.area))
+              // console.log('区'+_this.selectCounty)
+          
+              for(var i=0;i<countyAll.length;i++){
+                if(countyAll[i].id == _this.selectCounty){
+                  status = '2'
+                }
+              }
+              if(status == '1'){
+                _this.selectCounty = '';
+              }
+            }
+
+  
+            // if (_this.initArea != 1) {
+            //   _this.selectCounty = '';
+            // }
+            // setTimeout(function () {
+            //   _this.initArea = 2;
+            // }, 100)
+            // console.log(_this.initArea)
+          } else {
+            _this.$message.error(response.data.msg);
+          }
+        }).catch(function (err) {
+          _this.$message.error(err);
+        });
+      }
+    }
+  })
+</script>
+</html>

@@ -1,0 +1,354 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>仓库配置</title>
+    <link rel="stylesheet" href="../Public/utils/css/public.style.css?v=0907">
+    <link rel="stylesheet" href="../Public/css/element-ui.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="../Public/../Hr/depList.css?v=123">
+    <link rel="stylesheet" href="../Public/icon/css/font-awesome.min.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <style>
+    [v-cloak] {
+        display: none;
+    }
+    #detailWare th {
+        background: #ecf2f7;
+        height: 40px;
+        text-align: center;
+        font-size: .7rem;
+        color: #546e7a;
+        letter-spacing: 0;
+        border: 1px solid #cadee7;
+        white-space: nowrap;
+    }
+
+    #detailWare table {
+        margin-top: 20px;
+    }
+
+    .store_detail {
+        margin-left: 30px;
+        margin-bottom: 50px;
+    }
+
+    .store_detail .active {
+        opacity: 1;
+    }
+
+    .store_detail a {
+        cursor: pointer;
+        font-weight: bold;
+        opacity: 0.5;
+        margin-right: 30px;
+    }
+    </style>
+</head>
+
+<body>
+    <div id="detailWare" v-cloak class="recruit use-btn" style="padding-bottom: 260px;" v-cloak>
+        <input type="hidden" id="id" value=<?php echo $id; ?>>
+        <div class="store_detail">
+            <a onclick="changenewtab(this,'<{$Think.lang.基础配置}>')" _href="<{:U('store/detail')}>&id=<?php echo $id; ?>">
+                <{$Think.lang.基础配置}>
+            </a>
+            <a class="active">
+                <{$Think.lang.仓库配置}>
+            </a>
+            <a onclick="changenewtab(this,'<{$Think.lang.物流配置}>')" _href="<{:U('store/detail_logistics')}>&id=<?php echo $id; ?>">
+                <{$Think.lang.物流配置}>
+            </a>
+            <a onclick="changenewtab(this,'<{$Think.lang.高级配置}>')" _href="<{:U('store/detail_other')}>&id=<?php echo $id; ?>">
+                <{$Think.lang.高级配置}>
+            </a>
+            <a onclick="changenewtab(this,'<{$Think.lang.财务配置}>')" _href="<{:U('store/detail_finance')}>&id=<?php echo $id; ?>">
+                <{$Think.lang.财务配置}>
+            </a>
+            <a onclick="changenewtab(this,'<{$Think.lang.走仓推荐}>')" _href="<{:U('store/detail_warehouse_recommended')}>&id=<?php echo $id; ?>">
+                <{$Think.lang.走仓推荐}>
+            </a>
+            <a onclick="changenewtab(this,'<{$Think.lang.日志信息}>')" _href="<{:U('store/detail_log')}>&id=<?php echo $id; ?>">
+                <{$Think.lang.日志信息}>
+            </a>
+        </div>
+        <el-col :span="24">
+            <el-select v-model="form.isSupport" clearable  placeholder="请选择" style="width: 150px;">
+                <!--  <el-option v-for="item in COUNTRY" :key="item.id" :label="item.zh_name" :value="item.id">
+               </el-option> -->
+                <el-option label="支持" value="1"></el-option>
+                <el-option label="不支持" value="2"></el-option>
+            </el-select>
+            &nbsp;
+            <el-input placeholder="请输入" v-model="form.searchVal" style="width: 400px;vertical-align: middle;">
+                <el-select v-model="form.condition" clearable slot="prepend" placeholder="请选择" style="width: 130px">
+                    <el-option label="仓库名称" value="wareName" key="wareName"></el-option>
+                    <el-option label="支持的国家" value="supCountry" key="supCountry"></el-option>
+                    <el-option label="所属地" value="USER_ID" key="USER_ID"></el-option>
+                </el-select>
+            </el-input>
+            <button style="height: 36px;" class="btn-pub btn-green" @click="search()">查询</button>
+            <el-button  @click="reset()">重置</el-button>
+            <el-button class="btn-pub btn-blue" type="primary"  @click="confirmIsNone()" style="height: 28px;line-height: 17px;font-size: 13px;margin-left: 94%;margin-top: -8px;" size="small">批量编辑</el-button>
+        </el-col>
+        <br>
+        <br>
+        <div class="col-30 text-right" style="margin-bottom: 15px">
+            <div class="use-row use-btn" >
+                <div class=" text-left result-num">
+                    搜索结果：&nbsp;&nbsp;共 <b>{{ wareCount }}</b> 条记录
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-100">
+                <table class="table-list">
+                    <thead>
+                        <tr style="background: #F7F9FB;">
+                            <th width="5%;">
+                                <el-checkbox v-model="checkedAll" @change="checkAll()" ></el-checkbox>
+                            </th>
+                            <th width="10%;">仓库名称</th>
+                            <th width="25%;">所属地</th>
+                            <!-- <th width="200px"  style="word-wrap:break-word;">支持配送的国家</th> -->
+                            <th width="15%;">是否支持</th>
+                            <th width="15%;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="item in dataList">
+                            <td>
+                                <el-checkbox v-model="item.checked"></el-checkbox>
+                                <!-- 
+                                <span v-if="item.STORE_INDEX_URL"><el-button style="font-size: 13px;" @click="jumpStore(item.ID)" type="text" size="small">{{item.STORE_NAME}}</el-button></span>
+                                <span v-else style="font-size: 13px;">{{item.STORE_NAME}}</span> -->
+                            </td>
+                            <td>{{item.CD_VAL}}</td>
+                            <td>{{item.belongArea}}</td>
+                            <!-- <td style="word-wrap:break-word;">{{item.supportArea}}</td> -->
+                            <td>
+                                <span v-if="item.isEdit=='2'">
+                                    <el-radio-group v-model="item.isSupport">
+                                    <el-radio  :label="1">是</el-radio>
+                                    <el-radio  :label="2">否</el-radio>
+                                    </el-radio-group>
+                                </span>
+                                <span v-else>
+                                    <span v-if="item.isSupport=='1'">是</span><span v-if="item.isSupport=='2'">否</span>
+                                </span>
+                            </td>
+                            <td>
+                                <span v-if="item.isEdit=='2'">
+                                    <el-button  type="text" @click="cancel()" >取消</el-button>
+                                    <el-button  type="text" @click="save(id,item.CD,item.isSupport)" >保存</el-button>
+                                </span>
+                                <span v-else>
+                                    <el-button class="btn-pub btn-blue" type="primary" @click="edit(item.CD)" style="height: 28px;line-height: 17px;font-size: 13px;" size="small">编辑</el-button>
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div style="margin-top: 20px;" class="use-row">
+            <div class="col-100 text-right">
+                <el-pagination @size-change="handleSizeChange"  @current-change="handleCurrentChange"  :current-page.sync="page.sePage" :page-size="page.pageSize" layout="sizes,prev, pager, next" :total="wareCount"></el-pagination>
+            </div>
+        </div>
+
+        <el-dialog  :visible.sync="batchEditVisible" width="1%" style="width: 34%;margin-left: 34%;">
+            <span>是否支持 :</span> &nbsp
+            <el-radio  v-model="batchSupport" label="1">是</el-radio>
+            <el-radio v-model="batchSupport" label="2">否</el-radio>
+            <span slot="footer" class="dialog-footer">
+            <el-button @click="batchEditVisible = false">取 消</el-button>
+            <el-button type="primary" @click="batchSave()">确 定</el-button>
+            </span>
+        </el-dialog>
+    </div>
+</body>
+<!--引入js-->
+<script type="text/javascript" src="../Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="../Public/js/vue-2.4.2.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="../Public/js/axios.min.js"></script>
+<script type="text/javascript" src="../Public/js/element-ui.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript">
+var detailWare = new Vue({
+    el: '#detailWare',
+    data: {
+        //新增店铺开关
+        batchSupport:'1',
+        batchEditVisible:false,
+        isAdd: false,
+        id: '',
+        STORE_PLAT: [], //所有平台数据
+        SALE_TEAM: [], //所有销售团队
+        COUNTRY: [], //国家
+        operation: '',
+        isclick: false,
+        dataList: { 
+         },
+        //isEdit: false, //是否编辑
+        form: {
+            isSupport:'',
+            condition:'',
+            searchVal:'',
+        },
+        page: {
+            sePage: 1,
+            pageSize: 10,
+        },
+        checkedAll: false,
+        wareCount:100,
+    },
+   
+    created: function() {
+        this.search();
+        //默认选中第一个
+        this.form.condition = 'wareName';
+    },
+
+    methods: {
+        search: function() {
+            var id = $("#id").val();
+            this.id = id;
+            var url = "/index.php?m=api&a=store_getSupportWare&id=" + id+"&pagenow="+this.page.sePage+"&pageSize="+this.page.pageSize;
+            if (this.form.isSupport) {
+                url+="&isSupport="+this.form.isSupport
+            }
+            if (this.form.condition) {
+                url+="&condition="+this.form.condition
+            }
+            if (this.form.searchVal) {
+                url+="&searchVal="+this.form.searchVal
+            }
+            axios.post(url)
+                .then(function(res) {
+                    var data = res.data.data;
+                    for (var i = 0; i < data.length; i++) {
+                        data[i]['isEdit'] = '1';
+                    }
+                    detailWare.dataList = data;
+                    for (var i = detailWare.dataList.length; i--;) {
+                            Vue.set(detailWare.dataList[i], 'checked', false);
+                    }
+                    detailWare.wareCount = parseInt(data[0].count);
+                    if (detailWare.wareCount===0) {
+                        detailWare.dataList = [];
+                    }
+            })
+        },
+        handleCurrentChange: function(currentPage) {
+            this.page.sePage = currentPage;
+            this.search();
+        },
+        handleSizeChange: function(size) {
+                this.page.pageSize = size;
+                this.search();
+        },
+
+        //全选与全不选
+        checkAll: function() {
+            var i = this.dataList.length;
+            for (i; i--;) {
+                this.dataList[i].checked = this.checkedAll;
+            }
+        },
+        edit: function(cd) {
+            var data = detailWare.dataList;
+            for (var i = 0; i < data.length; i++) {
+                if (data[i].CD===cd) {
+                    detailWare.dataList[i]['isEdit'] = '2';
+                }
+            }
+        },
+        save: function(id,cd,isSupport) {
+            axios.post("/index.php?m=api&a=store_editWareSupport&id="+id+"&cd="+cd+"&isSupport="+isSupport)
+            .then(function(res){
+                if (res.data.code===200) {
+                    detailWare.search();
+                    detailWare.$message({
+                        message: '修改成功',
+                        type: 'success',
+                    });
+                }else{
+                   detailWare.$message({
+                        message: res.data.msg,
+                        type: 'warning',
+                    }); 
+                }
+            })
+        },
+        //批量编辑点击
+        confirmIsNone:function(){
+            var data = detailWare.dataList;
+            var arr =[];
+            for (var i = 0; i < data.length; i++) {
+                if (data[i].checked===true) {
+                       arr.push(data[i].CD);
+                   }
+            }
+            if (!arr.length) {
+                detailWare.$message({
+                        message: '请选择仓库',
+                        type: 'warning',
+                    }); 
+            }else{
+                detailWare.batchEditVisible = true;
+            }
+        },
+        
+        //批量编辑确定
+        batchSave:function(){
+            var id = $("#id").val();
+            var arr = [];
+            var data = this.dataList;
+            var batchSupport = this.batchSupport;
+            for (var i = 0; i < data.length; i++) {
+                   if (data[i].checked===true) {
+                       arr.push(data[i].CD);
+                   }
+            }
+            axios.post("/index.php?m=api&a=store_batchEditWare&id="+id+"&cdArr="+arr+"&batchSupport="+batchSupport)
+                .then(function(res){
+                    if (res.data.code===200) {
+                        detailWare.batchEditVisible= false;
+                        detailWare.checkedAll = false;
+                        detailWare.search();
+                        detailWare.$message({
+                            message: '编辑成功',
+                            type: 'success',
+                        }); 
+                    }
+                })
+        },
+        //重置
+        reset:function(){
+            for (k in this.form) {
+                this.form[k] = '';
+            }
+            this.checkedAll = false;
+            var i = this.dataList.length;
+            for (i; i--;) {
+                this.dataList[i].checked = false;
+            }
+            this.form.condition = 'wareName';
+        },
+        cancel:function(){
+            /*var id = $("#id").val();
+                //this.isEdit = !this.isEdit;
+                location.href = "/index.php?m=store&a=detail_ware&id="+id*/
+                this.isEdit = !this.isEdit;
+                this.reset();
+                this.search();
+        }
+    }
+})
+</script>
+
+</html>

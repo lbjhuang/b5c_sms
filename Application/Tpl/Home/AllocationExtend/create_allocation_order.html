@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title><{$Think.lang.$title}></title>
+    <link rel="stylesheet" type="text/css" href="../Public/css/H-ui-3.1.min.css"/>
+    <link rel="stylesheet" type="text/css" href="../Public/css/style.css" />
+    <link rel="stylesheet" type="text/css" href="../Public/lib/layer-v3.0.3/layer/skin/default/layer.css"/>
+    <link rel="stylesheet" type="text/css" href="../Public/icon/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="../Public/utils/css/public.style.css">
+    <link rel="stylesheet" href="../Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" type="text/css" href="../Public/css/allocation.css?v=125">
+    <style>
+        body .demo-class .layui-layer-title{background: white;color: black;border: none;font-size: 18px;font-weight: bold;}
+        .row{margin:0px;}
+        .b2b-form .row  .col-sm-3{padding: 0px}
+        .b2b-form .row  .col-sm-3 label{text-align: left;}
+    </style>
+</head>
+<body>
+<div class="wrap" id="app" v-cloak>
+    <h2><{$Think.lang.$title}></h2>
+    <!--基本信息-->
+    <div class="panel panel-primary" style="border: 1px solid #537a8;">
+        <div class="panel-header"><{$Think.lang.基本信息}></div>
+        <div class="panel-body" style="padding: 0px;">
+            <table class="table table-border table-bordered radius" style="border: none; border-left: none; border-bottom: none;">
+                <tbody>
+                <tr>
+                    <td><{$Think.lang.调出团队}></td>
+                    <td>
+                        <select name="out_team" v-model="out_team" v-cloak class="select-group">
+                            <option value=""><{$Think.lang.全部}></option>
+                            <option v-for="(i, v) in allocation_out_team" :value="i" class="select-item">{{i.CD_VAL}}</option>
+                        </select>
+                    </td>
+                    <td><{$Think.lang.调出仓库}></td>
+                    <td>
+                        <select name="in_team" v-model="in_team" v-cloak>
+                            <option value=""><{$Think.lang.全部}></option>
+                            <option v-for="(i, v) in allocation_out_warehouse" :value="v">{{i}}</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td><{$Think.lang.调入团队}></td>
+                    <td>
+                        <select name="out_warehouse" v-model="in_team" v-cloak>
+                            <option value=""><{$Think.lang.全部}></option>
+                            <option v-for="(i, v) in allocation_in_team" :value="i">{{i.CD_VAL}}</option>
+                        </select>
+                    </td>
+                    <td><{$Think.lang.调入仓库}></td>
+                    <td>
+                        <select name="in_warehouse" v-model="in_warehouse" v-cloak>
+                            <option value=""><{$Think.lang.全部}></option>
+                            <option v-for="(i, v) in allocation_in_warehouse" :value="v">{{i}}</option>
+                        </select>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="use-row">
+        <div class="col-100 text-right">
+            <ul class="pagination"> <{$pages}> </ul>
+        </div>
+    </div>
+    <!--出入库单-->
+    <div id="modal-demo" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content radius">
+                <div class="modal-header">
+                    <h3 class="modal-title">对话框标题</h3>
+                    <a class="close" data-dismiss="modal" aria-hidden="true" href="javascript:void();">×</a>
+                </div>
+                <div class="modal-body">
+                    <p><include :file="checkState" />{{checkState}}</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary">确定</button>
+                    <button class="btn" data-dismiss="modal" aria-hidden="true">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="../Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="../Public/js/jquery-ui.min.js"></script>
+<script src="../Public/js/vue.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui-3.1.min.js"></script>
+<script type="text/javascript" src="../Public/js/axios.min.js"></script>
+<script src="../Public/lib/layer-v3.0.3/layer/layer.js"></script>
+<script type="text/javascript" src="../Public/lib/My97DatePicker/WdatePicker.js"></script>
+<script>
+    Vue.filter('timeZone', function (time, self_time) {
+        var self_time = parseInt(self_time);
+        var pdate = new Date(time);
+        var str = '';
+        pdate.setDate(pdate.getDate()+self_time);
+        if (pdate != 'Invalid Date') {
+            year = pdate.getFullYear()
+            month = pdate.getMonth()+1;
+            day = pdate.getDate();
+            str = year + "-" + month + "-" + day;
+        } else {
+            str = "-";
+        }
+        return str;
+    });
+
+    var vm = new Vue({
+        el: '#app',
+        data:{
+            out_team: '',
+            in_team: '',
+            out_warehouse: '',
+            in_warehouse: '',
+            allocation_out_team: <{$allocation_out_team}>,
+            allocation_in_team: <{$allocation_in_team}>,
+            allocation_out_warehouse: <{$allocation_out_warehouse}>,
+            allocation_in_warehouse: <{$allocation_in_warehouse}>,
+        },
+        methods: {
+            recieve_allo: function (allo_id) {
+                var data = {"id": allo_id};
+                var url = "/index.php?m=allocation&a=receive";
+                var index = layer.confirm('<{$Think.lang.是否撤回}>？', {
+                    btn: ['<{$Think.lang.是}>','<{$Think.lang.否}>'],
+                    title: '<{$Think.lang.提示}>'
+                }, function(){
+                    layer.close(index);
+                    vm.request_allo(url, data);
+                }, function(){
+                    layer.close(index);
+                });
+                //this.stream_arr.splice(1, 0)
+            },
+            request_allo: function (url, data) {
+                var url = url;
+                var data = data;
+                var loadIndex = null;
+                $.ajax({
+                    type: "POST",
+                    async: true,
+                    url: url,
+                    data: data,
+                    beforeSend: function () {
+                        loadIndex = layer.msg('<{$Think.lang.处理中}>', {icon: 16, shade: 0.3, time: 0});
+                    },
+                    success: function (response) {
+                        layer.close(loadIndex);
+                        $.Huimodalalert(response.info, 2000);
+                        setInterval("window.location.reload()", vm.showTime);
+                    },
+                    error: function () {
+                        $.Huimodalalert('<{$Think.lang.网络繁忙，请重试}>!');
+                    }
+                });
+            },
+            search: function () {
+
+            },
+            reset: function () {
+                vm.allo_no = '';
+                vm.allo_guds = '';
+                vm.receive_team = '';
+                vm.warehouse_show = '';
+                vm.state = '';
+                vm.launch_time = '';
+                vm.launch_end_time = '';
+                vm.launch_team = '';
+            },
+            out_or_allo: function (id, type) {
+                var url = '/index.php?m=allocation&a=out_or_allo';
+                var title = '';
+                if(type == 1) {
+                    title = '<{$Think.lang.调拨出库}>';
+                    localStorage.setItem("out_or_allo_state",'1')
+                } else {
+                    title = '<{$Think.lang.调拨入库}>';
+                    localStorage.setItem("out_or_allo_state",'2')
+                }
+                $.post(url, {
+                        'id' : id,
+                        'type': type
+                    },
+                    function(str){
+                        var sindex = layer.open({
+                            title: title,
+                            area: ['893px', '600px'],
+                            type: 1,
+                            skin: 'demo-class',
+                            content: str //注意，如果str是object，那么需要字符拼接。
+                        });
+                    });
+            }
+        }
+    });
+    // construct
+    (function(){
+        if (0 != vm.params) {
+
+        }
+    })();
+</script>
+<script type="text/javascript" src="../Public/js/common_allo.js"></script>
+</body>
+
+</html>

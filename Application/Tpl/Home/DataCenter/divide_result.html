@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet"
+        href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.config.VER_NUM}>">
+    <title>分成结果查询</title>
+</head>
+<style>
+    .el-input {
+        width: 95%;
+    }
+
+    .el-date-editor .el-range-input {
+        width: 35%;
+    }
+
+    .el-form-item__label {
+        display: flex;
+        line-height: normal;
+        height: 40px;
+        align-items: center;
+        overflow: hidden;
+    }
+
+    .kpi_result {
+        width: 32%;
+        border: 1px solid #ECEFF1;
+        padding-left: 20px;
+        padding-right: 20px;
+        margin-right: 31px;
+    }
+
+    .kpi_result .el-pagination {
+        float: left;
+    }
+
+    .order-list-table.table-common tr th {
+        background: #fff;
+        color: black;
+    }
+
+    .el-tabs--border-card>.el-tabs__content {
+        padding: 0;
+    }
+
+    .date .el-form-item__label {
+        width: 40px !important;
+    }
+
+    .date .el-form-item__content {
+        margin-left: 40px !important;
+    }
+
+    .demo-table-expand {
+        font-size: 0;
+    }
+
+    .demo-table-expand label {
+        width: 90px;
+        color: #99a9bf;
+    }
+
+    .demo-table-expand .el-form-item {
+        margin-right: 0;
+        margin-bottom: 0;
+        width: 50%;
+    }
+
+    .el-table__header-wrapper {
+        overflow: hidden;
+    }
+
+    .el-pagination {
+        margin: 20px 0px 30px;
+    }
+
+    .el-tabs>.el-tabs__header {
+        width: 30%;
+        border: 1px solid #e4e7ed;
+    }
+
+    .el-tooltip__popper[x-placement^=right] .popper__arrow {
+        border-right-color: white !important;
+    }
+
+    .el-tooltip__poppe[x-placement^=right] .popper__arrow:after {
+        border-right-color: white !important;
+    }
+
+    .test {
+        background: white !important;
+        color: black !important;
+        border: 1px solid red;
+    }
+</style>
+
+<body class="orderList">
+    <div id="list" class="list-common" v-cloak style="margin-bottom:220px">
+        <!-- 搜索查询 start-->
+        <div class="orderList-search search-common">
+            <div class="search-toggle">
+                <el-form ref="form" label-width="90px" :label-position="labelPosition">
+                    <el-row>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('数据类型')">
+                                <el-select v-model="form.statistic_type" clearable style="width:100%;padding:0;">
+                                    <el-option :label="$lang('按发货统计')" value="deliver">
+                                    </el-option>
+                                    <el-option :label="$lang('按PO统计')" value="po">
+                                    </el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('日期')" class="date">
+                                <el-popover placement="right-start" width="150" trigger="hover"
+                                    :content="$lang('默认载入近7天数据')">
+                                    <i class="fa fa-question-circle" slot="reference"></i>
+                                </el-popover>
+                                <el-date-picker style="width:85%;height: 40px;float: right;" value-format="yyyyMMdd"
+                                    size="small" :clearable=false v-model="form.dateRange" type="daterange"
+                                    align="right" unlink-panels :range-separator="$lang('至')"
+                                    :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')"
+                                    :picker-options="pickerOptions">
+                                </el-date-picker>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="4" class="title-info-container">
+                            <div class="title-info">
+                                {{$lang('业务类型')}}
+                            </div>
+                        </el-col>
+                        <el-col :span="20" class="search-item-i">
+                            <span :class="{active:!form.busyId.length}"
+                                @click="selectOrderSource()">{{$lang('全部')}}</span>
+                            <span :class="{active:item.checked}" v-for="item in baseData.busyType"
+                                @click="selectOrderSource(item)">{{item.busy_type_name}}</span>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('团队')">
+                                <el-select :popper-append-to-body="false" v-model="form.saleTeamId" clearable
+                                    :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                    <el-option v-for="item in baseData.saleTeam" :label="item.name" :value="item.value"
+                                        :key="item.value"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="6">
+                            <el-form-item :label="$lang('订单号')">
+                                <el-input placeholder="请输入内容" v-model.trim="form.orderNum" clearable>
+                                </el-input>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                </el-form>
+            </div>
+            <!-- 搜索查询 end-->
+        </div>
+        <!-- 分割线 start-->
+        <div class="orderList-line line-split" style="height: 2px;margin-bottom: 20px"></div>
+        <!-- 分割线 end-->
+
+        <!--  KPI 分成结果/ 利润分成结果 -->
+        <div>
+            <el-row>
+                <el-col :span="8" class="kpi_result">
+                    <div class="grid-content bg-purple-light" style="font-size: 16px;padding: 10px 0;">
+                        {{$lang('销售额 ( 实际 ) 分成结果')}}
+                    </div>
+                    <el-table border show-header :data="salesKpiData" tooltip-effect="dark" style="width: 100%"
+                        class="order-list-table table-common" v-loading="tableLoading">
+                        <el-table-column prop="name" :label="$lang('团队')"></el-table-column>
+                        <el-table-column :label="$lang('销售额(USD)')">
+                            <template slot-scope="scope">
+                                {{scope.row.total_sales | integer | separatNum}}
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                    <el-pagination background @size-change="handleSalesKpiSizeChange"
+                        :current-page.sync="salesKpiForm.salesKpiPage" :page-size="salesKpiForm.salesKpiSize"
+                        layout="prev, pager, next" :total="salesKpiTotalCount">
+                    </el-pagination>
+                </el-col>
+                <el-col :span="8" class="kpi_result">
+                    <div class="grid-content bg-purple-light" style="font-size: 16px;padding: 10px 0;">
+                        {{$lang('销售额 ( KPI ) 分成结果')}}
+                        <el-popover placement="right-start" width="150" trigger="hover"
+                            :content="$lang('计算销售额（KPI）时，各团队分成比例和可大于1。')">
+                            <i class="fa fa-question-circle" slot="reference"></i>
+                        </el-popover>
+                    </div>
+                    <el-table border show-header :data="kpiData" tooltip-effect="dark" style="width: 100%"
+                        class="order-list-table table-common" v-loading="tableLoading">
+                        <el-table-column prop="name" :label="$lang('团队')"></el-table-column>
+                        <el-table-column :label="$lang('销售额(USD)')">
+                            <template slot-scope="scope">
+                                {{scope.row.total_sales | integer | separatNum}}
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                    <el-pagination background @size-change="handleKpiSizeChange" :current-page.sync="kpiForm.kpiPage"
+                        :page-size="kpiForm.kpiSize" layout="prev, pager, next" :total="kpiTotalCount">
+                    </el-pagination>
+                </el-col>
+                <el-col :span="8" class="kpi_result" style="margin-right:0">
+                    <div class="grid-content bg-purple-light" style="font-size: 16px;padding: 10px 0;">
+                        {{$lang('利润分成结果')}}
+                    </div>
+                    <el-table border show-header :data="profitData" tooltip-effect="dark" style="width: 100%"
+                        class="order-list-table table-common" v-loading="tableLoading">
+                        <el-table-column prop="name" :label="$lang('团队')"></el-table-column>
+                        <el-table-column prop="total_sales" :label="$lang('毛利(USD)')">
+                            <template slot-scope="scope">
+                                {{scope.row.order_revenue | integer | separatNum}}
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                    <el-pagination background @size-change="handleProfitSizeChange"
+                        :current-page.sync="profitsForm.profitsPage" :page-size="profitsForm.profitsSize"
+                        layout="prev, pager, next" :total="profitTotalCount">
+                    </el-pagination>
+                </el-col>
+            </el-row>
+        </div>
+        <!-- 订单表格主体 start-->
+        <div style="margin-top: 24px;font-size: 16px">{{$lang('订单明细')}}</div>
+        <div class="orderList-Main list-common-main">
+            <header>
+                <el-row style="position:relative">
+                    <el-col>
+                        <el-tabs v-model="activeName" type="border-card" @tab-click="handleClick">
+                            <el-tab-pane name="first">
+                                <span slot="label">B2C <i class="fa fa-circle" aria-hidden="true" style="color:red"
+                                        v-if="isShowMoreData"></i></span>
+                                <!-- B2C模块 -->
+                                <el-table border v-if="switchActive" :data="b2cData" tooltip-effect="dark"
+                                    style="width: 100%" class="order-list-table table-common" v-loading="tableLoading">
+                                    <el-table-column prop="order_id" :label="$lang('订单号')"></el-table-column>
+                                    <el-table-column :label="form.statistic_type === 'deliver'?$lang('出库时间'):$lang('付款时间')">
+                                        <template slot-scope="scope">
+                                            {{scope.row.date_id | dashes}}
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column prop="busy_type_name" :label="$lang('业务类型')">
+                                    </el-table-column>
+                                    <el-table-column prop="platform_name" :label="$lang('平台')"></el-table-column>
+                                    <el-table-column prop="busy_group_name" :label="$lang('销售团队')"></el-table-column>
+                                    <el-table-column prop="store_name" :label="$lang('店铺名称')"></el-table-column>
+                                    <el-table-column :label="$lang('支付金额(USD)')">
+                                        <template slot-scope="scope">
+                                            {{scope.row.order_total | integer | separatNum}}
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column :label="$lang('操作')">
+                                        <template slot-scope="scope">
+                                            <el-button type="success" size="small"
+                                                @click="b2cDetail(scope.row.order_id,scope.row.date_id)">
+                                                {{$lang('查看分成明细')}}
+                                            </el-button>
+                                        </template>
+                                    </el-table-column>
+                                </el-table>
+
+                                <el-pagination v-if="switchActive" background @size-change="handleB2cSizeChange"
+                                    @current-change="handleB2cCurrentChange" :current-page.sync="b2cForm.b2cPage"
+                                    :page-sizes="[10, 30, 50, 100]" :page-size="b2cForm.b2cSize"
+                                    layout="sizes,prev, pager, next, jumper" :total="b2cTotalCount">
+                                </el-pagination>
+
+                            </el-tab-pane>
+                            <el-tab-pane name="second">
+                                <span slot="label">B2B <i class="fa fa-circle" aria-hidden="true" style="color:red"
+                                        v-if="isShowMore"></i></span>
+                                <!-- B2B模块 -->
+                                <el-table border v-if="!switchActive" :data="b2bData" tooltip-effect="dark"
+                                    style="width: 100%" class="order-list-table table-common" v-loading="tableLoading">
+                                    <el-table-column prop="po_no" :label="$lang('B2B订单号')"></el-table-column>
+                                    <el-table-column :label="form.statistic_type === 'deliver'?$lang('发货时间'):$lang('PO时间')">
+                                        <template slot-scope="scope">
+                                            {{scope.row.po_date}}
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column prop="client_name" :label="$lang('客户')">
+                                    </el-table-column>
+                                    <el-table-column prop="our_company" :label="$lang('我方公司')"></el-table-column>
+                                    <el-table-column prop="busy_group_name" :label="$lang('销售团队')"></el-table-column>
+                                    <el-table-column :label="form.statistic_type === 'deliver'?$lang('销售金额(USD)'):$lang('PO金额')">
+                                        <template slot-scope="scope">
+                                            {{scope.row.po_sales | integer | separatNum}}
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column :label="$lang('商品成本(USD)')">
+                                        <template slot-scope="scope">
+                                            {{scope.row.goods_cost | integer | separatNum}}
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column :label="$lang('物流成本(USD)')">
+                                        <template slot-scope="scope">
+                                            {{scope.row.logistic_cost | integer | separatNum}}
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column :label="$lang('退税金额(USD)')">
+                                        <template slot-scope="scope">
+                                            {{scope.row.rebate_tax | integer | separatNum}}
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column :label="$lang('操作')">
+                                        <template slot-scope="scope">
+                                            <el-button type="success" size="small" @click="b2bDetail(scope.row)">
+                                                <!-- @click="b2cDetail(scope.row.order_id,scope.row.date_id)"> -->
+                                                {{$lang('查看分成明细')}}
+                                            </el-button>
+                                        </template>
+                                    </el-table-column>
+                                </el-table>
+
+                                <el-pagination v-if="!switchActive" background @size-change="handleB2bSizeChange"
+                                    @current-change="handleB2bCurrentChange" :current-page.sync="b2bForm.b2bPage"
+                                    :page-sizes="[10, 30, 50, 100]" :page-size="b2bForm.b2bSize"
+                                    layout="sizes,prev, pager, next, jumper" :total="b2bTotalCount">
+                                </el-pagination>
+                            </el-tab-pane>
+                        </el-tabs>
+                    </el-col>
+                    <div class="text-right" style="position: absolute; right: 0;">
+                        <el-button type="primary" @click="download()">
+                            {{$lang('导出')}}
+                        </el-button>
+                    </div>
+                </el-row>
+            </header>
+        </div>
+        <!-- 订单表格主体 end-->
+
+        <!-- B2C 分成明細彈出框 -->
+        <el-dialog title="提示" :visible.sync="isShowB2cDetail" width="90%">
+            <div style="padding: 20px 20px;overflow-x: scroll" v-if="isShowB2bDetail">
+                <div style="font-size: 16px;margin-bottom: 20px">
+                    {{$lang('订单分成明细')}}
+                    <i class="el-icon-close" style="position: absolute; right: 25px; cursor: pointer;"
+                        @click="isShowB2cDetail = false"></i>
+                </div>
+                <div>
+                    <span style="margin-left:20px; margin-right: 40px">{{$lang('订单号')}}</span>
+                    <span>{{order_id}}</span>
+                    <span style="margin-left:40px; margin-right: 40px" v-if="form.statistic_type === 'deliver'">{{$lang('出库时间')}}</span>
+                    <span style="margin-left:40px; margin-right: 40px" v-else>{{$lang('付款时间')}}</span>
+                    <span>{{date_id | dashes}}</span>
+                    <span style="margin-left:40px; margin-right: 40px">{{$lang('支付金额(USD)')}}</span>
+                    <span>{{order_total_sales | integer | numberFormat}}</span>
+                    <span style="margin-left:40px; margin-right: 40px">{{$lang('平台优惠(USD)')}}</span>
+                    <span>{{platform_discount_price | integer | numberFormat}}</span>
+                    <span style="margin-left:40px; margin-right: 40px">{{$lang('结算金额(USD)')}}</span>
+                    <span>{{pay_settle_price_usd | integer | numberFormat}}</span>
+                </div>
+                <div style="width: 118%;margin: 20px 0 20px 0;">
+                    <span style="margin-left:20px; margin-right: 40px">{{$lang('平台活动补贴(USD)')}}</span>
+                    <span>{{subsidy | integer  | numberFormat}}</span>
+                    <span style="margin-left:40px; margin-right: 40px">{{$lang('采购返佣金(USD)')}}</span>
+                    <span>{{pur_return_fee | integer  | numberFormat}}</span>
+                    <span style="margin-left:40px; margin-right: 40px">{{$lang('运费试算(USD)')}}</span>
+                    <span>{{shipping_cost | integer  | numberFormat}}</span>
+                    <!-- <span style="margin-left:20px; margin-right: 40px">{{$lang('头程运费(USD)')}}</span>
+                    <span>{{pre_amount_freight | integer  | numberFormat}}</span> -->
+                    <span style="margin-left:40px; margin-right: 40px">{{$lang('尾程物流派送关税(USD)')}}</span>
+                    <span>{{carry_tariff | integer  | numberFormat}}</span>
+                    <span style="margin-left:40px; margin-right: 40px">{{$lang('VAT费用(USD)')}}</span>
+                    <span v-if="form.statistic_type === 'po'">{{vat_fee| integer | numberFormat}}</span>
+                    <span v-else-if="form.statistic_type === 'deliver'">-</span>
+                    <span style="margin-left:40px; margin-right: 40px">{{$lang('支付手续费(USD)')}}</span>
+                    <span>{{paypal_fee| integer | numberFormat}}</span>
+                    <span style="margin-left:40px; margin-right: 40px">{{$lang('流量活动费用(USD)')}}</span>
+                    <span>{{league_fee| integer | numberFormat}}</span>
+                    <span style="margin-left:40px; margin-right: 40px">{{$lang('平台佣金(USD)')}}</span>
+                    <span>{{commission| integer | numberFormat}}</span>
+                </div>
+                <!-- <template> -->
+                <div style="width:112%">
+                    <el-table border :data="b2cDetailData" @expand-change="tableB2cDetail" style="width: 100%">
+                        <el-table-column type="expand">
+                            <template slot-scope="props">
+                                <el-form label-position="left" inline class="demo-table-expand">
+                                    <el-table :data="salesKpiTableData"
+                                        style="width: 32%;float: left;margin-right: 28px;" v-loading="tableLoading">
+                                        <el-table-column :label="$lang('销售额 ( 实际 ) 分成结果')">
+                                            <el-table-column prop="name" :label="$lang('团队')">
+                                            </el-table-column>
+                                            <el-table-column :label="$lang('销售额(USD)')">
+                                                <template slot-scope="scope">
+                                                    {{scope.row.total_sales | integer | separatNum}}
+                                                    ({{scope.row.split_per !== undefined ? (scope.row.split_per * 10 *10 +
+                                                '%') : (scope.row.order_revenue/order_total_sales | percentage) }})
+                                                </template>
+                                            </el-table-column>
+                                        </el-table-column>
+                                    </el-table>
+                                    <el-table :data="kpiTableData" style="width: 32%;float: left;"
+                                        v-loading="tableLoading">
+                                        <el-table-column :label="$lang('销售额 ( KPI ) 分成结果')">
+                                            <el-table-column prop="name" :label="$lang('团队')">
+                                            </el-table-column>
+                                            <el-table-column :label="$lang('销售额(USD)')">
+                                                <template slot-scope="scope">
+                                                    {{scope.row.total_sales | integer | separatNum}}
+                                                    ({{scope.row.split_per !== undefined ? (scope.row.split_per * 10 *10 +
+                                                '%') : (scope.row.order_revenue/order_total_sales | percentage) }})
+                                                </template>
+                                            </el-table-column>
+                                        </el-table-column>
+                                    </el-table>
+                                    <el-table :data="profitTableData" style="width: 32%;float: right;"
+                                        v-loading="tableLoading">
+                                        <el-table-column :label="$lang('利润分成结果')">
+                                            <el-table-column prop="name" :label="$lang('团队')">
+                                            </el-table-column>
+                                            <el-table-column :label="$lang('毛利(USD)')">
+                                                <template slot-scope="scope">
+                                                    {{scope.row.order_revenue | integer | numberFormat}}
+                                                    ({{scope.row.split_per !== undefined ? (scope.row.split_per * 10 *10 +
+                                                '%') : (scope.row.order_revenue/order_percent | percentage) }})
+                                                </template>
+                                            </el-table-column>
+                                        </el-table-column>
+                                    </el-table>
+                                </el-form>
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="SKU ID" prop="sku_id">
+                        </el-table-column>
+                        <el-table-column :label="$lang('商品名称')" prop="goods_name">
+                        </el-table-column>
+                        <el-table-column :label="$lang('品牌')" prop="brand_name">
+                        </el-table-column>
+                        <el-table-column :label="$lang('原产地')" prop="country_name">
+                        </el-table-column>
+                        <el-table-column :label="$lang('销售团队')" prop="busy_group_name">
+                        </el-table-column>
+                        <el-table-column :label="$lang('采购团队')" prop="pur_team_name">
+                        </el-table-column>
+                        <el-table-column :label="$lang('介绍团队')" prop="intro_team_name">
+                        </el-table-column>
+                        <el-table-column :label="$lang('商品数量')" prop="goods_num">
+                        </el-table-column>
+                        <el-table-column :label="$lang('销售单价(USD)')" :render-header="handleB2cHead">
+                            <template slot-scope="scope">
+                                {{scope.row.sale_price |integer | separatNum}}
+                            </template>
+                        </el-table-column>
+                        <el-table-column :label="$lang('采购单价(USD)')" :render-header="handleB2cHead">
+                            <template slot-scope="scope">
+                                {{scope.row.cost_cny_price |integer | separatNum}}
+                            </template>
+                        </el-table-column>
+                        <el-table-column :label="$lang('销售额(USD)')" :render-header="handleB2cSales">
+                            <template slot-scope="scope">
+                                {{scope.row.order_total_sales |integer | separatNum}}
+                            </template>
+                        </el-table-column>
+                        <el-table-column :label="$lang('成本(USD)')" :render-header="handleB2cCost">
+                            <template slot-scope="scope">
+                                {{scope.row.cost_total |integer | separatNum}}
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                    <div class="text-right">
+                        <el-pagination style="float:none;margin-top: 10px" background
+                            @current-change="handleB2cDetCurrentChange" :current-page.sync="b2cForm.b2cDetPage"
+                            :page-size="b2cForm.b2cDetSize" layout="prev, pager, next" :total="b2cDetailTotalCount">
+                        </el-pagination>
+                    </div>
+                </div>
+            </div>
+            <div style="padding: 20px 20px" v-show="!isShowB2bDetail">
+                <div style="font-size: 16px;margin-bottom: 20px">
+                    {{$lang('订单分成明细')}}
+                    <i class="el-icon-close" style="position: absolute; right: 25px; cursor: pointer;"
+                        @click="isShowB2cDetail = false"></i>
+                </div>
+                <div style="white-space: nowrap;margin: 20px 0 20px 0;">
+                    <span style="margin-left:20px; margin-right: 40px">{{$lang('B2B单号')}}</span>
+                    <span>{{po_no}}</span>
+                    <span style="margin-left:40px; margin-right: 40px" v-if="form.statistic_type === 'deliver'">{{$lang('发货时间')}}</span>
+                    <span style="margin-left:40px; margin-right: 40px" v-else>{{$lang('PO时间')}}</span>
+                    <span>{{po_date}}</span>
+                    <span style="margin-left:40px; margin-right: 40px" v-if="form.statistic_type === 'deliver'">{{$lang('销售金额(USD)')}}</span>
+                    <span style="margin-left:40px; margin-right: 40px" v-else>{{$lang('PO金额(USD)')}}</span>
+                    <span>{{po_sales | integer | numberFormat}}</span>
+                    <span style="margin-left:20px; margin-right: 40px">{{$lang('物流成本(USD)')}}</span>
+                    <span>{{po_logistic_cost | integer | numberFormat}}</span>
+                    <span style="margin-left:40px; margin-right: 40px">{{$lang('退税金额(USD)')}}</span>
+                    <span>{{po_rebate_tax | integer | numberFormat}}</span>
+                    <span style="margin-left:40px; margin-right: 40px">{{$lang('返利金额(USD)')}}</span>
+                    <span>{{rebate_amount_usd | integer | numberFormat}}</span>
+                    <span style="margin-left:40px; margin-right: 40px">{{$lang('销售团队')}}</span>
+                    <span>{{po_busy_group_name}}</span>
+                </div>
+                <!-- <template> -->
+                <el-table border :data="b2bDetailData" @expand-change="tableB2bDetail">
+                    <el-table-column type="expand">
+                        <template slot-scope="props">
+                            <el-form label-position="left" inline class="demo-table-expand">
+                                <el-table :data="props.row.salesKpiChildren"
+                                    style="width: 32%;float: left;margin-right: 27px;" v-loading="tableLoading">
+                                    <el-table-column :label="$lang('销售额 ( 实际 ) 分成结果')">
+                                        <el-table-column prop="name" :label="$lang('团队')">
+                                        </el-table-column>
+                                        <el-table-column :label="$lang('销售额(USD)')">
+                                            <template slot-scope="scope">
+                                                {{scope.row.total_sales | integer | separatNum}}
+                                                ({{scope.row.split_per !== undefined ? (scope.row.split_per * 10 *10 +
+                                                '%') : (scope.row.total_sales/order_total_sales | percentage) }})
+                                            </template>
+                                        </el-table-column>
+                                    </el-table-column>
+                                </el-table>
+                                <el-table :data="props.row.kpiChildren"
+                                    style="width: 32%;float: left;margin-right: 27px;" v-loading="tableLoading">
+                                    <el-table-column :label="$lang('销售额 ( KPI ) 分成结果')">
+                                        <el-table-column prop="name" :label="$lang('团队')">
+                                        </el-table-column>
+                                        <el-table-column :label="$lang('销售额(USD)')">
+                                            <template slot-scope="scope">
+                                                {{scope.row.total_sales | integer | separatNum}}
+                                                ({{scope.row.split_per !== undefined ? (scope.row.split_per * 10 *10 +
+                                                '%') : (scope.row.total_sales/order_total_sales | percentage) }})
+                                            </template>
+                                        </el-table-column>
+                                    </el-table-column>
+                                </el-table>
+                                <el-table :data="props.row.profitChildren" style="width: 32%;float: left;"
+                                    v-loading="tableLoading">
+                                    <el-table-column :label="$lang('利润分成结果')">
+                                        <el-table-column prop="name" :label="$lang('团队')">
+                                        </el-table-column>
+                                        <el-table-column :label="$lang('毛利(USD)')">
+                                            <template slot-scope="scope">
+                                                {{scope.row.order_revenue | integer | numberFormat}}
+                                                ({{scope.row.split_per !== undefined ? (scope.row.split_per * 10 *10 +
+                                                '%') : (scope.row.order_revenue/order_percent | percentage) }})
+                                            </template>
+                                        </el-table-column>
+                                    </el-table-column>
+                                </el-table>
+                            </el-form>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="SKU ID" prop="sku_id">
+                    </el-table-column>
+                    <el-table-column :label="$lang('商品名称')" prop="sku_name">
+                    </el-table-column>
+                    <el-table-column :label="$lang('品牌')" prop="brand_name">
+                    </el-table-column>
+                    <el-table-column :label="$lang('原产地')" prop="src_country_name">
+                    </el-table-column>
+                    <el-table-column :label="$lang('采购团队')" prop="pur_team_name">
+                    </el-table-column>
+                    <el-table-column :label="$lang('介绍团队')" prop="intro_team_name">
+                    </el-table-column>
+                    <el-table-column :label="$lang('商品数量')" prop="goods_num">
+                    </el-table-column>
+                    <el-table-column :label="$lang('销售单价(USD)')" :render-header="handleB2cHead">
+                        <template slot-scope="scope">
+                            {{scope.row.sale_price |integer | separatNum}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('采购单价(USD)')" :render-header="handleB2cHead">
+                        <template slot-scope="scope">
+                            {{scope.row.cost_cny_price |integer | separatNum}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('销售额(USD)')" :render-header="handleB2bSales">
+                        <template slot-scope="scope">
+                            {{scope.row.sale_volume |integer | separatNum}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('成本(USD)')" :render-header="handleB2bCost">
+                        <template slot-scope="scope">
+                            {{scope.row.cost_total |integer | separatNum}}
+                        </template>
+                    </el-table-column>
+                </el-table>
+                <div class="text-right">
+                    <el-pagination style="float:none;margin-top: 10px" background @size-change="handleB2bDetSizeChange"
+                        @current-change="handleB2bDetCurrentChange" :current-page.sync="b2bDetForm.b2bDetPage"
+                        :page-size="b2bDetForm.b2bDetSize" layout="prev, pager, next" :total="b2bDetailTotalCount">
+                    </el-pagination>
+                </div>
+            </div>
+        </el-dialog>
+
+    </div>
+    </div>
+    <script type="text/javascript"
+        src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js?v=<{$Think.config.VER_NUM}>">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js?<{$Think.config.VER_NUM}>">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>">
+    </script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js">
+    </script>
+    <script src="./Application/Tpl/Home/DataCenter/utils/globalConstAndFunc.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script>
+        if (getCookie('think_language') !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en)
+        };
+        Vue.component('b2c-message-cost', {
+            template: `
+                    <el-tooltip placement="left" effect="light">
+                        <div slot="content">
+                            <p> {{$lang('指单条记录的成本合计。')}} </p>
+                        </div>'
+                        <i class="fa fa-question-circle" style="margin-top:11px;color:black"></i>
+                    </el-tooltip>
+                    `
+        });
+        Vue.component('b2c-message-sales', {
+            template: `
+                    <el-tooltip placement="left" effect="light">
+                        <div slot="content">
+                            <p> {{$lang('指单条记录的销售额。')}} </p>
+                        </div>'
+                        <i class="fa fa-question-circle" style="margin-top:11px;color:black"></i>
+                    </el-tooltip>
+                    `
+        });
+        Vue.component('b2b-message-cost', {
+            template: `
+                    <el-tooltip placement="right" effect="light">
+                        <div slot="content">
+                            <p> {{$lang('指单条记录的成本合计。')}} </p>
+                        </div>'
+                        <i class="fa fa-question-circle" style="margin-top:11px;color:black"></i>
+                    </el-tooltip>
+                    `
+        });
+        Vue.component('b2b-message-sales', {
+            template: `
+                    <el-tooltip placement="left" effect="light">
+                        <div slot="content">
+                            <p> {{$lang('指单条记录的销售额。')}} </p>
+                        </div>'
+                        <i class="fa fa-question-circle" style="margin-top:11px;color:black"></i>
+                    </el-tooltip>
+                    `
+        });
+        de = new Vue({
+            el: '#list',
+            data: {
+                apiHost: GlobalConstAndFunc.api(),
+                switchActive: true,
+                isShowB2cDetail: false,
+                isShowB2bDetail: false,
+                isShowMore: false,
+                isShowMoreData: false,
+                activeName: 'first', // 表格切换初始值
+                tableLoading: true,
+                labelPosition: 'left',
+                listData: [],
+                kpiData: [],
+                salesKpiData: [],
+                profitData: [],
+                b2cData: [],
+                b2cData: [],
+                b2cDetailData: [],
+                b2bDetailData: [],
+                b2bData: [],
+                profitTableData: [],
+                kpiTableData: [],
+                salesKpiTableData: [],
+                totalCount: 10,
+                kpiTotalCount: 10,
+                salesKpiTotalCount: 10,
+                profitTotalCount: 10,
+                b2cTotalCount: 10,
+                b2cDetailTotalCount: 10,
+                b2bDetailTotalCount: 10,
+                b2bTotalCount: 10,
+                baseData: {},
+                receive_mode: [],
+                order_id: null,
+                date_id: '',
+                order_total_sales: '',
+                platform_discount_price:'',
+                pay_settle_price_usd: '', // 结算金额
+                order_percent: '', // 总利润
+                po_no: '',
+                po_date: '',
+                po_sales: '',
+                po_order_id: '',
+                po_logistic_cost: '',
+                po_rebate_tax: '',
+                rebate_amount_usd:'',
+                po_busy_group_name: '',
+                idValue: '',
+                subsidy: '', // 平台活动补贴
+                pur_return_fee: '', // 采购返佣金
+                league_fee: '', // 流量活动费用
+                paypal_fee: '', // 支付手续费
+                vat_fee: '', //VAT费用
+                carry_tariff: '', // 尾程物流派送关税
+                // pre_amount_freight: '', // 头程运费
+                commission: '', // 平台佣金
+                shipping_cost: '', // 运费试算
+                form: {
+                    receive_mode: [],
+                    startDate: undefined,
+                    endDate: undefined,
+
+                    dateRange: [], // 时间初始值,
+                    saleTeamId: null, // 销售团队
+                    busyId: [], // 业务类型
+                    splitTypeId: '',
+                    orderNum: '',
+                    page: 1,
+                    pageSize: 10,
+                    statistic_type: 'deliver'
+                },
+                kpiForm: {
+                    kpiPage: 1,
+                    kpiSize: 10
+                },
+                salesKpiForm: {
+                    salesKpiPage: 1,
+                    salesKpiSize: 10
+                },
+                profitsForm: {
+                    profitsPage: 1,
+                    profitsSize: 10
+                },
+                b2cForm: {
+                    b2cPage: 1,
+                    b2cSize: 10,
+                    b2cDetPage: 1,
+                    b2cDetSize: 10
+                },
+                b2bForm: {
+                    b2bPage: 1,
+                    b2bSize: 10
+                },
+                b2bDetForm: {
+                    b2bDetPage: 1,
+                    b2bDetSize: 10,
+                },
+                pickerOptions: {},
+                po_date_new:'',
+                
+            },
+            created: function () {
+                this.pickerOptions = {
+                        shortcuts: [{
+                            text: this.$lang("最近一周"),
+                            onClick: function (picker) {
+                                const end = new Date();
+                                const start = new Date();
+                                start.setTime(start.getTime() - 3600 * 1000 * 24 * 6);
+                                picker.$emit('pick', [start, end]);
+                            }
+                        }, {
+                            text: this.$lang("最近一个月"),
+                            onClick: function (picker) {
+                                const end = new Date();
+                                const start = new Date();
+                                start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+                                picker.$emit('pick', [start, end]);
+                            }
+                        }, {
+                            text: this.$lang("最近三个月"),
+                            onClick: function (picker) {
+                                const end = new Date();
+                                const start = new Date();
+                                start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+                                picker.$emit('pick', [start, end]);
+                            }
+                        }],
+                        disabledDate(time) {
+                            return time.getTime() > Date.now();
+                        }
+                    },
+                    // 初始化时间展示
+                    this.form.dateRange[0] = formatDate(new Date(new Date().setTime(new Date().getTime() -
+                        3600 * 1000 * 24 * 6)));
+                this.form.dateRange[1] = formatDate(new Date());
+                this.getBusyType(); // 业务类型 
+                this.getBusyGroup(); // 销售团队
+                this.getKpiResult(); // KPI分成结果
+                this.getSalesKpiResult(); // KPI实际分成结果
+                this.getProfitsResult();
+                this.getListData();
+                this.getBaseData();
+
+            },
+            methods: {
+                queryPost: function (url, param) {
+                    var headers = {
+                        headers: {
+                            'erp_req': true,
+                            'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+                        }
+                    }
+                    // 初始化时间展示
+                    return axios.post(this.apiHost + '/common' + url, Qs.stringify(param), headers);
+                },
+                // tab 表格切换
+                handleClick() {
+                    this.switchActive = this.activeName === 'first' ? true : false;
+                    if (this.switchActive) {
+                        this.b2cForm.b2cPage = 1;
+                        this.b2cForm.b2cSize = 10;
+                        this.getListData();
+                        // this.getBaseData();
+
+                    } else {
+                        this.b2bForm.b2bPage = 1;
+                        this.b2bForm.b2bSize = 10;
+                        // this.getListData();
+                        this.getBaseData();
+
+                    }
+                },
+                // 业务类型
+                getBusyType() {
+                    let param = {
+                        namespace: 'B2cOrderRevenueSplitMapper.queryParamBusyType',
+                        'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp_req': true
+                    }
+                    this.queryPost("/queryList", param)
+                        .then((res) => {
+                            var _data = res.data;
+                            if (_data.success) {
+                                this.$set(this.baseData, 'busyType', _data.datas.gridDatas)
+                            } else {
+                                this.$message.error(this.$lang(_data.msg));
+                            }
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                // 销售团队
+                getBusyGroup() {
+                    let param = {
+                        namespace: 'B2cOrderRevenueSplitMapper.queryParamBusyGroup',
+                        'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp_req': true
+                    }
+                    this.queryPost("/queryList", param)
+                        .then((res) => {
+                            var _data = res.data;
+                            if (_data.success) {
+                                this.baseData.saleTeam = _data.datas.gridDatas;
+                            } else {
+                                this.$message.error(this.$lang(_data.msg));
+                            }
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                // KPI 实际分成结果
+                getSalesKpiResult: function (id) {
+                    this.tableLoading = true;
+                    let param = {
+                        namespace: 'B2cOrderRevenueSplitMapper.queryRevenueSplit',
+                        startDate: this.form.dateRange && this.form.dateRange[0],
+                        endDate: this.form.dateRange && this.form.dateRange[1],
+                        busyId: this.form.busyId.length ? this.form.busyId.join() : null,
+                        saleTeamId: this.form.saleTeamId,
+                        orderId: this.form.orderNum.replace(/(^\s*)|(\s*$)/g, ""),
+                        splitTypeId: 1001,
+                        splitSalesType: true,
+                        statistic_type: this.form.statistic_type,
+                        page: this.salesKpiForm.salesKpiPage,
+                        pageSize: this.salesKpiForm.salesKpiSize,
+                        'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp_req': true
+                    }
+                    this.queryPost("/queryPage",
+                            param)
+                        .then((res) => {
+                            var _data = res.data;
+                            if (_data.success) {
+                                this.tableLoading = false;
+                                this.salesKpiData = _data.datas.gridDatas;
+                                this.salesKpiTotalCount = _data.totalCount;
+
+                            } else {
+                                this.$message.error(this.$lang(_data.msg));
+                            }
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                // KPI 分成结果
+                getKpiResult: function (id) {
+                    this.tableLoading = true;
+                    let param = {
+                        namespace: 'B2cOrderRevenueSplitMapper.queryRevenueSplit',
+                        startDate: this.form.dateRange && this.form.dateRange[0],
+                        endDate: this.form.dateRange && this.form.dateRange[1],
+                        busyId: this.form.busyId.length ? this.form.busyId.join() : null,
+                        saleTeamId: this.form.saleTeamId,
+                        orderId: this.form.orderNum.replace(/(^\s*)|(\s*$)/g, ""),
+                        statistic_type: this.form.statistic_type,
+                        splitTypeId: 1001,
+                        page: this.kpiForm.kpiPage,
+                        pageSize: this.kpiForm.kpiSize,
+                        'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp_req': true
+                    }
+                    this.queryPost("/queryPage",
+                            param)
+                        .then((res) => {
+                            var _data = res.data;
+                            if (_data.success) {
+                                this.tableLoading = false;
+                                this.kpiData = _data.datas.gridDatas;
+                                this.kpiTotalCount = _data.totalCount;
+
+                            } else {
+                                this.$message.error(this.$lang(_data.msg));
+                            }
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                // 利润 分成结果
+                getProfitsResult: function (id) {
+                    this.tableLoading = true;
+                    let param = {
+                        namespace: 'B2cOrderRevenueSplitMapper.queryRevenueSplit',
+                        startDate: this.form.dateRange && this.form.dateRange[0],
+                        endDate: this.form.dateRange && this.form.dateRange[1],
+                        busyId: this.form.busyId.length ? this.form.busyId.join() : null,
+                        saleTeamId: this.form.saleTeamId,
+                        orderId: this.form.orderNum.replace(/(^\s*)|(\s*$)/g, ""),
+                        statistic_type: this.form.statistic_type,
+                        splitTypeId: 1002,
+                        splitSalesType: true,
+                        page: this.profitsForm.profitsPage,
+                        pageSize: this.profitsForm.profitsSize,
+                        'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp_req': true
+                    }
+                    this.queryPost("/queryPage",
+                            param)
+                        .then((res) => {
+                            var _data = res.data;
+                            if (_data.success) {
+                                this.tableLoading = false;
+                                this.profitData = _data.datas.gridDatas;
+                                this.profitTotalCount = _data.totalCount;
+                            } else {
+                                this.$message.error(this.$lang(_data.msg));
+                            }
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                getListData: function (id) {
+                    
+                    this.tableLoading = true;
+                    let param = {
+                        namespace: 'B2cOrderRevenueSplitMapper.queryOrderInfo',
+                        startDate: this.form.dateRange && this.form.dateRange[0],
+                        endDate: this.form.dateRange && this.form.dateRange[1],
+                        busyId: this.form.busyId.length ? this.form.busyId.join() : null,
+                        saleTeamId: this.form.saleTeamId,
+                        statistic_type: this.form.statistic_type,
+                        orderId: this.isShowB2cDetail ? id : this.form.orderNum.replace(
+                            /(^\s*)|(\s*$)/g, ""),
+                        page: this.isShowB2cDetail ? this.b2cForm.b2cDetPage : this.b2cForm.b2cPage,
+                        pageSize: this.isShowB2cDetail ? this.b2cForm.b2cDetSize : this.b2cForm.b2cSize,
+                        'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp_req': true
+                    }
+                    // if(this.form.statistic_type == 'deliver'){
+                    //     param.deliverTime = this.$options.filters['dashes'] (date_id)
+                    // }
+                    // console.log(param);
+                    
+                    this.queryPost("/queryPage",
+                            param)
+                        .then((res) => {
+                            var _data = res.data;
+                            if (_data.success) {
+                                this.tableLoading = false;
+                                if (this.isShowB2cDetail) {
+                                    this.order_id = _data.datas.gridDatas[0].order_id;
+                                    this.date_id = _data.datas.gridDatas[0].date_id;
+                                    this.order_total_sales = _data.datas.gridDatas[0].order_total;
+                                    this.platform_discount_price = _data.datas.gridDatas[0].platform_discount_price
+                                    this.pay_settle_price_usd = _data.datas.gridDatas[0].pay_settle_price_usd;
+                                    this.order_percent = _data.datas.gridDatas[0].order_revenue;
+                                    this.subsidy = _data.datas.gridDatas[0].subsidy;
+                                    this.pur_return_fee = _data.datas.gridDatas[0].pur_return_fee;
+                                    this.league_fee = _data.datas.gridDatas[0].league_fee;
+                                    this.paypal_fee = _data.datas.gridDatas[0].paypal_fee;
+                                    this.vat_fee = _data.datas.gridDatas[0].vat_fee;
+                                    this.carry_tariff = _data.datas.gridDatas[0].carry_tariff;
+                                    // this.pre_amount_freight = _data.datas.gridDatas[0]
+                                    //     .pre_amount_freight;
+                                    this.commission = _data.datas.gridDatas[0].commission;
+                                    this.shipping_cost = _data.datas.gridDatas[0].shipping_cost;
+                                    this.b2cDetailData = _data.datas.gridDatas;
+                                    this.b2cDetailTotalCount = _data.totalCount;
+                                } else {
+                                    this.b2cData = _data.datas.gridDatas;
+                                    this.b2cTotalCount = _data.totalCount;
+                                    this.isShowMoreData = this.b2cData.length !== 0 ? true : false;
+                                    if (this.switchActive) {
+                                        this.isShowMoreData = false;
+                                    }
+                                }
+                            } else {
+                                this.$message.error(this.$lang(_data.msg));
+                            }
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                getBaseData: function (val) {
+                    this.tableLoading = true;
+                    let param = {
+                        namespace: 'B2cOrderRevenueSplitMapper.queryB2bOrderInfo',
+                        startDate: this.form.dateRange && this.form.dateRange[0],
+                        endDate: this.form.dateRange && this.form.dateRange[1],
+                        busyId: this.form.busyId.length ? this.form.busyId.join() : null,
+                        saleTeamId: this.form.saleTeamId,
+                        statistic_type: this.form.statistic_type,
+                        orderId: this.form.orderNum.replace(/(^\s*)|(\s*$)/g, ""),
+                        page: this.b2bForm.b2bPage,
+                        pageSize: this.b2bForm.b2bSize,
+                        'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp_req': true
+                    }
+                    this.queryPost("/queryPage",
+                            param)
+                        .then((res) => {
+                            var _data = res.data;
+                            if (_data.success) {
+                                this.tableLoading = false;
+                                this.b2bData = _data.datas.gridDatas;
+                                this.b2bTotalCount = _data.totalCount;
+                                this.isShowMore = this.b2bData.length !== 0 ? true : false;
+                                if (!this.switchActive) {
+                                    this.isShowMore = false;
+                                }
+                            } else {
+                                this.$message.error(this.$lang(_data.msg));
+                            }
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                getB2bDeteilData: function (val) {
+                    console.log(val);
+                    
+                    this.tableLoading = true;
+                    let param = {
+                        namespace: 'B2cOrderRevenueSplitMapper.queryB2bOrderDetailInfo',
+                        startDate: this.form.dateRange && this.form.dateRange[0],
+                        endDate: this.form.dateRange && this.form.dateRange[1],
+                        busyId: this.form.busyId.length ? this.form.busyId.join() : null,
+                        saleTeamId: this.form.saleTeamId,
+                        statistic_type: this.form.statistic_type,
+                        orderId: this.b2b_order_id,
+                        page: this.b2bDetForm.b2bDetPage,
+                        pageSize: this.b2bDetForm.b2bDetSize,
+                        'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp_req': true
+                    }
+                     if(this.form.statistic_type == 'deliver'){
+                        if(val.po_date){
+                            this.po_date_new = val.po_date
+                        }
+                        // param.deliverTime = this.$options.filters['dashes'] (date_id)
+                        param.deliverTime = this.po_date_new
+
+                    }
+                    console.log(param);
+                    this.queryPost("/queryPage",
+                            param)
+                        .then((res) => {
+                            var _data = res.data;
+                            if (_data.success) {
+                                this.tableLoading = false;
+                                this.b2bDetailData = _data.datas.gridDatas;
+                                this.b2bDetailTotalCount = _data.totalCount;
+                                for (var i = 0; i < this.b2bDetailData.length; i++) {
+                                    this.$set(this.b2bDetailData[i], 'kpiChildren', []);
+                                    this.$set(this.b2bDetailData[i], 'profitChildren', []);
+                                    this.$set(this.b2bDetailData[i], 'saleskpiChildren', []);
+                                }
+                            } else {
+                                this.$message.error(this.$lang(_data.msg));
+                            }
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                // 表格 KPI 分成结果
+                getKpiTabResult: function (id, item) {
+                    this.tableLoading = true;
+                    let param = {
+                        namespace: 'B2cOrderRevenueSplitMapper.queryRevenueSplit',
+                        startDate: this.form.dateRange && this.form.dateRange[0],
+                        endDate: this.form.dateRange && this.form.dateRange[1],
+                        orderId: id,
+                        rowId: item,
+                        busyId: this.form.busyId.length ? this.form.busyId.join() : null,
+                        // saleTeamId: this.form.saleTeamId,
+                        splitTypeId: 1001,
+                        statistic_type: this.form.statistic_type,
+                        page: 1,
+                        pageSize: 10,
+                        'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp_req': true
+                    }
+                    this.queryPost("/queryPage",
+                            param)
+                        .then((res) => {
+                            var _data = res.data;
+                            if (_data.success) {
+                                this.tableLoading = false;
+                                this.kpiTableData = _data.datas.gridDatas;
+                                for (var i = 0; i < this.b2bDetailData.length; i++) {
+                                    if (this.idValue == this.b2bDetailData[i].row_id.value) {
+                                        this.$set(this.b2bDetailData[i], 'kpiChildren', this
+                                            .kpiTableData);
+                                        // this.b2bDetailData[i]['kpiChildren'] = this.kpiTableData;
+                                    }
+                                }
+                            } else {
+                                this.$message.error(this.$lang(_data.msg));
+                            }
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                // 表格 销售 实际KPI 分成结果
+                getSalesKpiTabResult: function (id, item) {
+                    this.tableLoading = true;
+                    let param = {
+                        namespace: 'B2cOrderRevenueSplitMapper.queryRevenueSplit',
+                        startDate: this.form.dateRange && this.form.dateRange[0],
+                        endDate: this.form.dateRange && this.form.dateRange[1],
+                        orderId: id,
+                        rowId: item,
+                        busyId: this.form.busyId.length ? this.form.busyId.join() : null,
+                        splitSalesType: true,
+                        splitTypeId: 1001,
+                        statistic_type: this.form.statistic_type,
+                        page: 1,
+                        pageSize: 10,
+                        'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp_req': true
+                    }
+                    this.queryPost("/queryPage",
+                            param)
+                        .then((res) => {
+                            var _data = res.data;
+                            if (_data.success) {
+                                this.tableLoading = false;
+                                this.salesKpiTableData = _data.datas.gridDatas;
+                                for (var i = 0; i < this.b2bDetailData.length; i++) {
+                                    if (this.idValue == this.b2bDetailData[i].row_id.value) {
+                                        this.$set(this.b2bDetailData[i], 'salesKpiChildren', this
+                                            .salesKpiTableData);
+                                        // this.b2bDetailData[i]['kpiChildren'] = this.kpiTableData;
+                                    }
+                                }
+                            } else {
+                                this.$message.error(this.$lang(_data.msg));
+                            }
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                // 表格 利润 分成结果
+                getProfitsTabResult: function (id, item) {
+                    this.tableLoading = true;
+                    let param = {
+                        namespace: 'B2cOrderRevenueSplitMapper.queryRevenueSplit',
+                        startDate: this.form.dateRange && this.form.dateRange[0],
+                        endDate: this.form.dateRange && this.form.dateRange[1],
+                        busyId: this.form.busyId.length ? this.form.busyId.join() : null,
+                        // saleTeamId: this.form.saleTeamId,
+                        orderId: id,
+                        rowId: item,
+                        splitTypeId: 1002,
+                        splitSalesType: true,
+                        statistic_type: this.form.statistic_type,
+                        page: 1,
+                        pageSize: 10,
+                        'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp_req': true
+                    }
+                    this.queryPost("/queryPage",
+                            param)
+                        .then((res) => {
+                            var _data = res.data;
+                            if (_data.success) {
+                                this.tableLoading = false;
+                                this.profitTableData = _data.datas.gridDatas;
+                                for (var i = 0; i < this.b2bDetailData.length; i++) {
+                                    if (this.idValue == this.b2bDetailData[i].row_id.value) {
+                                        this.$set(this.b2bDetailData[i], 'profitChildren', this
+                                            .profitTableData);
+                                        // this.b2bDetailData[i]['profitChildren'] = this.profitTableData;
+                                    }
+                                }
+                            } else {
+                                this.$message.error(this.$lang(_data.msg));
+                            }
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                selectOrderSource: function (item) {
+                    var _this = this;
+                    if (!item) {
+                        _this.form.busyId = [];
+                        for (var i = 0; i < _this.baseData.busyType.length; i++) {
+                            _this.baseData.busyType[i].checked = false;
+                        }
+                    } else {
+                        item.checked = !item.checked;
+                        if (item.checked) {
+                            _this.form.busyId.push(item.id);
+                        } else {
+                            _this.form.busyId.forEach(function (val, index) {
+                                if (val == item.id) {
+                                    _this.form.busyId.splice(index, 1);
+                                }
+                            });
+                        }
+                    }
+                },
+
+                tableB2cDetail: function () {
+                    this.getKpiTabResult(this.order_id, null);
+                    this.getSalesKpiTabResult(this.order_id, null);
+                    this.getProfitsTabResult(this.order_id, null);
+                },
+                tableB2bDetail: function (item) {
+                    this.idValue = item.row_id.value;
+                    this.order_total_sales = item.sale_volume;
+                    this.getKpiTabResult(null, item.row_id.value);
+                    this.getSalesKpiTabResult(null, item.row_id.value);
+                    this.getProfitsTabResult(null, item.row_id.value);
+                },
+                handleKpiSizeChange: function (val) {
+                    this.kpiForm.kpiSize = val;
+                },
+                handleSalesKpiSizeChange: function (val) {
+                    this.salesKpiForm.salesKpiSize = val;
+                },
+                // handleKpiCurrentChange: function (val) {
+                //     this.kpiForm.kpiPage = val;
+                // },
+                handleProfitSizeChange: function (val) {
+                    this.profitsForm.profitsSize = val;
+                },
+                // handleProfitCurrentChange: function (val) {
+                //     this.profitsForm.profitsPage = val;
+                // },
+                handleB2cSizeChange: function (val) {
+                    this.b2cForm.b2cSize = val;
+                },
+                handleB2cCurrentChange: function (val) {
+                    this.b2cForm.b2cPage = val;
+                },
+                // B2C 弹出框
+                // handleB2cDetSizeChange: function (val) {
+                //     this.b2cForm.b2cDetSize = val;
+                // },
+                handleB2cDetCurrentChange: function (val) {
+                    this.b2cForm.b2cDetPage = val;
+                },
+                handleB2bSizeChange: function (val) {
+                    this.b2bForm.b2bSize = val;
+                },
+                handleB2bCurrentChange: function (val) {
+                    this.b2bForm.b2bPage = val;
+                },
+
+                handleB2bDetSizeChange: function (val) {
+                    this.b2bDetForm.b2bDetSize = val;
+                },
+                handleB2bDetCurrentChange: function (val) {
+                    this.b2bDetForm.b2bDetPage = val;
+                },
+
+                // b2c 分成明細
+                b2cDetail: function (id) {
+                    this.isShowB2cDetail = true;
+                    this.isShowB2bDetail = true;
+                    this.getListData(id);
+                },
+                
+                // b2b 分成明細
+                b2bDetail: function (id) {
+                    this.isShowB2cDetail = true;
+                    this.isShowB2bDetail = false;
+                    this.po_no = id.po_no;
+                    this.po_date = id.po_date;
+                    this.po_sales = id.po_sales;
+                    this.po_order_id = id.order_id;
+                    this.b2b_order_id = id.order_id;
+                    this.po_logistic_cost = id.logistic_cost;
+                    this.po_rebate_tax = id.rebate_tax;
+                    this.rebate_amount_usd = id.rebate_amount_usd;
+                    this.po_busy_group_name = id.busy_group_name;
+                    this.getB2bDeteilData(id);
+                },
+                download: function () {
+                    var dowUrl = this.switchActive ? 'b2cExportExcel?page=1&pageSize=10&' :
+                        'b2bExportExcel?page=1&pageSize=10&';
+                    var date = 'startDate=' + this.form.dateRange[0] + '&endDate=' + this.form.dateRange[
+                            1] +
+                        '&saleTeamId=' + this.form.saleTeamId +
+                        '&busyId=' + this.form.busyId +
+                        '&orderId=' + this.form.orderNum +
+                        '&statistic_type=' + this.form.statistic_type;
+                    var aEle = document.createElement("a");
+                    aEle.setAttribute("style", "display: none");
+                    aEle.setAttribute("href",
+                        this.apiHost + 'b2bAndB2cRevenueSplit/' + dowUrl + date
+                    );
+                    aEle.click();
+                },
+                // B2C成本文字提示框
+                handleB2cCost(h, {
+                    column,
+                    $index
+                }) {
+                    let l = column.label.length;
+                    let f = 16;
+                    column.minWidth = f * l;
+                    return h('div', {
+                        class: 'table-head',
+                        style: {
+                            width: '100%',
+                            color: 'black'
+                        }
+                    }, [
+                        h('span', column.label),
+                        h('b2c-message-cost', {})
+                    ])
+                },
+                // B2C成本销售额提示框
+                handleB2cSales(h, {
+                    column,
+                    $index
+                }) {
+                    let l = column.label.length;
+                    let f = 16;
+                    column.minWidth = f * l;
+                    return h('div', {
+                        class: 'table-head',
+                        style: {
+                            width: '100%',
+                            color: 'black'
+                        }
+                    }, [
+                        h('span', column.label),
+                        h('b2c-message-sales', {})
+                    ])
+                },
+                // B2B成本文字提示框
+                handleB2bCost(h, {
+                    column,
+                    $index
+                }) {
+                    let l = column.label.length;
+                    let f = 16;
+                    column.minWidth = f * l;
+                    return h('div', {
+                        class: 'table-head',
+                        style: {
+                            width: '100%',
+                            color: 'black'
+                        }
+                    }, [
+                        h('span', column.label),
+                        h('b2b-message-cost', {})
+                    ])
+                },
+                // B2B成本销售额提示框
+                handleB2bSales(h, {
+                    column,
+                    $index
+                }) {
+                    let l = column.label.length;
+                    let f = 16;
+                    column.minWidth = f * l;
+                    return h('div', {
+                        class: 'table-head',
+                        style: {
+                            width: '100%',
+                            color: 'black'
+                        }
+                    }, [
+                        h('span', column.label),
+                        h('b2b-message-sales', {})
+                    ])
+                },
+                handleB2cHead(h, {
+                    column
+                }) {
+                    let l = column.label.length;
+                    let f = 16;
+                    column.minWidth = f * l;
+                    return h('div', {
+                        class: 'table-head',
+                        style: {
+                            width: '100%'
+                        }
+                    }, [column.label])
+                }
+
+            },
+            //监听数据
+            watch: {
+                form: {
+                    handler(newValue, oldValue) {
+                        this.getKpiResult(newValue); // KPI分成结果
+                        this.getSalesKpiResult(newValue); // 实际销售 KPI分成结果
+                        this.getProfitsResult(newValue);
+                        this.getListData(newValue);
+                        this.getBaseData(newValue);
+                    },
+                    deep: true
+                },
+                kpiForm: {
+                    handler(newValue, oldValue) {
+                        this.getKpiResult(newValue); // KPI分成结果        
+                    },
+                    deep: true
+                },
+                salesKpiForm: {
+                    handler(newValue, oldValue) {
+                        console.log(newValue)
+                        this.getSalesKpiResult(newValue); // KPI分成结果
+                    },
+                    deep: true
+                },
+                profitsForm: {
+                    handler(newValue, oldValue) {
+                        this.getProfitsResult(newValue);
+                    },
+                    deep: true
+                },
+                b2cForm: {
+                    handler(newValue, oldValue) {
+                        this.getListData(newValue);
+                    },
+                    deep: true
+                },
+                b2bForm: {
+                    handler(newValue, oldValue) {
+                        this.getBaseData(newValue);
+                    },
+                    deep: true
+                },
+                b2bDetForm: {
+                    handler(newValue, oldValue) {
+                        this.getB2bDeteilData(newValue);
+                    },
+                    deep: true
+                }
+
+            },
+            //过滤器
+            filters: {
+                separatNum: function (num) { //千分位方法
+                    if (!num) {
+                        return
+                    };
+                    num = num + "";
+                    var _arr = num.split(".");
+                    return _arr[1] === "00" ? (num - 0).toLocaleString() + ".00" : (num - 0)
+                        .toLocaleString();
+                },
+                numberFormat: function (value) {
+                    if (value == undefined) {
+                        return;
+                    }
+                    var value1 = value;
+                    if (value < 0) {
+                        value1 = -value;
+                    }
+                    var intValue, decValue, symbol = '',
+                        result = '',
+                        strValue = value1.toString();
+                    if (strValue.indexOf('.') > -1) {
+                        symbol = strValue.indexOf('-') > -1 ? '-' : '';
+                        intValue = strValue.substring(strValue.indexOf('-') > -1 ? 1 : 0, strValue.indexOf(
+                            '.'));
+                        decValue = strValue.substring(strValue.indexOf('.'))
+                    } else {
+                        intValue = strValue;
+                        decValue = '';
+                    }
+                    while (intValue.length > 3) {
+                        result = ',' + intValue.slice(-3) + result;
+                        intValue = intValue.slice(0, intValue.length - 3);
+                    }
+                    result = symbol + intValue + result + decValue;
+
+                    return value < 0 ? '-' + result : result;
+                },
+                percentage: function (num) {
+                    return num ? ((num * 100).toFixed(0) + "%") : '0%';
+                },
+                integer: function (num) {
+                    return num ? ((num * 1).toFixed(0)) : '0';
+                },
+                dashes: function (num) {
+                    if (!num) {
+                        return
+                    };
+                    num = num + "";
+                    return num.substring(0, 4) + '-' + num.substring(4, 6) + '-' + num.substring(6, 8);
+                }
+            }
+        });
+
+        function formatDate(date) {
+            var y = date.getFullYear();
+            var m = date.getMonth() + 1;
+            m = m < 10 ? ('0' + m) : m;
+            var d = date.getDate();
+            d = d < 10 ? ('0' + d) : d;
+            var h = date.getHours();
+            var minute = date.getMinutes();
+            minute = minute < 10 ? ('0' + minute) : minute;
+            var second = date.getSeconds();
+            second = minute < 10 ? ('0' + second) : second;
+            return y + '' + m + '' + d;
+        };
+    </script>
+</body>
+
+</html>

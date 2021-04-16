@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>$lang('ODM')</title>
+  <meta name="viewport"
+    content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.8.2.css?v=<{$Think.const.V}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+  <!-- <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.const.V}>"> -->
+  <link rel="stylesheet" href="./Application/Tpl/Home/Legal/common.css?v=<{$Think.const.V}>">
+  <style>
+    .title-info {
+      font-size: 18px;
+      font-weight: bold;
+    }
+    .bold-info {
+      font-weight: bold;
+    }
+    .el-dialog__header{
+      padding: 0px;
+    }
+    .company_dialog_wrap{
+        display: flex;
+        flex-direction: column;
+        /* padding-right: 250px; */
+    }
+    .company_dialog_title{
+        margin-bottom: 30px;
+        font-size: 24px;
+        font-weight: bold;
+    }
+    .company_dialog_form .el-input{
+        padding: 0;
+        width: 50%;
+    }
+    .custom-table [class*=el-col-] {
+      float: none;
+    }
+    .el-select .el-tag{
+      /* width: 100%; */
+      white-space: normal;
+      display: inline-table;
+    }
+    .element-row .title{
+          font-size: 16px;
+          font-weight: bold;
+          margin-right: 10px;
+      }
+      .processNode{
+        display: flex;
+        align-items: center;
+      }
+  </style>
+</head>
+
+<body>
+  <div id="odm" class="wrapper" v-cloak>
+    <div>
+      <el-row  class="element-row">
+        <el-col :span="24">
+          <div class="processNode">
+              <span class="title">{{$lang('商标注册状态')}}</span>
+              <!-- <el-radio-group v-model="query.search.current_state">
+                <el-radio v-for="item in commonDataBack.current_type" :label="item.cd" border>{{$lang(item.cdVal)}}</el-radio>
+              </el-radio-group> -->
+
+              <el-checkbox-group v-model="query.search.current_state" size="medium">
+                <el-checkbox-button v-for="item in commonDataBack.current_type" v-model="item.cd"  :label="item.cd" :key="item.cd" border>{{item.cdVal}}</el-checkbox-button>
+              </el-checkbox-group>
+
+
+            </div>
+        </el-col>
+      </el-row>
+
+      <el-row class="element-row">
+        <el-col :span="4">
+           <!-- <el-select collapse-tags v-model.trim="query.search.country_code" filterable :filter-method="filterCountry" multiple :placeholder="$lang('申请国家')"> -->
+           <el-select collapse-tags v-model.trim="query.search.country_code" filterable multiple :placeholder="$lang('申请国家')">
+             <el-option v-for="item in commonData.area_code" :key="item.id" :label="$lang(item.NAME)" :value="item.id">
+             </el-option>
+           </el-select>
+        </el-col>
+        <el-col :span="4">
+          <!-- <el-select collapse-tags v-model.trim="query.search.company_code" filterable :filter-method="filterCompany" multiple :placeholder="$lang('申请公司')"> -->
+          <el-select collapse-tags v-model.trim="query.search.company_code" filterable multiple :placeholder="$lang('申请公司')">
+            <el-option v-for="item in commonData.company" :key="item.CD" :label="$lang(item.CD_VAL)" :value="item.CD">
+            </el-option>
+          </el-select>
+        </el-col>
+        <el-col :span="4">
+          <el-input :placeholder="$lang('申请商标')" v-model.trim="query.search.trademark_name" clearable style="width:200px;">
+          </el-input>
+        </el-col>
+        <el-col :span="4">
+          <el-input :placeholder="$lang('商标申请人')" v-model.trim="query.search.created_by" clearable style="width:200px;">
+          </el-input>
+        </el-col>
+        <el-col :span="4">
+          <el-input :placeholder="$lang('申请/注册号')" v-model.trim="query.search.register_code" style="width:200px;" clearable>
+          </el-input>
+        </el-col>
+        <!-- <el-col :span="4">
+          <el-select v-model.trim="query.search.current_state" filterable :filter-method="filterType" clearable :placeholder="$lang('注册状态')">
+            <el-option v-for="item in commonData.current_type" :key="item.cd" :label="$lang(item.cdVal)" :value="item.cd">
+            </el-option>
+          </el-select>
+        </el-col> -->
+     
+      </el-row>
+      <el-row class="element-row">
+        <el-col :span="4">
+          <el-input :placeholder="$lang('国际分类')" v-model.trim="query.search.international_type" clearable style="width:200px;">
+          </el-input>
+        </el-col>
+        <el-col :span="4">
+          <el-input :placeholder="$lang('商标编号')" v-model.trim="query.search.trademark_no" clearable style="width:200px;">
+          </el-input>
+        </el-col>
+        <el-col :span="5" :offset="1">
+            <button class="element-btn btn-search" @click="getTableData(1)">{{$lang('搜索')}}</button>
+            <button class="element-btn btn-reset" @click="resetTable">{{$lang('重置')}}</button>
+        </el-col>
+      </el-row>
+      <!-- 条件筛选 end-->
+    </div>
+
+    <div>
+      <!-- 表格 start -->
+        <el-row class="element-row">
+          <el-col :span="3" class="bold-info">
+            {{$lang('搜索结果：共')}}{{tableData.pages.total}}{{$lang('条记录')}}
+          </el-col>
+          <!-- <el-col :span="1" :offset="16" class="text-right">
+            <a @click="importOrder" style="color: #409EFF;cursor: pointer;">{{$lang('导入')}}</a>
+          </el-col> -->
+          <form id="otherImport" style="display:none">
+              <!-- <input type="file" name="expe" id="activeImport" onchange="$('#otherImport').submit()"> -->
+              <input type="file" name="file" id="activeImport" value="this.value" @change="importSumit()">
+          </form>
+          <!-- <el-col :span="1" class="text-center">
+            <a @click="exportTable" style="color: #409EFF;cursor: pointer;">{{$lang('导出')}}</a>
+          </el-col>
+          <el-col :span="1" class="text-center">
+            <a @click="downTmep" style="color: #409EFF;cursor: pointer;">{{$lang('下载模版')}}</a>
+          </el-col> -->
+
+          <!-- <?php if (checkPermissions('Trademark', 'createTrademark')) {?>
+          <el-col :span="2" class="text-right">
+            <el-button @click="add" class="element-btn btn-search">{{$lang('新建商标')}}</el-button>
+          </el-col>
+          <?php }?> -->
+          <el-col :span="2" class="text-right">
+            <el-button @click="deleteTrademark" class="element-btn btn-search">{{$lang('删除商标')}}</el-button>
+          </el-col>
+        </el-row>
+        <el-table border show-header @selection-change="handleSelectionChange" :data="tableData.data" tooltip-effect="dark" style="width: 100%" class="element-table"
+          v-loading="tableLoading">
+          <!-- <el-table-column :label="$lang('编号')" prop="no">
+          </el-table-column> -->
+          <el-table-column
+          type="selection"
+          width="55">
+          </el-table-column>
+          <el-table-column :label="$lang('商标编号')">
+            <template slot-scope="scope">
+              <a style="color: #409EFF;cursor: pointer;" @click="showDetail(scope.row)">{{$lang(scope.row.trademark_no)}}</a>
+            </template>
+          </el-table-column>
+          <el-table-column :label="$lang('商标名称')">
+            <template slot-scope="scope">
+              {{$lang(scope.row.trademark_name)}}
+            </template>
+          </el-table-column>
+          <el-table-column :label="$lang('国家')">
+            <template slot-scope="scope">
+              {{$lang(scope.row.country_name)}}
+            </template>
+          </el-table-column>
+          <el-table-column :label="$lang('公司')" prop="company_name">
+            <template slot-scope="scope">
+              {{$lang(scope.row.company_name)}}
+            </template>
+          </el-table-column>
+          <el-table-column :label="$lang('商标注册号')" prop="register_code">
+          </el-table-column>
+          <el-table-column :label="$lang('国际分类')" prop="international_type">
+          </el-table-column>
+          <el-table-column :label="$lang('商品/服务')" width="550px" align="left">
+            <template slot-scope="scope">
+                <div>
+                    <pre style="width: 528px;text-align: left;white-space: pre-wrap;word-wrap: break-word;" v-html="scope.row.goods">
+                    </pre>
+                </div>
+            </template>
+          </el-table-column>
+          <el-table-column :label="$lang('商标类型')">
+            <template slot-scope="scope">
+              {{$lang(scope.row.trademark_type_val)}}
+            </template>
+          </el-table-column>
+          <el-table-column :label="$lang('商标注册状态')">
+            <template slot-scope="scope">
+              {{$lang(scope.row.current_state_name)}}
+            </template>
+          </el-table-column>
+          <el-table-column :label="$lang('备注')" prop="remark">
+          </el-table-column>
+          <el-table-column :label="$lang('操作')">
+            <template slot-scope="scope">
+              <a style="color: #ffa140;cursor: pointer;" @click="operating('use',scope.row)">{{$lang('使用商标')}}</a>
+              <a style="color: #409EFF;cursor: pointer;" @click="operating('edit',scope.row)">{{$lang('修改')}}</a>
+            </template>
+          </el-table-column>
+        </el-table>
+      <!-- 表格 end -->
+
+      <el-pagination background @size-change="pageSizeChange" @current-change="currentPageChange"
+        :page-sizes="[10, 30, 50, 100]" :page-size="query.page.per_page" layout="sizes, prev, pager, next, jumper"
+        :total="tableData.pages.total" class="element-pagination">
+      </el-pagination>
+      <!-- 对话框 -->
+      <el-dialog :visible.sync="dialogVisible">
+          <div class="company_dialog_wrap">
+              <div class="company_dialog_title">
+                  <span>{{$lang('商标详情')}}</span>
+              </div>
+              <el-form class="company_dialog_form" label-width="80px" v-if="detailData.trademark_base">
+                  <el-form-item :label="$lang('商标名称')">
+                      <el-input v-model="detailData.trademark_base.trademark_name" readonly></el-input>
+                  </el-form-item>
+                  <el-form-item :label="$lang('注册公司')">
+                      <el-input v-model="companyName" readonly></el-input>
+                  </el-form-item>
+                  <el-form-item :label="$lang('注册国家')">
+                      <el-input v-model="countryName" readonly></el-input>
+                  </el-form-item>
+              </el-form>
+              <table cellpadding="0" cellspacing="0" border="0" class="custom-table" v-if="detailData.trademark_detail">
+                <tr>
+                  <td class="el-col-4">{{$lang('注册/申请号')}}</td>
+                  <td class="el-col-4">{{detailData.trademark_detail[0].register_code}}</td>
+                  <td class="el-col-4">{{$lang('申请日期')}}</td>
+                  <td class="el-col-4">{{detailData.trademark_detail[0].applied_date}}</td>
+                  <td class="el-col-4">{{$lang('国际分类')}}</td>
+                  <td class="el-col-4">{{detailData.trademark_detail[0].international_type}}</td>
+                </tr>
+                <tr>
+                  <td class="el-col-4">{{$lang('商品/服务')}}</td>
+                  <td colspan="5" class="el-col-4">{{detailData.trademark_detail[0].goods}}</td>
+                </tr>
+                <tr>
+                  <td class="el-col-4">{{$lang('初审公告日期')}}</td>
+                  <td class="el-col-4">{{detailData.trademark_detail[0].initial_review_date}}</td>
+                  <td class="el-col-4">{{$lang('当前状态')}}</td>
+                  <td class="el-col-4">{{detailData.trademark_detail[0].current_state | getCurrentData(commonData.current_type)}}</td>
+                  <td class="el-col-4">{{$lang('代理/办理机构')}}</td>
+                  <td class="el-col-4">{{detailData.trademark_detail[0].agent}}</td>
+                </tr>
+                <tr>
+                  <td class="el-col-4">{{$lang('备注')}}</td>
+                  <td colspan="5" class="el-col-4">{{detailData.trademark_detail[0].remark}}</td>
+                </tr>
+              </table>
+          </div>
+      </el-dialog>
+
+      <el-dialog @close='handleClose'  :visible.sync="dialogUseTrademark">
+        <div >
+            <div class="company_dialog_title">
+                <span>{{$lang('使用该商标')}}</span>
+            </div>
+            <el-form :model="useTrademarkForm" :rules="useTrademarkRules" ref="useTrademarkForm" label-width="180px">
+                <el-form-item prop="trademark_code" :label="$lang('商标编号')">
+                    <el-input disabled v-model="useTrademarkForm.trademark_code"></el-input>
+                </el-form-item>
+                <el-form-item prop="trademark_name" :label="$lang('商标名称')">
+                  <el-input disabled v-model="useTrademarkForm.trademark_name"></el-input>
+                </el-form-item>
+                <el-form-item prop="international_type" :label="$lang('商标分类')">
+                  <el-input disabled v-model="useTrademarkForm.international_type"></el-input>
+                </el-form-item>
+                <el-form-item prop="country_code" :label="$lang('国家')">
+                  <el-select disabled v-model="useTrademarkForm.country_code" filterable>
+                    <el-option v-for="item in commonData.area_code" :key="item.id" :label="$lang(item.NAME)" :value="item.id">
+                    </el-option>
+                  </el-select>
+                </el-form-item>
+                <el-form-item prop="use_trademark_type" :label="$lang('请选择商标使用类型')">
+                  <el-select v-model="useTrademarkForm.use_trademark_type">
+                    <el-option v-for="item in useTrademarkType" :key="item.val" :label="$lang(item.name)" :value="item.val">
+                    </el-option>
+                  </el-select>
+                </el-form-item>
+                <el-form-item>
+                  <el-button type="primary" @click="saveUseTrademark('useTrademarkForm')">{{$lang('保存')}}</el-button>
+                </el-form-item>
+            </el-form>
+        </div>
+    </el-dialog>
+
+    </div>
+  </div>
+
+  <!--引入js-->
+  <script src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+  <script src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+  <script src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+  <script src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+  <script src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+  <script src="./Application/Tpl/Home/Public/js/element-ui-2.8.2.js?v=<{$Think.const.V}>">
+  </script>
+  <script src="./Application/Tpl/Home/Public/js/element-en.js">
+  </script>
+  <script src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>">
+  </script>
+  <script type="text/javascript" src="../Public/lib/layer/1.9.3/layer.js"></script>
+  <script>
+
+  if (getCookie('think_language') !== "zh-cn") {
+    ELEMENT.locale(ELEMENT.lang.en)
+  }
+  var VM = new Vue({
+    el: '#odm',
+    // data: {
+    data() {
+      return {
+        dialogVisible: false,
+        dialogForm: {
+          qualificationName: '',
+          issuingAuthority: '',
+          renewalLocation: ''
+        },
+        dialogUseTrademark:false,
+        useTrademarkForm:{
+          idd:'',
+          trademark_code:'',
+          trademark_name:'',
+          international_type:'',
+          country_code:'',
+          use_trademark_type:'',
+        },
+        useTrademarkRules: {
+          trademark_code: [
+              { required: true, message: '请输入商标编号', trigger: 'blur' },
+          ],
+          trademark_name: [
+              { required: true, message: '请输入商标名称', trigger: 'blur' },
+          ],
+          international_type: [
+              { required: true, message: '请输入国际分类', trigger: 'blur' },
+          ],
+          country_code: [
+              { required: true, message: '请选择国家', trigger: 'change' },
+          ],
+          use_trademark_type: [
+              { required: true, message: this.$lang('请选择商标使用类型'), trigger: 'change' },
+          ]
+        },
+        detailData:{},
+        companyName:'',
+        countryName:'',
+        query: {
+          search: {
+            country_code: [],
+            company_code: [],
+            trademark_name: '',
+            created_by:'',
+            international_type:'',
+            trademark_no:'',
+            current_state: [],
+            register_code: '',
+            current_step:[],
+          },
+          page: {
+            current_page: 1,
+            per_page: 10
+          }
+        },
+        commonData: {
+
+        },
+        commonDataBack: {
+          area_code: [],
+          company: [],
+          current_type: [],
+          trademark: []
+        },
+        tableData: {
+          pages: {
+            total: 0
+          }
+        },
+        
+        tableLoading: false,
+        createInterface: 1,
+        isShow:false,
+        multipleSelection:[],
+        useTrademarkType:[
+          {name:'贴牌使用',val:'1'},
+          {name:'店铺申请使用',val:'2'},
+          {name:'授权使用',val:'3'},
+        ],
+      }
+    },
+    created: function () {
+      this.getCommonData();
+      this.getTableData();
+      this.getOurCompany();
+    },
+    filters:{
+      getCurrentData:function(value,arg){
+        for(var item of arg){
+          if(value == item.cd){
+            return item.cdVal;
+          }
+        }
+      },
+
+    },
+    methods: {
+      filtersTextarea: function(value) { //识别文本框编辑的换行符
+        if (!value) return '';
+        console.log(value,value.replace(/↵/g,"<br/>"))
+        return value.replace(/↵/g,"<br/>");
+      },
+      /**
+       * 获取URL中查询字符串中相应参数的值
+       *
+       * @param {string} name 参数名
+       * @return {(string | null)} 参数的值
+       */
+      queryPost: function (url, param) {
+        var headers = {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        }
+        return axios.post(url, Qs.stringify(param), headers);
+      },
+
+      filterCountry(newVal) {
+        if (newVal) {
+          this.commonData.area_code = this.commonDataBack.area_code.filter(item => {
+            return item.NAME.toLowerCase().indexOf(newVal.trim().toLowerCase()) > -1
+          })
+        } else {
+          this.commonData.area_code = this.commonDataBack.area_code
+        }
+      },
+
+      filterCompany(newVal) {
+        if (newVal) {
+            this.commonData.company = this.commonDataBack.company.filter(item => {
+              return item.cdVal.toLowerCase().indexOf(newVal.trim().toLowerCase()) > -1
+            })
+        } else {
+          this.commonData.company = this.commonDataBack.company
+        }
+      },
+
+      filterType(newVal) {
+        if (newVal) {
+            this.commonData.current_type = this.commonDataBack.current_type.filter(item => {
+              return item.cdVal.toLowerCase().indexOf(newVal.trim().toLowerCase()) > -1
+            })
+        } else {
+          this.commonData.current_type = this.commonDataBack.current_type
+        }
+      },
+
+
+      // 新版获取我方公司
+      getOurCompany() {
+        var _this = this;
+        axios.post('/index.php?g=common&m=index&a=get_our_company').then(function(res) {
+            if (res.data.code === 2000) {
+                _this.commonData.company = res.data.data;
+            } else {
+                _this.$message.error(this.$lang(res.data.msg));
+            }
+        })
+      },
+      // 获取通用数据
+      getCommonData: function () {
+        var param = {
+          data: {
+            query: {
+              area_code: 'true',
+              current_type: 'true'
+            }
+          }
+        };
+        axios.post("/index.php?g=oms&m=CommonData&a=commonData", param).then((res) => {
+          var data = res.data;
+          if (data.code === 2000) {
+            this.commonData = Object.assign({}, data.data, this.commonData);
+            const temp = JSON.stringify(data.data)
+            this.commonDataBack = JSON.parse(temp)
+          } else {
+            this.$message.error(this.$lang(data.msg));
+          }
+        }).catch( err => {
+          console.log(err)
+        });
+      },
+      current_step_change:function(val){
+        // console.log('val',val);
+        if(val.includes('N003710003')){
+          this.isShow = true
+        }else{
+          this.isShow = false
+          this.query.search.current_state = []
+        }
+      },
+      // 获取表格数据
+      getTableData: function (fromBtnClick) {
+        this.tableLoading = true;
+
+        if (fromBtnClick === 1 && this.query.page.current_page > 1) {
+          this.query.page.current_page = 1
+        }       
+        axios.post('/index.php?m=Trademark&a=dataList', this.query).then(res => {
+          this.tableLoading = false;
+          var data = res.data;
+          if (data.code === 2000) {
+            if(data.data.data){
+              this.tableData = data.data;
+              this.tableData.pages.total = parseInt(data.data.pages.total || 0)
+            }else{
+              this.tableData.data = [];
+              this.tableData.pages.total = 0;
+            }     
+          } else {
+            this.$message.error(this.$lang(data.msg));
+          }
+        }).catch(err => {
+          console.log(err)
+        });
+      },
+
+      resetTable: function () {
+        window.location.reload()
+
+        // this.query = {
+        //   search: {
+        //     country_code: [],
+        //     company_code: [],
+        //     trademark_name: '',
+        //     created_by:'',
+        //     international_type:'',
+        //     current_state: [],
+        //     register_code: '',
+        //     current_step:[],
+        //   },
+        //   page: {
+        //     current_page: 1,
+        //     per_page: 10
+        //   }
+        // }
+        // this.getTableData()
+      },
+
+      showDetail: function (val) {
+        console.log(val);
+        this.createInterface = sessionStorage.getItem('editOdmInterface') || 1;
+        this.route(this.$lang('查看商标'), "odm_edit", "view",val.id, this.createInterface++,val.trademark_no);
+        sessionStorage.setItem('editOdmInterface', this.createInterface);
+        // this.dialogVisible = true;
+        // axios.post('/index.php?m=Trademark&a=getTrademarkDetail', {trademark_id:id}).then(res => {
+        //   var data = res.data;
+        //   if (data.code === 200 && data.data) {
+        //     this.detailData = data.data;
+        //     for(var item of this.commonData.company){
+        //       if(this.detailData.trademark_detail[0].company_code == item.cd){
+        //         this.companyName = item.cdVal;
+        //       }
+        //     }
+        //     for(var item of this.commonData.area_code){
+        //       if(this.detailData.trademark_detail[0].country_code == item.id){
+        //         this.countryName = item.NAME;
+        //       }
+        //     }
+        //   } else {
+        //     this.$message.error(this.$lang(data.msg));
+        //   }
+        // }).catch(err => {
+        //   console.log(err)
+        // });
+      },
+      handleClose:function(){
+        this.$refs.useTrademarkForm.resetFields();
+        this.dialogUseTrademark = false
+      },
+      operating: function (type,val) {
+        if(type == 'use'){
+          if(val.current_state != 'N002980004'){
+            this.$message.warning(this.$lang('当前商标未注册，不可使用！'))
+            return;
+          }
+
+          this.useTrademarkForm.idd = val.id
+          this.useTrademarkForm.trademark_code = val.trademark_no
+          this.useTrademarkForm.trademark_name = val.trademark_name
+          this.useTrademarkForm.international_type = val.international_type
+          this.useTrademarkForm.country_code = val.country_code
+          this.useTrademarkForm.use_trademark_type = val.use_trademark_type
+          this.dialogUseTrademark = true
+        }else{
+          this.createInterface = sessionStorage.getItem('editOdmInterface') || 1;
+          this.route(this.$lang('编辑商标'), "odm_edit", "edit",val.id, this.createInterface++,val.trademark_no);
+          sessionStorage.setItem('editOdmInterface', this.createInterface);
+        }
+      },
+      saveUseTrademark:function(formName){
+        console.log(this.useTrademarkForm);
+        this.$refs[formName].validate((valid) => {
+          if (valid) {
+            axios.post("/index.php?m=trademark&a=useTrademarkAdd", {
+              trademark_no:this.useTrademarkForm.trademark_code,
+              use_type:this.useTrademarkForm.use_trademark_type
+            }).then((res) => {
+              console.log(res);
+              if (res.data.code === 200) {
+                this.$message.success(this.$lang('保存成功'))
+                this.handleClose()
+                this.getTableData()
+
+                setTimeout(() => {
+                  backTab('/index.php?m=legal&a=use_trademark', this.$lang('使用商标'))
+                }, 1000);  
+
+              } else {
+                this.$message.error(this.$lang(res.data.msg));
+              }
+            }).catch(err => {
+              console.log(err)
+            });
+          } else {
+            console.log('error submit!!');
+            return false;
+          }
+        });
+        
+      },
+      // 添加商标
+      add: function () {
+        this.createInterface = sessionStorage.getItem('addOdmInterface') || 1;
+        this.route(this.$lang('新建商标'), "odm_add", "create","", this.createInterface++);
+        sessionStorage.setItem('addOdmInterface', this.createInterface);
+      },
+      deleteTrademark:function(){
+
+          var ids = ''
+          var multipleSelection = this.multipleSelection
+
+          if(!multipleSelection || multipleSelection.length == 0){
+            this.$message.warning(this.$lang('请勾选商标'));
+            return;
+          }
+
+          for (var item in multipleSelection) {
+            ids == '' ? ids += multipleSelection[item].id : ids += ','+multipleSelection[item].id
+          }
+          axios.post("/index.php?m=Trademark&a=deleteODMData", {
+            ids:ids
+          }).then((res) => {
+            if (res.data.code === 200) {
+              this.$message.success(this.$lang('删除成功'))
+              this.getTableData()
+            } else {
+              this.$message.error(this.$lang(res.data.msg));
+            }
+          }).catch(err => {
+            console.log(err)
+          });
+
+      },
+      handleSelectionChange:function(val) {
+        this.multipleSelection = val;
+      },
+      //跳转详情页
+      route: function (title, _html, type,id, multiple,trademark_no) {
+        var dom = document.createElement("a"),
+          _href = "/index.php?&m=legal&a=" + _html + '&type=' + type + '&id=' + id+ '&trademark_no=' + trademark_no
+        dom.setAttribute("onclick", "opennewtab(this,'" + title + "')");
+        dom.setAttribute("_href", _href);
+        dom.click();
+      },
+      // 导入
+      importOrder: function importOrder() {
+          document.getElementById('activeImport').click();
+      },
+
+      // 导出表格
+      exportTable: function () {
+        var tmep = document.createElement('form');
+        tmep.action = '/index.php?m=Trademark&a=outputExcel';
+        tmep.method = "post";
+        tmep.style.display = "none";
+        var opt = document.createElement("input");
+        opt.name = 'post_data';
+        opt.value = JSON.stringify(this.query);
+        tmep.appendChild(opt);
+        document.body.appendChild(tmep);
+        tmep.submit();
+        $(tmep).remove();
+        tmep = null
+      },
+      // 模版下载
+      downTmep: function downTmep() {
+          var form = document.createElement('form');
+          form.action = '/index.php?m=Trademark&a=outputExcelTemplate';
+          form.method = "post";
+          form.style.display = "none";
+          form.innerHTML = '<input type="text" name="post_data" value=\'{"file_name":"import.xlsx"}\'>';
+          document.body.appendChild(form);
+          form.submit();
+          form.remove();
+          // console.log(form)
+          form = null;
+      },
+
+      // 表格索引计算
+      // indexMethod(index) {
+      //   const result = 1 + index + (this.query.page.current_page - 1) * this.query.page.per_page
+      //   return result
+      // },
+
+      pageSizeChange: function (val) {
+        this.query.page.per_page = val;
+        this.getTableData();
+      },
+      currentPageChange: function (val) {
+        this.query.page.current_page = val;
+        this.getTableData();
+      },
+      importSumit(){
+        var formData = new FormData(document.getElementById("otherImport"));//表单id
+        // $.ajax({
+        //     //几个参数需要注意一下
+        //     type: "POST",//方法类型
+        //     dataType: "json",//预期服务器返回的数据类型
+        //     url: "/index.php?m=Trademark&a=importExcel" ,//url
+        //     data: formData,
+        //     processData:false,
+        //     contentType:false,
+        //     success: function (result) {
+        //         console.log(result);//打印服务端返回的数据(调试用)
+        //         if (result.resultCode == 200) {
+        //             alert("SUCCESS");
+        //         }
+        //     },
+        //     error : function() {
+        //         alert("异常！");
+        //     }
+        // });
+        axios.post('/index.php?m=Trademark&a=importExcel', formData).then(res => {
+          var data = res.data;
+          if (data.code === 2000) {
+            this.$message.success(this.$lang(data.msg));
+          } else {
+            this.$message.error(this.$lang(data.msg));
+          }
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);        
+        }).catch(err => {
+          console.log(err)
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+        });
+      }
+    },
+  });
+
+  </script>
+</body>
+
+</html>

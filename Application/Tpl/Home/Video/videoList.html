@@ -1,0 +1,242 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="renderer" content="webkit|ie-comp|ie-stand">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+    <meta http-equiv="Cache-Control" content="no-siteapp"/>
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="../Public/lib/html5.js"></script>
+    <script type="text/javascript" src="../Public/lib/respond.min.js"></script>
+    <script type="text/javascript" src="../Public/lib/PIE_IE678.js"></script>
+    <![endif]-->
+    <link href="../Public/css/H-ui.min.css" rel="stylesheet" type="text/css"/>
+    <link href="../Public/css/H-ui.admin.css" rel="stylesheet" type="text/css"/>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>" />
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <title>
+
+    </title>
+    <style>
+        #my-video {
+            margin: 0 auto;
+            width: 100%;
+            height: 600px;
+        }
+
+        [v-cloak]{
+            display: none;
+        }
+
+        #video{
+            padding: 20px;
+        }
+        .el-col-8{
+            padding: 30px;
+        }
+        .table-list {
+            border-collapse: collapse;
+            border-spacing: 0;
+            width: 100%;
+            background: #ffffff;
+            border: 1px solid #cadee7;
+        }
+        
+        .table-list tr th {
+            background: #546e7a;
+            height: 40px;
+            text-align: center;
+            font-size: 0.7rem;
+            color: #ffffff;
+            letter-spacing: 0;
+            border: 1px solid #668491;
+            white-space: nowrap;
+        }
+        
+        .table-list tr td {
+            font-size: 0.68rem;
+            color: #263238;
+            letter-spacing: 0;
+            text-align: center;
+            padding: 0.5rem;
+            border: 1px solid #cadee7;
+            font-family: "Microsoft YaHei";
+        }
+        
+        .table-list tr td p {
+            font-size: 0.68rem;
+            text-align: center;
+            padding: 0;
+            margin: 0;
+            font-family: "Microsoft YaHei";
+        }
+        
+        .table-list tr:nth-of-type(even) {
+            background: #f7f9fb;
+            border: 1px solid #cadee7;
+        }
+    </style>
+</head>
+
+<body>
+
+<!--视频列表-->
+<div class="container" style="min-width:1150px;" id="video" v-cloak>
+    <?php if(ButtonAction::hidden('video/upload')){ ?>
+        <el-row>
+            <el-col :span="24" style="padding-left:30px;">
+                <el-upload :limit=1 class="upload-demo" 
+                :headers="{'X-Requested-With': 'XMLHttpRequest'}"
+                action="/index.php?m=video&a=upload" ref="video" 
+                :on-success="handlSuccess" 
+                :before-upload="handlBefor"
+                :on-progress="handlProgress"
+                v-loading="loading"
+                >
+                    <el-button size="small" type="primary">{{$lang('上传视频')}}</el-button>
+                    <div slot="tip" class="el-upload__tip">{{$lang('只能上传MP4、WMV文件，且不超过500M')}}</div>
+                </el-upload>
+            </el-col>
+        </el-row>
+    <?php } ?>
+    <div class="use-row">
+            <div class="col-100">
+                <table class="table-list" id="dataList">
+                    <thead>
+                        <tr>
+                            <th>{{ $lang("序号") }}</th>
+                            <th style="width:35%;">{{ $lang("标题") }}</th>
+                            <th>{{ $lang("上传时间") }}</th>
+                            <th>{{ $lang("上传人") }}</th>
+                            <th>{{ $lang("平均得分") }}</th>
+                            <th>{{ $lang("操作") }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(item, index) in dataList">
+                            <td>{{ index + 1 }}</td>
+                            <td>{{ item.name }}</td>
+                            <td>{{ item.created_at }}</td>
+                            <td>{{ item.created_by }}</td>
+                            <td>{{ item.score_avg }}</td>
+                            <td>
+                                <el-button type="primary" @click="viewDetail(item)">{{$lang("查看")}}</el-button>
+                                <?php if(ButtonAction::hidden('video/upload')){ ?>
+                                <el-button type="default" @click="delVideo(item.id)">{{$lang("删除")}}</el-button>
+                                <?php } ?>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="use-row">
+            <div class="col-100 text-right">
+                <el-pagination v-if="dataList" @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="pages.current_page" :page-sizes="[10, 20, 50, 100,200]" :page-size="pages.per_page" layout="sizes, prev, pager, next,jumper" :total="totalCount"></el-pagination>
+            </div>
+        </div>
+</div>
+
+<script type="text/javascript" src="../Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script>
+    var video = new Vue({
+        el: "#video",
+        data: {
+            fileList: [],
+            dataList: [],
+            loading:false,
+            pages:{
+                current_page: 1,
+                per_page: 10,
+            },
+            totalCount: 0,
+        },
+        created:function(){
+            this.getlist();
+        },
+        methods: {
+            getlist:function(){
+                var _this= this;
+                var data = {
+                    page:_this.pages.current_page,
+                    page_size:_this.pages.per_page,
+                }
+                axios.post('/index.php?m=video&a=videoList',data)
+                .then(function(res){
+                    _this.dataList = res.data.data.list;
+                    _this.totalCount = Number(res.data.data.total);
+                })
+            },
+            viewDetail: function(item) {
+                newTab("/index.php?m=video&a=video_detail&video_id=" + item.id , '视频详情');
+            },
+            handleSizeChange: function(size) {
+                this.pages.per_page = size;
+                this.getlist();
+            },
+            handleCurrentChange: function(currentPage) {
+                this.pages.current_page = currentPage;
+                this.getlist();
+            },
+            delVideo: function (id) {
+                var _this = this;
+                this.$confirm('此操作将永久删除该文件, 是否继续?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(function(){
+                    axios.post('/index.php?m=video&a=deleteVideo', { id: id }, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                        .then(function (res) {
+                            if (res.data.code == 2000) {
+                                _this.$message.success('删除成功');
+                                _this.getlist()
+                            } else {
+                                _this.$message.error(res.data.msg);
+                            }
+                        })
+                    }).catch(function () { });
+               
+            },
+            handlBefor:function(file){
+                var size = file.size/(1024 * 1024);
+                if(size > 500){
+                    this.$message.warning('文件大小不可超过500M');
+                    return false;
+                }
+            },
+            handlProgress:	function(event, file, fileList){
+                if(event.percent == 100){
+                    this.loading = true;
+                }
+            },
+            handlSuccess: function (res, file, fileList) {
+                _this = this;
+                _this.loading = false;
+                if (res.code == 2000) {
+                    _this.$message.success('上传成功');
+                    _this.getlist()
+                } else {
+                    _this.$message.error(res.msg);
+                    setTimeout(function(){
+                        _this.$refs.video.clearFiles()
+                    },500)
+                }
+            },
+        }
+
+    })
+</script>
+</body>
+
+</html>

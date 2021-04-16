@@ -1,0 +1,257 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="renderer" content="webkit|ie-comp|ie-stand">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no" />
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="/Application/Tpl/Home/Public/lib/html5.js"></script>
+    <script type="text/javascript" src="/Application/Tpl/Home/Public/lib/respond.min.js"></script>
+    <script type="text/javascript" src="/Application/Tpl/Home/Public/lib/PIE_IE678.js"></script>
+    <![endif]-->
+    <link href="/Application/Tpl/Home/Public/css/H-ui.min.css" rel="stylesheet" type="text/css" />
+    <link href="/Application/Tpl/Home/Public/css/H-ui.admin.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/lib/layer-v3.0.3/layer/skin/default/layer.css">
+    <link href="/Application/Tpl/Home/Public/css/style.css" rel="stylesheet" type="text/css" />
+    <link href="/Application/Tpl/Home/Public/lib/Hui-iconfont/1.0.1/iconfont.css" rel="stylesheet" type="text/css" />
+    <link href="/Application/Tpl/Question/Question/index.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="/Application/Tpl/Home/Public/css/common.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.13.0.css?v=<{$Think.const.V}>">
+    <title>人员配置</title>
+    <style>
+        [v-cloak] { display: none ;}
+        #main{
+
+        }
+        .question-detail-user .log-container tr td, .question-detail-opt .log-container tr td {
+            font-size: 13px;
+            display: inline-block;
+            width: 16.6%;
+            text-align: center;
+            padding: 0;
+            margin: 0;
+            border-left: 1px solid #CADEE7;
+            margin-left: -1px;
+        }
+        .info{
+            width: 100%;
+            min-height: 48px;
+        }
+        #table .info ,#table  .title{
+            display: table-cell;
+        }
+        pre:empty:before {
+            content: attr(placeholder);
+            font-size: 13px;
+            color: #999;
+        }
+
+        pre:focus:before {
+            content: none;
+        }
+        pre{
+            background: #ffffff;
+        }
+        i{
+            color: #ffffff;
+        }
+        .el-select-dropdown{
+            margin-top: -32px !important;
+        }
+    </style>
+</head>
+
+<body style="background: #ffffff">
+    <div id="main" class="question-detail-user" v-cloak style="padding-top: 150px">
+        <el-table
+                :data="tableData"
+                :show-header="false"
+                border
+                :cell-style="row" style="width: 601px;margin: auto;text-align: center">
+            <el-table-column
+                    prop="text"
+                    label=""
+                    width="300"
+                    style="background: #546E7A;"
+            >
+            </el-table-column>
+            <el-table-column
+                    prop="value"
+                    label=""
+                    width="300">
+                <template slot-scope="props">
+                    <el-select v-model="props.row.value" filterable :disabled="bool">
+                        <el-option
+                                v-for="(v,k) in users"
+                                :key="k"
+                                :label="v.name"
+                                :value="v.id">
+                        </el-option>
+                    </el-select>
+                </template>
+            </el-table-column>
+        </el-table>
+        <div style="display: flex;padding-top: 30px;">
+            <el-button type="primary"@click="save" size="mini" style="margin: auto">{{bool?'编辑':'保存'}}</el-button>
+        </div>
+
+    </div>
+    <script type="text/javascript" src="/Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="/Application/Tpl/Home/Public/lib/layer-v3.0.3/layer/layer.js"></script>
+    <script type="text/javascript" src="/Application/Tpl/Home/Public/lib/My97DatePicker/WdatePicker.js"></script>
+    <script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.admin.js?<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="/Application/Tpl/Home/Public/utils/utils.js"></script>
+    <script type="text/javascript" src="/Application/Tpl/Question/Question/wangEditor/wangEditor.min.js"></script>
+    <script src="/Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script src="/Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script src="/Application/Tpl/Home/Public/js/element-ui-2.13.0.js?v=<{$Think.const.V}>">
+    </script>
+    <script src="/Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script>
+        var vueApp = new Vue({
+            el: '#main',
+            data: {
+                bool:true,
+                tableData:[{
+                    text:'默认实施人员',
+                    value:''
+                },{
+                    text:'默认产品人员',
+                    value:''
+                },{
+                    text:'默认开发人员',
+                    value:''
+                },{
+                    text:'默认测试人员',
+                    value:''
+                }],
+                list:[],
+                users:[]
+            },
+            watch:{
+
+            },
+            mounted: function () {
+            },
+            created: function () {
+                var _this = this;
+                axios.post('/index.php?g=common&m=user&a=search_user').then(function (res) {
+                    var data = res.data;
+                    if (data.code == 2000) {
+                        _this.users = data.data;
+                    } else {
+                        _this.$message({
+                            message: _this.$lang('获取数据失败'),
+                            type: 'error'
+                        });
+                    }
+                })
+                axios.post('/index.php?g=question&m=question&a=getDefaultUser').then(function (res) {
+                    var data = res.data;
+                    if (data.code == 2000) {
+                        _this.list = data.data;
+                        for(var x = 0;x<_this.tableData.length;x++){
+                            _this.tableData[x].value = _this.list[x].user_id
+                        }
+                    } else {
+                        _this.$message({
+                            message: _this.$lang('获取数据失败'),
+                            type: 'error'
+                        });
+                    }
+                })
+                /*axios.get('/index.php?g=question&m=question&a=getUserType&type=1').then(function (res) {
+                    var data = res.data;
+                    if (data.code == 2000) {
+                        _this.list[1] = data.data;
+                    } else {
+                        _this.$message({
+                            message: _this.$lang('获取数据失败'),
+                            type: 'error'
+                        });
+                    }
+                })
+                axios.get('/index.php?g=question&m=question&a=getUserType&type=2').then(function (res) {
+                    var data = res.data;
+                    if (data.code == 2000) {
+                        _this.list[2] = data.data;
+                    } else {
+                        _this.$message({
+                            message: _this.$lang('获取数据失败'),
+                            type: 'error'
+                        });
+                    }
+                })
+                axios.get('/index.php?g=question&m=question&a=getUserType&type=3').then(function (res) {
+                    var data = res.data;
+                    if (data.code == 2000) {
+                        _this.list[3] = data.data;
+                    } else {
+                        _this.$message({
+                            message: _this.$lang('获取数据失败'),
+                            type: 'error'
+                        });
+                    }
+                })*/
+
+            },
+            methods: {
+                row:function({row, column, rowIndex, columnIndex}) {
+                    if(columnIndex === 0){
+                        return {'background': 'rgb(202, 222, 231)','text-align':'center'}
+                    }else{
+                        return {'display':'flex','justify-content': 'center'}
+                    }
+                },
+                save:function(){
+                    var _this = this
+                    if(!this.bool){
+                        var obj = {
+                            '0':{
+                                "type" : "1",
+                                "user_id" : this.tableData[0].value
+                            },
+                            '1':{
+                                "type" : "2",
+                                "user_id" : this.tableData[1].value
+                            },
+                            '2':{
+                                "type" : "3",
+                                "user_id" : this.tableData[2].value
+                            },
+                            '3':{
+                                "type" : "4",
+                                "user_id" : this.tableData[3].value
+                            }
+                        }
+
+                        axios.post('/index.php?g=question&m=question&a=saveConfig',obj).then(function (res) {
+                            var data = res.data;
+                            if (data.code == 200) {
+                                _this.$message({
+                                    message: _this.$lang('保存成功'),
+                                    type: 'success'
+                                });
+                            } else {
+                                _this.$message({
+                                    message: _this.$lang('获取数据失败'),
+                                    type: 'error'
+                                });
+                            }
+                        })
+                    }else{
+
+                    }
+                    this.bool = !this.bool
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

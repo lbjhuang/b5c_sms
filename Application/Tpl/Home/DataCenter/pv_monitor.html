@@ -1,0 +1,721 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.13.0.css?v=<{$Think.config.VER_NUM}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>">
+  <title>{{$lang('GP PV监控')}}</title>
+  <style>
+    [v-cloak] {
+      display: none;
+    }
+    body {
+      background: #F4F4F4;
+    }
+
+    .flex-center {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .flex-col-center {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    .flex-between {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .query {
+      position: relative;
+      padding: 40px 20px 40px;
+      font-size: 14px;
+      background: #fff;
+    }
+
+    .query .title {
+      padding-top: 3px;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .channels {
+      margin-top: 25px;
+      margin-bottom: -15px;
+    }
+
+    .channels .el-checkbox {
+      margin-bottom: 15px;
+    }
+
+    .channels .el-checkbox__input {
+      display: none
+    }
+
+    .channels .el-checkbox__label {
+      padding: 3px 8px;
+      margin-right: 40px;
+      background: #F4F4F4;
+      border-radius: 14px;
+    }
+
+    .channels .el-checkbox__input.is-checked+.el-checkbox__label {
+      color: #fff;
+      background: #0375DE;
+      border-radius: 14px;
+    }
+
+    .channels .el-checkbox+.el-checkbox {
+      margin-left: 0;
+    }
+
+    .date {
+      display: flex;
+      align-items: center;
+    }
+
+    .date .el-radio__input {
+      display: none;
+    }
+
+    .date .el-radio__label {
+      padding: 3px 8px;
+      margin-right: 40px;
+      background: #F4F4F4;
+      border-radius: 14px;
+    }
+
+    .date .el-radio__input.is-checked+.el-radio__label {
+      color: #fff;
+      background: #0375DE;
+      border-radius: 14px;
+    }
+
+    .date .el-input__inner {
+      height: 35px;
+    }
+
+    .charts {
+      margin: 20px 0 80px;
+    }
+
+    .pv-tend {
+      padding: 20px 1.2%;
+      margin-bottom: 20px;
+      background: #fff;
+      border-radius: 8px;
+    }
+    .pv-area {
+      padding: 20px 1.2%;
+      background: #fff;
+      border-radius: 8px;
+    }
+    .chart-title {
+      margin-bottom: 18px;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .el-table.custom-table {
+      flex: 0 1 auto;
+      color: rgba(0, 0, 0, 0.65);
+    }
+    .el-table.custom-table thead {
+      color: rgba(0,0,0,0.65);
+    }
+    .el-table.custom-table th {
+      background: #F4F4F4;
+    }
+
+  </style>
+</head>
+
+<body>
+  <div id="vm" v-cloak>
+    <div class="query">
+      <el-row class="date">
+        <el-col :span="1" class="title">{{$lang('周期')}}</el-col>
+        <el-radio v-model="dateTime" :label="date.value" v-for="date in dates" :key="date.value"
+          @change="dateTimeChange">
+          {{$lang(date.name)}}</el-radio>
+        <el-col :span="6">
+          <el-date-picker v-model="rangeDate" :picker-options="pickerOptions" value-format="yyyy-MM-dd"
+            type="daterange" range-separator="-" :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')"
+            @change="rangeDateChange" @blur="pickerMinDate = ''">
+          </el-date-picker>
+        </el-col>
+      </el-row>
+      <el-row type="flex" class="channels">
+        <el-col :span="1" class="title">{{$lang('客户端')}}</el-col>
+        <el-col :span="23">
+          <el-checkbox v-model="checkAll" @change="handleCheckAllChange">{{$lang('全部')}}</el-checkbox>
+          <el-checkbox v-for="(chanel, index) in chanelOptions" v-model="chanel.checked" :label="chanel.value"
+            :key="chanel.value" @change="handleCheckedChannelsChange">
+            {{$lang(chanel.name)}}
+          </el-checkbox>
+        </el-col>
+      </el-row>
+
+    </div>
+
+    <div class="charts">
+      <div class="pv-tend">
+        <div class="chart-title">
+          {{$lang('浏览量(PV) 趋势')}}
+        </div>
+        <div ref="pVTendChart" style="width: 100%; height: 580px;"></div>
+      </div>
+
+      <div class="pv-area">
+          <div class="chart-title">
+            {{$lang('浏览量(PV) 区域分布')}}
+          </div>
+          <el-tabs v-model="area" @tab-click="areaChange">
+            <el-tab-pane :label="$lang('全球')" name="country" class="flex-between">
+              <div ref="countryMapChart" style="width: 50%;height: 580px;"></div>
+              <section class="flex-col-center" style="width: 50%;height: 580px;">
+                <el-table :data="countryTableData.datas" class="custom-table" v-loading="countryTableLoading">
+                  <el-table-column :label="$lang('排名')" align="center" prop="level">
+                  </el-table-column>
+                  <el-table-column :label="$lang('区域')" prop="name">
+                  </el-table-column>
+                  <el-table-column :label="$lang('浏览量(PV)')" align="center">
+                    <template slot-scope="scope">
+                        {{scope.row.text | formatNum}}
+                    </template>
+                  </el-table-column>
+                  <el-table-column :label="$lang('占比')" align="center" prop="proportion">
+                    <template slot-scope="scope">
+                        {{scope.row.proportion | formatNum(true, true)}}
+                    </template>
+                  </el-table-column>
+                </el-table>
+                <el-pagination background @current-change="countryTablePageChange" :current-page="countryTablePage" layout="total, prev, pager, next"
+                  :total="countryTableData.totalCount">
+                </el-pagination>
+              </section>
+            </el-tab-pane>
+            <el-tab-pane :label="$lang('大陆')" name="province" class="flex-between">
+              <div ref="provinceMapChart" style="width: 50%;height: 580px;"></div>
+              <section class="flex-col-center" style="width: 50%;height: 580px;">
+                <el-table :data="provinceTableData.datas" class="custom-table" v-loading="provinceTableLoading">
+                  <el-table-column :label="$lang('排名')" align="center" prop="level">
+                  </el-table-column>
+                  <el-table-column :label="$lang('区域')" prop="name">
+                  </el-table-column>
+                  <el-table-column :label="$lang('浏览量(PV)')" align="center">
+                    <template slot-scope="scope">
+                      {{scope.row.text | formatNum}}
+                    </template>
+                  </el-table-column>
+                  <el-table-column :label="$lang('占比')" align="center" prop="proportion">
+                    <template slot-scope="scope">
+                      {{scope.row.proportion | formatNum(true, true)}}
+                    </template>
+                  </el-table-column>
+                </el-table>
+                <el-pagination background @current-change="provinceTablePageChange" :current-page="provinceTablePage" layout="total, prev, pager, next"
+                  :total="provinceTableData.totalCount">
+                </el-pagination>
+              </section>
+            </el-tab-pane>
+          </el-tabs>
+      </div>
+    </div>
+
+  </div>
+  <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue-2.6.10.js?v=<{$Think.config.VER_NUM}>">
+  </script>
+  <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js">
+  </script>
+  <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.13.0.js?v=<{$Think.config.VER_NUM}>">
+  </script>
+  <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>">
+  </script>
+  <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js">
+  </script>
+  <script type="text/javascript" src="./Application/Tpl/Home/Public/js/echarts-4.2.1.js?v=<{$Think.config.VER_NUM}>"></script>
+  <script src="./Application/Tpl/Home/DataCenter/world.js?v=<{$Think.config.VER_NUM}>"></script>
+  <script src="./Application/Tpl/Home/DataCenter/chinaMainland.js?v=<{$Think.config.VER_NUM}>"></script>
+  <script src="./Application/Tpl/Home/DataCenter/utils/globalConstAndFunc.js?v=<{$Think.config.VER_NUM}>"></script>
+
+  <script>
+    if (getCookie('think_language') !== "zh-cn") {
+      ELEMENT.locale(ELEMENT.lang.en)
+    };
+
+    var vm = new Vue({
+      el: '#vm',
+      filters: {
+        /**
+        * 数值千分位表示，考虑小数情况
+        *
+        * @param number 数值(Number或者String)
+        * @param {boolean} addSymbol 返回的结果是否加上%
+        * @param {boolean} isZero 是否对传入的数值是否等于0进行判断，等于0时返回<0.01
+        * @return 金额格式的字符串,如'1,234,567.45'
+        * @type String
+        */
+        formatNum(number, addSymbol, isZero) {
+          let hasMinus = false
+          if (number === '-') {
+            return number
+          } else {
+            if (addSymbol && isZero && number == 0) {
+              return '<0.01%'
+            }
+            let numStr = number.toString()
+            if (numStr.startsWith('-')) {
+              hasMinus = true
+              numStr = numStr.slice(1)
+            }
+            const numArr = numStr.split('.')
+            let [num, dotNum] = numArr
+            let result = []
+            const operateNum = num.split('').reverse()
+            const length = operateNum.length
+            for (let i = 0; i < length; i++) {
+              result.push(operateNum[i])
+              if (((i + 1) % 3 === 0) && (i !== length - 1)) {
+                result.push(',')
+              }
+            }
+            if (dotNum) {
+              result.reverse().push('.', ...dotNum)
+            } else {
+              result.reverse()
+            }
+
+            if (addSymbol) {
+              result = result.join('').concat('%')
+            } else {
+              result = result.join('')
+            }
+
+            if (hasMinus) {
+              result = '-' + result
+            }
+
+            return result
+          }
+        },
+        ratioZero(value) {
+          if (value === '0%' || value === '0.00%') {
+            return '-'
+          } else {
+            return value
+          }
+        },
+        /**
+        * 将数值四舍五入(保留2位小数)后格式化成金额形式
+        *
+        * @param num 数值(Number或者String)
+        * @return 金额格式的字符串,如'1,234,567.45'
+        * @type String
+        */
+        formatCurrency(num) {
+          num = num.toString().replace(/\$|\,/g, '');
+          if (isNaN(num))
+            num = "0";
+          sign = (num == (num = Math.abs(num)));
+          num = Math.floor(num * 100 + 0.50000000001);
+          cents = num % 100;
+          num = Math.floor(num / 100).toString();
+          if (cents < 10)
+            cents = "0" + cents;
+          for (var i = 0; i < Math.floor((num.length - (1 + i)) / 3); i++)
+            num = num.substring(0, num.length - (4 * i + 3)) + ',' +
+              num.substring(num.length - (4 * i + 3));
+          return (((sign) ? '' : '-') + num + '.' + cents);
+        }
+      },
+      data: {
+        apiHost: GlobalConstAndFunc.api(),
+        chanelOptions: [
+          {
+            name: 'Web',
+            value: 'www.gshopper.com',
+            checked: false
+          },
+          {
+            name: 'Wap',
+            value: 'm.gshopper.com',
+            checked: false
+          },
+          {
+            name: '移动端',
+            value: 'capi.gshopper.com',
+            checked: false
+          }
+        ],
+        chanels: ['www.gshopper.com', 'm.gshopper.com', 'capi.gshopper.com'],
+        checkAll: true,
+        checkedChannels: ['www.gshopper.com', 'm.gshopper.com', 'capi.gshopper.com'],
+        dates: [
+          {
+            name: '昨日',
+            value: 'D'
+          },
+          {
+            name: '近7日',
+            value: 'W'
+          },
+          {
+            name: '近30日',
+            value: 'M'
+          }
+        ],
+        rangeDate: '',
+        pickerMinDate: '',
+        
+        dateTime: 'D', 
+        pVTendChart: null,
+        area: 'country',
+        countryMapChart: null,
+        provinceMapChart: null,
+        countryTableData: {
+          datas: [],
+          totalCount: 0
+        },
+        countryTableLoading: true,
+        countryTablePage: 1,
+        provinceTableData: {
+          datas: [],
+          totalCount: 0
+        },
+        provinceTableLoading: true,
+        provinceTablePage: 1,
+        colorNineToSixteen: ['#03315B', '#284F73', '#0375DE', '#2889E2', '#13C2C2', '#36CBCB', '#FFC30F', '#FFCB32', '#FA8C16', '#FA9D38', '#F14E22', '#F36842', '#BF2741', '#C8475D', '#8D34A7', '#9D52B4'],
+      },
+      computed: {
+        pickerOptions() {
+          return {
+            onPick: ({ maxDate, minDate }) => {
+              this.pickerMinDate = minDate.getTime()
+              if (maxDate) {
+                this.pickerMinDate = ''
+              }
+            },
+
+            disabledDate: (time) => {
+              if (this.pickerMinDate) {
+                const day31 = (31 - 1) * 24 * 3600 * 1000
+                let maxTime = this.pickerMinDate + day31
+                let minTime = this.pickerMinDate - day31
+                return (time.getTime() > Date.now() || time.getTime() > maxTime) || (time.getTime() < new Date('2018/06/01').getTime() || time.getTime() < minTime)
+              }
+              return (time.getTime() < new Date('2018/06/01').getTime()) || (time.getTime() > Date.now())
+            }
+          }
+        },
+      },
+      mounted: function () {
+        echarts.registerMap('chinaMainland', chinaMainlandJson);
+        this.pVTendChart = echarts.init(this.$refs.pVTendChart)
+        this.countryMapChart = echarts.init(this.$refs.countryMapChart)
+        this.provinceMapChart = echarts.init(this.$refs.provinceMapChart)
+        this.getAllChartData()
+      },
+      methods: {
+        // 所有图表数据获取
+        getAllChartData() {
+          this.area = 'country'
+          this.countryTablePage = 1
+          this.provinceTablePage = 1
+          this.getPVTendData()
+          this.getMapPVData('country')
+          this.getMapPVData('province')
+          this.getPVAreaTableData('country')
+          this.getPVAreaTableData('province')
+        },
+        // 客户端筛选条件，全部的状态更改
+        handleCheckAllChange(val) {
+          if (val) {
+            for (const chanel of this.chanelOptions) {
+              chanel.checked = false
+            }
+            this.checkedChannels = this.chanels
+            this.getAllChartData()
+          } else {
+            this.checkAll = true
+          }
+        },
+        // 客户端筛选条件，客户端的选中状态更改
+        handleCheckedChannelsChange() {
+          this.checkAll = false
+          let arr = []
+          for (const chanel of this.chanelOptions) {
+            if (chanel.checked) {
+              arr.push(chanel.value)
+            }
+          }
+          if (arr.length > 0 && arr.length < 3) {
+            this.checkedChannels = arr
+          } else {
+            this.checkAll = true
+            this.checkedChannels = this.chanels
+            for (const chanel of this.chanelOptions) {
+              chanel.checked = false
+            }
+          }
+
+          this.getAllChartData()
+        },
+        // 周期筛选条件变动
+        dateTimeChange() {
+          this.rangeDate = ''
+          this.getAllChartData()
+        },
+        // 自定义日期变动
+        rangeDateChange(rangeDate) {
+          if (rangeDate) {
+            this.dateTime = ''
+          } else {
+            this.dateTime = 'D'
+          }
+          this.getAllChartData()
+        },
+        // 浏览量（PV）趋势数据获取
+        getPVTendData() {
+          this.pVTendChart.showLoading({
+            text: ''
+          })
+
+          let postData = {
+            'erp-req': true,
+            'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+            channel: JSON.stringify(this.checkedChannels),
+          }
+          if (this.dateTime) {
+            postData.dateTime = this.dateTime
+          } else {
+            postData.startDate = this.rangeDate[0]
+            postData.endDate = this.rangeDate[1]
+          }
+          this.queryPost('/gpPageViews/queryPageViewsTendency', postData).then(res => {
+            if (res.data.success) {
+              this.initPVTendChart(res.data.datas.data)
+            } else {
+              this.$message.error(res.data.msg)
+            }
+            this.pVTendChart.hideLoading()
+          }).catch(err => {
+            console.log(err)
+          });
+        },
+        // 浏览量（PV）趋势,图表配置
+        initPVTendChart(resData) {
+          let option = {
+            legend: {
+              itemWidth: 12,
+              itemHeight: 12,
+              icon: 'rect',
+              bottom: 0,
+            },
+            color: '#03315B',
+            tooltip: {
+              trigger: 'axis'
+            },
+            dataset: {
+              source: resData,
+              sourceHeader: true
+            },
+            grid: {
+              left: '5%',
+              bottom: 45
+            },
+            xAxis: {
+              type: 'category',
+              axisLabel: {
+                showMaxLabel: true
+              },
+              axisTick: {
+                show: false
+              },
+            },
+            yAxis: {
+              axisLine: {
+                show: false
+              },
+              axisTick: {
+                show: false
+              },
+              splitLine: {
+                lineStyle: {
+                  type: 'dotted',
+                  color: '#F0F0F0'
+                }
+              }
+            },
+            series: [
+              {
+                type: 'line',
+                seriesLayoutBy: 'row'
+              }
+            ]
+          }
+          this.pVTendChart.setOption(option, true)
+        },
+        // 浏览量（PV）区域分布,标签页切换
+        areaChange(tab) {
+          if(tab.name === 'province') {
+            this.$nextTick( () => {
+              this.provinceMapChart.resize()
+            })
+          }
+        },
+        
+        // 浏览量（PV）区域分布,地图数据获取
+        // @param {string} area 'country'/'province'
+        getMapPVData(area) {
+          this[area + 'MapChart'].showLoading({
+            text: ''
+          })
+
+          let postData = {
+            'erp-req': true,
+            'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+            channel: JSON.stringify(this.checkedChannels),
+            area
+          }
+          if (this.dateTime) {
+            postData.dateTime = this.dateTime
+          } else {
+            postData.startDate = this.rangeDate[0]
+            postData.endDate = this.rangeDate[1]
+          }
+          this.queryPost('/gpPageViews/queryPageViewsArea', postData).then(res => {
+            if (res.data.success) {
+              const data = res.data.datas.map(item => {
+                return {
+                  name: item.name,
+                  value: item.text
+                }
+              })
+              this[area + 'MapChartInit'](data)
+            } else {
+              this.$message.error(res.data.msg)
+            }
+            this[area + 'MapChart'].hideLoading()
+          }).catch(err => {
+            console.log(err)
+          });
+        },
+        // 浏览量（PV）区域分布，世界地图图表配置
+        countryMapChartInit(resData) {
+          let chinaVal = 0
+          for (let index = 0; index < resData.length; index++) {
+            let item = resData[index]
+            if (item.name === '台湾' || item.name === '香港' || item.name === '澳门' || item.name === '中国大陆') {
+              chinaVal += parseInt(item.value, 10)
+              resData.splice(index, 1)
+            }
+            
+          }
+          resData.splice(0, 0, { name: '中国', value: chinaVal.toString() })
+          let option = {
+            tooltip: {
+              formatter: params => {
+                let showVal
+                if (params.value) {
+                  showVal = this.$options.filters['formatNum'](params.value)
+                } else {
+                  showVal = '-'
+                }
+                
+                return `${params.name}: ${showVal}`
+              }
+            },
+            series: [{
+              type: 'map',
+              map: 'world',
+              nameMap: { "Afghanistan": "阿富汗", "Albania": "阿尔巴尼亚", "Algeria": "阿尔及利亚", "Angola": "安哥拉", "Argentina": "阿根廷", "Armenia": "亚美尼亚", "Australia": "澳大利亚", "Austria": "奥地利", "Azerbaijan": "阿塞拜疆", "Bahrain": "巴林", "Bangladesh": "孟加拉国", "Belarus": "白俄罗斯", "Belgium": "比利时", "Belize": "伯利兹", "Benin": "贝宁", "Bhutan": "不丹", "Bolivia": "玻利维亚", "Bosnia and Herz.": "波斯尼亚和黑塞哥维那", "Botswana": "博茨瓦纳", "Brazil": "巴西", "British Virgin Islands": "英属维京群岛", "Brunei": "文莱", "Bulgaria": "保加利亚", "Burkina Faso": "布基纳法索", "Burundi": "布隆迪", "Cambodia": "柬埔寨", "Cameroon": "喀麦隆", "Canada": "加拿大", "Cape Verde": "佛得角", "Cayman Islands": "开曼群岛", "Central African Rep.": "中非共和国", "Chad": "乍得", "Chile": "智利", "China": "中国", "Colombia": "哥伦比亚", "Comoros": "科摩罗", "Congo": "刚果", "Dem. Rep. Congo": "刚果民主共和国", "Costa Rica": "哥斯达黎加", "Croatia": "克罗地亚", "Cyprus": "塞浦路斯", "Czech Rep.": "捷克共和国", "Denmark": "丹麦", "Djibouti": "吉布提", "Dominican Rep.": "多米尼加共和国", "Ecuador": "厄瓜多尔", "Egypt": "埃及", "El Salvador": "萨尔瓦多", "Equatorial Guinea": "赤道几内亚", "Eritrea": "厄立特里亚", "Estonia": "爱沙尼亚", "Ethiopia": "埃塞俄比亚", "Fiji": "斐济", "Finland": "芬兰", "France": "法国", "Gabon": "加蓬", "Gambia": "冈比亚", "Georgia": "格鲁吉亚", "Germany": "德国", "Ghana": "加纳", "Greece": "希腊", "Greenland": "格陵兰", "Guatemala": "危地马拉", "Guinea": "几内亚",  "Guinea-Bissau": "几内亚比绍", "Guyana": "圭亚那", "Haiti": "海地", "Honduras": "洪都拉斯", "Hungary": "匈牙利", "Iceland": "冰岛", "India": "印度", "Indonesia": "印度尼西亚", "Iran": "伊朗", "Iraq": "伊拉克", "Ireland": "爱尔兰", "Isle of Man": "马恩岛", "Israel": "以色列", "Italy": "意大利", "Côte d'Ivoire": "科特迪瓦", "Jamaica": "牙买加", "Japan": "日本", "Jordan": "约旦", "Kazakhstan": "哈萨克斯坦", "Kenya": "肯尼亚", "Korea": "韩国", "Kuwait": "科威特", "Kyrgyzstan": "吉尔吉斯斯坦", "Lao PDR": "老挝", "Latvia": "拉脱维亚", "Lebanon": "黎巴嫩", "Lesotho": "莱索托", "Liberia": "利比里亚", "Libya": "利比亚", "Lithuania": "立陶宛", "Luxembourg": "卢森堡", "Macedonia": "马其顿", "Madagascar": "马达加斯加", "Malawi": "马拉维", "Malaysia": "马来西亚", "Maldives": "马尔代夫", "Mali": "马里", "Malta": "马耳他", "Mauritania": "毛利塔尼亚", "Mauritius": "毛里求斯", "Mexico": "墨西哥", "Moldova": "摩尔多瓦", "Monaco": "摩纳哥", "Mongolia": "蒙古", "Montenegro": "黑山共和国", "Morocco": "摩洛哥", "Mozambique": "莫桑比克", "Myanmar": "缅甸", "Namibia": "纳米比亚", "Nepal": "尼泊尔", "Netherlands": "荷兰", "New Zealand": "新西兰", "Nicaragua": "尼加拉瓜", "Niger": "尼日尔", "Nigeria": "尼日利亚", "Dem. Rep. Korea": "朝鲜", "Norway": "挪威", "Oman": "阿曼", "Pakistan": "巴基斯坦", "Panama": "巴拿马", "Paraguay": "巴拉圭", "Peru": "秘鲁", "Philippines": "菲律宾", "Poland": "波兰", "Portugal": "葡萄牙", "Puerto Rico": "波多黎各", "Qatar": "卡塔尔", "Reunion": "留尼旺", "Romania": "罗马尼亚", "Russia": "俄罗斯", "Rwanda": "卢旺达", "San Marino": "圣马力诺", "Saudi Arabia": "沙特阿拉伯", "Senegal": "塞内加尔", "Serbia": "塞尔维亚", "Sierra Leone": "塞拉利昂", "Singapore": "新加坡", "Slovakia": "斯洛伐克", "Slovenia": "斯洛文尼亚", "Somalia": "索马里", "South Africa": "南非", "Spain": "西班牙", "Sri Lanka": "斯里兰卡", "Sudan": "苏丹", "S. Sudan": "南苏丹", "Suriname": "苏里南", "Swaziland": "斯威士兰", "Sweden": "瑞典", "Switzerland": "瑞士", "Syria": "叙利亚", "Tajikistan": "塔吉克斯坦", "Tanzania": "坦桑尼亚", "Thailand": "泰国", "Togo": "多哥", "Tonga": "汤加", "Trinidad and Tobago": "特立尼达和多巴哥", "Tunisia": "突尼斯", "Turkey": "土耳其", "Turkmenistan": "土库曼斯坦", "U.S. Virgin Islands": "美属维尔京群岛", "Uganda": "乌干达", "Ukraine": "乌克兰", "United Arab Emirates": "阿拉伯联合酋长国", "United Kingdom": "英国", "United States": "美国", "Uruguay": "乌拉圭", "Uzbekistan": "乌兹别克斯坦", "Vatican City": "梵蒂冈城", "Venezuela": "委内瑞拉", "Vietnam": "越南", "Yemen": "也门", "Yugoslavia": "南斯拉夫", "Zaire": "扎伊尔", "Zambia": "赞比亚", "Zimbabwe": "津巴布韦", "Papua New Guinea": "巴布亚新几内亚", "Solomon Is.": "所罗门群岛", "Fr. S. Antarctic Lands": "所罗门群岛", "Cuba": "古巴", "Bahamas": "巴哈马", "W. Sahara": "西撒哈拉", "Vanuatu": "瓦努阿图", "New Caledonia": "新喀里多尼亚", "S. Geo. and S. Sandw. Is.": "南乔治亚和南桑威奇群岛", "Falkland Is.": "福克兰群岛" },
+              data: resData
+            }]
+          }
+          this.countryMapChart.setOption(option, true)
+        },
+        // 浏览量（PV）区域分布，大陆地图图表配置
+        provinceMapChartInit(resData) {
+          let option = {
+            tooltip: {
+              formatter: params => {
+                let showVal
+                if (params.value) {
+                  showVal = this.$options.filters['formatNum'](params.value)
+                } else {
+                  showVal = '-'
+                }
+
+                return `${params.name}: ${showVal}`
+              }
+            },
+            series: [{
+              type: 'map',
+              map: 'chinaMainland',
+              data: resData
+            }]
+          }
+          this.provinceMapChart.setOption(option, true)
+        },
+        // 浏览量（PV）区域分布，表格数据获取
+        getPVAreaTableData(area) {
+          this[area + 'TableLoading'] = true
+
+          let postData = {
+            'erp-req': true,
+            'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+            channel: JSON.stringify(this.checkedChannels),
+            area,
+            page: this[area + 'TablePage'],
+            pageSize: 10
+          }
+          if (this.dateTime) {
+            postData.dateTime = this.dateTime
+          } else {
+            postData.startDate = this.rangeDate[0]
+            postData.endDate = this.rangeDate[1]
+          }
+          this.queryPost('/gpPageViews/queryPageViewsAreaTable', postData).then(res => {
+            if (res.data.success) {
+              this[area + 'TableLoading'] = false
+              this[area + 'TableData'] = res.data
+            } else {
+              this.$message.error(res.data.msg)
+            }
+          }).catch(err => {
+            console.log(err)
+          });
+        },
+        // 浏览量（PV）区域分布，全球表格翻页
+        countryTablePageChange(page) {
+          this.countryTablePage = page
+          this.getPVAreaTableData('country')
+        },
+        // 浏览量（PV）区域分布，大陆表格翻页
+        provinceTablePageChange(page) {
+          this.provinceTablePage = page
+          this.getPVAreaTableData('province')
+        },
+        queryPost: function (url, param) {
+          var headers = {
+            headers: {
+              'erp-req': true,
+              'erp-cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+            }
+          }
+          return axios.post(this.apiHost + url, Qs.stringify(param), headers);
+        },
+      }
+    });
+  </script>
+</body>
+
+</html>

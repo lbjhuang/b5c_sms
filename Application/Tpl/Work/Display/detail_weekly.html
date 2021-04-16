@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>周报详情</title>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <style>
+        .list-common {
+            margin-left: 40px;
+        }
+        #edit {
+            width: 80%;
+            height: 350px;
+        }
+        .w-e-text-container {
+            height: 500px !important;
+        }
+        .w-e-text {
+            overflow-y: auto !important;
+        }
+        table {
+            border-top: 1px solid #ccc;
+            border-left: 1px solid #ccc;
+        }
+        table td,
+        table th {
+            border-bottom: 1px solid #ccc;
+            border-right: 1px solid #ccc;
+            padding: 3px 5px;
+        }
+        table th {
+            border-bottom: 2px solid #ccc;
+            text-align: center;
+        }
+
+        /* blockquote 样式 */
+        blockquote {
+            display: block;
+            border-left: 8px solid #d0e5f2;
+            padding: 5px 10px;
+            margin: 10px 0;
+            line-height: 1.4;
+            font-size: 100%;
+            background-color: #f1f1f1;
+        }
+
+        /* code 样式 */
+        code {
+            display: inline-block;
+            *display: inline;
+            *zoom: 1;
+            background-color: #f1f1f1;
+            border-radius: 3px;
+            padding: 3px 5px;
+            margin: 0 3px;
+        }
+        pre code {
+            display: block;
+        }
+
+        /* ul ol 样式 */
+        ul, ol {
+            margin: 10px 0 10px 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="rkWrap" class="list-common">
+        <!-- 富文本 start -->
+        
+        <div id="edit">
+
+        </div>
+    </div>
+
+    
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js?<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/wangEditor.min.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script>
+        var OPTION = {
+            lock: true
+        };
+
+        var _ID = getQueryString("_id");
+
+        // 富文本编辑器初始化
+        var E = window.wangEditor;
+        var editor = new E('#edit');
+        
+        editor.customConfig.menus = [];
+        
+        
+        var vm = new Vue({
+            el: '#rkWrap',
+            created: function () {
+                setTimeout(function () {
+                    editor.create();
+                }, 0);
+
+                this.getWeeklyDetail();
+            },
+            methods: {
+                getWeeklyDetail: function () {
+                    var _this = this;
+                    this.$loading(OPTION);
+                    var param = {
+                        url: '/index.php?g=work&m=report&a=weekly_report_detail',
+                        method: "post",
+                        data: {
+                            id: _ID
+                        }
+                    }
+                    ajax(param, this).then(function (res) {
+                        _this.$loading(OPTION).close();
+                        var _data = res.data;
+                        if (_data.code === 2000) {
+                            editor.txt.html(_data.data.content_html); 
+                        };
+                        // 禁用编辑功能
+                        editor.$textElem.attr('contenteditable', false);
+                    });
+                }
+            }
+        });
+       
+        /*
+        *js函数方法
+        */
+
+        //判断数据类型
+        function type (o) {
+            var s = Object.prototype.toString.call(o);
+            return s.slice(s.indexOf(" ") + 1, s.length - 1).toLowerCase();
+        };
+
+        //获取连接参数
+        function getQueryString (name) {
+            var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i"); 
+            var r = window.location.search.substr(1).match(reg); 
+            if (r != null) return unescape(r[2]); return null; 
+        };
+        
+        /**
+         * 对axios的简单二次封装
+         * @param _data 必传  请求参数 
+         * @param v     必传  vue实例对象
+         * @param flag  可传  是否开启table加载loading
+         * @returns {*}
+         */
+        function ajax (_data, v, flag) {
+            if (type(_data) !== "object") {
+                return;
+            };
+            
+            if (flag) {
+                v.tableLoading = true;
+            };
+            var errData = "服务器开小差了-_-!";
+
+            // 添加返回拦截器
+            axios.interceptors.response.use(
+                function (res) {
+                    if (flag) {
+                        v.tableLoading = false;
+                    };
+                    var _re = res && res.data;
+                    if (_re.code !== 2000) {
+                        v.$message.error(_re.msg);
+                    };
+                    return res;
+                },
+                function (error) {
+                    console.log(errData);
+                }
+            );
+            
+            // 对象赋值,兼容ie
+            if (_data.data) {
+                var data_ =  _data.data;
+                _data.data = Qs.stringify(data_);
+            };
+            _data.timeout = 2000;
+            _data.responsetype = 'json';
+            _data.headers = {'Content-Type': 'application/x-www-form-urlencoded'};
+            _data.validateStatus = function (status) {
+                if (status < 200 || status >= 300) {
+                    console.log(errData);
+                };
+                return status >= 200 && status < 300;
+            };
+            return axios(_data);
+        };
+    </script>
+</body>
+</html>

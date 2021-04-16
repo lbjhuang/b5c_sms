@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>出入库审批流程</title>
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.13.0.css?v=<{$Think.const.V}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Store/warehouse_recommended-new-and-edit.css">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Store/warehouse_recommended-goods-sku.css">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Store/warehouse_recommended-order-destination.css">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+
+</head>
+<style>
+    #outPutWarehouseApprovalList{
+        display: none;
+    }
+    .list__filters {
+        /*padding: 20px 20px 0 20px;*/
+    }
+
+    .list__filters .el-checkbox-button {
+        margin-right: 30px;
+    }
+
+    .list__filters .el-checkbox-button span {
+        border: 1px solid #DCDFE6;
+        border-radius: 4px !important;
+    }
+
+    .filter__approval-process {
+        display: flex;
+        align-items: center;
+    }
+
+    .filter__approval-process-row {
+        margin-bottom: 22px;
+    }
+
+    .filter__approval-process .filter__approval-process-title {
+        margin-right: 30px;
+    }
+
+    .list {
+        padding: 20px 20px 0 20px;
+    }
+
+    .list__filters {
+        display: flex;
+        flex-direction: column;
+        /*padding: 20px 20px 0 20px;*/
+        border-bottom: 1px solid #dddddd;
+    }
+
+    .filter__sum {
+        display: flex;
+        align-items: center;
+    }
+
+    .filter__sum-min {
+
+    }
+
+    .filter__sum-span {
+        margin-bottom: 22px;
+        padding: 0 10px;
+    }
+
+    .filter__sum-max .el-form-item__content {
+        margin-left: 0 !important;
+    }
+
+    .list__statistics {
+        padding: 0px 20px 0px 20px;
+        border-top: 1px solid;
+        border-left: 1px solid;
+        border-right: 1px solid;
+    }
+
+    .list__actions {
+        border-bottom: none;
+        padding: 10px;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .list__actions--primary {
+        padding: 20px;
+    }
+
+    .list__data {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .arrow {
+        display: flex;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: 1px solid;
+        /* text-align: center; */
+        justify-content: center;
+        align-items: center;
+    }
+
+    .arrows {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .el-icon-bottom {
+        font-size: 18px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .el-icon-top {
+        font-size: 18px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .list__pagination {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 10px;
+    }
+
+    .across-store-copy .across-store-copy-header {
+        margin-bottom: 20px;
+    }
+
+    .across-store-copy .across-store-copy-header .across-store-copy-title {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    /*.across-store-copy .across-store-copy-header .across-store-copy-title .el-select {*/
+    /*  margin-left: 0px !important;*/
+    /*}*/
+
+    .across-store-copy .across-store-copy-header .across-store-copy-title .el-form-item {
+        margin-bottom: 0px !important;
+    }
+
+    .across-store-copy .actions {
+        display: flex;
+        justify-content: center;
+        margin-top: 20px;
+    }
+
+    .approval__select .label-txt{
+				line-height: 32px;
+				text-align: right;
+    }
+
+    .link {
+        color: #70e8ff;
+        cursor: pointer;
+    }
+    
+    .button--new {
+        cursor: pointer;
+    }
+
+    /*
+     element-ui默认样式
+    */
+    .list__filters .el-select {
+        display: block !important;
+    }
+
+    #warehouseRecommended {
+        display: none;
+    }
+
+    .el-dropdown-menu .el-dropdown-menu__item {
+        padding: 0 0px !important;
+    }
+
+    .el-dropdown-menu .el-dropdown-menu__item span {
+        padding: 0 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .warehouse-recommended__list .el-table__header tr th {
+        background: #546E7A;
+        color: #FFFFFF;
+    }
+
+
+    .el-dialog__close {
+        font-size: 18px;
+        font-weight: bold;
+    }
+
+    .el-dialog__body {
+        padding: 10px 20px !important;
+    }
+
+    .el-table__body tr.hover-row>td{
+        background-color: #fff !important;
+    }
+</style>
+<body>
+<div id="outPutWarehouseApprovalList">
+  <div class="filter">
+
+  </div>
+  <div class="list">
+    <div data-test="filter" class="list__filters">
+      <el-form ref="form" label-width="90px" label-position="left" size="small">
+        <el-row :gutter="20" type="flex" class="filter__approval-process-row">
+          <el-col :md="24">
+            <div class="filter__approval-process">
+                <span class="filter__approval-process-title">
+                     {{$lang('审批流程节点')}}
+                </span>
+              <el-checkbox-group v-model="filter.status_cd" size="mini">
+                <template v-for="item in improtBillAuditStatus">
+                  <el-checkbox-button :label="item.CD" :key="item.CD">{{$lang(item.CD_VAL)}}</el-checkbox-button>
+                </template>
+              </el-checkbox-group>
+            </div>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20" type="flex">
+          <el-col :md="4">
+            <el-form-item :label="$lang('发起人')">
+<!--              <el-autocomplete-->
+<!--                  class="filter__create_by"-->
+<!--                  :fetch-suggestions="onLenovoQuery"-->
+<!--                  v-model="filter.create_by"-->
+<!--                  :placeholder="$lang('请输入英文名)')"-->
+<!--                  clearable-->
+<!--                  @keyup.enter.native="onSearch"-->
+<!--              />-->
+              <el-select
+                  class="filter__create_by"
+                  v-model="filter.create_by"
+                  multiple
+                  filterable
+                  clearable
+                  reserve-keyword
+                  :placeholder="$lang('请输入英文名')"
+                  @keyup.enter.native="onSearch"
+                  :loading="loading">
+                <el-option
+                    v-for="item in users"
+                    :key="item.id"
+                    :label="item.name"
+                    :value="item.name">
+                </el-option>
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :md="4">
+            <el-form-item :label="$lang('审批单号')">
+              <el-input
+                  v-model="filter.audit_no"
+                  clearable
+                  :placeholder="$lang('审批单号')"
+                  @keyup.enter.native="onSearch"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :md="4">
+            <el-form-item :label="$lang('出入库类型')">
+              <el-select
+                  filterable
+                  @keyup.enter.native="onSearch"
+                  v-model="filter.type_cd"
+                  clearable
+                  :placeholder="$lang('请选择')"
+              >
+                <el-option
+                    v-for="(item,key) in approvalType"
+                    :key="item.CD"
+                    :label="item.CD_VAL"
+                    :value="item.CD">
+                </el-option>
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :md="8">
+            <div class="filter__sum">
+              <el-form-item :label="$lang('货值总额')" class="filter__sum-min">
+                <el-input
+                    v-model="filter.sum_price_front"
+                    clearable
+                    :placeholder="$lang('最小金额')"
+                    @keyup.enter.native="onSearch"
+								>
+								<template slot="append">USD</template>
+							</el-input>
+              </el-form-item>
+              <span class="filter__sum-span">-</span>
+              <el-form-item class="filter__sum-max">
+                <el-input
+                    v-model="filter.sum_price_back"
+                    clearable
+                    :placeholder="$lang('最大金额')"
+                    @keyup.enter.native="onSearch"
+								>
+								<template slot="append">USD</template>
+							</el-input>
+              </el-form-item>
+            </div>
+          </el-col>
+				</el-row>
+				<el-row :gutter="20" type="flex">
+					<el-col :md="4">
+            <el-form-item :label="$lang('销售团队')">
+              <el-select
+                  filterable
+                  @keyup.enter.native="onSearch"
+                  v-model="filter.team_cd"
+                  clearable
+                  :placeholder="$lang('请选择')"
+              >
+                <el-option
+                    v-for="(item,key) in teamData"
+                    :key="item.cd"
+                    :label="item.cd_val"
+                    :value="item.cd">
+                </el-option>
+              </el-select>
+            </el-form-item>
+					</el-col>
+          <el-col :md="4">
+            <el-form-item>
+              <el-button
+                  type="primary"
+                  class="button button--search"
+                  :loading="searching"
+                  @click="onSearch"
+              >{{$lang('查询')}}
+              </el-button
+              >
+              <el-button
+                  type="primary"
+                  @click="onReset"
+                  class="button"
+                  :loading="searching"
+              >{{$lang('重置')}}
+              </el-button
+              >
+            </el-form-item>
+          </el-col>
+				</el-row>
+      </el-form>
+    </div>
+		<div v-loading="tableLoading">
+			<div class="list__actions">
+				<span>
+					<span>
+						<span>{{$lang('搜索结果：共') + " " + pagedOutPutWarehouseApprovals.totalElements + " " + $lang('条记录')}}</span>
+					</span>
+				</span>
+				<span>
+                    <el-button type="primary" size="small"  @click="onNew" class="button button--new">{{$lang('新增')}}</el-button>
+				</span>
+			</div>
+			<div class="list__data">
+				<el-table
+						:data="pagedOutPutWarehouseApprovals.data"
+						class="warehouse-recommended__list"
+						:default-sort="pagination.sort"
+						border
+						@sort-change="onSort"
+				>
+					<el-table-column
+							fixed
+							prop="audit_no"
+							align="center"
+							:resizable="false"
+							:label="$lang('审批单号')"
+					>
+						<template slot-scope="scope">
+							<div class="link" @click="routeToDetail(scope.row)">{{ scope.row.audit_no }}</div>
+						</template>
+					</el-table-column>
+					<el-table-column
+							align="center"
+							prop="team_cd_val"
+							:resizable="false"
+							:label="$lang('涉及团队')"
+					>
+						<template slot-scope="scope">
+							<span>{{ scope.row.team_cd_val }}</span>
+						</template>
+					</el-table-column>
+					<el-table-column
+							align="center"
+							prop="type_cd_val"
+							:resizable="false"
+							:label="$lang('出入库类型')"
+					>
+						<template slot-scope="scope">
+							<span>{{ scope.row.type_cd_val }}</span>
+						</template>
+					</el-table-column>
+					<el-table-column
+							align="center"
+							prop="sum_price_usd"
+							:resizable="false"
+							:label="$lang('货值总额')"
+					>
+						<template slot-scope="scope">
+							<span>{{ scope.row.sum_price_usd }}</span>
+						</template>
+					</el-table-column>
+					<el-table-column
+							align="center"
+							prop="create_by"
+							:resizable="false"
+							:label="$lang('发起人')"
+					>
+						<template slot-scope="scope">
+							<span>{{ $lang(scope.row.create_by)}}</span>
+						</template>
+					</el-table-column>
+					<el-table-column
+							align="center"
+							prop="status_cd_val"
+							:resizable="false"
+							:label="$lang('审批流程节点')"
+					>
+						<template slot-scope="scope">
+							<span>{{ $lang(scope.row.status_cd_val) }}</span>
+						</template>
+					</el-table-column>
+					<el-table-column
+							align="center"
+							:resizable="false"
+							fixed="right"
+							prop="opretion"
+							:label="$lang('操作')"
+							width="220px"
+					>
+						<template slot-scope="scope">
+							<!-- <el-button type="primary" @click="onView(scope.row)" size="small">
+								{{$lang('查看')}}
+							</el-button> -->
+                            <?php if(checkPermissions('Stock', 'editOutWarehouseApproval')) { ?>
+                                <!-- 审批驳回 审批完成 审批取消 -->
+                                <el-button v-if="scope.row.status_cd !== 'N003670005' && scope.row.status_cd !== 'N003670003' && scope.row.status_cd !== 'N003670004'" @click="onView(scope.row)">{{$lang('修改')}}</el-button>
+                            <?php }?>
+                            <!-- 此按钮仅支持状态为【待提交社申请】、【待领导审批】、【待财务审批】的审批单进行取消操作 -->
+                            <el-button v-if="scope.row.status_cd === 'N003670001' || scope.row.status_cd === 'N003670002' || scope.row.status_cd === 'N003670006'" @click="handleCancelApproval(scope.row.audit_no)">{{$lang('取消')}}</el-button>
+						</template>
+					</el-table-column>
+				</el-table>
+			</div>
+			<div data-test="pagination" class="list__pagination">
+				<el-pagination
+						@current-change="onPageChange"
+						@size-change="onSizeChange"
+						:current-page="pagination.current_page"
+						:page-size="pagination.per_page"
+						:page-sizes="[10,20]"
+						layout="sizes,prev, pager, next, jumper"
+						:total="pagedOutPutWarehouseApprovals.totalElements"
+				/>
+			</div>
+		</div>
+  </div>
+  <el-dialog
+      :title="$lang('发起审批')"
+      v-if="approvalTypeDialogVisible"
+			:visible.sync="approvalTypeDialogVisible"
+			center
+      width="500px">
+    <div class="approval__select">
+			<el-row :gutter="20">
+				<el-col :span="8" class="label-txt">
+					{{$lang('出库类型')}}
+				</el-col>
+				<el-col :span="16">
+					<el-select v-model="approvalTypeValue" :placeholder="$lang('请选择出库类型')" size="small">
+						<el-option
+								v-for="(item,key) in approvalType"
+								:key="item.CD"
+								:label="item.CD_VAL"
+								:value="item.CD">
+						</el-option>
+					</el-select>
+				</el-col>
+			</el-row>
+			<el-row :gutter="20" style="margin-top: 15px;">
+				<el-col :span="8" class="label-txt">
+					{{$lang('团队')}}
+				</el-col>
+				<el-col :span="16">
+					<el-select v-model="teamValue" :placeholder="$lang('请选择团队')" size="small">
+						<el-option
+								v-for="(item,key) in teamData"
+								:key="item.cd"
+								:label="item.cd_val"
+								:value="item.cd">
+						</el-option>
+					</el-select>
+				</el-col>
+			</el-row>
+      
+    </div>
+    <div class="actions">
+      <el-button @click="approvalTypeDialogVisible = false" size="small">{{$lang('取消')}}</el-button>
+      <el-button type="primary" @click="onConfirm" :loading="confirmLoading" size="small">{{$lang('确定')}}</el-button>
+    </div>
+    </span>
+  </el-dialog>
+</div>
+
+<script type="text/javascript" src="../Public/lib/jquery/1.9.1/jquery.min.js?v=<{$tdink.config.VER_NUM}>"></script>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue-2.6.10.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.13.0.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script src="./Application/Tpl/Home/Public/js/lodash-4.17.15.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+
+<script type="text/javascript" src="./Application/Tpl/Home/Store/bus.js"></script>
+<script>
+    if (getCookie('think_language') !== "zh-cn") {
+        ELEMENT.locale(ELEMENT.lang.en)
+    }
+</script>
+<script>
+
+    const PMS_HOST = "<{$PMS_HOST}>";
+    const storeId = "<{$id}>";
+
+    const vueApp = new Vue({
+        el: '#outPutWarehouseApprovalList',
+        components: {},
+        data() {
+            return {
+								teamData: [], // 团队
+                filter: {
+                    status_cd: [],
+                },
+                pagination: {
+                    current_page: 1,
+                    per_page: 10,
+                },
+                pagedOutPutWarehouseApprovals: {
+                    data: [],
+                    totalElements: 0
+                },
+                improtBillAuditStatus: [],
+                approvalTypeDialogVisible: false,
+                approvalType: [],
+								approvalTypeValue: "N003680002",
+								teamValue: "",
+                users:[],
+                searching: false,
+                loading: false,
+								confirmLoading: false,
+								tableLoading: false
+            }
+        },
+        computed: {
+            text: function () {
+            }
+        },
+        created() {
+						this.getProcessCode();
+						this.getTeam();
+            this.search();
+            this.onLenovoQuery()
+        },
+        mounted() {
+            document.getElementById("outPutWarehouseApprovalList").style.display = "block";
+            let createByInput = document.querySelector('.filter__create_by input');
+            createByInput.onkeyup = function (e) {
+                createByInput.value = createByInput.value.replace(/[\u4e00-\u9fa5]/gi, '');
+                createByInput.value = createByInput.value.replace(/[0-9]*/gi, '')
+            };
+
+        },
+        methods: {
+						getTeam() {
+							axios.get('/index.php?g=Warehouse&m=ImprotBillAudit&a=getTeam').then((res) => {
+								if(res.data.code == 2000) {
+									this.teamData = res.data.data;
+								} else {
+									this.$message.error(res.data.msg)
+								}
+                })
+						},
+            createByInputLimit(e) {
+                let eventObj = event || e;
+                let keyCode = eventObj.keyCode || eventObj.which;
+                console.log("code值", keyCode);
+                if ((keyCode >= 65 && keyCode <= 90)) {
+                    return true;
+                } else {
+                    return false;
+                }
+            },
+            onLenovoQuery() {
+                console.log("的方式劳动法",{name: this.filter.create_by});
+                axios.post(`/index.php?g=common&m=user&a=search_user`, {name: this.filter.create_by}).then((res) => {
+                    this.users = res.data.data;
+                    // this.users.forEach((obj) => {
+                    //     obj.value = obj.name
+                    // })
+                })
+            },
+            getProcessCode() {
+                axios.post('/index.php?g=common&m=index&a=get_cd', {
+                    cd_type: {
+                        improt_bill_audit_status: "false",
+                        improt_bill_type: "false"
+                    }
+                }).then((res) => {
+                    this.improtBillAuditStatus = res.data.data.improt_bill_audit_status;
+                    this.approvalType = res.data.data.improt_bill_type;
+                    console.log("流程节点", this.improtBillAuditStatus);
+                })
+            },
+            onNew() {
+                this.approvalTypeDialogVisible = true;
+            },
+            onEdit(id) {
+                this.editId = id;
+                this.editCustomRulesDialogVisible = true;
+            },
+            handleCancelApproval(audit_no) {
+                this.$confirm(this.$lang('确定取消审批吗？')).then(() => {
+                    this.loading = true;
+                    axios.post('/index.php?g=Warehouse&m=ImprotBillAudit&a=audit', {
+                        audit_no: audit_no,
+                        status_cd: 'N003670005'
+                    }).then((res) => {
+                        if (res.data.code === 2000) {
+                            this.loading = false;
+                            this.$message.success(this.$lang('提交成功'));
+                            this.search();
+                        } else {
+                            this.loading = false;
+                            this.$message.error(this.$lang(res.data.msg))
+                        }
+                    })
+                })
+            },
+            // 查看页
+            routeToDetail(item) {
+                let title = '查看EXCEL入库';
+                let operName = '入库'
+                if (item.type_cd === 'N003680001') {
+                    title = '查看EXCEL出库'
+                    operName = '出库';
+                }
+                newTab('/index.php?m=stock&a=out_or_in_warehouse_approval_view&type=' + item.type_cd + '&auditNo=' + item.audit_no + '&operName=' + operName, this.$lang(title));
+            },
+            onView(item) {
+                if (item.type_cd === 'N003680002') { //入库
+                    let href = "/index.php?m=stock&a=put_warehouse_approval_view&type=" + item.type_cd + "&auditNo=" + item.audit_no;
+                    let a = document.createElement('a');
+                    a.setAttribute("style", "display: none");
+                    a.setAttribute("onclick", "opennewtab(this,'" + this.$lang('修改EXCEL入库') + "')");
+                    a.setAttribute("_href", href);
+                    a.onclick();
+
+                } else if (item.type_cd === 'N003680001') { //出库
+                    let href = "/index.php?m=stock&a=out_warehouse_approval_view&type=" + item.type_cd + "&auditNo=" + item.audit_no;
+                    let a = document.createElement('a');
+                    a.setAttribute("style", "display: none");
+                    a.setAttribute("onclick", "opennewtab(this,'" + this.$lang('修改EXCEL出库') + "')");
+                    a.setAttribute("_href", href);
+                    a.onclick();
+                }
+            },
+            onSort() {
+
+            },
+            onPageChange(page) {
+                console.log("页码", page);
+                this.pagination.current_page = page;
+                this.search();
+            },
+            onSizeChange(size) {
+                this.pagination.per_page = size;
+                this.search();
+            },
+            onReset() {
+                Object.keys(this.filter).forEach((key) => {
+                    if (key === 'status_cd') {
+                        this.filter[key] = []
+
+                    } else {
+                        this.filter[key] = null
+                    }
+                })
+                this.search();
+            },
+            onSearch() {
+                this.pagination.current_page = 1;
+                this.search();
+            },
+            search() {
+                let filter = _.cloneDeep(this.filter);
+                let status_cd = "";
+                if (this.filter.status_cd.length !== 0) {
+                    status_cd = this.filter.status_cd.toString();
+                }
+                filter.status_cd = status_cd;
+                console.log("搜索条件", filter);
+								this.tableLoading = true;
+                axios.post(`/index.php?g=Warehouse&m=ImprotBillAudit&a=getList`, {
+                    search: filter,
+                    pages: this.pagination
+                }).then(res => {
+									this.tableLoading = false;
+                    this.pagedOutPutWarehouseApprovals.data = res.data.data.datas;
+                    this.pagedOutPutWarehouseApprovals.totalElements = parseInt(res.data.data.page[0].total_rows);
+                    console.log("列表数据", this.pagedOutPutWarehouseApprovals);
+                });
+            },
+            onConfirm() {
+								if(!this.teamValue) {
+									this.$message.warning(this.$lang('请先选择团队'));
+									return false;
+								}
+                if (this.approvalTypeValue === 'N003680002') { //入库
+                    this.confirmLoading = true;
+                    axios.post('/index.php?g=Warehouse&m=ImprotBillAudit&a=create', {
+												type: "N003680002",
+												team_cd: this.teamValue
+                    }).then((res) => {
+                        if (res.data.code === 2000) {
+                            let data = res.data.data;
+                            let auditNo = data.audit_no;
+                            this.confirmLoading = false;
+
+                            let href = "/index.php?m=stock&a=put_warehouse_approval_new&type=" + this.approvalTypeValue + "&auditNo=" + auditNo;
+                            let a = document.createElement('a');
+                            a.setAttribute("style", "display: none");
+                            a.setAttribute("onclick", "opennewtab(this,'" + this.$lang('新增EXCEL入库') + "')");
+                            a.setAttribute("_href", href);
+                            a.onclick();
+                            console.log("流程节点", data);
+                        } else {
+                            this.confirmLoading = false;
+                            this.$message.error(this.$lang(res.data.msg));
+
+                        }
+                    })
+
+                } else if (this.approvalTypeValue === 'N003680001') { //出库
+                    this.confirmLoading = true;
+
+                    axios.post('/index.php?g=Warehouse&m=ImprotBillAudit&a=create', {
+                        type: "N003680001",
+												team_cd: this.teamValue
+                    }).then((res) => {
+                        if (res.data.code === 2000) {
+                            let data = res.data.data;
+                            let auditNo = data.audit_no;
+                            this.confirmLoading = false;
+
+                            let href = "/index.php?m=stock&a=out_warehouse_approval_new&type=" + this.approvalTypeValue + "&auditNo=" + auditNo;
+                            let a = document.createElement('a');
+                            a.setAttribute("style", "display: none");
+                            a.setAttribute("onclick", "opennewtab(this,'" + this.$lang('新增EXCEL出库') + "')");
+                            a.setAttribute("_href", href);
+                            a.onclick();
+                        } else {
+                            this.confirmLoading = false;
+                            this.$message.error(this.$lang(res.data.msg));
+                        }
+
+                    })
+
+                }
+            }
+        }
+    });
+
+</script>
+</body>
+</html>

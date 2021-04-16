@@ -1,0 +1,2259 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="../Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="../Public/css/element-ui.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="../Public/../Hr/hrstyle.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="../Public/js/cropper/cropper.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="../Public/icon/css/font-awesome.min.css">
+    <style>
+    [v-cloak] {
+        display: none;
+    }
+
+    .editpos {
+        position: fixed;
+        right: 25px;
+        top: 20px;
+        opacity: 0.3;
+        z-index: 999;
+    }
+
+    .conFormat {
+        margin-top: 1px;
+        margin-bottom: -18px;
+        line-height: 1.8;
+        font-size: 11px;
+    }
+    .text-value{
+        white-space: pre-wrap;
+        word-break: break-all;
+    }
+    .erpPassword{
+        margin-left: 12px;
+        font-size: 14px;
+    }
+    #hrAddEdit{
+        margin-bottom: 270px;
+    }
+    .required:before {
+        content: '*';
+        color: #ff4949;
+        margin-right: 4px;
+    }
+    .dialog_store >div.el-dialog{
+        margin: 0;
+    }
+    .el-select-dropdown__item.selected{
+        color: #fff;
+    }
+    .addPerson .avatar-uploader .el-upload{
+        width: 178px;
+    }
+    .avatar-uploader img{
+        width: 178px;
+        height: auto;
+    }
+    .addPerson .show-avatar{
+        overflow: hidden;
+    }
+    </style>
+</head>
+
+<body>
+    <input type="hidden" value="<?php echo $menu; ?>" id="ctrl" />
+    <input type="hidden" value="<?php echo $resumeData['ID']; ?>" id="resctrl" />
+    <div id="hrAddEdit" class="addPerson" v-cloak>
+        <div class="use-row" style="margin-bottom: 20px;">
+            <div class="col-50 use-title">{{$lang(title)}}<span v-if="title == '员工名片'"> — {{form.EmpScNm}}</span></div>
+            <div class="col-50 text-right use-btn">
+                <div class="use-row">
+                    <!--第一页保存-->
+                    <div class="col-100 editpos" v-if="menu.personInfo && edit.show || menu.personInfo && control.admin && !control.id">
+                        <button class="btn-pub  btn-blue" type="button" @click="saveForm()">&nbsp;{{$lang('保存')}}&nbsp;</button>
+                        <button style="right: 105px;" class="btn-pub  btn-default mg-l-20" type="button" @click="cancel()">&nbsp;{{$lang('取消')}}&nbsp;</button>
+                    </div>
+                    <!--第二页保存-->
+                    <div class="col-100 editpos use-btn" v-if="!menu.personInfo && edit.show || !menu.personInfo && control.admin && !control.id">
+                        <button class="btn-pub btn-blue" type="button" @click="saveForm2()">&nbsp;&nbsp;{{$lang('保存')}}&nbsp;&nbsp;</button>
+                        <button style="right: 105px;" class="btn-pub btn-default mg-l-20" type="button" @click="cancel()">&nbsp;&nbsp;{{$lang('取消')}}&nbsp;&nbsp;</button>
+                    </div>
+                    <div class="col-100 editpos" v-if="!edit.show && control.admin && control.id || (!edit.show && control.staff)">
+                        <?php if(ButtonAction::hidden()){ ?>
+                            <button type="button" class="btn-pub  btn-blue" @click="editContent()" >{{$lang('编辑')}}</button>
+                        <?php }?> 
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="use-row text-center tab-title" v-if="control.admin && control.id">
+            <div class="col-50" @click="menu.personInfo = true">
+                <p :class="menu.personInfo ? 'active':'default'">{{$lang('个人信息')}}<i></i></p>
+            </div>
+            <div class="col-50" @click="menu.personInfo = false">
+                <p :class="menu.personInfo ? 'default':'active'">{{$lang('HR跟踪信息')}}<i></i></p>
+            </div>
+        </div>
+        <!---------------------------------------------------华丽的分割线----------------------------------------------------------->
+        <!--
+            个人信息展示模块
+            control.admin      管理员(新建状态)
+            menu.personInfo    个人信息/跟踪信息
+            edit.show          编辑/展示
+            control.id         管理员(携带员工ID进入查看/编辑)
+        -->
+        <!--hr 模块-->
+        <div v-if="control.staff || (control.admin && control.id && !edit.show && menu.personInfo)" style="margin-bottom: 20px">
+            <el-form :label-position="labelPosition" :rules="rules" ref="form" label-width="95px" :model="form">
+                <el-row class="base-info">
+                    <el-col :span="6">
+                        <div class="show-avatar">
+                            <div v-if="!edit.show" ><img class="photo" v-if="form.Pic" :src="form.Pic" width="200" ></div>
+                            <div v-if="form.Pic && cropStatus && edit.show">
+                                <div style="max-width: 360px;max-height:210px;">
+                                    <img :src="form.Pic" alt="" id="avatar" style="max-height:210px">
+                                </div>
+                            </div>
+                            <div v-if="!cropStatus && edit.show">
+                                <!-- <el-upload class="avatar-uploader" :auto-upload="false" action="/index.php?m=Api&a=hrUpload" :show-file-list="false"
+                                    :on-change="handleChange" name="Pic" ref="Pic">
+                                    <img v-if="form.Pic" :src="form.Pic" >
+                                    <i v-if="edit.show && !form.Pic" class="el-icon-plus avatar-uploader-icon"></i>
+                                </el-upload> -->
+                                <el-upload
+                                class="avatar-uploader"
+                                action="/index.php?m=Api&a=hrUpload"
+                                :on-success="handleAvatarSuccess"
+                                :show-file-list="false"
+                                :on-change="handleChange">
+                                <img v-if="form.Pic" :src="form.Pic" >
+                                <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+                                </el-upload>
+                           
+
+
+                            </div>
+                            <div class="text-center crop-button" v-if="cropStatus && edit.show">
+                                <el-button type="primary" size="small" @click="crop()"><i class="fa fa-check"></i></el-button>
+                                <el-button size="small" @click="reset()"><i class="fa fa-refresh"></i></el-button>
+                            </div>
+                        </div>
+                    </el-col>
+                    <el-col :span="18">
+                        <div class="title">{{$lang('员工基础信息')}}</div>
+                        <table class="base-table" cellpadding="0" cellspacing="0" border="0">
+                            <tbody>
+                                <tr>
+                                    <td>{{$lang('工号')}}</td>
+                                    <td>{{form.workNum}}</td>
+                                    <td>{{$lang('花名')}}</td>
+                                    <td>{{form.EmpScNm}}</td>
+                                    <td>{{$lang('入职时间')}}</td>
+                                    <td>{{form.perJobDate}}</td>
+                                </tr>
+                                <tr>
+                                    <td>{{$lang('中文职位')}}</td>
+                                    <td>{{form.jobCd}}</td>
+                                    <td>{{$lang('英文职位')}}</td>
+                                    <td>{{form.JobEnCd}}</td>
+                                    <td>{{$lang('司龄')}}</td>
+                                    <td>
+                                        <span v-if="form.companyAge > 0">{{form.companyAge}} {{$lang('月')}}</span>
+                                        <span v-if="form.companyAge == 0">{{$lang('未满一个月')}}</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>{{$lang('状态')}}</td>
+                                    <td>{{form.status}}</td>
+                                    <td>{{$lang('工作地点')}}</td>
+                                    <td>{{form.workPlace}}</td>
+                                    <td>{{$lang('对接HR')}}</td>
+                                    <td>{{form.dockingHr}} </td>
+                                </tr>
+                                <tr>
+                                    <td>{{$lang('ERP账号')}}</td>
+                                    <td>{{form.erpAct}}</td>
+                                    <td>{{$lang('ERP密码')}}</td>
+                                    <td>
+                                        <span v-if="form.emplid" class="erpPassword">********</span> 
+                                        <el-button type="text" v-if="edit.show" style="font-size: 12px;float: right;" @click="changePwdVisible=true">{{$lang('修改密码')}}</el-button>
+                                    </td>
+                                    <td>{{$lang('花名邮箱')}}</td>
+                                    <td>{{form.scEmail}} </td>
+                                </tr>
+                              <!--   <tr>
+                                    <td>
+                                        <el-form-item label="职级">
+                                            <p class="text-value">{{form.rank}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td v-if="form.status=='离职'">
+                                        <el-form-item label="离职时间">
+                                            <p class="text-value">{{form.depJobDate}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td v-else></td>
+                                    <td v-if="form.status=='离职'">
+                                        <el-form-item label="离职编号">
+                                            <p class="text-value">{{form.depJobNum}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td v-else></td>
+                                </tr> -->
+                            </tbody>
+                        </table>
+                    </el-col>
+                </el-row>
+            </el-form>
+        </div>
+        <!--所属部门-->
+        <div class="department" v-if="control.staff || (control.admin && control.id && !edit.show && menu.personInfo)" >
+            <div class="title">{{$lang('所属部门')}}</div>
+            <table border="0" cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th width="300">{{$lang('部门')}}</th>
+                        <th>{{$lang('从属部门')}}</th>
+                        <th>{{$lang('部门领导')}}</th>
+                        <th>{{$lang('部门类型')}}</th>
+                        <th>{{$lang('直属领导')}}</th>
+                        <th width="160">{{$lang('部门占比')}}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="item in form.department">
+                        <td>{{item.DEPT_NM}}</td>
+                        <td>{{item.PAR_DEPT_NM}}</td>
+                        <td>{{item.leader_dept}}</td>
+                        <td>{{item.TYPE_NM}}</td>
+                        <td>{{item.leader_direct}}</td>
+                        <td>{{item.PERCENT}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <!--个人信息模块-->
+        <div v-if="control.staff && !edit.show || (control.admin && control.id && !edit.show && menu.personInfo)" style="margin-bottom: 20px">
+            <div class="use-row">
+                <div class="col-100">
+                    <div class="head-title">{{$lang('员工个人信息')}}</div>
+                    <el-form :label-position="labelPosition" label-width="100px" :model="form" :rules="rules" ref="form">
+                        <table class="per-table">
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <el-form-item :label="$lang('真名')">
+                                            <p class="text-value">{{form.empNm}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('联系方式')">
+                                            <p class="text-value">{{form.prePhone}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('分机号')">
+                                            <p class="text-value"><span v-if="form.offTel">{{form.offTel}}</span><span v-else></span></p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('职位类别')">
+                                            <p class="text-value">{{form.jobTypeCd}}</p>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="1">
+                                        <el-form-item :label="$lang('身份证号码')">
+                                            <p class="text-value">{{form.perCartId}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('性别')">
+                                            <p class="text-value">
+                                                <span v-if="form.sex == 0">{{$lang('男')}}</span>
+                                                <span v-if="form.sex == 1">{{$lang('女')}}</span>
+                                                <span v-if="form.sex == 2"></span>
+                                            </p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('是否吸烟')">
+                                            <p class="text-value">
+                                                <span v-if="form.perIsSmoking == 1">{{$lang('是')}}</span>
+                                                <span v-else-if="form.perIsSmoking == 2"> </span>
+                                                <span v-else>{{$lang('否')}}</span>
+                                            </p>
+                                        </el-form-item>
+                                    </td>
+                                    <td v-if="form.status=='离职'">
+                                        <el-form-item :label="$lang('档案是否归档')">
+                                            <p class="text-value">
+                                                <span v-if="form.is_filed == 1">{{$lang('是')}}</span>
+                                                <span v-else-if="form.is_filed == 2">{{$lang('否')}}</span>
+                                            </p>
+                                        </el-form-item>
+                                    </td>
+                                    <td v-else></td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <el-form-item :label="$lang('出生日期')">
+                                            <p class="text-value">{{form.perBirthDate}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('年龄')">
+                                            <p class="text-value"><span v-if="form.age!=0">{{form.age}}</span><span v-else></span></p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('籍贯')">
+                                            <p class="text-value">{{form.perAddress}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('户籍')">
+                                            <p class="text-value">{{form.perResident}}</p>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <el-form-item :label="$lang('婚姻状态')">
+                                            <p class="text-value">{{form.perIsMarried}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('子女数')">
+                                            <p class="text-value">
+                                                <span v-if="form.childNum">{{form.childNum}}</span>
+                                            </p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('孩子性别')">
+                                            <p class="text-value">
+                                                <span v-if="form.childBoyNum">{{form.childBoyNum}}{{$lang('男')}}</span>
+                                                <span v-if="form.childGirlNum">{{form.childGirlNum}}{{$lang('女')}}</span>
+                                            </p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('政治面貌')">
+                                            <p class="text-value">{{form.perPolitical}}</p>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2">
+                                        <el-form-item :label="$lang('户口性质')">
+                                            <p class="text-value">
+                                                <span v-if="form.hosehold == 0">{{$lang('城镇户籍')}}</span>
+                                                <span v-else-if="form.hosehold == 1">{{$lang('农业户籍')}}</span>
+                                                <span v-else-if="form.hosehold == 2">{{$lang('其他')}}</span>
+                                                <span v-else></span>
+                                            </p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('民族')">
+                                            <p class="text-value">{{form.perNational}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('公积金账号')">
+                                            <p class="text-value">{{form.fundAccount}}</p>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                                <tr>
+                                   <td colspan="2">
+                                        <el-form-item :label="$lang('私人邮箱')">
+                                            <p class="text-value">{{form.email}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('微信')">
+                                            <p class="text-value">{{form.weChat}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('QQ')">
+                                            <p class="text-value">{{form.qqAccount}}</p>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2">
+                                        <el-form-item :label="$lang('户籍地址')">
+                                            <p class="text-value">{{form.houAdderss.proh}}&nbsp;&nbsp;{{form.houAdderss.cityH}}&nbsp;&nbsp;{{form.houAdderss.areaH}}&nbsp;&nbsp;{{form.houAdderss.detailH}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td colspan="2">
+                                        <el-form-item :label="$lang('现居住地址')">
+                                            <p class="text-value">{{form.livingAddress.provL}}&nbsp;&nbsp;{{form.livingAddress.cityL}}&nbsp;&nbsp;{{form.livingAddress.areaL}}&nbsp;&nbsp;{{form.livingAddress.detailL}}</p>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2">
+                                        <el-form-item :label="$lang('语言能力')">
+                                            <p class="text-value">
+                                                <span v-if="form.firstLan">{{$lang('第一外语')}}</span>&nbsp;&nbsp;
+                                                <span>{{form.firstLan}}</span>&nbsp;&nbsp;
+                                                <span v-if="form.firstLanLevel == 0">{{$lang('精通')}}</span>
+                                                <span v-if="form.firstLanLevel == 1">{{$lang('熟练')}}</span>
+                                                <span v-if="form.firstLanLevel == 2">{{$lang('一般')}}</span>
+                                            </p>
+                                        </el-form-item>
+                                    </td>
+                                    <td colspa:n="2">
+                                        <el-form-item label="">                                          
+                                            <p class="text-value">
+                                                <span v-if="form.secondLan">{{$lang('第二外语')}}</span>&nbsp;&nbsp;
+                                                <span>{{form.secondLan}}</span>&nbsp;&nbsp;
+                                                <span v-if="form.secondLanLevel == 0">{{$lang('精通')}}</span>
+                                                <span v-if="form.secondLanLevel == 1">{{$lang('熟练')}}</span>
+                                                <span v-if="form.secondLanLevel == 2">{{$lang('一般')}}</span>
+                                            </p>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="4">
+                                        <el-form-item :label="$lang('爱好及特长')">
+                                            <p class="text-value">{{form.hobbySpa}}</p>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2">
+                                        <el-form-item :label="$lang('身份证正反面')">
+                                            <p class="text-value">
+                                                <span style="color: #13ce66; font-size: 12px;" v-if="form.perCardPic">( {{$lang('已上传')}} )</span>
+                                                <span style="color: #fb4f4f; font-size: 12px;" v-else>({{$lang('请上传身份证正反面')}})</span>
+                                                <el-button style="padding: 0" type="text" @click="previewAnnex('perCardPic',form)">{{$lang('查看')}}</el-button>
+                                            </p>
+                                        </el-form-item>
+                                    </td>
+                                    <td colspan="2">
+                                        <el-form-item :label="$lang('简历附件')">
+                                            <p class="text-value">
+                                                <span style="color: #13ce66; font-size: 12px;" v-if="form.resume">( {{$lang('已上传')}} )</span>
+                                                <span style="color: #fb4f4f; font-size: 12px;" v-else>({{$lang('请上传简历附件')}})</span>
+                                                <el-button style="padding: 0" type="text" @click="previewAnnex('resume',form)">{{$lang('查看')}}</el-button>
+                                            </p>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </el-form>
+                </div>
+            </div>
+            <!--紧急联系人-->
+            <div class="use-row">
+                <div class="col-100">
+                    <el-form :label-position="labelPosition" label-width="95px" :model="form" :rules="rules" ref="form">
+                        <table class="contact-person">
+                            <caption>{{$lang('紧急联系人')}}</caption>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <el-form-item :label="$lang('与本人关系')">
+                                            <p class="text-value">{{form.concatRel}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('姓名')">
+                                            <p class="text-value">{{form.concatName}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('联系方式')">
+                                            <p class="text-value">{{form.concatWay}}</p>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </el-form>
+                </div>
+            </div>
+            <!--教育经历-->
+            <div class="use-row">
+                <div class="col-100">
+                    <el-form :label-position="labelPosition" :model="form" :rules="rules" ref="form">
+                        <table class="experience">
+                            <caption>
+                                <div class="use-row">
+                                    <div class="col-50">{{$lang('教育经历')}}</div>
+                                </div>
+                            </caption>
+                            <tbody>
+                                <tr>
+                                    <th>{{$lang('开始时间')}}</th>
+                                    <th>{{$lang('结束时间')}}</th>
+                                    <th>{{$lang('学校名称')}}</th>
+                                    <th>{{$lang('专业')}}</th>
+                                    <th>{{$lang('学历性质')}}</th>
+                                    <th>{{$lang('学历验证结果')}}</th>
+                                    <th>{{$lang('是否学位')}}</th>
+                                    <th>{{$lang('毕业证书编号')}}</th>
+                                </tr>
+                            </tbody>
+                            <tbody>
+                                <tr v-for="item in form.eduExp">
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.eduStartTime}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.eduEndTime}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.schoolName}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.eduMajors}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.eduDegNat}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.validateRes}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">
+                                                <span v-if="item.isDegree == 1">{{$lang('是')}}</span>
+                                                <span v-if="item.isDegree == 0">{{$lang('否')}}</span>
+                                            </p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.certiNo}}</p>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3">
+                                        <el-form-item :label="$lang('最高学历毕业证书附件')">
+                                            <p class="text-value">
+                                                <span style="color: #13ce66; font-size: 12px;" v-if="form.graCert">( {{$lang('已上传')}} )</span>
+                                                <span style="color: #fb4f4f; font-size: 12px;" v-else>({{$lang('请上传毕业证书附件')}})</span>
+                                                <el-button style="padding: 0" type="text" @click="previewAnnex('graCert',form.eduExp[0])">{{$lang('查看')}}</el-button>
+                                            </p>
+                                        </el-form-item>
+                                    </td>
+                                    <td colspan="2">
+                                        <el-form-item :label="$lang('最高学历学位证书附件')">
+                                            <p class="text-value">
+                                                <span style="color: #13ce66; font-size: 12px;" v-if="form.degCert">( {{$lang('已上传')}} )</span>
+                                                <span style="color: #fb4f4f; font-size: 12px;" v-else>({{$lang('请上传学位证书附件')}})</span>
+                                                <el-button style="padding: 0" type="text" @click="previewAnnex('degCert',form.eduExp[0])">{{$lang('查看')}}</el-button>
+                                            </p>
+                                        </el-form-item>
+                                    </td>
+                                    <td colspan="4">
+                                        <el-form-item :label="$lang('学信网验证附件')">
+                                            <p class="text-value">
+                                                <span style="color: #13ce66; font-size: 12px;" v-if="form.learnProve">( {{$lang('已上传')}} )</span>
+                                                <span style="color: #fb4f4f; font-size: 12px;" v-else>({{$lang('请上传学信网验证附件')}})</span>
+                                                <el-button style="padding: 0" type="text" @click="previewAnnex('learnProve',form.eduExp[0])">{{$lang('查看')}}</el-button>
+                                            </p>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </el-form>
+                </div>
+            </div>
+            <!--工作经历-->
+            <div class="use-row">
+                <div class="col-100">
+                    <el-form :label-position="labelPosition" :model="form" :rules="rules" ref="form">
+                        <table class="info-multiple">
+                            <caption>
+                                <div class="use-row">
+                                    <div class="col-50">{{$lang('工作经历')}}</div>
+                                    <div class="col-50 text-right" v-if="form.isFirstCom">
+                                        <span style="font-size: 14px;">{{$lang('本公司是否为第一家公司')}}</span>&nbsp;&nbsp;
+                                        <span v-if="form.isFirstCom == 1"> {{$lang('是')}}</span>
+                                        <span v-if="form.isFirstCom == 0"> {{$lang('否')}}</span>
+                                    </div>
+                                </div>
+                            </caption>
+                            <tbody>
+                                <tr>
+                                    <th>{{$lang('开始时间')}}</th>
+                                    <th>{{$lang('结束时间')}}</th>
+                                    <th>{{$lang('公司名称')}}</th>
+                                    <th>{{$lang('职位')}}</th>
+                                    <th>{{$lang('离职原因')}}</th>
+                                </tr>
+                            </tbody>
+                            <tbody>
+                                <tr v-for="item  in form.workExp">
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.wordStartTime}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.wordEndTime}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.companyName}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.posi}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.depReason}}</p>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </el-form>
+                </div>
+            </div>
+            <!--银行卡信息-->
+            <div class="use-row">
+                <div class="col-100">
+                    <el-form :label-position="labelPosition" :model="form" :rules="rules" ref="form">
+                        <table class="info-multiple">
+                            <caption>
+                                <div class="use-row">
+                                    <div class="col-50">{{$lang('银行卡信息')}}</div>
+                                </div>
+                            </caption>
+                            <tbody>
+                                <tr>
+                                    <th>{{$lang('账号')}}</th>
+                                    <th>{{$lang('中文名拼音')}}</th>
+                                    <th>SWIFT CODE</th>
+                                    <th>{{$lang('开户行')}}</th>
+                                    <th>{{$lang('开户行（英文）')}}</th>
+                                </tr>
+                            </tbody>
+                            <tbody>
+                                <tr v-for="item  in form.bankCard">
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.bankAct}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.bankName}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.swiftCood}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.bankDeposit}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.BankEndeposit}}</p>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </el-form>
+                </div>
+            </div>
+            <!--家庭情况-->
+            <div class="use-row">
+                <div class="col-100">
+                    <el-form :label-position="labelPosition" :model="form" :rules="rules" ref="form">
+                        <table class="info-multiple">
+                            <caption>
+                                <div class="use-row">
+                                    <div class="col-50">{{$lang('家庭情况')}}</div>
+                                </div>
+                            </caption>
+                            <tbody>
+                                <tr>
+                                    <th>{{$lang('与本人关系')}}</th>
+                                    <th>{{$lang('姓名')}}</th>
+                                    <th>{{$lang('年龄')}}</th>
+                                    <th>{{$lang('职业')}}</th>
+                                    <th>{{$lang('工作单位')}}</th>
+                                </tr>
+                            </tbody>
+                            <tbody>
+                                <tr v-for="item in form.home">
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.homeRes}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.homeName}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.homeAge}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.occupa}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.workUnits}}</p>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </el-form>
+                </div>
+            </div>
+            <!--培训经验-->
+            <div class="use-row">
+                <div class="col-100">
+                    <el-form :label-position="labelPosition" :model="form" :rules="rules" ref="form">
+                        <table class="info-multiple">
+                            <caption>
+                                <div class="use-row">
+                                    <div class="col-50">{{$lang('培训经验')}}</div>
+                                </div>
+                            </caption>
+                            <tbody>
+                                <tr>
+                                    <th>{{$lang('培训名称')}}</th>
+                                    <th>{{$lang('开始时间')}}</th>
+                                    <th>{{$lang('结束时间')}}</th>
+                                    <th>{{$lang('培训机构')}}</th>
+                                    <th>{{$lang('培训描述')}}</th>
+                                </tr>
+                            </tbody>
+                            <tbody>
+                                <tr v-for="item  in form.training">
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.trainingName}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.trainingStartTime}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.trainingEndTime}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.trainingIns}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.trainingDes}}</p>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </el-form>
+                </div>
+            </div>
+            <!--资格证书-->
+            <div class="use-row">
+                <div class="col-100">
+                    <el-form :label-position="labelPosition" :model="form" :rules="rules" ref="form">
+                        <table class="info-multiple">
+                            <caption>
+                                <div class="use-row">
+                                    <div class="col-50">{{$lang('资格证书')}}</div>
+                                </div>
+                            </caption>
+                            <tbody>
+                                <tr>
+                                    <th>{{$lang('名称')}}</th>
+                                    <th>{{$lang('颁发时间')}}</th>
+                                    <th>{{$lang('颁发单位')}}</th>
+                                </tr>
+                            </tbody>
+                            <tbody>
+                                <tr v-for="item  in form.certificate">
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.certiName}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.certifiTime}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.certifiunit}}</p>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </el-form>
+                </div>
+            </div>
+        </div>
+        <!--跟踪信息模块-->
+        <div v-if="!menu.personInfo && !edit.show && control.admin && control.id">
+            <!--合同信息-->
+            <div class="use-row">
+                <div class="col-100">
+                    <el-form :label-position="labelPosition" label-width="115px" :model="form2">
+                        <table class="contact-person">
+                            <caption>
+                                <div class="use-row">
+                                    <div class="col-100">{{$lang('合同信息')}}</div>
+                                </div>
+                            </caption>
+                            <tbody>
+                                <tr v-for="(item,key) in form2.contract">
+                                    <td>
+                                        <el-form-item :label="$lang('公司')">
+                                            <p class="text-value">{{item.conCompany}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('用工性质')">
+                                            <p class="text-value">{{item.natEmploy}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('试用期结束日期')">
+                                            <span v-if="item.isdisabled">
+                                                {{$lang('无')}}
+                                            </span>
+                                            <span v-else>
+                                            <p class="text-value">{{item.trialEndTime}}</p>
+                                            </span>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('合同开始日期')">
+                                            <p class="text-value">{{item.conStartTime}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('合同结束日期')">
+                                            <p class="text-value">{{item.conEndTime}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('合同状态')">
+                                            <p class="text-value">{{item.conStatus}}</p>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </el-form>
+                </div>
+            </div>
+            <!--工作内奖惩-->
+            <div class="use-row record">
+                <div class="col-10">
+                    <label>{{$lang('工作内奖惩')}}</label>
+                </div>
+                <div class="col-85">
+                    <div class="use-row" v-for="item in form2.reward">
+                        <div class="col-20">
+                            <p class="text-value">{{item.rewardName}}</p>
+                        </div>
+                        <div class="col-70">
+                            <pre class="conFormat">
+                                <p class="text-value">{{item.rewardContent}}</p>
+                            </pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--晋升记录-->
+            <div class="use-row record">
+                <div class="col-10">
+                    <label>{{$lang('晋升记录')}}</label>
+                </div>
+                <div class="col-85">
+                    <div class="use-row" v-for="item in form2.promo">
+                        <div class="col-20">
+                            <p class="text-value">{{item.promoType}}</p>
+                        </div>
+                        <div class="col-20">
+                            <p class="text-value">{{item.promoTime}}</p>
+                        </div>
+                        <div class="col-50">
+                            <pre class="conFormat" style="margin-left: -175px;">
+                            <p class="text-value">{{item.promoContent}}</p>
+                            </pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--日报缺失-->
+            <div class="use-row record">
+                <div class="col-10">
+                    <label>{{$lang('日报缺失')}}</label>
+                </div>
+                <div class="col-85">
+                    <div class="use-row" v-for="item in form2.paperMiss">
+                        <div class="col-20">
+                            <p class="text-value">{{item.paperMissTime}}</p>
+                        </div>
+                        <div  class="col-60">
+                            <pre class="conFormat">
+                            <p class="text-value">{{item.paperMissCon}}</p>
+                            </pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--员工交流-->
+            <div class="use-row">
+                <div class="col-100">
+                    <el-form :label-position="labelPosition" :model="form2">
+                        <table class="inter">
+                            <caption>
+                                <div class="use-row">
+                                    <div class="col-100">{{$lang('员工交流')}}</div>
+                                </div>
+                            </caption>
+                            <tbody>
+                                <tr>
+                                    <th>{{$lang('类型')}}</th>
+                                    <th>{{$lang('时间')}}</th>
+                                    <th>{{$lang('面谈地点')}}</th>
+                                    <th>{{$lang('谈话人')}}</th>
+                                    <th>{{$lang('具体内容')}}</th>
+                                    <th>{{$lang('备注')}}</th>
+                                </tr>
+                            </tbody>
+                            <tbody>
+                                <tr v-for="item in form2.interArr">
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.interType}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.interTime}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.interObj}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.interPerson}}</p>
+                                        </el-form-item>
+                                    </td>
+                                    <td style="width: 40%;">
+                                        <el-form-item><pre class="conFormat" style="margin-bottom: -2px;"><p  class="text-value">{{item.interContent}}</p></pre></el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.afterCase}}</p>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                                <tr></tr>
+                            </tbody>
+                        </table>
+                    </el-form>
+                </div>
+            </div>
+            <!--  <div class="use-row record">
+           <div class="col-10"><label>HR记录</label></div>
+           <div class="col-85">
+               <div class="use-row" v-for="item in form2.hrRecord">
+                   <div class="col-80"><p class="text-value">{{item.reContent}}</p></div>
+                   <div class="col-20"><p class="text-value">{{item.reTime}}</p></div>
+               </div>
+           </div>
+       </div> -->
+            <div class="use-row">
+                <div class="col-100">
+                    <el-form :label-position="labelPosition" :model="form2">
+                        <table class="inter">
+                            <caption>
+                                <div class="use-row">
+                                    <div class="col-100">{{$lang('HR记录')}}</div>
+                                </div>
+                            </caption>
+                            <tbody>
+                                <tr>
+                                    <th>{{$lang('内容')}}</th>
+                                    <th>{{$lang('操作时间')}}</th>
+                                </tr>
+                            </tbody>
+                            <tbody>
+                                <tr v-for="item in form2.hrRecord">
+                                    <td style="width: 80%;">
+                                        <el-form-item>
+                                            <pre class="conFormat" style="margin-left: -285px;width: 1200px;">
+                                                <p class="text-value">{{item.reContent}}</p>
+                                            </pre>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <p class="text-value">{{item.reTime}}</p>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                                <tr></tr>
+                            </tbody>
+                        </table>
+                    </el-form>
+                </div>
+            </div>
+        </div>
+        <!---------------------------------------------------华丽的分割线----------------------------------------------------------->
+        <!--
+         个人信息编辑模块
+         control.admin      管理员(新建状态)
+         menu.personInfo    个人信息/跟踪信息
+         edit.show          编辑/展示
+         control.id         管理员(携带员工ID进入查看/编辑)
+        -->
+        <!--hr 模块-->
+        <div v-if="(menu.personInfo && control.admin && edit.show) || (menu.personInfo && control.admin && !control.id)" style="margin-bottom: 20px">
+            <el-row class="base-info">
+                <el-col :span="6">
+                    <div class="show-avatar">
+                        <div v-if="form.Pic && cropStatus">
+                            <div style="max-width: 355px;max-height:210px;">
+                                <img :src="form.Pic" alt="" id="avatar" style="max-height:260px">
+                            </div>
+                        </div>
+                        <div v-if="!cropStatus">
+                            <!-- <el-upload class="avatar-uploader" :auto-upload="false" action="/index.php?m=Api&a=hrUpload" :show-file-list="false" :on-change="handleChange" name="Pic" ref="Pic">
+                                <img v-if="form.Pic" :src="form.Pic" class="avatar">
+                                <i v-else class="el-icon-plus avatar-uploader-icon"> &nbsp;</i>
+                            </el-upload> -->
+                            <el-upload
+                            class="avatar-uploader"
+                            action="/index.php?m=Api&a=hrUpload"
+                            :on-success="handleAvatarSuccess"
+                            :show-file-list="false"
+                            :on-change="handleChange">
+                            <img v-if="form.Pic" :src="form.Pic" >
+                            <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+                            </el-upload>
+                        </div>
+                        <!-- <div v-if="cropStatus" class="crop-button">
+                            <el-button type="primary" size="small" @click="crop()"><i class="fa fa-check"></i></el-button>
+                            <el-button size="small"><i class="fa fa-refresh" @click="reset()"></i></el-button>
+                        </div> -->
+                    </div>
+                </el-col>
+                <el-col :span="18">
+                    <div class="title">{{$lang('员工基础信息')}}</div>
+                    <el-form :label-position="labelPosition" :rules="rulesHr" ref="form" label-width="95px" :model="form">
+                        <table class="hr-table">
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <el-form-item :label="$lang('工号')" prop="workNum">
+                                            <el-input type="number" v-model="form.workNum" :placeholder="$lang('请输入数字')"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('花名')" prop="EmpScNm">
+                                            <el-input v-model="form.EmpScNm" :placeholder="$lang('请输入花名')"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('入职时间')" prop="perJobDate">
+                                            <el-date-picker v-model="form.perJobDate" :placeholder="$lang('选择日期')" @change="countComAge()"></el-date-picker>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <el-form-item :label="$lang('中文职位')" prop="jobCd">
+                                            <el-select :filterable="true" :placeholder="$lang('中文职位')" v-model="form.jobCd" clearable @change="checkJob">
+                                                <el-option :key="item.CD_VAL" :label="item.CD_VAL" :value="item.CD_VAL" v-for="item in selData.job"></el-option>
+                                            </el-select>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('英文职位')" prop="JobEnCd">
+                                            <el-input v-model="form.JobEnCd" :placeholder="$lang('英文职位')"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('司龄')" prop="companyAge">
+                                            <el-input v-model="form.companyAge" :placeholder="$lang('请输入数字')"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <el-form-item :label="$lang('状态')" prop="status">
+                                            <el-select :filterable="true" :placeholder="$lang('状态')" v-model="form.status" clearable>
+                                                <el-option :key="item.CD_VAL" :label="item.CD_VAL" :value="item.CD_VAL" v-for="item in selData.status"></el-option>
+                                            </el-select>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('工作地点')" prop="workPlace">
+                                            <el-select :filterable="true" :placeholder="$lang('工作地点')" v-model="form.workPlace" clearable>
+                                                <el-option :key="item.CD_VAL" :label="item.CD_VAL" :value="item.CD_VAL" v-for="item in selData.workPlace"></el-option>
+                                            </el-select>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('对接HR')">
+                                            <el-input v-model="form.dockingHr" :placeholder="$lang('请输入对接HR')"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <el-form-item :label="$lang('ERP账号')" prop="erpAct">
+                                            <el-input v-model="form.erpAct"  :placeholder="$lang('请输入ERP账号')"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('ERP密码')"  prop="erpPwd">                                             
+                                             <span v-if="form.emplid">
+                                                 <p class="text-value" style="width: 100%;">
+                                                     <span class="erpPassword">********</span> 
+                                                     <span v-if="sendResetEmailStatus">
+                                                        <el-button style="float: right;" size="small" @click="resetPwdVisible=true" type="primary" disabled style="vertical-align: middle;">{{$lang('邮件已发送')}}</el-button>
+                                                    </span>
+                                                     <span v-else>
+                                                         <el-button style="float: right;" size="small" @click="resetPwdVisible=true" type="primary" style="vertical-align: middle;">{{$lang('重置密码')}}</el-button>
+                                                     </span>
+                                                 </p>
+                                             </span>
+                                             <span v-else>
+                                                 <el-input  v-model="form.erpPwd" type="text" ></el-input>
+                                             </span>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('花名邮箱')" prop="scEmail">
+                                            <el-input v-model="form.scEmail" :placeholder="$lang('可输入多个邮箱（英文逗号分割）')"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                             <!--    <tr>
+                                    <td style="border-right:1px solid #CADEE7" class="text-center" v-if="cropStatus">
+                                        <el-button type="primary" size="small" @click="crop()"><i class="fa fa-check"></i></el-button>
+                                        <el-button size="small"><i class="fa fa-refresh" @click="reset()"></i></el-button>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('职级')" style="padding-left: 10px;">
+                                            <el-select filterable :placeholder="$lang('职级')" v-model="form.rank" clearable>
+                                                <el-option :key="item.CD_VAL" :label="item.CD_VAL" :value="item.CD_VAL" v-for="item in selData.rank"></el-option>
+                                            </el-select>
+                                        </el-form-item>
+                                    </td>
+                                    
+                                    <td v-if="form.status=='离职'">
+                                        <el-form-item :label="$lang('离职时间')">
+                                            <el-date-picker v-model="form.depJobDate" type="date" :placeholder="$lang('选择日期')" :disabled="form.status !== '离职'" @change="countComAge()"></el-date-picker>
+                                        </el-form-item>
+                                    </td>
+                                    <td v-else></td>
+                                    <td v-if="form.status=='离职'">
+                                        <el-form-item :label="$lang('离职编号')">
+                                            <el-input type="number" v-model="form.depJobNum" :placeholder="$lang('请输入数字')"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td v-else></td>
+                                </tr> -->
+                            </tbody>
+                        </table>
+                    </el-form>
+                </el-col>
+            </el-row>
+        </div>
+        <!--所属部门-->
+        <div class="department" v-if="(menu.personInfo && control.admin && edit.show) || (menu.personInfo && control.admin && !control.id)">
+            <div class="title">
+                <el-row>
+                    <el-col :span="12"><span class="required">{{$lang('所属部门')}}</span></el-col>
+                    <el-col :span="12" class="text-right"><i style="cursor: pointer;" class="el-icon-plus" @click="addDepart"></i></el-col>
+                </el-row>
+            </div>
+            <table border="0" cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th width="300">{{$lang('部门')}}</th>
+                        <th>{{$lang('从属部门')}}</th>
+                        <th>{{$lang('部门领导')}}</th>
+                        <th>{{$lang('部门类型')}}</th>
+                        <th>{{$lang('直属领导')}}</th>
+                        <th width="160">{{$lang('部门占比')}}</th>
+                        <th width="80">{{$lang('删除')}}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(item,key) in form.department">
+                        <td>
+                            <el-select v-model="item.ID1" filterable clearable :placeholder="$lang('请选择部门')" style="width:100%" @change="pickDep(item)">
+                                <el-option v-for="(item,key) in departmentlist" :key="key" :label="item.DEPT_NM" :value="key"> </el-option>
+                            </el-select>
+                        </td>
+                        <td>{{item.PAR_DEPT_NM}}</td>
+                        <td>{{item.leader_dept}}</td>
+                        <td>{{item.TYPE_NM}}</td>
+                        <td>{{item.leader_direct}}</td>
+                        <td>
+                            <el-input v-model="item.PERCENT" :placeholder="$lang('请输入内容')" ></el-input>
+                        </td>
+                        <td><i v-if="key" style="cursor: pointer;" class="el-icon-minus" @click="minDepart(key)"></i></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <!--个人信息模块-->
+        <div v-if="(menu.personInfo && control.admin && edit.show) || (control.staff && edit.show) || (menu.personInfo && control.admin && !control.id)">
+            <div class="use-row">
+                <div class="col-100">
+                        <div class="head-title">{{$lang('员工个人信息')}}</div>
+                    <el-form :label-position="labelPosition" label-width="95px" :model="form" :rules="control.staff && !control.admin ? rulesPer :null" ref="form" prop="">
+                        <table class="per-table">
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <el-form-item :label="$lang('真名')" prop="empNm">
+                                            <el-input v-model="form.empNm"></el-input>
+                                        </el-form-item> {{form.name}}</td>
+                                    <td>
+                                        <el-form-item :label="$lang('联系方式')" prop="prePhone">
+                                            <el-input v-model="form.prePhone"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('分机号')">
+                                            <el-input v-model="form.offTel"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('职位类别')">
+                                            <el-select :filterable="true" :placeholder="$lang('职位类别')" v-model="form.jobTypeCd" clearable>
+                                                <el-option :key="item.CD_VAL" :label="item.CD_VAL" :value="item.CD_VAL" v-for="item in selData.jobCdType"></el-option>
+                                            </el-select>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="1">
+                                        <el-form-item :label="$lang('身份证号码')" prop="perCartId">
+                                            <el-input v-model="form.perCartId" :placeholder="$lang('请输入18位身份证号码')" @blur="readCardId()"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('性别')" prop="sex">
+                                            <el-radio-group v-model="form.sex">
+                                                <el-radio label="0">{{$lang('男')}}</el-radio>
+                                                <el-radio label="1">{{$lang('女')}}</el-radio>
+                                            </el-radio-group>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('是否吸烟')" prop="perIsSmoking">
+                                            <el-radio-group v-model="form.perIsSmoking">
+                                                <el-radio label="1">{{$lang('是')}}</el-radio>
+                                                <el-radio label="0">{{$lang('否')}}</el-radio>
+                                            </el-radio-group>
+                                        </el-form-item>
+                                    </td>
+                                    <td v-if="form.status=='离职'">
+                                        <el-form-item :label="$lang('档案是否归档')" prop="is_filed">
+                                            <el-radio-group v-model="form.is_filed" :disabled="form.status !== '离职'">
+                                                <el-radio label="1">{{$lang('是')}}</el-radio>
+                                                <el-radio label="2">{{$lang('否')}}</el-radio>
+                                            </el-radio-group>
+                                        </el-form-item>
+                                    </td>
+                                    <td v-else></td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <el-form-item :label="$lang('出生日期')" prop="perBirthDate">
+                                            <el-date-picker v-model="form.perBirthDate" :placeholder="$lang('选择日期')"></el-date-picker>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('年龄')" prop="age">
+                                            <el-input type="number" :placeholder="$lang('请输入数字')" v-model="form.age"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('籍贯')" prop="perAddress">
+                                            <el-input v-model="form.perAddress"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('户籍')" prop="perResident">
+                                            <el-input v-model="form.perResident"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <el-form-item :label="$lang('婚姻状态')" prop="perIsMarried">
+                                            <el-select :filterable="true" :placeholder="$lang('婚姻状态')" v-model="form.perIsMarried" clearable>
+                                                <el-option :key="item.CD_VAL" :label="item.CD_VAL" :value="item.CD_VAL" v-for="item in selData.married"></el-option>
+                                            </el-select>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('子女数')" prop="childNum">
+                                            <el-input v-model="form.childNum"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('孩子性别')" prop="childNum">
+                                            <el-input style="width:50px" v-model="form.childBoyNum"></el-input>
+                                            <label class="el-form-item__label inner-cus-label">{{$lang('男')}}</label>
+                                            <el-input style="width:50px" v-model="form.childGirlNum"></el-input>
+                                            <label class="el-form-item__label inner-cus-label">{{$lang('女')}}</label>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('政治面貌')" prop="perPolitical">
+                                            <el-select :filterable="true" :placeholder="$lang('政治面貌')" v-model="form.perPolitical" clearable>
+                                                <el-option :key="item.CD_VAL" :label="item.CD_VAL" :value="item.CD_VAL" v-for="item in selData.pot"></el-option>
+                                            </el-select>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2">
+                                        <el-form-item :label="$lang('户口性质')" prop="hosehold">
+                                            <el-radio-group v-model="form.hosehold">
+                                                <el-radio label="0">{{$lang('城镇户籍')}}</el-radio>
+                                                <el-radio label="1">{{$lang('农业户籍')}}</el-radio>
+                                                <el-radio label="2">{{$lang('其他')}}</el-radio>
+                                            </el-radio-group>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('民族')" prop="perNational" clearable>
+                                            <el-select :filterable="true" :placeholder="$lang('请选择')" v-model="form.perNational">
+                                                <el-option :key="item.CD_VAL" :label="item.CD_VAL" :value="item.CD_VAL" v-for="item in selData.peoples"></el-option>
+                                            </el-select>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('公积金账号')" prop="fundAccount">
+                                            <el-input v-model="form.fundAccount"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2">
+                                        <el-form-item :label="$lang('私人邮箱')" :class="{ 'is-required': this.control.staff }" prop="email">
+                                            <el-input v-model="form.email"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('微信')" :class="{ 'is-required': this.control.staff }" prop="weChat">
+                                            <el-input v-model="form.weChat"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('QQ')" prop="qqAccount">
+                                            <el-input v-model="form.qqAccount"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2" class="select-input-group">
+                                        <el-form-item :label="$lang('户籍地址')" prop="houAdderss">
+                                            <!-- <el-select :filterable="true" :placeholder="$lang('省')" v-model="form.houAdderss.proh" @change="getAdd(form.houAdderss.proh,'houCityData')">
+                                         <el-option :key="item.areaNo" :label="item.zhName" :value="item.areaNo" v-for="item in address.houProvinceData"></el-option>
+                                     </el-select>
+                                     <el-select  :filterable="true" :placeholder="$lang('市、县')" v-model="form.houAdderss.cityH" @change="getAdd(form.houAdderss.cityH,'houAreaData')">
+                                         <el-option :key="item.areaNo" :label="item.zhName" :value="item.areaNo" v-for="item in address.houCityData"></el-option>
+                                     </el-select>
+                                     <el-select :filterable="true" :placeholder="$lang('区')" v-model="form.houAdderss.areaH">
+                                         <el-option :key="item.areaNo" :label="item.zhName" :value="item.areaNo" v-for="item in address.houAreaData"></el-option>
+                                     </el-select>-->
+                                            <el-input v-model="form.houAdderss.detailH"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td colspan="2" class="select-input-group required">
+                                        <el-form-item :label="$lang('现居住地址')" prop="livingAddress">
+                                            <!--   <el-select  :filterable="true" :placeholder="$lang('省')" v-model="form.livingAddress.provL" @change="getAdd(form.livingAddress.provL,'livingCityData')">
+                                           <el-option :key="item.areaNo" :label="item.zhName" :value="item.areaNo" v-for="item in address.livingProvinceData"></el-option>
+                                       </el-select>
+                                       <el-select :filterable="true" :placeholder="$lang('市、县')" v-model="form.livingAddress.cityL" @change="getAdd(form.livingAddress.cityL,'livingAreaData')">
+                                           <el-option :key="item.areaNo" :label="item.zhName" :value="item.areaNo" v-for="item in address.livingCityData"></el-option>
+                                       </el-select>
+                                       <el-select :filterable="true" :placeholder="$lang('区')" v-model="form.livingAddress.areaL">
+                                           <el-option :key="item.areaNo" :label="item.zhName" :value="item.areaNo" v-for="item in address.livingAreaData"></el-option>
+                                       </el-select>-->
+                                            <el-input v-model="form.livingAddress.detailL"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2">
+                                        <el-form-item :label="$lang('语言能力')">
+                                            <el-select :placeholder="$lang('第一外语')" style="width: 40%; margin-right: 10%;" v-model="form.firstLan">
+                                                <el-option :key="item.CD_VAL" :label="item.CD_VAL" :value="item.CD_VAL" v-for="item in selData.langa"></el-option>
+                                            </el-select>
+                                            <el-radio-group v-model="form.firstLanLevel">
+                                                <el-radio label="0">{{$lang('精通')}}</el-radio>
+                                                <el-radio label="1">{{$lang('熟练')}}</el-radio>
+                                                <el-radio label="2">{{$lang('一般')}}</el-radio>
+                                            </el-radio-group>
+                                        </el-form-item>
+                                    </td>
+                                    <td colspan="2">
+                                        <el-form-item label="">
+                                            <el-select :placeholder="$lang('第二外语')" style="width: 40%; margin-right: 10%;" v-model="form.secondLan">
+                                                <el-option :key="item.CD_VAL" :label="item.CD_VAL" :value="item.CD_VAL" v-for="item in selData.langa"></el-option>
+                                            </el-select>
+                                            <el-radio-group v-model="form.secondLanLevel">
+                                                <el-radio label="0">{{$lang('精通')}}</el-radio>
+                                                <el-radio label="1">{{$lang('熟练')}}</el-radio>
+                                                <el-radio label="2">{{$lang('一般')}}</el-radio>
+                                            </el-radio-group>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="4">
+                                        <el-form-item :label="$lang('爱好及特长')" prop="hobbySpa">
+                                            <el-input v-model="form.hobbySpa"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2">
+                                        <div class="use-row">
+                                            <el-upload style="display: inline-block;" class="upload-demo" action="/index.php?m=Api&a=hrUpload" name="perCardPic" :on-success="uploadFileFun" ref="perCardPic">
+                                                <el-button size="small"><span v-if="this.control.staff" style="vertical-align: middle;;color: #ff4949; margin-right: 4px;font-size: 12px;">*</span>{{$lang('上传身份证正反面')}} </el-button>
+                                                <span slot="tip" class="el-upload__tip" v-if="!form.perCardPic">&nbsp;&nbsp;&nbsp;&nbsp;({{$lang('文件支持')}}PDF，JPG，PNG，word，PDF)&nbsp;&nbsp;</span>
+                                                <span slot="tip" class="el-upload__tip" v-if="form.perCardPic">&nbsp;&nbsp;&nbsp;&nbsp;( {{$lang('已上传')}} )&nbsp;&nbsp;</span>
+                                            </el-upload>
+                                            <div>
+                                                <el-button style="padding: 0" type="text" @click="preview('perCardPic')" v-if="url.perCardPic">{{$lang('查看')}}</el-button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td colspan="2">
+                                        <div class="use-row">
+                                            <el-upload style="display: inline-block;" class="upload-demo" action="/index.php?m=Api&a=hrUpload" name="resume" :on-success="uploadFileFun" ref="resume">
+                                                <el-button size="small"><span v-if="this.control.staff" style="vertical-align: middle;;color: #ff4949; margin-right: 4px;font-size: 12px;">*</span>{{$lang('上传简历')}} </el-button>
+                                                <span slot="tip" class="el-upload__tip" v-if="!form.resume">&nbsp;&nbsp;&nbsp;&nbsp;({{$lang('文件支持')}}PDF，word)&nbsp;&nbsp;</span>
+                                                <span slot="tip" class="el-upload__tip" v-if="form.resume">&nbsp;&nbsp;&nbsp;&nbsp;( {{$lang('已上传')}} )&nbsp;&nbsp;</span>
+                                            </el-upload>
+                                            <div>
+                                                <el-button style="padding: 0" type="text" @click="preview('resume')" v-if="url.resume">{{$lang('查看')}}</el-button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </el-form>
+                </div>
+            </div>
+            <!--紧急联系人-->
+            <div class="use-row">
+                <div class="col-100">
+                    <el-form :label-position="labelPosition" label-width="95px" :model="form" :rules="control.staff && !control.admin ? rulesPer :null" ref="form">
+                        <table class="contact-person">
+                            <caption>{{$lang('紧急联系人')}}</caption>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <el-form-item :label="$lang('与本人关系')" prop="concatRel">
+                                            <el-input v-model="form.concatRel"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('姓名')" prop="concatName">
+                                            <el-input v-model="form.concatName"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('联系方式')" prop="concatWay">
+                                            <el-input v-model="form.concatWay"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </el-form>
+                </div>
+            </div>
+            <!--教育经历-->
+            <div class="use-row">
+                <div class="col-100">
+                    <el-form :label-position="labelPosition" :model="form" :rules="rules" ref="form">
+                        <table class="experience">
+                            <caption>
+                                <div class="use-row">
+                                    <div class="col-50">{{$lang('教育经历')}}</div>
+                                    <div class="col-50 text-right">
+                                        <el-button type="text" @click="addEntry('eduExp')"><i class="el-icon-plus" style="color: white;"></i>&nbsp;</el-button>
+                                    </div>
+                                </div>
+                            </caption>
+                            <thead>
+                                <tr>
+                                    <th><span v-if="this.control.staff" style="color: #ff4949; margin-right: 4px;font-size: 12px;">*</span>{{$lang('开始时间')}}</th>
+                                    <th><span v-if="this.control.staff " style="color: #ff4949; margin-right: 4px;font-size: 12px;">*</span>{{$lang('结束时间')}}</th>
+                                    <th><span v-if="this.control.staff " style="color: #ff4949; margin-right: 4px;font-size: 12px;">*</span>{{$lang('学校名称')}}</th>
+                                    <th><span v-if="this.control.staff " style="color: #ff4949; margin-right: 4px;font-size: 12px;">*</span>{{$lang('专业')}}</th>
+                                    <th><span v-if="this.control.staff " style="color: #ff4949; margin-right: 4px;font-size: 12px;">*</span>{{$lang('学历性质')}}</th>
+                                    <th><span v-if="this.control.staff " style="color: #ff4949; margin-right: 4px;font-size: 12px;">*</span>{{$lang('学历验证结果')}}</th>
+                                    <th><span v-if="this.control.staff " style="color: #ff4949; margin-right: 4px;font-size: 12px;">*</span>{{$lang('是否学位')}}</th>
+                                    <th><span v-if="this.control.staff " style="color: #ff4949; margin-right: 4px;font-size: 12px;">*</span>{{$lang('毕业证书编号')}}</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(item,key) in form.eduExp">
+                                    <td>
+                                        <el-form-item>
+                                            <el-date-picker v-model="item.eduStartTime" type="date" :placeholder="$lang('选择日期')"></el-date-picker>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <el-date-picker v-model="item.eduEndTime" type="date" :placeholder="$lang('选择日期')"></el-date-picker>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <el-input v-model="item.schoolName"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <el-input v-model="item.eduMajors"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <el-input v-model="item.eduDegNat"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <el-form-item>
+                                                <el-select :placeholder="$lang('请选择')" v-model="item.validateRes" clearable filterable>
+                                                    <el-option :key="item.CD_VAL" :label="item.CD_VAL" :value="item.CD_VAL" v-for="item in selData.validateRes"></el-option>
+                                                </el-select>
+                                            </el-form-item>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <el-radio-group v-model="item.isDegree">
+                                                <el-radio label="1">{{$lang('是')}}</el-radio>
+                                                <el-radio label="0">{{$lang('否')}}</el-radio>
+                                            </el-radio-group>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item prop="certiNo">
+                                            <el-input v-model="item.certiNo"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td class="text-right">
+                                        <el-button type="text" @click="delEntry('eduExp',item)" v-if="key != 0"><i class="el-icon-minus"></i></el-button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3">
+                                        <div class="use-row">
+                                            <div>
+                                                <el-upload style="display: inline-block;" class="upload-demo" action="/index.php?m=Api&a=hrUpload" name="graCert" :on-success="uploadFileFun" ref="graCert">
+                                                    <el-button size="small">{{$lang('最高学历毕业证书附件')}}</el-button>
+                                                    <span slot="tip" class="el-upload__tip" v-if="!form.graCert">({{$lang('文件支持')}}PDF，JPG，PNG)&nbsp;&nbsp;</span>
+                                                    <span slot="tip" class="el-upload__tip" v-if="form.graCert">( {{$lang('已上传')}} )&nbsp;&nbsp;</span>
+                                                </el-upload>
+                                            </div>
+                                            <div>
+                                                <el-button style="padding: 0" type="text" @click="preview('graCert')" v-if="url.graCert">{{$lang('查看')}}</el-button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td colspan="2">
+                                        <div class="use-row">
+                                            <el-upload style="display: inline-block;" class="upload-demo" action="/index.php?m=Api&a=hrUpload" name="degCert" :on-success="uploadFileFun" ref="degCert">
+                                                <el-button size="small">{{$lang('最高学历学位证书附件')}}</el-button>
+                                                <span slot="tip" class="el-upload__tip" v-if="!form.degCert">({{$lang('文件支持')}}PDF，JPG，PNG)</span>
+                                                <span slot="tip" class="el-upload__tip" v-if="form.degCert">( {{$lang('已上传')}} )</span>
+                                            </el-upload>
+                                            <div>
+                                                <el-button style="padding: 0" type="text" @click="preview('degCert')" v-if="url.degCert">{{$lang('查看')}}</el-button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td colspan="4">
+                                        <div class="use-row">
+                                            <el-upload style="display: inline-block;" class="upload-demo" action="/index.php?m=Api&a=hrUpload" name="learnProve" :on-success="uploadFileFun" ref="learnProve">
+                                                <el-button size="small">{{$lang('学信网验证附件')}}</el-button>
+                                                <span slot="tip" class="el-upload__tip" v-if="!form.learnProve">({{$lang('文件支持')}}PDF，word)</span>
+                                                <span slot="tip" class="el-upload__tip" v-if="form.learnProve">( {{$lang('已上传')}} )</span>
+                                            </el-upload>
+                                            <div>
+                                                <el-button style="padding: 0" type="text" @click="preview('learnProve')" v-if="url.learnProve">{{$lang('查看')}}</el-button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </el-form>
+                </div>
+            </div>
+            <!--工作经历-->
+            <div class="use-row">
+                <div class="col-100">
+                    <el-form :label-position="labelPosition" :model="form" :rules="rules" ref="form">
+                        <table class="info-multiple">
+                            <caption>
+                                <div class="use-row">
+                                    <div class="col-30">{{$lang('工作经历')}}</div>
+                                    <div class="col-70 text-right">
+                                        <span style="font-size: 14px;">{{$lang('本公司是否为第一家公司')}}</span>&nbsp;&nbsp;
+                                        <el-radio class="radio" v-model="form.isFirstCom" label="1" style="color: white">{{$lang('是')}}</el-radio>
+                                        <el-radio class="radio" v-model="form.isFirstCom" label="0" style="color: white">{{$lang('否')}}</el-radio>&nbsp;&nbsp;&nbsp;&nbsp;
+                                        <el-button v-if="form.isFirstCom != 1" type="text" @click="addEntry('workExp')"><i class="el-icon-plus" style="color: white;"></i>&nbsp;</el-button>
+                                    </div>
+                                </div>
+                            </caption>
+                            <thead>
+                                <tr>
+                                    <th>{{$lang('开始时间')}}</th>
+                                    <th>{{$lang('结束时间')}}</th>
+                                    <th>{{$lang('公司名称')}}</th>
+                                    <th>{{$lang('职位')}}</th>
+                                    <th>{{$lang('离职原因')}}</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(item,key) in form.workExp">
+                                    <td>
+                                        <el-form-item>
+                                            <el-date-picker v-model="item.wordStartTime" :disabled="form.isFirstCom == 1" type="date" :placeholder="$lang('选择日期')"></el-date-picker>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <el-date-picker v-model="item.wordEndTime" :disabled="form.isFirstCom == 1" type="date" :placeholder="$lang('选择日期')"></el-date-picker>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <el-input v-model="item.companyName" :disabled="form.isFirstCom == 1"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <el-input v-model="item.posi" :disabled="form.isFirstCom == 1"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <el-input v-model="item.depReason" :disabled="form.isFirstCom == 1"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td class="text-right">
+                                        <el-button type="text" @click="delEntry('workExp',item)" v-if="key != 0"><i class="el-icon-minus"></i></el-button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </el-form>
+                </div>
+            </div>
+            <!--银行卡信息-->
+            <div class="use-row">
+                <div class="col-100">
+                    <el-form :label-position="labelPosition" :model="form" :rules="rules" ref="form">
+                        <table class="info-multiple">
+                            <caption>
+                                <div class="use-row">
+                                    <div class="col-50">{{$lang('银行卡信息')}}</div>
+                                    <div class="col-50 text-right">
+                                        <el-button type="text" @click="addEntry('bankCard')"><i class="el-icon-plus" style="color: white;"></i>&nbsp;</el-button>
+                                    </div>
+                                </div>
+                            </caption>
+                            <thead>
+                                <tr>
+                                    <th><span v-if="this.control.staff " style="color: #ff4949; margin-right: 4px;font-size: 12px;"></span>{{$lang('账号')}}</th>
+                                    <th><span v-if="this.control.staff " style="color: #ff4949; margin-right: 4px;font-size: 12px;"></span>{{$lang('中文名拼音')}}</th>
+                                    <th><span v-if="this.control.staff " style="color: #ff4949; margin-right: 4px;font-size: 12px;"></span>{{$lang('SWIFT')}} CODE</th>
+                                    <th><span v-if="this.control.staff " style="color: #ff4949; margin-right: 4px;font-size: 12px;"></span>{{$lang('开户行')}}</th>
+                                    <th><span v-if="this.control.staff " style="color: #ff4949; margin-right: 4px;font-size: 12px;"></span>{{$lang('开户行（英文）')}}</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(item,key) in form.bankCard">
+                                    <td>
+                                        <el-form-item>
+                                            <el-input v-model="item.bankAct"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <el-input v-model="item.bankName"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <el-input v-model="item.swiftCood"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <el-input v-model="item.bankDeposit"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <el-input v-model="item.BankEndeposit"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td class="text-right">
+                                        <el-button type="text" @click="delEntry('bankCard',item)" v-if="key != 0"><i class="el-icon-minus"></i></el-button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </el-form>
+                </div>
+            </div>
+            <!--家庭情况-->
+            <div class="use-row">
+                <div class="col-100">
+                    <el-form :label-position="labelPosition" :model="form" :rules="rules" ref="form">
+                        <table class="info-multiple">
+                            <caption>
+                                <div class="use-row">
+                                    <div class="col-50">{{$lang('家庭情况')}}</div>
+                                    <div class="col-50 text-right">
+                                        <el-button type="text" @click="addEntry('home')"><i class="el-icon-plus" style="color: white;"></i>&nbsp;</el-button>
+                                    </div>
+                                </div>
+                            </caption>
+                            <thead>
+                                <tr>
+                                    <th><span v-if="this.control.staff " style="color: #ff4949; margin-right: 4px;font-size: 12px;"></span>{{$lang('与本人关系')}}</th>
+                                    <th><span v-if="this.control.staff " style="color: #ff4949; margin-right: 4px;font-size: 12px;"></span>{{$lang('姓名')}}</th>
+                                    <th><span v-if="this.control.staff " style="color: #ff4949; margin-right: 4px;font-size: 12px;"></span>{{$lang('年龄')}}</th>
+                                    <th><span v-if="this.control.staff " style="color: #ff4949; margin-right: 4px;font-size: 12px;"></span>{{$lang('职业')}}</th>
+                                    <th><span v-if="this.control.staff " style="color: #ff4949; margin-right: 4px;font-size: 12px;"></span>{{$lang('工作单位')}}</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(item,key) in form.home">
+                                    <td>
+                                        <el-form-item>
+                                            <el-input v-model="item.homeRes"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <el-input v-model="item.homeName"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <el-input v-model="item.homeAge"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <el-input v-model="item.occupa"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <el-input v-model="item.workUnits"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td class="text-right">
+                                        <el-button type="text" @click="delEntry('home',item)" v-if="key != 0"><i class="el-icon-minus"></i></el-button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </el-form>
+                </div>
+            </div>
+            <!--培训经验-->
+            <div class="use-row">
+                <div class="col-100">
+                    <el-form :label-position="labelPosition" :model="form" :rules="rules" ref="form">
+                        <table class="info-multiple">
+                            <caption>
+                                <div class="use-row">
+                                    <div class="col-50">{{$lang('培训经验')}}</div>
+                                    <div class="col-50 text-right">
+                                        <el-button type="text" @click="addEntry('training')"><i class="el-icon-plus" style="color: white;"></i>&nbsp;</el-button>
+                                    </div>
+                                </div>
+                            </caption>
+                            <thead>
+                                <tr>
+                                    <th>{{$lang('培训名称')}}</th>
+                                    <th>{{$lang('开始时间')}}</th>
+                                    <th>{{$lang('结束时间')}}</th>
+                                    <th>{{$lang('培训机构')}}</th>
+                                    <th>{{$lang('培训描述')}}</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(item,key) in form.training">
+                                    <td>
+                                        <el-form-item>
+                                            <el-input v-model="item.trainingName"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <el-date-picker v-model="item.trainingStartTime" type="date" :placeholder="$lang('选择日期')"></el-date-picker>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <el-date-picker v-model="item.trainingEndTime" type="date" :placeholder="$lang('选择日期')"></el-date-picker>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <el-input v-model="item.trainingIns"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <el-input v-model="item.trainingDes"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td class="text-right">
+                                        <el-button type="text" @click="delEntry('training',item)" v-if="key != 0"><i class="el-icon-minus"></i></el-button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </el-form>
+                </div>
+            </div>
+            <!--资格证书-->
+            <div class="use-row">
+                <div class="col-100">
+                    <el-form :label-position="labelPosition" :model="form" :rules="rules" ref="form">
+                        <table class="info-multiple">
+                            <caption>
+                                <div class="use-row">
+                                    <div class="col-50">{{$lang('资格证书')}}</div>
+                                    <div class="col-50 text-right">
+                                        <el-button type="text" @click="addEntry('certificate')"><i class="el-icon-plus" style="color: white;"></i>&nbsp;</el-button>
+                                    </div>
+                                </div>
+                            </caption>
+                            <thead>
+                                <tr>
+                                    <th style="width:33%">{{$lang('名称')}}</th>
+                                    <th style="width:33%">{{$lang('颁发时间')}}</th>
+                                    <th style="width:33%">{{$lang('颁发单位')}}</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(item,key) in form.certificate">
+                                    <td>
+                                        <el-form-item>
+                                            <el-input v-model="item.certiName"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <el-date-picker v-model="item.certifiTime" type="date" :placeholder="$lang('选择日期')"></el-date-picker>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <el-input v-model="item.certifiunit"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td class="text-right">
+                                        <el-button type="text" @click="delEntry('certificate',item)" v-if="key != 0"><i class="el-icon-minus"></i></el-button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </el-form>
+                </div>
+            </div>
+        </div>
+        <!---------------------------------------------------华丽的分割线----------------------------------------------------------->
+        <!--跟踪信息模块-->
+        <div v-if="!menu.personInfo && !control.id　||  (!menu.personInfo && edit.show && control.id)">
+            <!--合同信息-->
+            <div class="use-row">
+                <div class="col-100">
+                    <el-form :label-position="labelPosition" label-width="115px" :model="form2">
+                        <table class="contact-person">
+                            <caption>
+                                <div class="use-row">
+                                    <div class="col-50">{{$lang('合同信息')}}</div>
+                                    <div class="col-50 text-right">
+                                        <el-button type="text" @click="addContract()"><i class="el-icon-plus" style="color: white;"></i></el-button>
+                                    </div>
+                                </div>
+                            </caption>
+                            <tbody>
+                                <tr v-for="(item,key) in form2.contract">
+                                    <td>
+                                        <el-form-item :label="$lang('公司')">
+                                            <el-select :filterable="true" :placeholder="$lang('请选择')" v-model="item.conCompany">
+                                                <el-option :key="item.CD_VAL" :label="item.CD_VAL" :value="item.CD_VAL" v-for="item in selData.companyInfo"></el-option>
+                                            </el-select>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('用工性质')">
+                                            <el-select :filterable="true" :placeholder="$lang('请选择')" v-model="item.natEmploy">
+                                                <el-option :key="item.CD_VAL" :label="item.CD_VAL" :value="item.CD_VAL" v-for="item in selData.employNat"></el-option>
+                                            </el-select>
+                                        </el-form-item>
+                                    </td>
+                                    <td style="width: 300px;padding-right: 5px;">
+                                        <el-form-item :label="$lang('试用期结束日期')">
+                                            <el-date-picker :disabled="item.isdisabled" v-model="item.trialEndTime" :placeholder="$lang('选择日期')"></el-date-picker>
+                                        </el-form-item>
+                                    </td>
+                                    <td style="padding-left: 0px;padding-top: 0px;">
+                                        <el-checkbox  v-model="item.isdisabled" @change="chooseNo(item.isdisabled,key)">无</el-checkbox>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('合同开始日期')">
+                                            <el-date-picker v-model="item.conStartTime" :placeholder="$lang('选择日期')"></el-date-picker>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('合同结束日期')">
+                                            <el-date-picker v-model="item.conEndTime" :placeholder="$lang('选择日期')"></el-date-picker>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item :label="$lang('合同状态')">
+                                            <el-select :filterable="true" :placeholder="$lang('请选择')" v-model="item.conStatus">
+                                                <el-option :key="item.CD_VAL" :label="item.CD_VAL" :value="item.CD_VAL" v-for="item in selData.contractStatus"></el-option>
+                                            </el-select>
+
+                                         </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-button type="text" @click="delContract(item)" v-if="key != 0"><i class="el-icon-minus"></i></el-button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </el-form>
+                </div>
+            </div>
+            <!--工作内奖惩-->
+            <div class="use-row record">
+                <div class="col-10">
+                    <label>{{$lang('工作内奖惩')}}</label>
+                </div>
+                <div class="col-85">
+                    <div class="use-row" v-for="item in form2.reward">
+                        <div class="col-20">
+                            <el-select v-model="item.rewardName" :placeholder="$lang('请选择')">
+                                <el-option :key="item.CD_VAL" :label="item.CD_VAL" :value="item.CD_VAL" v-for="item in selData.ThingName"></el-option>
+                            </el-select>
+                        </div>
+                        <div class="col-80">
+                            <el-input type="textarea" :rows='2' v-model="item.rewardContent" :placeholder="$lang('请输入内容')"></el-input>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-5 text-right">
+                    <el-button type="text" @click="addReward()"><i class="el-icon-plus"></i></el-button>
+                </div>
+            </div>
+            <!--晋升记录-->
+            <div class="use-row record">
+                <div class="col-10">
+                    <label>{{$lang('晋升记录')}}</label>
+                </div>
+                <div class="col-85">
+                    <div class="use-row" v-for="item in form2.promo">
+                        <div class="col-20">
+                            <el-select v-model="item.promoType" :placeholder="$lang('请选择')">
+                                <el-option :key="item.CD_VAL" :label="item.CD_VAL" :value="item.CD_VAL" v-for="item in selData.recordType"></el-option>
+                            </el-select>
+                        </div>
+                        <div class="col-20">
+                            <el-date-picker v-model="item.promoTime" :placeholder="$lang('选择日期')"></el-date-picker>
+                        </div>
+                        <div class="col-60">
+                            <el-input type="textarea" :rows='2' v-model="item.promoContent" :placeholder="$lang('请输入内容')"></el-input>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-5 text-right">
+                    <el-button type="text" @click="addPromo()"><i class="el-icon-plus"></i></el-button>
+                </div>
+            </div>
+            <!--日报缺失-->
+            <div class="use-row record">
+                <div class="col-10">
+                    <label>{{$lang('日报缺失')}}</label>
+                </div>
+                <div class="col-85">
+                    <div class="use-row" v-for="item in form2.paperMiss">
+                        <div class="col-20">
+                            <el-date-picker v-model="item.paperMissTime" :placeholder="$lang('请选择日期')"></el-date-picker>
+                            </el-form-item>
+                        </div>
+                        <div class="col-80">
+                            <el-input type="textarea" :rows='2' v-model="item.paperMissCon" :placeholder="$lang('请输入内容')"></el-input>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-5 text-right">
+                    <el-button type="text" @click="addPaperMiss()"><i class="el-icon-plus"></i></el-button>
+                </div>
+            </div>
+            <!--员工交流-->
+            <div class="use-row">
+                <div class="col-100">
+                    <el-form :label-position="labelPosition" :model="form2">
+                        <table class="inter">
+                            <caption>
+                                <div class="use-row">
+                                    <div class="col-50">{{$lang('员工交流')}}</div>
+                                    <div class="col-50 text-right">
+                                        <el-button type="text" @click="addChat()"><i class="el-icon-plus" style="color: white;"></i></el-button>
+                                    </div>
+                                </div>
+                            </caption>
+                            <tbody>
+                                <tr>
+                                    <th>{{$lang('类型')}}</th>
+                                    <th>{{$lang('时间')}}</th>
+                                    <th>{{$lang('面谈地点')}}</th>
+                                    <th>{{$lang('谈话人')}}</th>
+                                    <th>{{$lang('具体内容')}}</th>
+                                    <th>{{$lang('备注')}}</th>
+                                </tr>
+                            </tbody>
+                            <tbody>
+                                <tr v-for="item in form2.interArr">
+                                    <td>
+                                        <el-form-item>
+                                            <el-select v-model="item.interType" :placeholder="$lang('请选择')">
+                                                <el-option :key="item.CD_VAL" :label="item.CD_VAL" :value="item.CD_VAL" v-for="item in selData.sayType"></el-option>
+                                            </el-select>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <el-date-picker v-model="item.interTime" type="datetime" :placeholder="$lang('选择日期')"></el-date-picker>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <el-input v-model="item.interObj" placeholder="请输入面谈地点"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <el-input v-model="item.interPerson" placeholder="请输入谈话人"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td style="width: 40%;">
+                                        <el-form-item>
+                                            <el-input type="textarea" :rows='2' v-model="item.interContent" placeholder="请输入具体内容"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td>
+                                        <el-form-item>
+                                            <el-input v-model="item.afterCase" placeholder="请输入备注"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                                <tr></tr>
+                            </tbody>
+                        </table>
+                    </el-form>
+                </div>
+            </div>
+            <div class="use-row">
+                <div class="col-100">
+                    <el-form :label-position="labelPosition" :model="form2">
+                        <table class="inter">
+                            <caption>
+                                <div class="use-row">
+                                    <div class="col-50">{{$lang('HR记录')}}</div>
+                                    <div class="col-50 text-right">
+                                        <el-button type="text" @click="addrecord()"><i class="el-icon-plus" style="color: white;"></i></el-button>
+                                    </div>
+                                </div>
+                            </caption>
+                            <tbody>
+                                <tr>
+                                    <th>{{$lang('内容')}}</th>
+                                    <th>{{$lang('操作时间')}}</th>
+                                </tr>
+                            </tbody>
+                            <tbody>
+                                <tr v-for="item in form2.hrRecord">
+                                    <td style="width: 80%;" class="col-20">
+                                        <el-form-item>
+                                            <el-input type="textarea" :rows='2' v-model="item.reContent" placeholder="请输入HR记录"></el-input>
+                                        </el-form-item>
+                                    </td>
+                                    <td class="col-80">
+                                        <el-form-item>
+                                            <el-date-picker v-model="item.reTime" placeholder="选择日期"></el-date-picker>
+                                        </el-form-item>
+                                    </td>
+                                </tr>
+                                <tr></tr>
+                            </tbody>
+                        </table>
+                    </el-form>
+                </div>
+            </div>
+        </div>
+
+    <!-- 修改密码弹框 -->
+        <el-dialog title="修改密码" :visible.sync="changePwdVisible" size="tiny" style="width: 95%;margin-left: 8%;">
+             <el-form :model="form">
+                <el-form-item :label="$lang('新密码')" label-width="5">
+                  <el-input v-model="pwdForm.erpPwd" type="password" style="width: 350px;padding-left: 14px;margin-bottom: 9px;" auto-complete="off"></el-input>
+                </el-form-item>
+                <el-form-item :label="$lang('再次输入')" label-width="10">
+                  <el-input v-model="pwdForm.confirmPwd" type="password" auto-complete="off" style="width: 350px;margin-bottom: 9px;"></el-input>
+                </el-form-item>
+            </el-form> 
+          <div slot="footer" class="dialog-footer">
+            <el-button @click="cancelChange()">{{$lang('取消')}}</el-button>
+            <el-button type="primary" @click="confirmChangePwd(form.erpAct,form.emplid)">{{$lang('确定')}}</el-button>
+          </div>
+        </el-dialog>
+
+        <!-- 重置密码弹框 -->
+        <el-dialog title="重置密码" :visible.sync="resetPwdVisible" size="tiny" style="width: 80%;margin-left: 8%;">
+             <p style="text-align: center;">{{$lang('密码会以邮件形式通知员工')}}<br>
+                {{$lang('是否重置')}}?</p> 
+          <div slot="footer" class="dialog-footer">
+            <el-button @click="cancelReset()">{{$lang('取消')}}</el-button>
+            <el-button type="primary" @click="resetPwd(form.erpAct,form.emplid,form.EmpScNm)">{{$lang('确定')}}</el-button>
+          </div>
+        </el-dialog> 
+
+        <!-- 店铺交接 -->
+        <el-dialog class="dialog_store" title="提示" :visible.sync="storeTransfer" >
+            <p v-if="no_handover_num != '0'">{{$lang('该员工还有')}}{{no_handover_num}}{{$lang('个店铺账号未交接，成功交接后才可以离职。')}}</p> 
+            <p v-if="no_handover_num == 0 && in_handover_num">{{$lang('该员工还有')}}{{in_handover_num}}{{$lang('个店铺账号正在交接中，请交接人确认完成店铺账号信息后再来将此员工设置为离职。')}}</p> 
+            <div v-if="no_handover_num != '0'">
+                <p>{{$lang('一键设置交接人：')}}</p>
+                <el-select style="width: 100%;" v-model="storeTransferPerson" clearable filterable style="width: 150px;">
+                    <el-option
+                        v-for="item in storeTransferPersonList"
+                        :key="item.M_ID"
+                        :label="item.M_NAME"
+                        :value="item.M_ID">
+                    </el-option>
+                </el-select>
+            </div>
+
+            <!-- <div v-show="!in_handover_num">
+                <p>交接暂未完成，还不可以离职哦，请等该员工交接完成后再来将此员工设置为离职</p>
+            </div> -->
+            <div slot="footer" class="dialog-footer">
+                <el-button type="primary" @click="storeTransferSubmit()">{{$lang('确认')}}</el-button>
+                <el-button @click="storeTransferCancel">{{$lang('取消')}}</el-button>
+            </div>
+        </el-dialog> 
+        <!-- 店铺未完成提示 -->
+        
+    </div>
+
+    
+    <!--引入js-->
+    <!-- 引入组件库 -->
+    <script type="text/javascript" src="../Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script src="../Public/js/H-ui.js"></script>
+    <script src="../Public/js/H-ui.admin.js?v=<{$Think.const.V}>"></script>
+    <script type="text/javascript" src="../Public/js/vue-2.4.2.js?v=<{$Think.const.V}>"></script>
+    <script type="text/javascript" src="../Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="../Public/js/element-ui.js?v=<{$Think.const.V}>"></script>
+    <script type="text/javascript" src="../Public/../Hr/addPerson.js?v=<{$Think.const.V}>"></script>
+    <script type="text/javascript" src="../Public/js/cropper/cropper.js?v=<{$Think.const.V}>"></script>
+    <script>
+    $(".editpos").mouseover(function() {
+        $(".editpos").css("opacity", 1);
+    })
+    $(".editpos").mouseout(function() {
+        $(".editpos").css("opacity", 0.3);
+    })
+    </script>
+</body>
+
+</html>

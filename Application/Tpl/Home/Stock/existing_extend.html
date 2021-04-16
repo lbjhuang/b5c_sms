@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>现存量查询</title>
+    <link rel="stylesheet" type="text/css" href="<{$HI_PATH}>css/H-ui.min.css" />
+    <link rel="stylesheet" type="text/css" href="<{$HI_PATH}>css/H-ui.admin.css" />
+    <link rel="stylesheet" type="text/css" href="<{$HI_PATH}>lib/Hui-iconfont/1.0.1/iconfont.css" />
+    <link rel="stylesheet" type="text/css" href="<{$HI_PATH}>lib/icheck/icheck.css" />
+    <link rel="stylesheet" type="text/css" href="<{$HI_PATH}>skin/default/skin.css"   />
+    <link rel="stylesheet" type="text/css" href="<{$HI_PATH}>css/style.css" />
+    <link rel="stylesheet" type="text/css" href="<{$HI_PATH}>css/vew.1.7.css"/>
+    <link rel="stylesheet" type="text/css" href="<{$HI_PATH}>lib/layer-v3.0.3/layer/skin/default/layer.css"/>
+    <link rel="stylesheet" href="../Public/icon/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../Public/utils/css/public.style.css">
+    <link rel="stylesheet" href="../Public/css/existing_extend.css?=20171025">
+    <link rel="stylesheet" href="../Public/css/element-ui.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="../Public/css/default.css?v=<{$Think.const.V}>">
+</head>
+<style>
+    .customer-width {
+        min-width: 364px;
+    }
+    .el-select,.el-date-editor--daterange.el-input{
+        width:calc(90% - 80px);
+    }
+    .el-select .el-input__inner,.el-date-editor--daterange .el-input__inner{
+        width:100%;
+    }
+    .toTop{
+        width: 42px;
+        height: 42px;
+    }
+    .use-row{
+        height:36px;
+    }
+    .use-row .col-30{
+        width:30%;
+    }
+
+    .preview-wrap{
+        position: relative;
+        display: inline-block;
+        width: 100%;
+    }
+    .preview-wrap img{
+        cursor: pointer;
+    }
+    .preview-wrap .big-img{
+        position: absolute;
+        bottom: 0px;
+        left: 50px;
+        box-shadow: 1px 2px 15px #606266;
+    }
+</style>
+<body>
+<div class="wrap" id="xcl-wrap" v-cloak>
+    <!--搜索项-->
+    <include file="search_model" />
+    <!--内容项-->
+    <div id="xcl-table" style="margin-top: 15px">
+        <table class="b2b-table">
+            <thead>
+            <tr class="use-head">
+                <th width="30"><{$Think.lang.序号}></th>
+                <th></th>
+                <th class="existing_extend_img_th"><{$Think.lang.商品图}></th>
+                <th><{$Think.lang.SKU编码}></th>
+                <th><{$Think.lang.自编码}></th>
+                <th><{$Think.lang.条形码}></th>
+                <th v-if="def_channel"><{$Think.lang.渠道}></th>
+                <th><{$Think.lang.商品名称}></th>
+                <th><{$Think.lang.属性}></th>
+                <th><{$Think.lang.在库库存}></th>
+                <th><{$Think.lang.可售}></th>
+                <th><{$Think.lang.占用}></th>
+                <th v-if="def_channel"><{$Think.lang.锁定}></th>
+                <th><{$Think.lang.锁定}></th>
+                <th><{$Think.lang.库存成本}></th>
+            </tr>
+            </thead>
+            <tbody class="use-body">
+            <template v-for="(d,index) in stream_arr">
+                <tr v-cloak class="td-wrap">
+                    <td>{{index+1}}</td>
+                    <td :sd="tmp">
+                        <span class="button-hide" @click="show_tr(d)" style="display: inline-block">
+                            <img :src="d.noshow ? base_msg_open : base_msg"  width="14" height="14">
+                        </span>
+                    </td>
+                    <td>
+                        <span class="preview-wrap">
+                            <img :src="d.GUDS_IMG_CDN_ADDR" width="40" height="40" @mouseover="previewImg(d,'showImg',true)" @mouseout="previewImg(d,'showImg',false)">
+                            <div v-if="d.showImg">
+                                <img  :src="d.GUDS_IMG_CDN_ADDR" width="300" height="300" class="big-img">
+                            </div>
+                        </span>
+                    </td>
+                    <td>{{d.SKU_ID}}</td>
+                    <td class="hide"><span v-if="d.channel in all_channel">{{d.channel}}</span></td>
+                    <td>{{d.GUDS_OPT_CODE}}</td>
+                    <td>{{$lang(d.GUDS_OPT_UPC_ID)}}</td>
+                    <td v-if="def_channel"><span v-if="d.channel in all_channel">{{all_channel[d.channel].CD_VAL}}</span></td>
+                    <td>{{d.GUDS_NM}}</td>
+                    <td><span v-if="d.GUDS_OPT_VAL_MPNG">{{d.GUDS_OPT_VAL_MPNG}}</span><span v-else></span></td>
+                    <td class="c-red"><span v-if="d.all_inventory > 0" >{{d.all_inventory}}</span><span v-else>0</span></td>
+                    <td><span v-if="d.all_sale">{{d.all_sale}}</span><span v-else>0</span></td>
+                    <td class="box-parent" :class="{ showbg:d.show_bg }" style="cursor: pointer; text-decoration: underline;" >
+                        <span @click="show_parent_occ(d)">{{d.all_occupied}}</span>
+                        <div class="xcl-box" v-show="d.is_show">
+                            <div class="xcl-box-main">
+                                <div class="search-row">
+                                    <div class="search-row-main">
+                                        <input type="text" v-model="search_order">
+                                        <i class="Hui-iconfont Hui-iconfont-search" @click="search"></i>
+                                    </div>
+                                    <button type="button" @click="reset"><{$Think.lang.重置}></button>
+                                    <i class="Hui-iconfont cancel" @click="close(d)">&#xe6a6;</i>
+                                </div>
+                                <p class="xcl-box-maintotal"><{$Think.lang.结果}>：共<i>{{out_display_total}}</i><{$Think.lang.条记录}></p>
+                                <div>
+                                    <table class="tabel table-bg">
+                                        <thead>
+                                        <tr>
+                                            <th ><{$Think.lang.序号}></th>
+                                            <th ><{$Think.lang.B5C订单}></th>
+                                            <th ><{$Think.lang.第三方订单}></th>
+                                            <th ><{$Think.lang.数量}></th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr v-for="(s,index) in show_table">
+                                            <td>{{index+1}}</td>
+                                            <td class="td-linknum">
+                                               <span>{{s.ORD_ID}}</span>
+                                            </td>
+                                            <td class="td-linknum">
+                                                <span>{{s.ORDER_ID}}</span>
+                                            </td>
+                                            <td>{{s.occupy_num}}</td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                    <div class=" padding10-0">
+                                        <ul class="pagination" v-html="ajax_page"></ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td :class="{ showbg:d.locking_show_bg }">
+                    <span style="cursor: pointer; text-decoration: underline;" @click="show_parent_locking(d)">{{d.all_locking}}</span>
+                    <div class="xcl-box" v-show="d.locking_is_show">
+                     <div class="xcl-box-main" style="width:800px;">
+                                <div class="search-row">
+                                    <div class="search-row-main">
+                                        <input type="text" v-model="locking_show_table.search">
+                                        <i class="Hui-iconfont Hui-iconfont-search" @click="search('locking')"></i>
+                                    </div>
+                                    <button type="button" @click="reset"><{$Think.lang.重置}></button>
+                                    <i class="Hui-iconfont cancel" @click="close(d,'locking')">&#xe6a6;</i>
+                                </div>
+                                <p class="xcl-box-maintotal"><{$Think.lang.结果}>：共<i>{{locking_show_table.count}}</i><{$Think.lang.条记录}></p>
+                                <div>
+                                    <table class="tabel table-bg">
+                                        <thead>
+                                        <tr>
+                                            <th ><{$Think.lang.序号}></th>
+                                            <th ><{$Think.lang.平台}></th>
+                                            <th ><{$Think.lang.店铺}></th>
+                                            <th ><{$Think.lang.订单编号}></th>
+                                            <th ><{$Think.lang.SKU编号}></th>
+                                            <th ><{$Think.lang.锁定仓库}></th>
+                                            <th ><{$Think.lang.锁定数量}></th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr v-for="(s,index) in locking_show_table.list">
+                                            <td>{{index+1}}</td>
+                                            <td class="td-linknum">
+                                               <span>{{s.channel}}</span>
+                                            </td>
+                                            <td class="td-linknum">
+                                                <span>{{s.storeName}}</span>
+                                            </td>
+                                            <td>{{s.orderId}}</td>
+                                            <td>{{s.skuId}}</td>
+                                            <td>{{s.warehouse}}</td>
+                                            <td>{{s.allTotalInventory}}</td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                    <div class=" padding10-0">
+                                        <ul class="pagination" v-html="locking_show_table.page"></ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>¥<span v-if="d.all_total">{{king(d.all_total, 2)}}</span><span v-else>0</span></td><!--库存成本-->
+                </tr>
+                <tr v-show="d.noshow">
+                    <td colspan="16" class="padding0">
+                        <div class="insert-wrap">
+                            <table class="table table-border table-bordered table-bg">
+                                <thead class="th-wrap">
+                                <tr class="text-c">
+                                    <th><{$Think.lang.批次号}></th>
+                                    <th><{$Think.lang.是否滞销}></th>
+                                    <th><{$Think.lang.仓库}></th>
+                                    <th><{$Think.lang.所属公司}></th>
+                                    <th><{$Think.lang.销售团队}></th>
+                                    <th><{$Think.lang.采购单号}></th>
+                                    <th><{$Think.lang.采购团队}></th>
+                                    <th><{$Think.lang.采购时间}></th>
+                                    <th><{$Think.lang.入库时间}></th>
+                                    <th><{$Think.lang.在库天数}></th>
+                                    <th><{$Think.lang.到期日}></th>
+                                    <th><{$Think.lang.在库库存}></th>
+                                    <th><{$Think.lang.可售}></th>
+                                    <th><{$Think.lang.占用}></th>
+                                    <th><{$Think.lang.锁定}></th>
+                                    <th><{$Think.lang.批次单价}></th>
+                                    <th><{$Think.lang.批次成本}></th>
+                                </tr>
+                                </thead>
+                                <tbody class="td-wrap">
+                                <tr class="text-c" v-for="(bd,index) in d.get_data" v-cloak class="td-wrap">
+                                    <td>{{bd.batch_code}}</td>
+                                    <td>{{bd.unmarketable}}</td><!--是否滞销-->
+                                    <td><span v-if="bd.warehouse_id in house_all_list">{{house_all_list[bd.warehouse_id].warehouse}}</span><span v-else>-</span></td>
+                                    <td>{{our_company[bd.our_company]}}</td>
+                                    <td><span v-if="bd.sale_team_code in sale_teams">{{sale_teams[bd.SALE_TEAM]}}</span></td>
+                                    <td>{{bd.purchase_order_no}}</td>
+                                    <td>{{sp_teams[bd.SP_TEAM_CD]}}</td>
+                                    <td>{{bd.procurement_date}}</td>
+                                    <td>{{bd.create_time}}</td>
+                                    <td>{{bd.existed_days}}</td>
+                                    <td>{{bd.deadline_date_for_use}}</td>
+                                    <td>{{bd.total_inventory}}</td>
+                                    <td>{{bd.available_for_sale_num}}</td>
+                                    <td class="box-parent" :class="{ showbg:bd.show_bg }"  style="cursor: pointer; text-decoration: underline;">
+                                        <span @click="show_data(bd)">{{bd.sizeAll}}</span>
+                                        <div v-show="bd.article" class="xcl-box">
+                                            <div class="xcl-box-main">
+                                                <div class="search-row">
+                                                    <div class="search-row-main">
+                                                        <input type="text" v-model="search_order" >
+                                                        <i class="Hui-iconfont Hui-iconfont-search" @click="search_batch"></i>
+                                                    </div>
+                                                    <button type="button" @click="reset"><{$Think.lang.重置}></button>
+                                                    <i class="Hui-iconfont  cancel" @click="close(bd);">&#xe6a6;</i>
+                                                </div>
+                                                <p class="xcl-box-maintotal"><{$Think.lang.结果}>：共<i>{{in_display_total}}</i> <{$Think.lang.条记录}></p>
+                                                <div>
+                                                    <table class="table table-bg">
+                                                        <thead>
+                                                        <tr>
+                                                            <th ><{$Think.lang.序号}></th>
+                                                            <th ><{$Think.lang.B5C订单}></th>
+                                                            <th ><{$Think.lang.第三方订单}></th>
+                                                            <th ><{$Think.lang.数量}></th>
+                                                        </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                        <tr v-for="(val, key) in show_batch_datas">
+                                                            <td>{{ key + 1 }}</td>
+                                                            <td class="td-linknum">
+                                                                <!--<a onclick="opennewtab(this,'B5C订单')" :_href="detail_show + val.ORD_ID" target="_blank" href="javascript:void(0);" > <span>{{ val.ORD_ID }}</span></a>-->
+                                                                <span>{{ val.ORD_ID }}</span>
+                                                            </td>
+                                                            <td class="td-linknum">
+                                                                <!--<a onclick="opennewtab(this,'第三方订单')" :_href="other_url + val.ORDER_ID" target="_blank" href="javascript:void(0);" > <span>{{ val.ORDER_ID }}</span></a>-->
+                                                               <span>{{ val.ORDER_ID }}</span>
+                                                            </td>
+                                                            <td>{{ val.occupy_num }}</td>
+                                                        </tr>
+                                                        </tbody>
+                                                    </table>
+                                                    <div class=" padding10-0">
+                                                        <ul class="pagination" v-html="ajax_page"></ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="box-parent"  style="cursor: pointer; text-decoration: underline;">
+                                        <span @click="show_data(bd,'locking')">{{bd.locksale}}</span>
+                                        <div v-show="bd.article_locking" class="xcl-box">
+                                        <div class="xcl-box-main" style="width:800px;" >
+                                            <div class="search-row">
+                                                <div class="search-row-main">
+                                                    <input type="text" v-model="locking_show_batch_datas.search">
+                                                    <i class="Hui-iconfont Hui-iconfont-search" @click="search('locking_child')"></i>
+                                                </div>
+                                                <button type="button" @click="reset"><{$Think.lang.重置}></button>
+                                                <i class="Hui-iconfont cancel" @click="close(bd,'locking_child')">&#xe6a6;</i>
+                                            </div>
+                                            <p class="xcl-box-maintotal"><{$Think.lang.结果}>：共<i>{{locking_show_batch_datas.count}}</i><{$Think.lang.条记录}></p>
+                                            <div>
+                                                <table class="tabel table-bg">
+                                                    <thead>
+                                                    <tr>
+                                                        <th ><{$Think.lang.序号}></th>
+                                                        <th ><{$Think.lang.平台}></th>
+                                                        <th ><{$Think.lang.店铺}></th>
+                                                        <th ><{$Think.lang.订单编号}></th>
+                                                        <th ><{$Think.lang.SKU编号}></th>
+                                                        <th ><{$Think.lang.锁定仓库}></th>
+                                                        <th ><{$Think.lang.锁定数量}></th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    <tr v-for="(s,index) in locking_show_batch_datas.list">
+                                                        <td>{{index+1}}</td>
+                                                        <td class="td-linknum">
+                                                           <span>{{s.channel}}</span>
+                                                        </td>
+                                                        <td class="td-linknum">
+                                                            <span>{{s.storeName}}</span>
+                                                        </td>
+                                                        <td>{{s.orderId}}</td>
+                                                        <td>{{s.skuId}}</td>
+                                                        <td>{{s.warehouse}}</td>
+                                                        <td>{{s.allTotalInventory}}</td>
+                                                    </tr>
+                                                    </tbody>
+                                                </table>
+                                                <div class=" padding10-0">
+                                                    <ul class="pagination" v-html="locking_show_batch_datas.page"></ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    </td>
+                                    <td>¥<span v-if="bd.unit_price">{{king(bd.unit_price, 2)}}</span><span v-else>0</span></td>
+                                    <td>¥<span v-if="bd.all_total">{{king(bd.all_total, 2)}}</span><span v-else>0</span></td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </td>
+                </tr>
+            </template>
+            </tbody>
+        </table>
+    </div>
+    <div class="use-row">
+        <div class="col-100 text-right">
+            <ul class="pagination" v-html="show_ajax_page"></ul>
+        </div>
+    </div>
+</div>
+<script src="<{$HI_PATH}>/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="<{$HI_PATH}>/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="<{$HI_PATH}>/js/stock/alert.js"></script>
+<script type="text/javascript" src="<{$HI_PATH}>/js/vue.js"></script>
+<script type="text/javascript" src="<{$HI_PATH}>/lib/layer-v3.0.3/layer/layer.js"></script>
+<script type="text/javascript" src="../Public/js/element-ui.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="../Public/utils/utils.js"></script>
+<script type="text/javascript">
+    Vue.filter('timeZone', function (time, self_time) {
+        var self_time = parseInt(self_time);
+        var pdate = new Date(time);
+        var str = '';
+        pdate.setDate(pdate.getDate()+self_time);
+        if (pdate != 'Invalid Date') {
+            year = pdate.getFullYear()
+            month = pdate.getMonth()+1;
+            day = pdate.getDate();
+            str = year + "-" + month + "-" + day;
+        } else {
+            str = "-";
+        }
+
+        return str;
+    });
+    var vm = new Vue({
+        el:"#xcl-wrap",
+        data:{
+            stream_arr:<{$stream_arr}>,
+            house_list:<{$house_list}>,
+            house_all_list:<{$house_all_list}>,
+            all_channel:<{$all_channel}>,
+            def_channel:0,
+            param:<{$param}>,
+            show_table:[],
+            search_order:'',
+            SKU_ID:'',
+            clickState:'',
+            other_url:"<{$go_url}>",
+            detail_show:"<{$detail_show}>",
+            show_list:"",
+            show_sku:"",
+            ajax_page:"",
+            show_ajax_page: <{$show_pages}>,
+            def_sku_none: 0,
+            house_list_model:'',
+            GUDS_CNS_NM:'',
+            SKU:'',
+            sale_teams: <{$sale_teams}>,
+            sp_teams: <{$sp_teams}>,
+            show_batch_datas: [],
+            base_msg: '/Application/Tpl/Home/Public/images/rk-add.png',
+            base_msg_open: '/Application/Tpl/Home/Public/images/rk-shrink.png',
+            tmp: '123',
+            unsalables: <{$unsalable}>,
+            our_company: <{$our_company}>,
+            expire_time_ret: <{$expire_time}>,
+            sp_time: [], // 采购开始结束时间
+            in_time: [],// 入库开始结束时间
+            select_sale_teams: [],// 销售团队
+            select_sp_teams: [],// 采购团队
+            select_company_teams: [],// 所属公司
+            expire_time: [],// 到期日开始结束
+            unsalable: '',// 是否滞销
+            pru_order_no: '',// 采购单号
+            count: <{$count}>,
+            top_nums: <{$top_nums}>,
+            money: '<{$money}>',
+            on_way_money: '<{$on_way_money}>',
+            on_way_sku: '<{$on_way_sku}>',
+            on_way_number: '<{$on_way_number}>',
+            expire_time_select: '',// 日期间隔
+            batch_parent_id: '',
+            out_display_total: '',
+            in_display_total: '',
+            warehouse_id:'',
+            locking_in_display_total:'',
+            locking_show_batch_datas:{
+                "search":'',
+                "list":[],
+                "page":''
+            },
+            locking_show_table:{
+                "search":'',
+                "list":[],
+                "page":''
+            },
+            pickerOptions2: {
+                shortcuts: [{
+                    text: '最近一个月',
+                    onClick:function(picker) {
+                        var end = new Date();
+                        var start = new Date();
+                        start.setTime(start.getTime() + 3600 * 1000 * 24 * 30);
+                        picker.$emit('pick', [end, start]);
+                    }
+                }, {
+                    text: '最近三个月',
+                    onClick:function(picker) {
+                        var end = new Date();
+                        var start = new Date();
+                        start.setTime(start.getTime() + 3600 * 1000 * 24 * 90);
+                        picker.$emit('pick', [end, start]);
+                    }
+                },{
+                    text: '最近六个月',
+                    onClick:function(picker) {
+                        var end = new Date();
+                        var start = new Date();
+                        start.setTime(start.getTime() + 3600 * 1000 * 24 * 180);
+                        picker.$emit('pick', [end, start]);
+                    }
+                },]
+            }
+    },
+    methods:{
+        show_tr: function (e) {
+            if (e.noshow == 1) {
+                vm.tmp = 1;
+                e.noshow = 0;
+                vm.tmp = e.noshow;
+                return;
+            } else if(e.nowshow == 0) {
+                e.noshow = 1;
+                vm.tmp = 2;
+            } else {
+                e.noshow = 1;
+                vm.tmp = 2;
+            }
+            if (!e.get_data)vm.show_batch(e.SKU_ID, e.channel, e);
+            vm.tmp = e.noshow;
+        },
+        previewImg: function (item, tag, type) {
+          this.$set(item, tag, type);
+        },
+        filter_search: function (index) {
+            var p = index + 1;
+            var param = vm.param = {
+                'SKU': vm.SKU,
+                'GUDS_CNS_NM': vm.GUDS_CNS_NM,
+                'house_list_model': vm.house_list_model,
+                'pru_order_no': vm.pru_order_no,
+                'select_sale_teams': vm.select_sale_teams,
+                'select_sp_teams': vm.select_sp_teams,
+                'select_company_teams': vm.select_company_teams,
+                'sp_time': [utils.dateFormat(vm.sp_time[0],'yyyy-MM-dd'), utils.dateFormat(vm.sp_time[1],'yyyy-MM-dd')],
+                'in_time': [utils.dateFormat(vm.in_time[0],'yyyy-MM-dd'), utils.dateFormat(vm.in_time[1],'yyyy-MM-dd')],
+                'expire_time': [utils.dateFormat(vm.expire_time[0],'yyyy-MM-dd'), utils.dateFormat(vm.expire_time[1],'yyyy-MM-dd')],
+                'expire_type': vm.expire_type,
+                'expire_time_select': vm.expire_time_select,
+                'unsalable': vm.unsalable,
+                'p': p,
+            };
+            $.ajax({
+                type:"POST",
+                async: true,
+                url:"/index.php?m=stock&a=existing_extend",
+                data: param,
+                beforeSend: function () {
+                    index = layer.load(2, {
+                        shade: [0.5,'#fff'] //0.1透明度的白色背景
+                    });
+                },
+                success:function(res) {
+                    if (res.status == 1) {
+                        vm.stream_arr = res.data;
+                        vm.show_ajax_page = res.show_pages;
+                        vm.count = res.count;
+                        vm.top_nums = res.top_nums;
+                        vm.money = res.money;
+                        vm.on_way_money = res.on_way_money;
+                        vm.on_way_sku = res.on_way_sku;
+                        vm.on_way_number = res.on_way_number;
+                    } else {
+                        vm.stream_arr = [];
+                    }
+                    layer.close(index);
+                },
+                error:function() {
+                    alertNew('网络繁忙，请重试！')
+                }
+            });
+        },
+        filterSearchLock: function (index) {
+            console.log(vm)
+            var SKU_ID = vm.SKU;
+            var p = index + 1;
+            $.ajax({
+                type: "POST",
+                async: false,
+                url: "/index.php?m=Warehouse&a=searchLock",
+                data: {
+                    "data": {
+                        "query": {
+                            "skuId":SKU_ID,
+                            "warehouse":vm.warehouse_id,
+                            "batchId":vm.clickState==="child" ? vm.batch_parent_id : '',
+                            "pageIndex":p
+                        }
+                    }
+                },
+                success: function (res) {
+                    if(res.code === 2000){
+                        if(vm.clickState==="child"){
+                            vm.locking_show_batch_datas.list = res.data.pageData;
+                            vm.locking_show_batch_datas.count = res.data.count;
+                            vm.locking_show_batch_datas.page = res.data.page;
+                        }else{
+                            vm.locking_show_table.list = res.data.pageData;
+                            vm.locking_show_table.count = res.data.count;
+                            vm.locking_show_table.page = res.data.page;
+                        }           
+                    }
+                },
+                error: function () {
+                    alertNew('网络繁忙，请重试！')
+                }
+            });
+            this.stream_arr.splice(1, 0)
+        },
+        go_urls: function(url) {
+            if (!this.stream_arr) {
+                layer.msg('无可下载数据，请先搜索');
+                return;
+            }
+            var rule_forward = '/index.php?m=stock&a=rule_forward';
+            var param = vm.param = {
+                'SKU': vm.SKU,
+                'GUDS_CNS_NM': vm.GUDS_CNS_NM,
+                'house_list_model': vm.house_list_model,
+                'pru_order_no': vm.pru_order_no,
+                'select_sale_teams': vm.select_sale_teams,
+                'select_sp_teams': vm.select_sp_teams,
+                'select_company_teams': vm.select_company_teams,
+                'sp_time': [utils.dateFormat(vm.sp_time[0],'yyyy-MM-dd'), utils.dateFormat(vm.sp_time[1],'yyyy-MM-dd')],
+                'in_time': [utils.dateFormat(vm.in_time[0],'yyyy-MM-dd'), utils.dateFormat(vm.in_time[1],'yyyy-MM-dd')],
+                'expire_time': [utils.dateFormat(vm.expire_time[0],'yyyy-MM-dd'), utils.dateFormat(vm.expire_time[1],'yyyy-MM-dd')],
+                'expire_type': vm.expire_type,
+                'expire_time_select': vm.expire_time_select,
+                'unsalable': vm.unsalable,
+            };
+            $.ajax({
+                type:"POST",
+                async: false,
+                url: rule_forward,
+                data: param,
+                beforeSend: function () {
+                    index = layer.load(2, {
+                        shade: [0.5,'#fff'] //0.1透明度的白色背景
+                    });
+                },
+                success:function(res) {
+                    window.location.href = url + '&' + res;
+                    layer.close(index);
+                },
+                error:function() {
+                    alertNew('网络繁忙，请重试！')
+                }
+            });
+        },
+        show_data: function (e,type) {
+            var batch_parent_id = vm.batch_parent_id = e.id;
+            vm.SKU_V = e.SKU_ID;
+            var sku_id = e.SKU_ID;
+            vm.warehouse_id = e.warehouse_id;
+            var index = 0;
+            var _requestData = {'batch_parent_id': batch_parent_id, 'sku_id': sku_id};
+            if(type === "locking"){
+                vm.clickState = "child";
+                _requestData = {
+                    "data": {
+                      "query": {
+                        "skuId":sku_id,
+                        "batchId":batch_parent_id,
+                        "warehouse":e.warehouse_id
+                      }
+                    }
+                };
+                $.ajax({
+                type:"POST",
+                async:false,
+                url:"/index.php?m=Warehouse&a=searchLock",
+                data:_requestData,
+                beforeSend  : function () {
+                    index = layer.load(2, {
+                        shade: [0.1,'#fff'] //0.1透明度的白色背景
+                    });
+                },
+                success:function(res){
+                    if (res.code === 2000) {
+                        vm.locking_show_batch_datas.list = res.data.pageData;
+                        vm.locking_show_batch_datas.count= res.data.count;
+                        vm.locking_show_batch_datas.page = res.data.page;
+                        e.article_locking = 1;
+                    } else {
+                        box.Alert('<{$Think.lang.提示}>', '<{$Think.lang.查询无结果}>');
+                    }
+                    layer.close(index);  
+                },
+                error:function(){
+                    alertNew('网络繁忙，请重试！')
+                }
+                });
+            }else{
+                $.ajax({
+                type:"POST",
+                async:false,
+                url:"/index.php?m=stock&a=existing_occ",
+                data:_requestData,
+                beforeSend  : function () {
+                    index = layer.load(2, {
+                        shade: [0.1,'#fff'] //0.1透明度的白色背景
+                    });
+                },
+                success:function(res){
+                    if(JSON.parse(res)['status'] == 'y'){
+                        vm.show_batch_datas = JSON.parse(res)['data'];
+                        vm.show_list = JSON.parse(res)['show'];
+                        vm.show_sku = JSON.parse(res)['show']['sku'];
+                        vm.ajax_page = JSON.parse(res)['show']['ajax'];
+                        vm.in_display_total=JSON.parse(res)['count'];
+                        e.article = 1;
+                    }else{
+                        box.Alert('<{$Think.lang.提示}>',JSON.parse(res)['info']);
+                    }
+                    layer.close(index);
+                },
+                error:function(){
+                    alertNew('网络繁忙，请重试！')
+                }
+            });
+            }
+           
+        },
+        show_parent_data: function (e) {
+            var sku_id = sku_id;
+            var channel = channel;
+            var index;
+            e.get_data = [];
+            if (vm.def_sku_none == 0 || vm.def_sku_none == false) {
+                var state = 0;
+            } else {
+                var state = 1;
+            }
+            $.ajax({
+                type: "POST",
+                async: false,
+                url: "/index.php?m=stock&a=show_parent_occ",
+                data: {
+                    sku_id: sku_id,
+                    channel: channel,
+                    params: vm.param,
+                    def_sku_none: state
+                },
+                beforeSend  : function () {
+                    index = layer.load(2, {
+                        shade: [0.1,'#fff'] //0.1透明度的白色背景
+                    });
+                },
+                success: function (res) {
+                    var res_status = JSON.parse(res)['status'];
+                    if (res_status == 'n') {
+                        layer.open({
+                            title: '<{$Think.lang.提示}>',
+                            type: 1,
+                            skin: 'layui-layer layui-layer-page', //样式类名
+                            closeBtn: 0, //不显示关闭按钮
+                            anim: 5,
+                            shadeClose: true, //开启遮罩关闭
+                            content: JSON.parse(res)['info']
+                        });
+                    } else {
+                        e.get_data = JSON.parse(res)['data'];
+                    }
+                    layer.close(index);
+                },
+                error: function () {
+                    alertNew('网络繁忙，请重试！');
+                }
+            });
+        },
+        close_show: function(e) {
+            e.article = 0;
+        },
+        reset:function (e) {
+            var e = [];
+            e.SKU_ID = this.SKU_ID;
+            this.search_order = '';
+            this.locking_show_table.search = '';
+            this.locking_show_batch_datas.search = '';
+            //this.show(e);
+        },
+        reset_order:function (e) {
+            this.SKU = '';
+            this.GUDS_CNS_NM = '';
+            this.house_list_model = [];
+            this.def_channel = 0;
+            this.def_sku_none = 0;
+            this.sp_time = []; // 采购开始结束时间
+            this.in_time = [];// 入库开始结束时间
+            this.select_sale_teams = [];// 销售团队
+            this.select_sp_teams = [];// 采购团队
+            this.select_company_teams = [];// 所属公司
+            this.expire_type = '1';// 到期类型，固定时间段，或者时间范围
+            this.expire_time = [];// 到期日开始结束
+            this.unsalable = '';// 是否滞销
+            this.pru_order_no = '';// 采购单号
+            this.expire_time_select = '';// 日期间隔
+            vm.filter_search(e-1);
+        },
+        show:function (e) {
+            e.show_bg = 1;
+            var SKU_ID = this.SKU_ID = e.SKU_ID;
+            $.ajax({
+                type: "POST",
+                async: false,
+                url: "/index.php?m=stock&a=existing_occ",
+                data: {
+                    SKU_ID: SKU_ID,
+                },
+                success: function (res) {
+                    if (JSON.parse(res)['status'] == 'y') {
+                        vm.show_table = JSON.parse(res)['data']
+                        vm.show_list = JSON.parse(res)['show']
+                        vm.show_sku = JSON.parse(res)['show']['sku']
+                        vm.ajax_page = JSON.parse(res)['show']['ajax'];
+                        vm.out_display_total= JSON.parse(res)['count'];
+                        e.is_show = 1;
+
+                    } else {
+                        box.Alert('<{$Think.lang.提示}>', JSON.parse(res)['info']);
+                        e.show_bg = 0;
+                    }
+
+                },
+                error: function () {
+                    alertNew('网络繁忙，请重试！')
+                }
+            });
+            this.stream_arr.splice(1, 0)
+        },
+        show_page:function (index) {
+            var SKU_ID = vm.SKU_ID = vm.show_sku;
+            var p = index + 1;
+            var batch_parent_id = vm.batch_parent_id;
+            $.ajax({
+                type: "POST",
+                async: false,
+                url: "/index.php?m=stock&a=existing_occ",
+                data: {
+                    SKU_ID: vm.SKU_V,
+                    p: p,
+                    batch_parent_id: batch_parent_id
+                },
+                success: function (res) {
+                    if (JSON.parse(res)['status'] == 'y') {
+                        if (batch_parent_id) vm.show_batch_datas = JSON.parse(res)['data'];
+                        else vm.show_table = JSON.parse(res)['data'];
+                        vm.ajax_page = JSON.parse(res)['show']['ajax']
+                    } else {
+                        box.Alert('<{$Think.lang.提示}>', JSON.parse(res)['info']);
+                    }
+
+                },
+                error: function () {
+                    alertNew('网络繁忙，请重试！')
+                }
+            });
+            this.stream_arr.splice(1, 0)
+        },
+        search:function (type) {
+            var order = '';
+            if(type==="locking_child" || type==='locking'){
+                type==="locking_child" ? order = this.locking_show_batch_datas.search : order = this.locking_show_table.search;
+                var postData = {
+                   "data": {
+                     "query": {
+                       "skuId":vm.SKU_V,
+                       "orderId":order,
+                       "batchId": type==="locking_child" ? vm.batch_parent_id : ''
+                     }
+                   }
+                };
+                if(type==="locking_child"){
+                    postData = {
+                       "data": {
+                         "query": {
+                           "skuId":vm.SKU_V,
+                           "orderId":order,
+                           "warehouse":vm.warehouse_id,
+                           "batchId": type==="locking_child" ? vm.batch_parent_id : ''
+                         }
+                       }
+                    };
+                }
+
+
+                $.ajax({
+                type: "POST",
+                async: false,
+                url: "/index.php?m=Warehouse&a=searchLock",
+                data: postData,
+                success: function (res) {
+                    if (res.code === 2000) {
+                        if(type==="locking_child"){
+                            vm.locking_show_batch_datas.list = res.data.pageData;
+                            vm.locking_show_batch_datas.count= res.data.count;
+                            vm.locking_show_batch_datas.page = res.data.page;
+                        }else{
+                            vm.locking_show_table.list = res.data.pageData;
+                            vm.locking_show_table.count= res.data.count;
+                            vm.locking_show_table.page = res.data.page;
+                        }               
+                    } else {
+                        box.Alert('<{$Think.lang.提示}>', '<{$Think.lang.查询无结果}>');
+                    }
+
+                },
+                error: function () {
+                    alertNew('网络繁忙，请重试！')
+                }
+            });
+            }else{
+            var order_id = this.search_order;
+            var _requestData = {'order_id': order_id, 'SKU_ID': this.SKU_ID};
+//            console.log(_requestData)
+            $.ajax({
+                type: "POST",
+                async: false,
+                url: "/index.php?m=stock&a=existing_occ",
+                data: _requestData,
+                success: function (res) {
+                    if (JSON.parse(res)['status'] == 'y') {
+                        vm.show_table = JSON.parse(res)['data'];
+                        vm.show_list = JSON.parse(res)['show'];
+                        vm.show_sku = JSON.parse(res)['show']['sku'];
+                        vm.ajax_page = JSON.parse(res)['show']['ajax'];
+                        vm.out_display_total= JSON.parse(res)['count'];
+
+                    } else {
+                        box.Alert('<{$Think.lang.提示}>', JSON.parse(res)['info']);
+                    }
+
+                },
+                error: function () {
+                    alertNew('网络繁忙，请重试！')
+                }
+            });
+            this.stream_arr.splice(1, 0)
+            }
+            
+        },
+        search_batch:function () {
+            var order_id = this.search_order;
+            var show_batch_datas = null;
+            var _requestData = {'SKU_ID': this.SKU_ID, 'batch_parent_id': this.batch_parent_id, 'order_id': order_id};
+            $.ajax({
+                type: "POST",
+                async: false,
+                url: "/index.php?m=stock&a=existing_occ",
+                data: _requestData,
+
+                beforeSend  : function () {
+                    index = layer.load(2, {
+                        shade: [0.1,'#fff'] //0.1透明度的白色背景
+                    });
+                },
+                success: function (res) {
+                    if (JSON.parse(res)['status'] == 'y') {
+                        show_batch_datas = JSON.parse(res)['data'];
+                        vm.show_list = JSON.parse(res)['show'];
+                        vm.show_sku = JSON.parse(res)['show']['sku'];
+                        vm.ajax_page = JSON.parse(res)['show']['ajax'];
+                        vm.in_display_total= JSON.parse(res)['count'];
+                    } else {
+                        box.Alert('<{$Think.lang.提示}>', JSON.parse(res)['info']);
+                    }
+                    layer.close(index);
+                },
+                error: function () {
+                    alertNew('网络繁忙，请重试！')
+                }
+            });
+            if (show_batch_datas) {
+                vm.show_batch_datas = show_batch_datas;
+            }
+            this.stream_arr.splice(1, 0)
+        },
+        close:function (e,type) {
+            console.log(e,type)
+            if(type == "locking"){
+                e.locking_is_show = e.locking_show_bg =0;
+                vm.locking_show_table.search = '';
+            }else if(type == "locking_child"){           
+                e.article_locking = 0;
+                vm.locking_show_batch_datas.search = '';
+            }else {
+                e.article = e.show_bg = e.is_show = 0;
+                this.search_order = '';
+            }
+            this.stream_arr.splice(1, 0);
+        },
+        king:function (e, l) {
+            if (!l) l = 4;
+            var k = e.toString().split('.')
+            if (e.toString().indexOf('.') > 0) {
+                if (k [1].length > l)  k[1] = k[1].substr(0, l);
+                else {
+                    for (var i = k[1].length; i < l; i++) {
+                        k[1] += '0';
+                    }
+                }
+                var s = '.' + k[1];
+            } else {
+                var s = ''
+            }
+            return k[0].toString().replace(/\d{1,3}(?=(\d{3})+(\.\d*)?$)/g, '$&,') + s;
+        },
+        showBtn:function (event) {
+            event.target.style.height = "50px";
+            event.target.children[1].style.display = "inline-block";
+        },
+        hideBtn:function (eventd) {
+            event.target.style.height = "";
+            event.target.children[1].style.display = "none";
+        },
+        unstock_search: function () {
+
+            // 选中
+            if (vm.def_sku_none == 0 || vm.def_sku_none == false) {
+                vm.param = {
+                    'SKU': vm.SKU,
+                    'GUDS_CNS_NM': vm.GUDS_CNS_NM,
+                    'house_list_model': vm.house_list_model,
+                    'pru_order_no': vm.pru_order_no,
+                    'select_sale_teams': vm.select_sale_teams,
+                    'select_sp_teams': vm.select_sp_teams,
+                    'select_company_teams': vm.select_company_teams,
+                    'sp_time': [utils.dateFormat(vm.sp_time[0],'yyyy-MM-dd'), utils.dateFormat(vm.sp_time[1],'yyyy-MM-dd')],
+                    'in_time': [utils.dateFormat(vm.in_time[0],'yyyy-MM-dd'), utils.dateFormat(vm.in_time[1],'yyyy-MM-dd')],
+                    'expire_time': [utils.dateFormat(vm.expire_time[0],'yyyy-MM-dd'), utils.dateFormat(vm.expire_time[1],'yyyy-MM-dd')],
+                    'expire_type': vm.expire_type,
+                    'expire_time_select': vm.expire_time_select,
+                    'unsalable': vm.unsalable,
+                    'def_sku_none': 1
+                };
+                vm.def_sku_none = 1;
+            } else {
+                vm.param = {
+                    'SKU': vm.SKU,
+                    'GUDS_CNS_NM': vm.GUDS_CNS_NM,
+                    'house_list_model': vm.house_list_model,
+                    'pru_order_no': vm.pru_order_no,
+                    'select_sale_teams': vm.select_sale_teams,
+                    'select_sp_teams': vm.select_sp_teams,
+                    'select_company_teams': vm.select_company_teams,
+                    'sp_time': [utils.dateFormat(vm.sp_time[0],'yyyy-MM-dd'), utils.dateFormat(vm.sp_time[1],'yyyy-MM-dd')],
+                    'in_time': [utils.dateFormat(vm.in_time[0],'yyyy-MM-dd'), utils.dateFormat(vm.in_time[1],'yyyy-MM-dd')],
+                    'expire_time': [utils.dateFormat(vm.expire_time[0],'yyyy-MM-dd'), utils.dateFormat(vm.expire_time[1],'yyyy-MM-dd')],
+                    'expire_type': vm.expire_type,
+                    'expire_time_select': vm.expire_time_select,
+                    'unsalable': vm.unsalable,
+                    'def_sku_none': 0
+                };
+                vm.def_sku_none = 1;
+            }
+            $.ajax({
+                type:"POST",
+                async: true,
+                url:"/index.php?m=stock&a=existing_extend",
+                data: vm.param,
+                beforeSend: function () {
+                    index = layer.load(2, {
+                        shade: [0.5,'#fff'] //0.1透明度的白色背景
+                    });
+                },
+                success:function(res) {
+                    if (res.status == 1) {
+                        vm.stream_arr = res.data;
+                        vm.show_ajax_page = res.show_pages;
+                        vm.count = res.count;
+                        vm.top_nums = res.top_nums;
+                    } else {
+                        vm.stream_arr = [];
+                    }
+                    layer.close(index);
+                },
+                error:function() {
+                    alertNew('网络繁忙，请重试！')
+                }
+            });
+        },
+        show_parent_locking: function (e){
+            vm.clickState = "parent";
+            e.locking_show_bg = 1;
+            vm.SKU_V = e.SKU_ID;
+            $.ajax({
+                type: "POST",
+                async: false,
+                url: "/index.php?m=Warehouse&a=searchLock",
+                data: {
+                    "data": {
+                        "query": {
+                            "skuId":e.SKU_ID,
+                            "pageIndex":1
+                        }
+                    }
+                },
+                success: function (res) {
+                    console.log(res)
+                    if (res.code ===2000) {
+                        vm.locking_show_table.list = res.data.pageData;
+                        vm.locking_show_table.count= res.data.count;
+                        vm.locking_show_table.page = res.data.page;
+                        e.locking_is_show = 1;
+
+                    } else {
+                        box.Alert('<{$Think.lang.提示}>', JSON.parse(res)['info']);
+                        e.locking_show_bg = 0;
+                    }
+
+                },
+                error: function () {
+                    alertNew('网络繁忙，请重试！')
+                }
+            });
+            this.stream_arr.splice(1, 0)
+        },
+        show_parent_occ: function (e) {
+            e.show_bg = 1;
+            vm.SKU_V = e.SKU_ID;            
+            var sku_id = e.SKU_ID;
+            var channel = e.channel;
+            if (vm.def_sku_none == 0 || vm.def_sku_none == false) {
+                var state = 0;
+            } else {
+                var state = 1;
+            }
+            $.ajax({
+                type: "POST",
+                async: false,
+                url: "/index.php?m=stock&a=show_parent_occ",
+                data: {
+                    sku_id: sku_id,
+                    params: vm.param,
+                    channel: channel,
+                    def_sku_none: state
+                },
+                success: function (res) {
+                    if (JSON.parse(res)['status'] == 'y') {
+                        vm.show_table = JSON.parse(res)['data']
+                        vm.show_list = JSON.parse(res)['show']
+                        vm.show_sku = JSON.parse(res)['show']['sku']
+                        vm.ajax_page = JSON.parse(res)['show']['ajax'];
+                        vm.out_display_total= JSON.parse(res)['count'];
+                        e.is_show = 1;
+
+                    } else {
+                        box.Alert('<{$Think.lang.提示}>', JSON.parse(res)['info']);
+                        e.show_bg = 0;
+                    }
+
+                },
+                error: function () {
+                    alertNew('网络繁忙，请重试！')
+                }
+            });
+            this.stream_arr.splice(1, 0)
+        },
+        show_batch: function (sku_id, channel, e) {
+            var sku_id = sku_id;
+            var channel = channel;
+            var index;
+            e.get_data = [];
+            if (vm.def_sku_none == 0 || vm.def_sku_none == false) {
+                var state = 0;
+            } else {
+                var state = 1;
+            }
+            $.ajax({
+                type: "POST",
+                async: false,
+                url: "/index.php?m=stock&a=show_batch",
+                data: {
+                    sku_id: sku_id,
+                    channel: channel,
+                    params: vm.param,
+                    def_sku_none: state
+                },
+                beforeSend  : function () {
+                    index = layer.load(2, {
+                        shade: [0.1,'#fff'] //0.1透明度的白色背景
+                    });
+                },
+                success: function (res) {
+                    var res_status = JSON.parse(res)['status'];
+                    if (res_status == 'n') {
+                        layer.open({
+                            title: '<{$Think.lang.提示}>',
+                            type: 1,
+                            skin: 'layui-layer layui-layer-page', //样式类名
+                            closeBtn: 0, //不显示关闭按钮
+                            anim: 5,
+                            shadeClose: true, //开启遮罩关闭
+                            content: JSON.parse(res)['info']
+                        });
+                    } else {
+                        //vm.get_data = JSON.parse(res)['data'];
+                        e.get_data = JSON.parse(res)['data'];
+                    }
+                    layer.close(index);
+                },
+                error: function () {
+                    alertNew('网络繁忙，请重试！');
+                }
+            });
+        },
+    },
+    });
+    function opennewtab(o,title){
+        if($(o).attr('_href')){
+            var bStop=false;
+            var bStopIndex=0;
+            var _href=$(o).attr('_href');
+            var _titleName=$(o).html();
+            var topWindow=$(window.parent.document);
+            var show_navLi=topWindow.find("#min_title_list li");
+            show_navLi.each(function() {
+                if($(this).find('span').attr("data-href")==_href){
+                    bStop=true;
+                    bStopIndex=show_navLi.index($(o));
+                    return false;
+                }
+            });
+            if(!bStop){
+                var topWindow=$(window.parent.document);
+                var show_nav=topWindow.find('#min_title_list');
+                show_nav.find('li').removeClass("active");
+                var iframe_box=topWindow.find('#iframe_box');
+                show_nav.append('<li class="active"><span data-href="'+_href+'">'+title+'</span><i></i><em></em></li>');
+
+                var topWindow=$(window.parent.document);
+                var taballwidth=0,
+                    $tabNav = topWindow.find('.acrossTab'),
+                    $tabNavWp = topWindow.find(".Hui-tabNav-wp"),
+                    $tabNavitem = topWindow.find(".acrossTab li"),
+                    $tabNavmore =topWindow.find(".Hui-tabNav-more");
+                if (!$tabNav[0]){return}
+                $tabNavitem.each(function(index, element) {
+                    taballwidth+=Number(parseFloat($(this).width()+60))});
+                $tabNav.width(taballwidth+25);
+                var w = $tabNavWp.width();
+                if(taballwidth+25>w){
+                    $tabNavmore.show()}
+                else{
+                    $tabNavmore.hide();
+                    $tabNav.css({left:0})}
+                var iframeBox=iframe_box.find('.show_iframe');
+                iframeBox.hide();
+                iframe_box.append('<div class="show_iframe"><div class="loading"></div><iframe frameborder="0" src='+_href+'></iframe></div>');
+                var showBox=iframe_box.find('.show_iframe:visible');    
+                showBox.find('iframe').attr("src",_href).load(function(){
+                    showBox.find('.loading').hide();
+                });
+            }
+            else{
+                show_navLi.removeClass("active").eq(bStopIndex).addClass("active");
+                var iframe_box=topWindow.find("#iframe_box");
+                iframe_box.find(".show_iframe").hide().eq(bStopIndex).show().find("iframe").attr("src",_href);
+            }
+        }
+    }
+    function show_page(e){
+        vm.show_page(e-1)
+    }
+    function filterSearchLock(e){
+        vm.filterSearchLock(e-1)
+    }
+    function filter_search(e) {
+        vm.filter_search(e-1);
+    }
+    (function(){
+        if(0 != vm.param){
+            vm.house_list_model=vm.param.house_list_model;
+            vm.GUDS_CNS_NM=vm.param.GUDS_CNS_NM;
+            vm.SKU=vm.param.SKU;
+            vm.def_channel = parseInt(vm.param.channel);
+            vm.def_sku_none = parseInt(vm.param.def_sku_none);
+        }
+    })();
+</script>
+</body>
+
+</html>

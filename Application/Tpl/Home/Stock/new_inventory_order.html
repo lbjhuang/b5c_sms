@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>发起盘点</title>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/btn-new.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+</head>
+
+<style>
+    [v-cloak] {
+        display: none;
+    }
+    .title{
+        font-size: 26px;
+        font-weight: bold;
+    }
+    .addStep1{
+        display: flex;
+        align-items: center;
+        min-height: calc(100vh - 200px);
+        justify-content: center;
+    }
+    .addStep1 .newBtn,.addStep2 .newBtn{
+        margin: 50px auto;
+        width: 150px;
+        display: block;
+    }
+    .addStep1_wrap{
+        border: 1px solid #ddd;
+        padding: 50px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .addStep2_title{
+        margin: 20px 0;
+    }
+    .addStep2_title span{
+        margin-right: 30px;
+    }
+    .table_pages{
+        margin-top: 20px;
+        text-align: right;
+    }
+    .table-list .batch{
+        cursor: pointer;
+    }
+    .addStep2_inner_head{
+        background: #546E7A;
+        color: #fff;
+        padding: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 16px;
+    }
+    .child_table .el-table__header th{
+        background-color: #547a73;
+        color: #fff;
+    }
+    .addStep1_inner,.sku_inventory{
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    .addStep1_inner .el-select{
+        width: 300px;
+    }
+    .sku_inventory .el-select{
+        width: 130px;
+    }
+    .sku_inventory > .el-input{
+        width: 150px;
+        margin-left: 20px;
+    }
+    .title_inner{
+        width: 200px;
+        font-size: 18px;
+    }
+</style>
+
+<body>
+<div id="newInventoryOrder" v-cloak>
+    <div class="title">{{$lang('新建盘点单')}} {{stepStatus == 'first' ? '（1/2）' :'（2/2）'}}</div>
+    <div v-if="stepStatus == 'first'" class="addStep1">
+        <div class="addStep1_wrap">
+            <div class="addStep1_inner">
+                <div class="title_inner"> <span style="color: red;">*</span> {{$lang('选择盘点仓库：')}}</div>
+                <el-select v-model="inventory_warehouse_cd" filterable :placeholder="$lang('请选择仓库')">
+                    <el-option :key="key" :label="value" :value="key" v-for="(value,key) in inventory_warehouse"></el-option>
+                </el-select>
+            </div>
+            <div class="addStep1_inner">
+                <div class="title_inner"> <span style="color: red;">*</span> {{$lang('选择销售团队：')}}</div>
+                <el-select v-model="sale_team_cd" filterable :placeholder="$lang('请选择销售团队')" >
+                    <el-option
+                            v-for="item in sell_team"
+                            :key="item.CD"
+                            :label="$lang(item.CD_VAL)"
+                            :value="item.CD">
+                    </el-option>
+                </el-select>
+            </div>
+            <div class="sku_inventory">
+                <div class="title_inner"> <span style="color: red;">*</span> {{$lang('SKU盘点：')}}</div>
+                <el-select :placeholder="$lang('请选择SKU盘点')" v-model="skuType">
+                    <el-option :label="$lang('某些SKU')" value="1"></el-option>
+                    <el-option :label="$lang('全SKU')" value="0"></el-option>
+                </el-select>
+                <el-input :placeholder="$lang('英文逗号分割')" v-if="skuType == '1'" v-model="sku_inventory"></el-input>
+            </div>
+            <div class="addStep1_inner">
+                <div class="title_inner"> <span style="color: red;">*</span> {{$lang('商品类型：')}}</div>
+                <el-select v-model="goods_type" :placeholder="$lang('请选择商品类型')">
+                    <el-option :label="$lang('全品类')" value="N003730001"></el-option>
+                    <el-option :label="$lang('正品')" value="N003730002"></el-option>
+                    <el-option :label="$lang('残次品')" value="N003730003"></el-option>
+                </el-select>
+            </div>
+            <el-button class="newBtn" @click="next" type="primary">{{$lang('下一步')}}</el-button>
+        </div>
+    </div>
+    <div v-if="stepStatus == 'second'" class="addStep2">
+        <div class="addStep2_title">
+            <span>{{$lang('盘点仓库：')}} {{inventory_warehouse_val}}</span>
+            <span>{{$lang('盘点发起人：')}} {{userName}}</span> 
+            <span>{{$lang('盘点销售团队：')}} {{salesTeam}}</span> 
+            <span>{{$lang('盘点SKU：')}} {{skuInventory}}</span> 
+            <span>{{$lang('盘点商品类型：')}} {{goodsType}}</span> 
+        </div>
+        <div class="baseline"></div>
+        <div class="addStep2_inner">
+            <div class="addStep2_inner_head">
+                <span>{{$lang('盘点商品信息')}}</span>
+                <el-button @click="exportExcel" type="primary">EXCEL {{$lang('导出')}}</el-button>
+            </div>
+            <el-table class="table-list" v-loading="tableLoading" :data="productInformationData" @expand-change="viewDetail" border>
+                <el-table-column width="100" align="center" :label="$lang('序号')">
+                    <template slot-scope="scope">
+                        <span>{{scope.$index + 1}}</span>
+                    </template>
+                </el-table-column>
+                <!-- <el-table-column align="center" type="expand" :label="$lang('批次')">
+
+                    <template slot-scope="scope">
+                        <el-table border show-header :data="scope.row.detail"  style="width: 100%;" v-loading="scope.row.tableInnerLoading"  class="child_table">
+                            <el-table-column align="center" :label="$lang('批次号')">
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.batchCode}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column align="center" :label="$lang('采购公司')">
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.ourCompany}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column align="center" :label="$lang('SKU编码')">
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.skuId}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column align="center" :label="$lang('采购入库时间')">
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.purStorageDate}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column align="center" :label="$lang('在库库存')">
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.amountTotalNum}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column align="center" :label="$lang('可售库存')">
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.amountSaleNum}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column align="center" :label="$lang('占用库存')">
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.amountOccupiedNum}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column align="center" :label="$lang('锁定库存')">
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.amountLockingNum}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column align="center" :label="$lang('采购团队')">
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.purTeam}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column align="center" :label="$lang('销售团队')">
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.saleTeam}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column align="center" :label="$lang('销售小团队')">
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.small_sale_team}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column align="center" :label="$lang('采购单价（CNY，含增值税）')">
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.unitPrice}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column align="center" :label="$lang('采购单价（CNY，不含增值税）')">
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.unitPriceNoTax}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column align="center" :label="$lang('采购单价（USD，含增值税）')">
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.unitPriceUsd}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column align="center" :label="$lang('采购单价（USD，不含增值税）')">
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.unitPriceUsdNoTax}}</span>
+                                </template>
+                            </el-table-column>
+                            <el-table-column align="center" :label="$lang('应盘点数量（=商品总在库库存）')">
+                                <template slot-scope="scope">
+                                    <span>{{scope.row.amountTotalNum}}</span>
+                                </template>
+                            </el-table-column>
+
+                        </el-table>
+                    </template>
+
+                </el-table-column> -->
+                <el-table-column align="center" :label="$lang('货位号')">
+                    <template slot-scope="scope">
+                        <span>{{scope.row.location_code}}</span>
+                    </template>
+                </el-table-column>
+                <!-- <el-table-column align="center" :label="$lang('正品货位号')">
+                    <template slot-scope="scope">
+                        <span>{{scope.row.skuId}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center" :label="$lang('残次品货位号')">
+                    <template slot-scope="scope">
+                        <span>{{scope.row.skuId}}</span>
+                    </template>
+                </el-table-column> -->
+                <el-table-column align="center" :label="$lang('商品图片')">
+                    <template slot-scope="scope">
+                        <img style="width: 100%;" :src="scope.row.imageUrl">
+                    </template>
+                </el-table-column>
+                <el-table-column align="center" :label="$lang('SKU编码')">
+                    <template slot-scope="scope">
+                        <span>{{scope.row.skuId}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center" :label="$lang('商品类型')">
+                    <template slot-scope="scope">
+                        <span>{{scope.row.productType}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center" :label="$lang('条形码')">
+                    <template slot-scope="scope">
+                        <span>{{scope.row.upcId}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center" :label="$lang('商品名称')">
+                    <template slot-scope="scope">
+                        <span>{{scope.row.gudsName}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center" :label="$lang('属性')">
+                    <template slot-scope="scope">
+                        <span>{{scope.row.optAttr}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center" :label="$lang('在库库存')">
+                    <template slot-scope="scope">
+                        <span>{{scope.row.amountTotalNum}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center" :label="$lang('可售库存')">
+                    <template slot-scope="scope">
+                        <span>{{scope.row.amountSaleNum}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center" :label="$lang('占用库存')">
+                    <template slot-scope="scope">
+                        <span>{{scope.row.amountOccupiedNum}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column align="center" :label="$lang('锁定库存')">
+                    <template slot-scope="scope">
+                        <span>{{scope.row.amountLockingNum}}</span>
+                    </template>
+                </el-table-column>
+                
+            </el-table>
+        
+            <el-pagination class="table_pages" @size-change="handleSizeChange" @current-change="handleCurrentChange" 
+                :current-page.sync="pages.current_page"
+                :page-sizes="[10, 50, 100, 200,300]" :page-size="pages.per_page"
+                layout="sizes, prev, pager, next,jumper"
+                :total="pages.totalCount">
+            </el-pagination>
+
+        </div>
+
+        <el-button :disabled="submit_status" class="newBtn" @click="submit" type="primary">{{$lang('提交')}}</el-button>
+
+    </div>
+</div>
+
+<script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.form.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+<script src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js?<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script>
+  if (getCookie('think_language') !== "zh-cn") {
+    ELEMENT.locale(ELEMENT.lang.en)
+  }
+  var way = new Vue({
+    el: '#newInventoryOrder',
+    data: {
+        inventory_warehouse_cd:'',
+        sale_team_cd:'',
+        skuType:'',
+        sku_inventory:'',
+        goods_type:'',
+        inventory_warehouse_val:'',
+        salesTeam:'',
+        skuInventory:'',
+        goodsType:'',
+        userName:'',
+        inventory_warehouse:[],
+        sell_team:[],
+        stepStatus:'first',
+        productInformationData:[],
+        pages:{
+            totalCount:0,
+            per_page:10,
+            current_page:1
+        },
+        tableLoading:false,
+        submit_status:false
+    },
+    created: function () {
+      this.getBaseData();
+    },
+    methods: {
+        getBaseData: async function(){
+            var _this = this;
+
+            axios.post('/index.php?g=warehouse&m=inventory&a=getOwnWarehouse').then(function (res) {
+                if (res.data.code == 2000) {
+                    _this.inventory_warehouse = res.data.data;
+                } else {
+                    _this.$message({
+                        message: _this.$lang('获取数据失败'),
+                        type: 'warning'
+                    });
+                }
+            })
+
+            axios.post('/index.php?g=common&m=index&a=get_cd', {
+                cd_type:{
+                    sell_team:true
+                }
+            }).then(function (response) {
+                if(response.data.code === 2000){
+                    // _this.sell_team = response.data.data.sell_team
+                    var sell_team_data = response.data.data.sell_team
+                    sell_team_data.unshift({"CD": "", "CD_VAL": "全团队"});
+                    _this.sell_team = sell_team_data
+                }
+            })
+
+
+            
+        },
+        search:function(){
+            var _this = this;
+            var param = {
+                "search":{
+                    "warehouse_cd" : _this.inventory_warehouse_cd,
+                    "inve_id" : '',
+                    "sale_team_cd" : _this.sale_team_cd,
+                    "inve_sku" : _this.skuType == '0' ? '' : _this.sku_inventory,
+                    "goods_type" : _this.goods_type == 'N003730001' ? '' : (_this.goods_type == 'N003730002' ? '1': '2')
+
+                },
+                "page": {
+                    "current_page" : _this.pages.current_page,
+                    "per_page" : _this.pages.per_page
+                }
+            };
+            _this.tableLoading = true
+            axios.post('/index.php?g=warehouse&m=inventory&a=getInveGoods', param).then(function (res) {
+                if(res.data.code == 2000){
+                    _this.productInformationData = res.data.data.data
+                    _this.pages.totalCount = Number(res.data.data.pages.total)
+                }
+                _this.tableLoading = false
+            })
+        },
+        next:function(){
+            if(this.inventory_warehouse_cd == ''){
+                this.$message.warning(this.$lang('请选择盘点仓库'))
+            }else if(this.skuType == '' || (this.skuType == '1' && this.sku_inventory == '')){
+                this.$message.warning(this.$lang('请填写SKU盘点'))
+            }else if(this.goods_type == ''){
+                this.$message.warning(this.$lang('请选择商品类型'))
+            }else{
+                this.stepStatus = 'second'
+                this.search()
+                var index =this.sell_team.findIndex(items =>{
+                    if(items.CD==this.sale_team_cd){
+                        return true
+                    }
+                })
+
+
+                this.inventory_warehouse_val = this.inventory_warehouse[this.inventory_warehouse_cd]
+                this.salesTeam = this.sell_team[index].CD_VAL
+                this.skuInventory = this.skuType == '0' ? '全sku' : this.sku_inventory
+                this.goodsType = this.goods_type == 'N003730001' ? '全品类' : (this.goods_type == 'N003730002' ? '正品': '残次品')
+                this.userName = $('#scName', top.document).text()
+            }
+            
+        },
+        exportExcel:function(){
+            var param = {
+                data: {
+                    warehouse_cd: this.inventory_warehouse_cd,
+                    "sale_team_cd" : this.sale_team_cd,
+                    "inve_sku" : this.skuType == '0' ? '' : this.sku_inventory,
+                    "goods_type_cd" : this.goods_type == 'N003730001' ? '' : (this.goods_type == 'N003730002' ? '1': '2')
+                }
+            };
+
+            var tmep = document.createElement('form');
+            tmep.action = '/index.php?g=warehouse&m=inventory&a=inveExport';
+            tmep.method = "post";
+            tmep.style.display = "none";
+            var opt = document.createElement("input");
+            opt.name = 'export_params';
+            opt.value = JSON.stringify(param);
+            tmep.appendChild(opt);
+            document.body.appendChild(tmep);
+            tmep.submit();
+            $(tmep).remove();
+        },
+        handleSizeChange: function (size) {
+            this.pages.per_page = size;
+            this.search();
+        },
+        handleCurrentChange: function (currentPage) {
+            this.pages.current_page = currentPage;
+            this.search();
+        },
+        submit:function(){
+            var _this = this;
+            var param = {
+                "data":{
+                    "warehouse_cd" : _this.inventory_warehouse_cd,
+                    "sale_team_cd" : _this.sale_team_cd,
+                    "inve_sku" : _this.skuType == '0' ? '' : _this.sku_inventory,
+                    "goods_type_cd" : _this.goods_type,
+                },
+            };
+            _this.$confirm(_this.$lang('请确认是否已导出所需盘点数据?'), _this.$lang('提示'), {
+                confirmButtonText: _this.$lang('确定'),
+                cancelButtonText: _this.$lang('取消'),
+                type: 'warning'
+            }).then(() => {
+                axios.post('/index.php?g=warehouse&m=inventory&a=inveCreate', param).then(function (res) {
+                    if(res.data.code == 2000){
+                        _this.$message.success(_this.$lang('新建盘点单成功'))
+                        _this.submit_status = true
+                    
+                        setTimeout(() => {
+                            var dom = document.createElement('a');
+                            var _href = "/index.php?m=stock&a=inventory_detail&idd="+res.data.data;
+                            dom.setAttribute("onclick", "opennewtab(this,'" + _this.$lang('盘点详情') + "')");
+                            dom.setAttribute("_href", _href);
+                            dom.click();
+                        }, 1000);
+                        setTimeout(() => {
+                            window.parent.document.querySelector('#min_title_list [title="发起盘点"] b').click()
+                            $(window.parent.document.querySelector('#iframe_box')).find('.show_iframe:visible').find('.loading').hide()
+                        }, 2000);
+ 
+                    }else{
+                        _this.$message.error(res.data.msg)
+                    }
+                })
+            }).catch(() => {
+                _this.$message({
+                    type: 'info',
+                    message: _this.$lang('已取消')
+                });          
+            });
+
+        },
+        viewDetail:function(row){
+            var _this = this
+            
+
+            if(!row.detail){
+                var param = {
+                    "search":{
+                        "warehouse_cd" : _this.inventory_warehouse_cd,
+                        "sku_id" : row.skuId,
+                        "sale_team_cd" : _this.sale_team_cd,
+                        "goods_type" : _this.goods_type == 'N003730001' ? '' : (_this.goods_type == 'N003730002' ? '1': '2')
+                    }
+                };
+                _this.$set(row, 'tableInnerLoading', true);
+                axios.post('/index.php?g=warehouse&m=inventory&a=getInveGoodsBatch', param).then(function (res) {
+                    console.log(res);
+                    if(res.data.code == 2000){
+                        _this.$set(row, 'detail', res.data.data.data)
+                    }
+                    _this.$set(row, 'tableInnerLoading', false);
+                })
+            }
+
+
+        },
+        
+        
+    
+     
+    
+  
+    },
+
+  
+  })
+</script>
+</body>
+
+</html>

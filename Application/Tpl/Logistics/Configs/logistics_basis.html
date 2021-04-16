@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html lang="en">
+<head>
+      <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+     <link rel="stylesheet" href="./Application/Tpl/Home/Public/lib/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.const.V}>">
+    <link href="/Application/Tpl/Home/Public/lib/My97DatePicker/skin/WdatePicker.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="../Public/css/logistics.css">
+    <link rel="stylesheet" href="../Public/css/logistics-basis.css">
+    <title><{$Think.lang.物流基础表}></title>
+    <style>
+        [v-cloak]{display: none !important;}
+        .layui-layer-content{width:500px;background:white !important;border:1px solid #cccccc;border-right:2px solid #cccccc}
+        .el-input__icon{
+            right: 10px;
+        }
+        .row {
+          margin: 0px !important; 
+        }
+        ul, li {
+          list-style-type: none;
+       }
+       .scroller .el-select-dropdown__wrap{
+           overflow-x: hidden !important; 
+           overflow-y: scroll;
+        }
+        .pop::-webkit-scrollbar{
+            display: none;
+        }
+        .el-table__body-wrapper{
+            overflow: visible !important;
+        }
+    </style>
+</head>
+<body>
+ <div id="logistics" class="logistics_basis" v-cloak>
+    <div class="header">
+         <el-date-picker v-model="form.startTime" format="yyyy-MM-dd" @change="dateChange" type="date" value-format="yyyy-MM-dd" :placeholder="$lang('开始时间')"></el-date-picker>
+            <span style="width: 10px;margin-left: 15px;"> - </span>
+        <el-date-picker v-model="form.endTime" format="yyyy-MM-dd" @change="endTimeChange" value-format="yyyy-MM-dd" type="date" :placeholder="$lang('结束时间')" style="margin-left: 20px;"></el-date-picker>
+         <el-select :popper-append-to-body=false :placeholder="$lang('物流公司')" v-model="form.logistiosCompanyValue" @change="getWarehouseData" :multiple-limit=10 multiple style="width: 300px;height: 35px;margin-bottom: 4px;"  multiple collapse-tags filterable>
+            <el-option v-for="(item, index) in logisticsCompany" :value="item.cd" :label="$lang(item.cdVal)" :key="item.cd"></el-option>
+        </el-select>
+        <el-select v-model="form.companyType" style="width: 200px;height: 40px;">
+            <el-option v-for="item in companyTypeData" :value="item.id" :label="$lang(item.val)" :key="item.id"></el-option>
+        </el-select>
+        <el-input type="text" @blur="agentCompanyBlur" style="width: 300px;margin-left: 10px;" :placeholder="$lang('请输入')" v-model="form.agentCompany"></el-input>
+        <div class="operator-btn">
+            <button type="button" class="seacher" @click="basisDataSearch()">{{$lang('搜索')}}</button>
+            <button type="reset" class="reset" @click="reset">{{$lang('重置')}}</button>
+        </div>
+    </div>
+     <div class="row logistics_add" v-cloak>
+       <div class="col-lg-12 col-md-12 col-sm-12">
+             <p>{{$lang('搜索结果')}}：{{$lang('共')}}<span> {{totalCount}} </span>{{$lang('条记录')}}</p>
+             <a class="logistics_basis_xl_export" href="javascript:void(0)" style="color:#1e7eb4 !important;" @click="logisticsXlExport()">{{$lang('导出')}}</a>
+             <a class="logistics_basis_xl_export" href="/index.php?g=logistics&m=FreightRules&a=tpl_down" style="color:#1e7eb4 !important;">{{$lang('运费模板下载')}}</a>
+             <a class="logistics_basis_xl_export" href="javascript:void(0)" style="color:#1e7eb4 !important;" @click="logisticsXlImport()">{{$lang('运费模板导入')}}</a>
+             <a class="logistics_basis_xl_export" href="javascript:void(0)" style="color:#1e7eb4 !important;" @click="freightTemplateExport()">{{$lang('运费模板导出')}}</a>
+             <form id="otherImport" action="/index.php?g=logistics&m=FreightRules&a=import" method="post" enctype="multipart/form-data" style="display:none">
+                 <input type="file" name="file" id="activeImport" onchange="$('#otherImport').submit()">
+             </form>
+            <?php if(ButtonAction::hidden()){ ?>
+           <button type="button" class="seacher" @click="add('add')">{{$lang('新增')}}</button>
+            <?php } ?>
+       </div>
+     </div>
+     <div class="logistics_table" id="base-table" v-cloak>
+        <el-table border show-header  ref="multipleTable" tooltip-effect="dark" style="width: 100%" v-loading="tableLoading" :data="basisData"   @selection-change="handleSelectionChange">
+            <el-table-column width="70" :label="$lang('编号')"> 
+                <template scope="scope">
+                    {{scope.row.id}}
+                </template>
+            </el-table-column>
+             <el-table-column width="150" :label="$lang('物流公司')"> 
+                <template scope="scope">
+                    {{$lang(scope.row.logistics_company)}}
+                </template>
+            </el-table-column>
+             <el-table-column width="150" :label="$lang('物流方式')"> 
+                <template scope="scope">
+                    {{$lang(scope.row.logistics_mode)}}
+                </template>
+            </el-table-column>
+             <el-table-column width="170" :label="$lang('运费模板')"> 
+                <template scope="scope">
+                    <!-- {{scope.row.id}} -->
+                    <div  @mouseenter="showTips(scope.row)" @mouseleave="showTips(scope.row)" class="colorBlue" @click="jumpFre(scope.row.id, '运费规则表')" style="position: relative;">
+                        <div class="freight-templat" style="overflow: hidden;text-overflow: ellipsis;white-space: nowrap;width: 180px;height: 30px;">
+                           <!--  <span v-for="val in scope.row.POSTAGE_ID">{{val}} <small>,</small></span> -->
+                            <span>{{$lang((scope.row.POSTAGE_ID || []).join())}} <small></small></span>
+                        </div>
+                        
+                    </div>  
+                    <div class="freight-tips" v-if="scope.row.POSTAGE_ID && scope.row.POSTAGE_ID.length > 1 && scope.row.isShow">
+                      <span v-for="val in scope.row.POSTAGE_ID">{{$lang(val)}}<small>,</small></span>
+                    </div>  
+                </template>
+            </el-table-column>
+             <el-table-column width="130" :label="$lang('服务代码')"> 
+                <template scope="scope">
+                    {{$lang(scope.row.service_code)}}
+                </template>
+            </el-table-column>
+             <el-table-column width="210" :label="$lang('面单获取方式')"> 
+                <template scope="scope">
+                    {{$lang(scope.row.SURFACE_WAY_GET_NAME.join(','))}}
+                </template>
+            </el-table-column>
+             <el-table-column width="150" :label="$lang('物流公司类型')"> 
+                <template scope="scope">
+                    <span v-if="scope.row.need_gift=='1'">{{$lang('物流公司物流')}}</span>
+                    <span v-if="scope.row.need_gift=='0'">{{$lang('平台自有物流')}}</span>
+                </template>
+            </el-table-column>
+            <el-table-column width="150" :label="$lang('实际物流公司')"> 
+                <template scope="scope">
+                    <span>{{scope.row.real_logistics_company_name}}</span>
+                </template>
+            </el-table-column>
+             <el-table-column width="170" :label="$lang('修改时间')"> 
+                <template scope="scope">
+                    {{scope.row.update_time }}
+                </template>
+            </el-table-column>
+             <el-table-column width="102" :label="$lang('是否启用')"> 
+                <template scope="scope">
+                    <span v-if="scope.row.is_enable == 1">{{$lang('已启用')}}</span>  
+                    <span v-if="scope.row.is_enable == 0">{{$lang('未启用')}}</span>  
+                </template>
+            </el-table-column>
+             <el-table-column width="100" :label="$lang('修改人')"> 
+                <template scope="scope">
+                    {{scope.row.creator}}
+                </template>
+            </el-table-column>
+             <el-table-column  :label="$lang('操作')">
+                <template scope="scope">
+                    <?php if(checkPermissions('Logistics/configs', 'resetLogisticsSearchCount')) { ?>
+                  <el-tooltip class="item" effect="dark" :content="$lang('刷新实际物流公司，用于轨迹查询')" placement="left">
+                    <button type="button" :disabled="scope.row.isdisabled" class="edit" @click="refresh(scope.$index,scope.row)" style="border:1px solid #000">{{$lang('刷新')}}</button>
+                  </el-tooltip>
+                  <?php }?>
+                  <button type="button" class="edit" @click="add('modefied',scope.row)" style="background: #1e7eb4 !important;color: #fff;">{{$lang('编辑')}}</button>
+                </template>
+            </el-table-column>
+        </el-table>
+         <div class="logistics_table_record" v-cloak>
+             <div class="block">
+                 <el-pagination
+                         background
+                         @current-change="handleCurrentChange"
+                         @size-change="handleSizeChange"
+                         :current-page.sync="page.currentPage"
+                         :page-size="page.pageSize"
+                         :page-sizes="[10, 30, 50, 100]"
+                         layout="total, sizes, prev, pager, next, jumper"
+                         :total="totalCount">
+                 </el-pagination>
+<!--                  <el-pagination background @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="form.currentPage"
+                :page-sizes="[10, 30, 50, 100]" :page-size="form.pageSize" layout="sizes,prev, pager, next, jumper" :total="totalCount"></el-pagination>
+ -->             </div>
+         </div>
+     </div>
+    <el-dialog :visible.sync="dialogVisible" width="25%" v-cloak class="pop" :close-on-click-modal=false show-close>
+        <div class="logistics_pop_top" style="overflow: hidden;">
+             <span v-if="Popstatus == 'add'" style="margin-top: 10px;"><small  >{{$lang('新增')}}</small></span>
+             <span v-if="Popstatus == 'modefied'" style="margin-top: 10px;"><small>{{$lang('修改')}}</small></span>
+             <i @click="cancel()" style="margin-top: 5px;cursor: hand;"><img src="../Public/img/close.png" alt="" style="width: 25px;height: 25px;padding: 4px 4px;"></i>
+         </div>
+         <div class="logistics_pop_body" style="position: relative;">
+            <div class="flex scroller">
+                <label class="must">{{$lang('物流公司')}}</label>
+                <el-select :popper-append-to-body=false @change="logisticsCompanyChange" v-model="pop_logistics_company" class="from-control no_border" filterable id="pop_logistics_company" style="width: 250px;">
+                    <el-option v-for="(company,index) in companyData" :key="company.code"
+                         :label="$lang(company.val)"
+                         :value="company.code">
+                    </el-option>
+                </el-select>
+            </div>
+             <div class="flex">
+                <label class="must">{{$lang('物流方式')}}</label>
+                <el-input type="text" class="form-control" v-model="pop_logistics_mode" id="pop_logistics_mode"></el-input>
+             </div>
+             <div class="flex">
+                <label class="must">{{$lang('服务代码')}}</label>
+                <el-input type="text" class="form-control" v-model="pop_service_code" id="pop_service_code"></el-input>
+             </div>
+             <div class="flex">
+                <label class="must">{{$lang('账号')}}</label>
+                <el-select :popper-append-to-body=false v-model="accountName" @change="accountNameChange" class="account-name" id="pop_logistics_company" style="width: 250px;">
+                    <el-option v-for="(val, index) in addData" :key="index" :label="val" :value="index">
+                    </el-option>
+                </el-select>
+             </div>
+             <div class="flex scroller">
+                 <label class="must">{{$lang('面单获取方式')}}</label>
+                 <el-select :popper-append-to-body=false v-model="surfaceWay_chose" name="surfaceWay_chose" multiple :placeholder="$lang('请选择')" id="onKeyPressSelectAll" style="width: 250px;" collapse-tags>
+                    <el-option v-for="item in surfaceWay" :key="item.CD_VAL" :label="$lang(item.CD_VAL)" :value="item.value"></el-option>
+                </el-select>
+             </div>
+             <div class="flex scroller">
+                <label class="must">{{$lang('物流公司类型')}}</label>
+                <el-select :popper-append-to-body=false v-model="logisticsState" placeholder="请选择" style="width: 250px;">
+                    <el-option v-for="item in logisticsCompanyType" :value="item.id" :label="$lang(item.val)" :key="item.id"></el-option>
+                </el-select>
+             </div>
+             <div class="flex scroller">
+                <label class="must">{{$lang('实际物流公司')}}</label>
+                <el-select :popper-append-to-body=false @change="real_logistics_company_change" v-model="real_logistics_company_id" class="from-control no_border" filterable id="pop_logistics_company" style="width: 250px;">
+                    <el-option v-for="(company,index) in real_logistics_companyData" :key="company.idd"
+                         :label="$lang(company.val)"
+                         :value="company.idd">
+                    </el-option>
+                </el-select>
+             </div>
+             <div class="flex" style="align-items: center;">
+                 <label class="must">{{$lang('是否启用')}}</label>
+                 <el-switch v-model="Popradio" active-color="#13ce66" on-text="" off-text="" style="margin-left: 13px;"  inactiv-color="#eceff1" on-value="1" off-value="0"> </el-switch>
+             </div>
+         </div>
+         <span slot="footer" class="dialog-footer">
+            <el-button @click="cancel()">{{$lang('取消')}}</el-button>
+            <el-button type="primary" @click="basisSubmitButton" style="margin-right: 20px;">{{$lang('确定')}}</el-button>
+        </span>
+    </el-dialog>
+ </div>
+</body>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script src="/Application/Tpl/Logistics/Configs/logistics_basis.js?v=<{$Think.config.v}>"></script>
+</html>

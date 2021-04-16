@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+        <{Think.lang.盈亏预估记录}>
+    </title>
+
+    <link href="../Public/css/H-ui-3.1.min.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="../Public/css/stock.css?v=<{$Think.const.V}>" />
+    <link rel="stylesheet" type="text/css" href="../Public/css/style.css?v=<{$Think.const.V}>" />
+    <link rel="stylesheet" type="text/css" href="../Public/css/default.css?v=<{$Think.const.V}>" />
+    <link rel="stylesheet" type="text/css" href="../Public/lib/Hui-iconfont/1.0.7/iconfont.css?v=<{$Think.const.V}>" />
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.13.0.css?v=<{$Think.const.V}>">
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="estimateRecord" v-cloak>
+        <div class="es-header">
+            <el-form :model="search">
+                <el-row>
+                    <el-col :span="8">
+                        <el-form-item :label="$lang('创建时间')">
+                            <el-date-picker v-model="search.date" value-format="yyyy-MM-dd" type="daterange"
+                                @change="getData" :range-separator="$lang('至')" :start-placeholder="$lang('开始日期')"
+                                :end-placeholder="$lang('结束日期')">
+                            </el-date-picker>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                        <el-form-item :label="$lang('预估次数')">
+                            <el-select v-model="search.year" multiple clearable :placeholder="$lang('请选择年份')"
+                                @change="getData">
+                                <!-- 往前10年，往后20年 -->
+                                <el-option v-for="year in 30" :key="year" :label="2010 + year" :value="2010 + year">
+                                </el-option>
+                            </el-select>
+                            <el-select v-model="search.count" multiple clearable :placeholder="$lang('次数')"
+                                @change="getData">
+                                <el-option v-for="count in 60" :key="count" :label="count" :value="count"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+            </el-form>
+        </div>
+        <div class="use-row operate">
+            <div class="col-100" style="text-align: right; margin-right: 30px;">
+                <el-button type="primary" @click="routeToAddRecord">{{$lang('新增预估记录')}}</el-button>
+            </div>
+        </div>
+        <div class="es-content">
+            <el-table :data="data" border class="table-list" v-loading="loading">
+                <el-table-column prop="ID" label="ID"></el-table-column>
+                <el-table-column :label="$lang('预估次数')">
+                    <template slot-scope="scope">
+                        <div>{{scope.row.es_year}}{{$lang('年')}} {{$lang('第')}}{{scope.row.es_num}}{{$lang('次')}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="created_time" :label="$lang('创建时间')">
+                    <template slot-scope="scope">
+                        <div>{{scope.row.created_time | dateFormat}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="update_time" :label="$lang('最后修改时间')">
+                    <template slot-scope="scope">
+                        <div>{{scope.row.update_time | dateFormat}}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('操作')">
+                    <template slot-scope="scope">
+                        <el-button @click="handleView(scope.row)">{{$lang('查看')}}</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <div class="use-row pagination">
+                <div class="col-100 text-right">
+                    <el-pagination background  layout="sizes, prev, pager, next" :page-sizes="[10, 50, 100]"
+                    @size-change="handleEsPageSize" @current-change="handleEsPage"
+                        :total="total">
+                    </el-pagination>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+<script src="../Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="../Public/js/H-ui.js"></script>
+<script type="text/javascript" src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script type="text/javascript" src="../Public/js/request.js?v=<{$Think.const.V}>"></script>
+<script>
+    if (getCookie("think_language") !== "zh-cn") {
+        ELEMENT.locale(ELEMENT.lang.en);
+    }
+    var app = new
+        Vue({
+            name: "estimate_record",
+            el: "#estimateRecord",
+            data() {
+                return {
+                    search: {
+                        date: [],
+                        year: [],
+                        count: [],
+                        page: 1,
+                        pageSize: 10
+                    },
+                    data: [],
+                    total: 0,
+                    loading: false,
+                }
+            },
+            filters: {
+                dateFormat(timestamp) {
+                    if (!timestamp) return;
+                    return new Date(timestamp - new Date().getTimezoneOffset() * 60 * 1000).toJSON().substring(0, 19).replace('T', ' ');
+                }
+            },
+            created() {
+                this.getData();
+            },
+            methods: {
+                getData() {
+                    const [start_time, end_time] = this.search.date || [];
+                    const form = new FormData();
+                    form.append('start_time', start_time || '');
+                    form.append('end_time', end_time || '');
+                    form.append('es_year', this.search.year.join(','));
+                    form.append('es_num', this.search.count.join(','));
+                    form.append('page', this.search.page);
+                    form.append('pageSize', this.search.pageSize);
+                    this.loading = true;
+                    request('plfData/queryPlfData', form, 'insight').then(res => {
+                        this.loading = false;
+                        if (res.success) {
+                            this.data = res.datas;
+                            this.total = res.totalCount;
+                        }
+                    })
+                },
+                handleEsPageSize(size) {
+                    this.search.pageSize = size;
+                    this.getData();
+                },
+                handleEsPage(page) {
+                    this.search.page = page;
+                    this.getData();
+                },
+                handleView(row) {
+                    newTab('index.php?m=profitEstimate&a=estimate_detail&id=' + row.ID, this.$lang('预估记录详情'))
+                },
+                routeToAddRecord() {
+                    request('plfData/getTableIndex', null, 'insight', { loading: false }).then(res => {
+                        if (res.success) {
+                            window.sessionStorage.setItem('gp-erp-estimate-record', JSON.stringify(res.datas));
+                            newTab('index.php?m=profitEstimate&a=add_estimate_record', this.$lang('新增预估记录'))
+                        } else {
+                            this.$confirm(this.$lang(res.msg), this.$lang('错误提示'), {
+                                confirmButtonText: this.$lang('确定'),
+                                type: 'warning'
+                            })
+                        }
+                    })
+                },
+                digitFormat(num) {
+                    num = parseFloat(num).toFixed(2);
+                    var num1 = num.split('.')[0] + '';//数字转字符串  
+                    var str = "";//字符串累加  
+                    for (var i = num1.length - 1, j = 1; i >= 0; i--, j++) {
+                        if (j % 3 == 0 && i != 0 && num1[i - 1] != '-') {//每隔三位加逗号，过滤正好在第一个数字的情况 过滤负数情况 
+                            str += num1[i] + ",";//加千分位逗号  
+                            continue;
+                        }
+                        str += num1[i];//倒着累加数字
+                    }
+                    return str.split('').reverse().join("") + '.' + num.split('.')[1];
+                },
+            }
+        });
+</script>
+
+</html>

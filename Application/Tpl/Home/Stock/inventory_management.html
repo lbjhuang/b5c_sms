@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>盘点管理</title>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <!-- <link rel="stylesheet" href="./Application/Tpl/Home/Public/../Hr/hrstyle.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>"> -->
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/btn-new.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+</head>
+
+<style>
+    [v-cloak] {
+        display: none;
+    }
+    .td-item-100 {
+        width: 100%;
+    }
+    .td-item-33 {
+        width: 33.333%;
+    }
+    /* .search-table,.td-item-33 .el-select{
+        width: 100%;
+    } */
+    .search-table{
+        width: 100%;
+    }
+    .search-table .el-select,
+    .search-table .el-input{
+        width: 300px;
+    }
+    .show-list .el-form-item__label{
+        padding: 0px 10px 0px 0px;
+    }
+    .search_results{
+        display: flex;
+        justify-content: space-between;
+        font-size: 16px;
+        margin-bottom: 20px;
+    }
+    .table_pages{
+        margin-top: 20px;
+        text-align: right;
+    }
+    .isGreen {
+        color: #50d850;
+    }
+
+    .isRed {
+        color: red;
+    }
+    /* .inventory_status{
+        height: 80px;
+    } */
+    .inventory_status span{
+        width: 155px;
+        height: 24px;
+        background: rgb(244 244 244);
+        border-radius: 12px;
+        line-height: 24px;
+        text-align: center;
+        padding: 0;
+        display: inline-block;
+        font-size: 13px;
+        margin: 5px;
+        cursor: pointer;
+    }
+    .inventory_status span.active{
+        background: rgb(3, 117, 222);
+        color: rgb(255, 255, 255);
+    }
+    .search_tbody tr{
+        display: flex;
+    }
+    .table-list tr th{
+        background: #546e7a;
+        color: #ffffff;
+    }
+    .sku_inventory .el-form-item__content{
+        display: flex;
+    }
+    .sku_inventory .el-select, .sku_inventory .el-select .el-input{
+        width: 150px;
+    }
+    .sku_inventory .el-form-item__content > .el-input{
+        margin-left: 15px;
+    }  
+</style>
+
+<body>
+<div id="inventoryManagement" class="show-list" v-cloak>
+    <el-form :model="searchForm" label-position="right" label-width="150px">
+        <div class="use-row">
+            <div class="col-100">
+                <table class="search-table">
+                    <tbody class="search_tbody">
+                        <tr class="inventory_status">
+                            <td class="td-item-100">
+                                <el-form-item :label="$lang('盘点状态')">
+                                    <span :class="{active:searchForm.search.statusData == ''}" class="tab-item" @click="selectStatus()">{{$lang('全部')}}</span>
+                                    <span :class="{active:status.value == searchForm.search.statusData}" class="tab-item" v-for="(status,key) in inventoryStatusData" :key="key" :data-cd="status.value" @click="selectStatus(status,'1')">{{$lang(status.label)}}</span>
+                                </el-form-item>
+                            </td>
+                        </tr>
+                        <tr class="inventory_status">
+                            <td class="td-item-100">
+                                <el-form-item v-show="statusChildrenName" :label="$lang(statusChildrenName)">
+                                    <span :class="{active:status.value == searchForm.search.statusData2}" class="tab-item" v-for="(status,key) in statusChildren" :key="key" :data-cd="status.value" @click="selectStatus(status,'2')">{{$lang(status.label)}}</span>
+                                </el-form-item>
+                            </td> 
+                        </tr>
+                        <tr>
+                            <td class="td-item-33">
+                                <el-form-item :label="$lang('盘点仓库')">
+                                    <el-select :placeholder="$lang('请选择')" filterable v-model="searchForm.search.warehouse_cd">
+                                        <el-option :key="key" :label="$lang(value)" :value="key" v-for="(value,key) in warehouseData"></el-option>
+                                    </el-select>
+                                </el-form-item>
+                            </td>
+                            <td class="td-item-33">
+                                <el-form-item :label="$lang('发起盘点时间')">
+                                    <el-date-picker
+                                        v-model="searchForm.search.created_at"
+                                        type="daterange"
+                                        value-format="yyyy-MM-dd"
+                                        placeholder="选择日期">
+                                    </el-date-picker>
+                                </el-form-item>
+                            </td>
+                            <td class="td-item-33">
+                                <el-form-item :label="$lang('盘点单号')">
+                                    <el-input v-model="searchForm.search.inve_no"></el-input>
+                                </el-form-item>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="td-item-33">
+                                <el-form-item :label="$lang('盘点发起人')">
+                                    <el-input v-model="searchForm.search.created_by"></el-input>
+                                </el-form-item>
+                            </td>
+                            <td class="td-item-33">
+                                <el-form-item :label="$lang('结束盘点时间')">
+                                    <el-date-picker
+                                        v-model="searchForm.search.end_at"
+                                        type="daterange"
+                                        value-format="yyyy-MM-dd"
+                                        placeholder="选择日期">
+                                    </el-date-picker>
+                                </el-form-item>
+                            </td>
+                            <td class="td-item-33">
+                                <el-form-item :label="$lang('盘点差异')">
+                                    <el-select :placeholder="$lang('请选择')" v-model="searchForm.search.has_difference">
+                                        <el-option :label="$lang('有')" value="1"></el-option>
+                                        <el-option :label="$lang('无')" value="0"></el-option>
+                                    </el-select>
+                                </el-form-item>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="td-item-33">
+                                <el-form-item :label="$lang('销售团队')">
+                                    <el-select v-model="searchForm.search.sale_team_cd" filterable :placeholder="$lang('请选择销售团队')" >
+                                        <el-option
+                                                v-for="item in sell_team"
+                                                :key="item.CD"
+                                                :label="$lang(item.CD_VAL)"
+                                                :value="item.CD">
+                                        </el-option>
+                                    </el-select>
+                                </el-form-item>
+                            </td>
+                            <td class="td-item-33 sku_inventory">
+                                <el-form-item :label="$lang('盘点SKU')">
+                                    <el-select :placeholder="$lang('请选择')" v-model="searchForm.search.skuType">
+                                        <el-option :label="$lang('某些SKU')" value="1"></el-option>
+                                        <el-option :label="$lang('全SKU')" value="0"></el-option>
+                                    </el-select>
+                                    <el-input v-if="searchForm.search.skuType == '1'" :placeholder="$lang('英文逗号分隔')" v-model="searchForm.search.inve_sku"></el-input>
+                                </el-form-item>
+                            </td>
+                            <td class="td-item-33">
+                                <el-form-item :label="$lang('盘点商品类型')">
+                                    <el-select :placeholder="$lang('请选择')" v-model="searchForm.search.goods_type_cd">
+                                        <el-option :label="$lang('全品类')" value="N003730001"></el-option>
+                                        <el-option :label="$lang('正品')" value="N003730002"></el-option>
+                                        <el-option :label="$lang('残次品')" value="N003730003"></el-option>
+                                    </el-select>
+                                </el-form-item>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div>
+                                    <el-button @click="search" type="primary">{{$lang('查询')}}</el-button>
+                                    <el-button @click="reset" type="info">{{$lang('重置')}}</el-button>
+                                    <el-button @click="add" type="primary">{{$lang('新增盘点')}}</el-button>
+                                    <el-button @click="cancelInventory" type="primary">{{$lang('取消盘点')}}</el-button>
+                                    <!-- <button type="button" class="btn-search" @click="search">{{$lang('查询')}}</button>
+                                    <button type="button" class="btn-reset" @click="reset">{{$lang('重置')}}</button>
+                                    <button type="button" class="btn-search" @click="add">{{$lang('新增盘点')}}</button> -->
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </el-form>
+    <div class="baseline"></div>
+    <div class="search_results">
+        <div>
+            {{$lang('搜索结果')}}：&nbsp;&nbsp;{{$lang('共')}}
+            <b>{{searchForm.pages.totalCount}}</b> {{$lang('条')}}
+        </div>
+    </div>
+    <el-table class="table-list" :data="inventoryManagementTable" border @selection-change="handleSelectionChange">
+        <el-table-column type="selection" width="55">
+    </el-table-column>
+        <el-table-column align="center" width="100"  :label="$lang('序号')">
+            <template slot-scope="scope">
+                <span>{{scope.$index + 1}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('盘点单号')">
+            <template slot-scope="scope">
+                <span>{{scope.row.inve_no}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('盘点仓库')">
+            <template slot-scope="scope">
+                <span>{{scope.row.warehouse_cd_val}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('发起盘点时间')" width="180px">
+            <template slot-scope="scope">
+                <span>{{scope.row.created_at}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('结束盘点时间')" width="180px">
+            <template slot-scope="scope">
+                <span>{{scope.row.end_at}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('发起人')">
+            <template slot-scope="scope">
+                <span>{{scope.row.created_by}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('销售团队')">
+            <template slot-scope="scope">
+                <span>{{scope.row.sale_team_cd_val}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('盘点商品类型')">
+            <template slot-scope="scope">
+                <span>{{scope.row.goods_type_cd_val}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('盘点SKU')">
+            <template slot-scope="scope">
+                <span>{{scope.row.inve_sku}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('盘点状态')">
+            <template slot-scope="scope">
+                <span>{{$lang(scope.row.status_cd_val)}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column width="100" align="center" :label="$lang('盘点差异')">
+            <template slot-scope="scope">
+                <span>{{scope.row.has_difference}}</span>
+            </template>
+        </el-table-column>
+        <el-table-column align="center" :label="$lang('操作')">
+            <template slot-scope="scope">
+                <el-button type="primary" @click="viewDetail(scope.row)">{{$lang('详情')}}</el-button>
+            </template>
+        </el-table-column>
+    </el-table>
+
+    <el-pagination class="table_pages" @size-change="handleSizeChange" @current-change="handleCurrentChange" 
+        :current-page.sync="searchForm.pages.current_page"
+        :page-sizes="[10, 50, 100, 200]" :page-size="searchForm.pages.per_page"
+        layout="sizes, prev, pager, next,jumper"
+        :total="searchForm.pages.totalCount">
+    </el-pagination>
+
+
+</div>
+
+<script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.form.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js"></script>
+<script src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/Qs.js"></script>
+<script src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script>
+  if (getCookie('think_language') !== "zh-cn") {
+    ELEMENT.locale(ELEMENT.lang.en)
+  }
+  var way = new Vue({
+    el: '#inventoryManagement',
+    data: {
+        searchForm:{
+            search:{
+                warehouse_cd:'',
+                created_at:'',
+                inve_no:'',
+                created_by:'',
+                end_at:'',
+                has_difference:'',
+                statusData: '',
+                statusData2: '',
+                sale_team_cd:'',
+                inve_sku:'',
+                goods_type_cd:'',
+                skuType:'',
+            },
+            pages:{
+                totalCount:0,
+                per_page:10,
+                current_page:1
+            }
+        },
+        inventoryOrders: [], // 选中得盘点单
+        baseData:{},
+        inventoryManagementTable:[],
+        inventoryStatusData:[],
+        statusChildren:[],
+        statusChildrenName:'',
+        warehouseData:[],
+        sell_team:[]
+    },
+    created: function () {
+      this.getBaseData();
+      this.search()
+    },
+    methods: {
+        getBaseData: async function(){
+            var _this = this;
+            // if(utils.getQueryVariable('procurement_number')){
+            //     _this.searchForm.search.purchaseOrderNo = utils.getQueryVariable('procurement_number')
+            // }
+
+            // var param = {
+            //     "cd_type": {
+            //         our_company: true,
+            //         currency: true
+            //     }
+            // };
+            axios.post('/index.php?g=warehouse&m=inventory&a=getInveStatus').then(function (res) {
+                if (res.data.code == 2000) {
+                    _this.inventoryStatusData = res.data.data;
+                } else {
+                    _this.$message({
+                        message: _this.$lang('获取数据失败'),
+                        type: 'warning'
+                    });
+                }
+            })
+
+            axios.post('/index.php?g=warehouse&m=inventory&a=getOwnWarehouse').then(function (res) {
+                if (res.data.code == 2000) {
+                    _this.warehouseData = res.data.data;
+                } else {
+                    _this.$message({
+                        message: _this.$lang('获取数据失败'),
+                        type: 'warning'
+                    });
+                }
+            })
+
+            axios.post('/index.php?g=common&m=index&a=get_cd', {
+                cd_type:{
+                    sell_team:true
+                }
+            }).then(function (response) {
+                if(response.data.code === 2000){
+                    // _this.sell_team = response.data.data.sell_team
+                    var sell_team_data = response.data.data.sell_team
+                    sell_team_data.unshift({"CD": "all", "CD_VAL": "全团队"});
+                    _this.sell_team = sell_team_data
+                }
+            })
+
+        },
+        search:function(){
+            var _this = this;
+            
+            var inve_sku = _this.searchForm.search.skuType == '0' ?  'all' : _this.searchForm.search.inve_sku
+            var param = {
+                "search":{
+                    "end_at":{
+                        "start":_this.searchForm.search.end_at[0],
+                        "end" : _this.searchForm.search.end_at[1]
+                    },
+                    "created_at":{
+                        "start":_this.searchForm.search.created_at[0],
+                        "end" : _this.searchForm.search.created_at[1]
+                    },
+                    "inve_no" : _this.searchForm.search.inve_no,
+                    "status_cd" : _this.searchForm.search.statusData,
+                    "sec_status_cd" : _this.searchForm.search.statusData2,
+                    "created_by" : _this.searchForm.search.created_by,
+                    "has_difference" : _this.searchForm.search.has_difference,
+                    "warehouse_cd" : _this.searchForm.search.warehouse_cd,
+                    "goods_type_cd" : _this.searchForm.search.goods_type_cd,
+                    "inve_sku" : inve_sku,
+                    "sale_team_cd" : _this.searchForm.search.sale_team_cd,
+                },
+                "pages": {
+                    "current_page" : _this.searchForm.pages.current_page,
+                    "per_page" : _this.searchForm.pages.per_page
+                }
+            };
+
+            axios.post('/index.php?g=warehouse&m=inventory&a=inveIndex', param).then(function (res) {
+                if(res.data.code == 2000){
+                    _this.inventoryManagementTable = res.data.data.data ? res.data.data.data : []
+                    _this.searchForm.pages.totalCount = Number(res.data.data.pages.total)
+                }
+            })
+        },
+        reset:function(){
+            this.searchForm.search = {
+                warehouse_cd:'',
+                created_at:'',
+                inve_no:'',
+                created_by:'',
+                end_at:'',
+                has_difference:'',
+                statusData: '',
+                statusData2: '',
+            }
+            this.searchForm.pages = {
+                per_page:10,
+                current_page:1
+            }
+            this.statusChildrenName = ''
+            this.search()
+        },
+        handleSelectionChange(orders) {
+            this.inventoryOrders = orders.map(order => order.id);
+        },
+        cancelInventory() {
+            if (this.inventoryOrders.length === 0) return this.$message.warning(this.$lang('请先勾选盘点单'))
+            if (this.inventoryOrders.length > 1) return this.$message.warning(this.$lang('不支持取消多个盘点单！'))
+            const [orderId] = this.inventoryOrders;
+            const params = {
+                id: orderId
+            }
+            axios.post('/index.php?g=warehouse&m=inventory&a=inveDelete', Qs.stringify(params)).then(res => {
+                if (res.data.code !== 2000) {
+                    return this.$message.error(res.data.msg);
+                }
+                this.$message.success(this.$lang('取消盘点成功'));
+                this.search();
+            })
+        },
+        add:function(){
+            var dom = document.createElement('a');
+            var _href = "/index.php?m=stock&a=new_inventory_order";
+            dom.setAttribute("onclick", "opennewtab(this,'" + this.$lang('发起盘点') + "')");
+            dom.setAttribute("_href", _href);
+            dom.click();
+        },
+        viewDetail:function(val){
+            console.log(val);
+            var _this = this
+            var dom = document.createElement('a');
+            var _href = "/index.php?m=stock&a=inventory_detail&idd="+val.id;
+            dom.setAttribute("onclick", "opennewtab(this,'" + _this.$lang('盘点详情') + "')");
+            dom.setAttribute("_href", _href);
+            dom.click();
+        },
+        handleSizeChange: function (size) {
+            this.searchForm.pages.per_page = size;
+            this.search();
+        },
+        handleCurrentChange: function (currentPage) {
+            this.searchForm.pages.current_page = currentPage;
+            this.search();
+        },
+        selectStatus: function selectStatus(item,index) {
+            if(item && index == '1'){
+                this.searchForm.search.statusData = item == ''? '': item.value
+                this.searchForm.search.statusData2 = ''
+                if(item.childrenName){
+                    this.statusChildrenName = item.childrenName
+                    this.statusChildren = item.children
+                }else{
+                    this.statusChildrenName = ''
+                    this.statusChildren = []
+                }
+            }else if(item && index == '2'){
+                this.searchForm.search.statusData2 = item.value == this.searchForm.search.statusData2 ? '':item.value
+            }else{
+                this.searchForm.search.statusData = ''
+                this.statusChildrenName = ''
+                this.statusChildren = []
+                this.searchForm.search.statusData2 = ''
+            }
+        },
+  
+    },
+
+  })
+</script>
+</body>
+
+</html>

@@ -1,0 +1,3312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>">
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+  <link rel="stylesheet" href="./Application/Tpl/Scm/style.css?v=<{$Think.config.VER_NUM}>">
+  <title>销售部分</title>
+  <style>
+    #sales_leader{
+      padding: 30px;
+    }
+    .disabled-background .el-input-group__prepend {
+      background-color: #fff !important;
+    }
+    .el-selectOption {
+        position: relative;
+    }
+    .el-selectOption .el-select-dropdown {
+        position: absolute !important;
+        top: 40 !important;
+        left: 0 !important;
+    }
+    .detail_table{
+        border-bottom: 1px solid #CADEE7;
+        border-right: 1px solid #CADEE7;
+    }
+    .detail_table td{
+        width: 100px;
+        border-top: 1px solid #CADEE7;
+        border-left: 1px solid #CADEE7;
+        text-align: center;
+    }
+    .good_column{
+        padding: 0;
+    }
+    .good_column li{
+        min-height: 50px;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid #EBEEF5;
+        justify-content: center;
+    }
+    .good_column li:last-child{
+        border-bottom: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="sales_leader" v-cloak>
+    <el-tabs v-model="tab.active" @tab-click="switchTab" class="demand">
+        <!-- 需求详情 -->
+        <el-tab-pane :label="$lang('需求详情')" name="detail" v-loading="tab.loading">
+            <!--进度条start-->
+            <div class="module-wrap">
+                <div class="title"> {{$lang('总进度')}} </div>
+                <el-steps :active="status.is_spot == 1 ? active.step - 2 : active.step" align-center :class="{'warning':demand.status == 'N002130700','failure':demand.status == 'N002130500'||demand.status == 'N002130600'}">
+                    <el-step v-for="(item,index) in baseData.scm_step" :title="$lang(nodeName(item.CD_VAL))" :key="item.CD" v-if="status.is_spot != 1 && (index == 1 || index == 2) || (index != 1 && index != 2)"></el-step>
+                </el-steps>
+            </div>
+            <!--进度条end-->
+            <!-- 销售信息start -->
+            <div class="module-wrap">
+                <div class="title">
+                    <el-col :span="12"> {{$lang('销售信息')}} </el-col>
+                    <el-col :span="12" class="text-right">  <el-button type="primary" size="mini" @click="folding('sell')">{{$lang('折叠/展开')}}</el-button> </el-col>
+                </div>
+                <table v-if="fold.sell" class="show-table" border="0" cellpadding="0" cellspacing="0">
+                    <tbody>
+                      <tr>
+                          <td> {{$lang('需求编号')}} </td>
+                          <td> {{demand.demand_code}} </td>
+                          <td> {{$lang('销售进度')}} </td>
+                          <td :class="{'error':demand.status == 'N002130700' || demand.status == 'N002130500' ||demand.status == 'N002130600'}"> {{$lang(demand.status_val)}} </td>
+                      </tr>
+                      <tr>
+                          <td> {{$lang('需求类型')}} </td>
+                          <td> {{$lang(demand.demand_type_val)}} </td>
+                          <td> {{$lang('客户名称')}}<label :class="{'required':!type.hotProducts && type.editStatus}"></label></td>
+                          <td> 
+                            <div v-if="type.editStatus">
+                                <el-select class="width-100" remote filterable clearable v-model="demand.customer_charter_no" @change="handleSelect" :loading="customLoading"
+                                :placeholder="$lang('请输入客户名称')" value-key="SP_NAME" :remote-method="remoteMethod">
+                                    <el-option v-for="(item, index) in customOptions" :key="index" :label="item.SP_NAME" :value="item.SP_CHARTER_NO"></el-option>
+                                </el-select>
+                                <!-- <el-autocomplete class="width-100" :disabled='type.hotProducts' v-model="demand.customer"  @select="selectCustomer"  value-key="name" :fetch-suggestions="queryCustomer"  placeholder="<{$Think.lang.请输入客户名称}>"></el-autocomplete> -->
+                            </div>
+                            <div v-else style="color: #409EFF">
+                                <el-popover
+                                placement="bottom"
+                                title=""
+                                trigger="hover">
+                                    <table class="detail_table" cellpadding="0" cellspacing="0" v-if="audit_info">
+                                        <tr>
+                                            <td>{{$lang('成立时间')}}</td>
+                                            <td>
+                                                {{audit_info.EST_TIME}}
+                                            </td>
+                                            <td>{{$lang('认缴资本')}}</td>
+                                            <td>
+                                                {{audit_info.CURRENCY}}{{audit_info.SUB_CAPITAL}}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>{{$lang('法人代表')}}</td>
+                                            <td>
+                                                {{audit_info.LG_REP}}
+                                            </td>
+                                            <td>{{$lang('股东名称')}}</td>
+                                            <td>
+                                                {{audit_info.SHARE_NAME}}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>{{$lang('信用评分(境外公司必填)')}}</td>
+                                            <td>
+                                                {{audit_info.CREDIT_SCORE}}
+                                            </td>
+                                            <td>{{$lang('信用评级(境外公司必填)')}}</td>
+                                            <td>
+                                                {{audit_info.CREDIT_LEVEL}}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>{{$lang('是否有负面信息')}}</td>
+                                            <td>
+                                                {{audit_info.IS_HAVE_NAGETIVE_INFO}}
+                                            </td>
+                                            <td>{{$lang('负面信息项')}}</td>
+                                            <td>
+                                                <span v-if="audit_info.negative">{{audit_info.negative[0]}}</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>{{$lang('风险评级')}}</td>
+                                            <td>
+                                                {{audit_info.RISK_RATING}}
+                                            </td>
+                                            <td>{{$lang('审核人')}}</td>
+                                            <td>
+                                                {{audit_info.REVIEWER}}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>{{$lang('审核时间')}}</td>
+                                            <td>
+                                                {{audit_info.REV_TIME}}
+                                            </td>
+                                            <td></td>
+                                            <td>
+                                                
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>{{$lang('法务备注')}}</td>
+                                            <td colspan="3">
+                                                {{audit_info.LEGAL_REMARK}}
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    <span slot="reference" style="color:#409EFF;cursor: pointer;">{{$lang(demand.customer)}}</span>
+                                </el-popover>
+                             </div>
+                          </td>
+                      </tr>
+                      <tr>
+                          <td>{{$lang('预计销售国家')}}<label :class="{'required':type.editStatus}"></label>
+                          <td>
+                            <div v-if="type.editStatus">
+                                <el-select  :popper-append-to-body="false" multiple clearable filterable collapse-tags v-model="demand.expected_sales_country" :placeholder="$lang('请选择预计销售国家')" class="width-100">
+                                    <el-option v-for="(item, index) in saleCountries" :key="index" :label="$lang(item.NAME)" :value="item.id" style="text-align: left;">
+                                    </el-option>
+                                </el-select>
+                              </div>
+                              <div v-else>
+                                  {{demand.expected_sales_country_val}} 
+                              </div>
+                          </td>
+                          <td>
+                              {{$lang('预计销售平台')}}<label :class="{'required':type.hotProducts && type.editStatus && !demand.customer_charter_no}"></label>
+                          </td>
+                          <td>
+                            <div v-if="type.editStatus">
+                                <el-select :disabled="type.hotProducts && demand.customer_charter_no !==''" :popper-append-to-body="false" multiple collapse-tags v-model="demand.expected_sales_platform_cd" clearable filterable :placeholder="$lang('请选择预计销售平台')" class="width-100">
+                                    <el-option v-for="(item, index) in saleSitecd" :key="index" :label="$lang(item.cdVal)" :value="item.cd" style="text-align: left;">
+                                    </el-option>
+                                </el-select> 
+                              </div>
+                              <div v-else>
+                                  {{demand.expected_sales_platform_cd_val ? demand.expected_sales_platform_cd_val : '非平台销售'}} 
+                              </div>
+                          </td>
+                      </tr>
+                      <tr>
+                          <td> {{$lang('框架合同')}}<label :class="{'required':!type.hotProducts && type.editStatus}"></label></td>
+                          <td>
+                              <div v-if="type.editStatus">
+                                  <el-select class="width-60"  @change="setCompany" filterable :disabled='type.hotProducts || demand.is_purchase_only == 1' :loading="loading.contractLoading" v-model="demand.contract"  @focus="queryContract" :placeholder="$lang('请选择适用合同')"  clearable>
+                                      <el-option v-for="(item, index) in baseData.contract" :key="index" :label="item.CON_NO" :value="item.CON_NO"> </el-option>
+                                  </el-select>
+                                  <el-checkbox class="width-20" :disabled='type.hotProducts || !!demand.contract' v-model="demand.is_purchase_only" false-label="0" true-label="1">
+                                    {{$lang('无框架合同')}}
+                                  </el-checkbox>
+                              </div>
+                              <div v-else>
+                                  <span v-if="demand.is_purchase_only == 1">
+                                      {{$lang('单采合作无合同')}}
+                                  </span>
+                                  <span v-else>{{demand.contract}}</span>
+                              </div>
+                          </td>
+                          <td> {{$lang('我方公司')}}<label :class="{'required':!type.hotProducts && type.editStatus}"></label></td>
+                          <td> 
+                            <div v-if="type.editStatus">
+                              <el-select  :popper-append-to-body="false" clearable v-model="demand.our_company" :placeholder="$lang('请选择我方公司')" class="width-100">
+                                <el-option v-for="(item, index) in baseData.our_company" :key="index" :label="item.CD_VAL" :value="item.CD" class="text-left"> </el-option>
+                              </el-select>
+                            </div>
+                            <div v-else>
+                                {{demand.our_company_val}} 
+                            </div>
+                          </td>
+                      </tr>
+                      <tr>
+                          <td> {{$lang('业务类型')}}<label :class="{'required':type.editStatus}"></label> </td>
+                          <td> 
+                              <div v-if="type.editStatus">
+                                  <el-select  :popper-append-to-body="false" clearable v-model="demand.business_mode" :placeholder="$lang('请选择业务类型')" class="width-100">
+                                      <el-option v-for="(item, index) in baseData.business_type" :key="index" :label="item.CD_VAL" :value="item.CD"  class="text-left"> </el-option>
+                                  </el-select>
+                              </div>
+                              <div v-else>
+                                  {{demand.business_mode_val}} 
+                              </div>
+                          </td>
+                          <td> {{$lang('客户收货方式')}}<label :class="{'required':!type.hotProducts && type.editStatus}"></label> </td>
+                          <td> 
+                              <div v-if="type.editStatus">
+                                  <el-select :popper-append-to-body="false" clearable :disabled='type.hotProducts' v-model="demand.receive_mode" :placeholder="$lang('请选择交货方式')" class="width-100">
+                                      <el-option v-for="(item, index) in baseData.delivery_type" :key="index" :label="item.CD_VAL" :value="item.CD" style="text-align: left;"> </el-option>
+                                  </el-select>
+                              </div>
+                              <div v-else>
+                                  {{demand.receive_mode_val}} 
+                              </div>
+                          </td> 
+                      </tr>
+                      <tr>
+                          <td> {{$lang('发货操作')}}<label :class="{'required':!type.hotProducts && type.editStatus}"></label> </td>
+                          <td> 
+                              <div v-if="type.editStatus">
+                                  <el-radio :disabled='type.hotProducts' v-model="demand.need_warehouse" label="0">
+                                      {{$lang('直接发给客户')}}
+                                  </el-radio>
+                                  <el-radio :disabled='type.hotProducts' v-model="demand.need_warehouse" label="1">
+                                      {{$lang('先入我方仓库，再发给客户')}}
+                                  </el-radio>
+                              </div>
+                              <div v-else>
+                                  {{$lang(demand.need_warehouse_val)}} 
+                              </div>
+                          </td>
+                          <td> {{$lang('客户收货地址')}}<label :class="{'required':!type.hotProducts && type.editStatus}"></label> </td>
+                          <td>
+                              <div v-if="type.editStatus">
+                                  <el-select :popper-append-to-body="false" clearable :disabled='type.hotProducts' v-model="demand.receive_country" :placeholder="$lang('国家')" style="width:32%;">
+                                      <el-option v-for="(item, index) in baseData.countries" :key="index" :label="item.NAME" :value="item.ID" style="text-align: left;"></el-option>
+                                  </el-select>
+                                  <el-select :popper-append-to-body="false" clearable :disabled='type.hotProducts' v-model="demand.receive_province" :placeholder="$lang('省/州')" style="width:33%;">
+                                      <el-option v-for="(item, index) in baseData.provinces" :key="index" :label="item.NAME" :value="item.ID" style="text-align: left;"> </el-option>
+                                  </el-select>
+                                  <el-select :popper-append-to-body="false" clearable :disabled='type.hotProducts' v-model="demand.receive_city" :placeholder="$lang('市/区')" style="width:33%;">
+                                      <el-option v-for="(item, index) in baseData.citys" :key="index" :label="item.NAME" :value="item.ID" style="text-align: left;"> </el-option>
+                                  </el-select>
+                                  <el-input v-model="demand.receive_address" clearable :disabled='type.hotProducts' :placeholder="$lang('详细地址')" style="margin-top:5px;"></el-input>
+                              </div>
+                              <div v-else>
+                                  {{demand.receive_country_val}}-
+                                  {{demand.receive_province_val}}-
+                                  {{demand.receive_city_val}}-
+                                  {{demand.receive_address}}
+                              </div>
+                          </td>
+                      </tr>
+                      <tr>
+                          <td> {{$lang('预计销售金额（含税）')}} </td>
+                          <td> {{demand.sell_currency_val}} {{demand.sell_amount | numberFormat}} </td>
+                          <td> {{$lang('预计发货时间')}}<label :class="{'required':!type.hotProducts && type.editStatus}"></label> </td>
+                          <td> 
+                              <div v-if="type.editStatus">
+                                  <el-date-picker :disabled='type.hotProducts' v-model="demand.ship_date" :picker-options="date.picksBefore" value-format="yyyy-MM-dd" type="date" :placeholder="$lang('请填写预计发货时间')" class="width-100"> </el-date-picker>
+                              </div>
+                              <div v-else>
+                                {{demand.ship_date}} 
+                              </div>
+                          </td>
+                      </tr>
+                      <tr>
+                          <td> {{$lang('收款周期')}}<label :class="{'required':!type.hotProducts && type.editStatus}"></label> </td>
+                          <td> 
+                              <div v-if="type.editStatus">
+                                  <el-select :popper-append-to-body="false" :disabled='type.hotProducts' v-model="demand.collection_cycle" :placeholder="$lang('请选择收款期数')" class="width-100" @change="pickCycle">
+                                      <el-option v-for="(item, index) in baseData.collection_cycle" :key="index" :label="item.CD_VAL" :value="item.CD" class="text-left"> </el-option>
+                                  </el-select>
+                              </div>
+                              <div v-else>
+                                  {{$lang(demand.collection_cycle_val)}} 
+                              </div>
+                          </td>
+                          <td> {{$lang('收款时间')}}<label :class="{'required':type.editStatus}"></label> </td>
+                          <td>
+                              <div v-if="type.editStatus">
+                                  <div style="margin: 5px 0;" class="nowrap text-left" v-for="(item,index) in demand.collection_time" :key="index">
+                                      <el-select :popper-append-to-body="false" :disabled='type.hotProducts' v-model="item.node" :placeholder="$lang('节点')" style="width:20%;">
+                                          <el-option v-for="(item, index) in baseData.collection_node" :key="index" :label="$lang(item.CD_VAL)" :value="item.CD" class="text-left"> </el-option>
+                                      </el-select>
+                                      <el-select :popper-append-to-body="false" :disabled='type.hotProducts' v-model="item.days" :placeholder="$lang('天数')" style="width:16%;">
+                                          <el-option v-for="(item, index) in baseData.payment_days" :key="index" :label="item.CD_VAL" :value="item.CD"  class="text-left"> </el-option>
+                                      </el-select>
+                                      <el-select :popper-append-to-body="false" :disabled='type.hotProducts' v-model="item.day_type" :placeholder="$lang('天数类型')" style="width:20%;">
+                                          <el-option v-for="(item, index) in baseData.collection_days_type" :key="index" :label="$lang(item.CD_VAL)" :value="item.CD"  class="text-left"> </el-option>
+                                      </el-select>
+                                      <el-input v-model="item.percent" :disabled='type.hotProducts' :placeholder="$lang('比例')" style="width:12%;"></el-input>%
+                                      <el-date-picker :picker-options="item.picksBeforeTime" @change="pickTime(demand.collection_time,index,item.date)" v-model="item.date" value-format="yyyy-MM-dd" type="date" :placeholder="$lang('收款时间')" style="width:26%;"> </el-date-picker>
+                                  </div>
+                              </div>
+                              <div v-else>
+                                <p v-for="item in demand.collection_time_val">{{item}}</p>
+                              </div>
+                          </td>
+                      </tr>
+                      <tr>
+                        <td>
+                            {{$lang('【采购部分】销售物流及服务费用（预估）')}}<label :class="{'required':!type.hotProducts && status.is_spot != 1 && type.editStatus}"></label>
+                        </td>
+                        <td>
+                            <div v-if="type.editStatus" class="nowrap">
+                                <el-input :placeholder="$lang('请输入金额')" @input="fillRequire(demand, 'expense')" :disabled="status.is_spot == 1" :class="{'disabled-background': status.is_spot != 1}"
+                                    v-model="demand.expense">
+                                    <el-select style="width: 80px;" :popper-append-to-body="false" :disabled="status.is_spot == 1" v-model="demand.expense_currency" slot="prepend" :placeholder="$lang('请选择币种')">
+                                        <el-option v-for="(item, index) in baseData.currency" :key="index" :label="item.CD_VAL" :value="item.CD" style="text-align: left;"></el-option>
+                                    </el-select>
+                                </el-input>
+                            </div>
+                            <div v-else>
+                                {{demand.expense_currency_val}} {{demand.expense | numFormat}}
+                            </div>
+                        </td>
+                        <td>
+                            {{$lang('【现货部分】销售物流及服务费用（预估）')}}<label :class="{'required':!type.hotProducts && status.is_spot === '0' && type.editStatus}"></label>
+                        </td>
+                        <td>
+                            <div v-if="type.editStatus" class="nowrap">
+                                <el-input :placeholder="$lang('请输入金额')" @input="fillRequire(demand, 'expense_spot')" :disabled="status.is_spot == 2" :class="{'disabled-background': status.is_spot != 2}"
+                                    v-model="demand.expense_spot">
+                                    <el-select style="width: 80px;" :popper-append-to-body="false" :disabled="status.is_spot == 2" v-model="demand.expense_currency_spot" slot="prepend" :placeholder="$lang('请选择币种')">
+                                        <el-option v-for="(item, index) in baseData.currency" :key="index" :label="item.CD_VAL" :value="item.CD" style="text-align: left;"></el-option>
+                                    </el-select>
+                                </el-input>
+                            </div>
+                            <div v-else>
+                                {{demand.expense_currency_spot_val}} {{demand.expense_spot | numFormat}}
+                            </div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                            {{$lang('【采购部分】销售应缴税')}}<label :class="{'required':!type.hotProducts && status.is_spot != 1 && type.editStatus}"></label>
+                        </td>
+                        <td>
+                            <div v-if="type.editStatus" class="nowrap">
+                                <el-input :placeholder="$lang('请输入金额')" @input="fillRequire(demand, 'tax')" :disabled="status.is_spot == 1" :class="{'disabled-background': status.is_spot != 1}" v-model="demand.tax">
+                                    <el-select style="width: 80px;" :popper-append-to-body="false" :disabled="status.is_spot == 1" v-model="demand.tax_currency" slot="prepend" :placeholder="$lang('请选择币种')">
+                                        <el-option v-for="(item, index) in baseData.currency" :key="index" :label="item.CD_VAL" :value="item.CD" style="text-align: left;"></el-option>
+                                    </el-select>
+                                </el-input>
+                            </div>
+                            <div v-else>
+                                {{demand.tax_currency_val}} {{demand.tax | numFormat}}
+                            </div>
+                        </td>
+                        <td>
+                            {{$lang('【现货部分】销售应缴税')}}<label :class="{'required':!type.hotProducts && status.is_spot === '0' && type.editStatus}"></label>
+                        </td>
+                        <td>
+                            <div v-if="type.editStatus" class="nowrap">
+                                <el-input :placeholder="$lang('请输入金额')" @input="fillRequire(demand, 'tax_spot')" :disabled="status.is_spot == 2" :class="{'disabled-background': status.is_spot != 2}" v-model="demand.tax_spot">
+                                    <el-select style="width: 80px;" :popper-append-to-body="false" :disabled="status.is_spot == 2" v-model="demand.tax_currency_spot" slot="prepend" :placeholder="$lang('请选择币种')">
+                                        <el-option v-for="(item, index) in baseData.currency" :key="index" :label="item.CD_VAL" :value="item.CD" style="text-align: left;"></el-option>
+                                    </el-select>
+                                </el-input>
+                            </div>
+                            <div v-else>
+                                {{demand.tax_currency_spot_val}} {{demand.tax_spot | numFormat}}
+                            </div>
+                        </td>
+                      </tr>
+                      <tr>
+                          
+                      </tr>
+                      <tr>
+                          <td> {{$lang('销售发票')}}<label :class="{'required':!type.hotProducts && type.editStatus}"></label> </td>
+                          <td> 
+                            <div v-if="type.editStatus" class="nowrap">
+                                <el-select :popper-append-to-body="false" clearable :disabled='type.hotProducts' v-model="demand.invoice_type" :placeholder="$lang('请选择发票类型')" class="width-50">
+                                    <el-option v-for="(item, index) in baseData.invoice_type" :key="index" :label="$lang(item.CD_VAL)" :value="item.CD" class="text-left"> </el-option>
+                                </el-select>
+                                <el-select :popper-append-to-body="false" clearable :disabled='type.hotProducts' v-model="demand.tax_rate" :placeholder="$lang('请选择税点')" class="width-50">
+                                    <el-option v-for="(item, index) in baseData.tax_rate" :key="index" :label="item.CD_VAL" :value="item.CD" class="text-left"> </el-option>
+                                </el-select>
+                            </div>
+                            <div v-else>
+                                {{$lang(demand.invoice_type_val)}} {{demand.tax_rate_val}}
+                            </div>
+                          </td>
+                          <td> {{$lang('需求截止时间')}} </td>
+                          <td> {{demand.deadline}} </td>
+                      </tr>
+                      <tr>
+                          <td> {{$lang('销售同事')}}<label :class="{'required':type.editStatus}"></label> </td>
+                          <td> 
+                              <div v-if="type.editStatus">
+                                  <el-autocomplete class="width-100" v-model="demand.seller"  value-key="name" :fetch-suggestions="querySearchSeller" :placeholder="$lang('请输入销售同事')"></el-autocomplete>
+                              </div>
+                              <div v-else>
+                                  {{demand.seller}} 
+                              </div>
+                          </td>
+                          <td> {{$lang('销售团队')}}<label :class="{'required':type.editStatus}"></label> </td>
+                          <td>
+                              <div v-if="type.editStatus">
+                                  <el-select :popper-append-to-body="false" clearable v-model="demand.sell_team" :placeholder="$lang('请选择销售团队')" class="width-100">
+                                      <el-option v-for="(item, index) in baseData.sell_team" :key="index" :label="item.CD_VAL" :value="item.CD" style="text-align: left;"> </el-option>
+                                  </el-select>
+                              </div>
+                              <div v-else>
+                                  {{demand.sell_team_val}}
+                              </div> 
+                          </td>
+                      </tr>
+                      <tr v-if="!type.hotProducts && active.step > 4">
+                            <td> {{$lang('销售PO单号')}}<label :class="{'required':active.step == 5 && demand.status == 'N002130300'}"></label> </td>
+                            <td> 
+                                <div v-if="active.step == 5 && demand.status == 'N002130300'">
+                                    <el-input class="width-60" v-model="demand.third_po_no" :disabled='demand.has_3rd_po == 0' :placeholder="$lang('销售PO单号')"></el-input>
+                                    <el-checkbox class="width-20" :disabled='!!demand.third_po_no' v-model="demand.has_3rd_po" false-label="1" true-label="0">
+                                        {{$lang('无销售PO单号')}}
+                                    </el-checkbox>
+                                </div>
+                                <div v-else>
+                                    <span v-if="demand.has_3rd_po == 0">
+                                        {{$lang('无销售PO单号')}}
+                                    </span>
+                                    <span v-else>{{demand.third_po_no}}</span>
+                                </div>
+                            </td>
+                            <td> {{$lang('PO时间')}}<label :class="{'required':active.step == 5 && demand.status == 'N002130300'}"></label> </td>
+                            <td>
+                                <div v-if="active.step == 5 && demand.status == 'N002130300'">
+                                    <el-date-picker :disabled='type.hotProducts' v-model="demand.po_date" :picker-options="date.picksAfter" value-format="yyyy-MM-dd" type="date" :placeholder="$lang('PO时间')" class="width-100"> </el-date-picker>
+                                </div>
+                                <div  v-else>
+                                    {{demand.po_date}}
+                                </div> 
+                            </td>
+                      </tr>
+                      <tr>
+                        <td>{{$lang('返利比例(预估)')}}<label :class="{'required':type.editStatus}"></label></td>
+                        <td>
+                            <div v-if="type.editStatus">
+                                <el-input v-model="demand.rebate_rate" class="width-50" @blur="getAmount" :disabled='type.hotProducts'></el-input> %
+                            </div>
+                            <div v-else>
+                                {{demand.rebate_rate}} % 
+                            </div>      
+                        </td>
+                        <td>{{$lang('返利金额(预估)')}}</td>
+                        <td>
+                        {{demand.sell_currency_val}} {{demand.rebate_amount}}
+                        </td>
+                      </tr>
+                      <tr>
+                          <td> {{$lang('订单备注')}} </td>
+                          <td colspan="3">
+                              <div v-if="type.editStatus">
+                                  <el-input v-model="demand.remark" :placeholder="$lang('请输入订单备注')" class="width-100"></el-input>
+                              </div>
+                              <div  v-else>
+                                  {{demand.remark}}
+                              </div>
+                          </td>
+                      </tr>
+                       <tr>
+                          <td> {{$lang('订单附件')}} </td>
+                          <td colspan="3">
+                              <div v-if="type.editStatus">
+                                  <el-upload multiple action="/index.php?m=order_detail&a=file_upload" :before-upload="beforeUpload" :on-remove="removeList" :on-change="upProgress" :file-list="orderFileList" accept="application">
+                                      <el-button size="small" type="primary"> {{$lang('点击上传')}} </el-button>
+                                      <span style="margin-left: 20px;" slot="tip" class="el-upload__tip"> {{$lang('只能上传 Excel、Word、PPT、PDF、Picture文件，≤50M')}} </span>
+                                  </el-upload>
+                              </div>
+                              <div v-else>
+                                <span v-for="item in demand.attachment">
+                                    <a class="downFile" :title="$lang('点击下载附件')" :href="'/index.php?m=order_detail&a=download&file='+item.save_name">{{item.original_name}}</a>
+                                </span>
+                              </div>
+                          </td>
+                      </tr>
+                      <tr v-if="active.step >= 5 && active.step != 6 && demand.demand_type != 'N002100100'">
+                          <td>{{$lang('销售PO附件')}}<label :class="{'required':active.step == 5 && demand.status == 'N002130300'}"></label></td>
+                          <td colspan="3">
+                              <div v-if="active.step == 5 && demand.status !== 'N002130500' && demand.status !== 'N002130200'">
+                                 <el-upload multiple action="/index.php?m=order_detail&a=file_upload" :before-upload="beforeUpload"  :on-remove="removeList" :on-change="upProgress" accept="application">
+                                    <el-button size="small" type="primary"> {{$lang('点击上传')}} </el-button>
+                                    <span style="margin-left: 20px;" slot="tip" class="el-upload__tip"> {{$lang('只能上传 Excel、Word、PPT、PDF、Picture文件，≤50M')}} </span>
+                                 </el-upload>
+                              </div>
+                              <div v-else>
+                                    <span v-for="item in demand.po">
+                                        <a class="downFile" :href="'/index.php?m=order_detail&a=download&file='+item.save_name">{{item.original_name}}</a>
+                                    </span>
+                                </div>
+                          </td>
+                      </tr>
+                      <tr v-if="active.step == 6 && demand.demand_type != 'N002100100'">
+                        <td>{{$lang('销售PO附件')}}</td>
+                        <td colspan="3">
+                            <div v-if="active.step == 6 && demand.status === 'N002130300'">
+                                <el-upload multiple action="/index.php?m=order_detail&a=file_upload" :before-upload="beforeUpload"  :on-remove="removeList" :on-change="upProgress" accept="application">
+                                    <el-button size="small" type="primary"> {{$lang('点击重新上传')}} </el-button>
+                                    <span style="margin-left: 20px;" slot="tip" class="el-upload__tip"> {{$lang('只能上传 Excel、Word、PPT、PDF、Picture文件，≤50M')}} </span>
+                                </el-upload>
+                                <p v-show="isLawUploadFlag" v-for="(item, index) in demand.po" :key="index">
+                                    <a :href="'/index.php?m=order_detail&a=download&file='+item.save_name">{{item.original_name}}</a>
+                                </p>
+                            </div>
+                            <div v-else>
+                                <span v-for="item in demand.po">
+                                    <a class="downFile" :href="'/index.php?m=order_detail&a=download&file='+item.save_name">{{item.original_name}}</a>
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <!-- 销售信息end -->
+            <!-- 法务审核——销售侧start -->
+            <h2 v-if="active.step >= 6">{{$lang('法务审核——销售侧')}}</h2>
+            <table v-if="active.step >= 6" class="legal-table" cellpadding="0" cellspacing="0" style="table-layout:fixed;word-break:break-all;border-right: 1px solid #CADEE7;border-bottom: 1px solid #CADEE7">
+                <tr>
+                    <td style="width: 80px">{{$lang('第一步')}}</td>
+                    <td style="width: 120px">{{$lang('审核建议')}}</td>
+                    <td v-if="demand.status == 'N002130300'">
+                        <el-input :autosize="{ minRows: 4, maxRows: 6}" type="textarea" placeholder="请输入内容" v-model="auditProposal"></el-input>
+                        <p style="text-align: right;margin-bottom: 0">
+                            <el-button size="small" type="primary" @click="saveProposal"> {{$lang('保存')}} </el-button>
+                        </p>
+                    </td>
+                    <td :colspan="demand.status == 'N002130300' ? 1 : 2">
+                        <div class="auditProposalWrap" v-html="demand.forensic_audit_proposal"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>{{$lang('第二步')}}</td>
+                    <td>{{$lang('生成水印')}}</td>
+                    <td colspan="2" style="text-align: left">
+                        <el-button v-if="demand.status == 'N002130300'" size="small" type="primary" @click="saveWatermark"> {{$lang('审核通过生成水印')}} </el-button>
+                        <span v-if="demand.po_with_watermark" v-for="item in demand.po_with_watermark">
+                            <a class="downFile" :href="'/index.php?m=order_detail&a=download&file='+item.save_name">{{item.original_name}}；</a>
+                        </span>
+                    </td>
+                </tr>
+                <tr v-if="demand.status == 'N002130300'">
+                    <td>{{$lang('第三步')}}</td>
+                    <td>{{$lang('邮件发送给业务团队')}}</td>
+                    <td colspan="2">
+                        <div style="text-align: left">
+                            <span style="margin-right: 60px;"><el-input style="width: 120px;" v-model="targetObj"></el-input>@gshopper.com</span>
+                            抄送：<span v-for="(item, index) in copyObj" style="margin-right: 15px;" :key="index">
+                                    <el-input style="width: 120px;" v-model="item.val"></el-input>@gshopper.com
+                            </span><i class="el-icon-plus" @click="addCopyEmail"></i>
+                        </div>
+                        <p style="text-align: left">
+                            <el-button size="small" type="primary" @click="sendEmail"> {{$lang('发送')}} </el-button> 
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <td>{{$lang('第四步')}}</td>
+                    <td>{{$lang('PO归档')}}</td>
+                    <td colspan="2" style="text-align: left">
+                        <div v-if="demand.status == 'N002130300'" style="display: inline-block;vertical-align: top;margin-right:20px;">
+                            <el-button size="small" type="primary" @click="reuploadPo('syncPo')"> {{$lang('同步PO')}} </el-button>
+                            <span v-show="demand.po_archive && axyncArchiveFlag">
+                                <a style="display:block" v-for="(item,index) in demand.po_archive" :key="index" class="downFile" :href="'/index.php?m=order_detail&a=download&file='+item.save_name">{{item.original_name}}</a><br>
+                            </span>
+                        </div>
+                        <div style="display: inline-block;">
+                            <el-upload ref="popopo" multiple action="/index.php?m=order_detail&a=file_upload" :show-file-list="isShowFileList" :before-upload="rearchiveBeforeUpload" :on-remove="rearchiveRemoveList" :on-change="rearchiveUpProgress"  accept="application">
+                                <el-button size="small" type="primary"> {{$lang('上传PO')}} </el-button>
+                            </el-upload>
+                            <p v-show="isArchiveFlag && demand.po_archive" v-for="(item, index) in demand.po_archive" :key="index">
+                                <a :href="'/index.php?m=order_detail&a=download&file='+item.save_name">{{item.original_name}}</a>
+                            </p>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+            <!-- 法务审核——销售侧end -->
+            <!-- 商品信息start -->
+            <div class="module-wrap"  v-if="status.is_spot != 1">
+                <div class="title">
+                    <el-col :span="12"> 
+                        {{$lang('商品信息')}}
+                        <el-checkbox  style="width: 60px; color: white; margin-left: 30px;" :disabled="active.step > 2" v-model="selectAll" @change="selectAllFn">{{$lang('全选')}}</el-checkbox>
+                     </el-col>
+                    <el-col :span="12" class="text-right">  
+                        <el-button size="mini" @click="displayDde">
+                            <span v-if="summaryDisplay"> {{$lang('汇总展示')}} </span>
+                            <span v-else> {{$lang('报价展示')}} </span>
+                        </el-button> 
+                        <el-button type="primary" size="mini" @click="folding('goods')">{{$lang('折叠/展开')}}</el-button> 
+                    </el-col>
+                </div>
+                <div v-if="fold.goods" v-for="(item, key) in goodsInfo" class="goods-module">
+                  <table class="goods-table" border="0" cellpadding="0" cellspacing="0">
+                      <thead>
+                          <tr>
+                            <th width="30px"></th>
+                            <th width="105px">{{$lang('SKU编码')}}</th>
+                            <th width="105px">{{$lang('条形码')}}</th>
+                            <th>{{$lang('图片')}}</th>
+                            <th width="120px">{{$lang('商品名称')}}</th>
+                            <th>{{$lang('属性')}}</th>
+                            <th>{{$lang('授权&链路信息')}}</th>
+                            <th>{{$lang('销售价（含增值税）')}}<label :class="{'required':type.editStatus}"></label></th>
+                            <th>{{$lang('销售价（不含增值税）')}}<label :class="{'required':type.editStatus}"></label></th>
+                            <th>{{$lang('已选现货数量')}}</th>
+                            <th>{{$lang('已选在途数量')}}</th>
+                            <th width="100px">{{$lang('已选报价数量/可选报价数量')}}</th>
+                            <th>{{$lang('总计')}}</th>
+                          </tr>
+                      </thead>
+                      <tbody>
+                          <tr>
+                            <td><i :title="item.open ? '展开':'收起'" style="font-size: 13px" :class="item.open ? 'el-icon-plus':'el-icon-minus'" @click="shrink(item)"></i></td>
+                            <td>{{item.sku_id}}</td>
+                            <td>{{item.bar_code}}</td>
+                            <td>
+                                <span class="preview-wrap">
+                                    <img :src="item.guds_img_cdn_addr" width="40" height="40" @mouseover="previewImg(item,'showImg',true)" @mouseout="previewImg(item,'showImg',false)">
+                                    <div v-if="item.showImg">
+                                        <img :src="item.guds_img_cdn_addr" width="300" height="300" class="big-img">
+                                    </div>
+                                </span>
+                            </td>
+                            <td>{{$lang(item.goods_name)}}</td>
+                            <td>{{item.sku_attribute}}</td>
+                            <td>{{$lang(item.auth_and_link_val)}}</td>
+                            <td>
+                                <div v-if="type.editStatus">
+                                    <el-input style="width: 180px;" type="number" :placeholder="$lang('请输入金额')" class="disabled-background" v-model.number="item.sell_price">
+                                        <el-select style="width: 75px;" :popper-append-to-body="false" @change="changeCurrency" v-model="demand.sell_currency" slot="prepend" :placeholder="$lang('请选择币种')">
+                                            <el-option v-for="(item, index) in baseData.currency" :key="index" :label="item.CD_VAL" :value="item.CD" style="text-align: left;"></el-option>
+                                        </el-select>
+                                    </el-input>
+                                </div>
+                                <div v-else>
+                                    {{demand.sell_currency_val}} {{item.sell_price | numFormat}}
+                                </div>
+                            </td>
+                            <td>
+                                <div v-if="type.editStatus">
+                                    <el-input style="width: 180px;" type="number" :placeholder="$lang('请输入金额')" class="disabled-background" v-model.number="item.sell_price_not_contain_tax">
+                                        <el-select style="width: 75px;" :popper-append-to-body="false" @change="changeCurrency" v-model="demand.sell_currency" slot="prepend" :placeholder="$lang('请选择币种')">
+                                            <el-option v-for="(item, index) in baseData.currency" :key="index" :label="item.CD_VAL" :value="item.CD" style="text-align: left;"></el-option>
+                                        </el-select>
+                                    </el-input>
+                                </div>
+                                <div v-else>
+                                    {{demand.sell_currency_val}} {{item.sell_price_not_contain_tax | numFormat}}
+                                </div>
+                            </td>
+                            <td>
+                                <p v-if="item.spot_warehouse && item.spot_warehouse.length" v-for="(jtem, index) in item.spot_warehouse" :key="index">{{$lang(jtem.deliveryWarehouseName)}}: {{jtem.num}}</p>
+                                <span v-if="type.editStatus && demand.demand_type != 'N002100100'" style="text-decoration:underline;cursor:pointer;color:#409EFF;" @click="againSpot(item, key)">{{$lang('重选现货')}}</span>
+                                <span v-if="(!type.editStatus || demand.demand_type == 'N002100100') && !item.spot_warehouse">{{item.spot_number}}</span>
+                            </td>
+                            <td>
+                                <p v-if="item.on_way_warehouse && item.on_way_warehouse.length" v-for="i in item.on_way_warehouse">{{i.deliveryWarehouseName}}: {{i.num}}</p>
+                                <span v-if=" !item.on_way_warehouse">0</span>
+                            </td>
+                            <td>
+                                <span>{{item.pickQuantity || 0}}</span>
+                                <span>/</span>
+                                <span>{{optionalQuantity(item.quotation_goods || [])}}</span>
+                            </td>
+                            <td>
+                                {{+item.on_way_number + +item.spot_number + (item.pickQuantity || 0)}}
+                            </td>
+                          </tr>
+                      </tbody>
+                  </table>
+                  <div class="goods-child-wrap" v-if="!item.open">
+                    <table v-if="item.quotation_goods && item.quotation_goods.length" class="goods-child-table" border="0" cellpadding="0" cellspacing="0">
+                        <thead>
+                          <tr>
+                            <th><el-checkbox  :disabled="active.step > 2" v-model="item.checkAll" @change="pickAll(item, key)"></el-checkbox></th>
+                            <th> {{$lang('采购编号')}} </th>
+                            <th> {{$lang('供应商')}} </th>
+                            <th> {{$lang('采购团队')}} </th>
+                            <th> {{$lang('供货价（含增值税）')}} </th>
+                            <th> {{$lang('供货价（不含增值税）')}} </th>
+                            <th> {{$lang('供货数量')}} </th>
+                            <th> {{$lang('退税')}} </th>
+                            <th v-if="!isSell_small_team" width="160px;"> {{$lang('已选数量')}} </th>
+                            
+                            <th v-if="isSell_small_team" width="160px;"> {{$lang('小团队')}} </th>
+                            <th v-if="isSell_small_team" width="160px;"> {{$lang('已选数量')}} </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="e in item.quotation_goods">
+                              <td><el-checkbox v-model="e.checked" :disabled="active.step > 2" @change="pickSingle(e, item, key)"></el-checkbox></td>
+                              <td>{{e.quotation_code}}</td>
+                              <td>{{e.supplier}}</td>
+                              <td>{{e.purchase_team}}</td>
+                              <td>{{e.currency}}  {{e.purchase_price | numFormat}}</td>
+                              <td>{{e.currency}}  {{e.purchase_price_not_contain_tax | numFormat}}</td>
+                              <td>{{e.supply_number}}</td>
+                              <td>{{e.drawback_percent}}</td>
+                              <td v-if="!isSell_small_team">
+                                <el-input v-if="e.checked && active.step < 3" type="number"  v-model.number="e.choose_number" @blur="cooseNumber(item)" :placeholder="$lang('请输入数量')"></el-input>
+                                <span v-else>{{e.choose_number}}</span>
+                              </td>
+
+                              <td v-if="isSell_small_team">
+                                <ul class="good_column">
+                                    <li v-for="(item2, index) in e.sell_small_team_json">
+                                       <span>{{item2.small_team_name}}</span>
+                                    </li>
+                                </ul>
+                              </td>
+                              <td v-if="isSell_small_team">
+                                <ul class="good_column">
+                                    <li v-for="(item2, index) in e.sell_small_team_json">
+                                        <el-input v-if="e.checked && active.step < 3" type="number"  :disabled="true" v-model.number="item2.number" @blur="cooseNumber(item)" :placeholder="$lang('请输入数量')"></el-input>
+                                        <span v-else>{{item2.number}}</span>
+                                    </li>
+                                </ul>
+                              </td>
+
+                            </tr>
+                        </tbody>
+                    </table>
+                  </div>
+                </div>
+            </div>
+
+            <!-- 纯现货 -->
+            <div class="module-wrap" v-if="status.is_spot == 1">
+                <div class="title">
+                    <el-col :span="12"> {{$lang('商品信息')}} </el-col>
+                    <el-col :span="12" class="text-right"> <el-button type="primary" size="mini" @click="folding('goods')">{{$lang('折叠/展开')}}</el-button> </el-col>
+                </div>
+                <div v-if="fold.goods" v-for="(item,key) in goodsInfo" class="goods-module">
+                    <table class="goods-table" border="0" cellpadding="0" cellspacing="0">
+                        <thead>
+                            <tr>
+                            <th width="105">{{$lang('SKU编码')}}</th>
+                            <th width="105">{{$lang('条形码')}}</th>
+                            <th width="120">{{$lang('商品名称')}}</th>
+                            <th>{{$lang('SKU信息')}}</th>
+                            <th>{{$lang('商品图片')}}</th>
+                            <th width="40">{{$lang('热度评级')}}</th>
+                            <th>{{$lang('需求数量')}}</th>
+                            <th>{{$lang('销售单价（含增值税）')}}</th>
+                            <th>{{$lang('销售单价（不含增值税）')}}</th>
+                            <th>{{$lang('采购数量')}}</th>
+                            <th>{{$lang('使用现货数量')}}</th>
+                            <!-- <th>{{$lang('现货批次')}}</th> -->
+                            <th width="80">{{$lang('现货成本（退税前）')}}</th>
+                            <th>{{$lang('使用在途数量')}}</th>
+                            <!-- <th>{{$lang('在途批次')}}</th> -->
+                            <th width="80">{{$lang('在途成本（退税前）')}}</th>
+                            <th>{{$lang('退税')}}</th>
+
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>{{item.sku_id}}</td>
+                                <td>{{item.bar_code}}</td>
+                                <td>{{$lang(item.goods_name)}}</td>
+                                <td>{{item.sku_attribute}}</td>
+                                <td>
+                                    <span class="preview-wrap">
+                                        <img :src="item.guds_img_cdn_addr" width="40" height="40" @mouseover="previewImg(item,'showImg',true)" @mouseout="previewImg(item,'showImg',false)">
+                                        <div v-if="item.showImg">
+                                            <img :src="item.guds_img_cdn_addr" width="300" height="300" class="big-img">
+                                        </div>
+                                    </span>
+                                </td>
+                                <td>{{item.hotness}}</td>
+                                <td>{{item.require_number}}</td>
+                                <td>{{demand.sell_currency_val}} {{item.sell_price | numberFormat}}</td>
+                                <td>{{demand.sell_currency_val}} {{item.sell_price_not_contain_tax | numberFormat}}</td>
+                                <td>{{item.purchase_number}}</td>
+                                <td>{{item.spot_number}}</td>
+                                <!-- <td>
+                                    <p v-for="(whItem, i) in item.spot_warehouse" :key="i">{{$lang(whItem.deliveryWarehouseName)}}: {{whItem.num}}</p>
+                                </td> -->
+                                <td>￥{{item.spot_cost | numberFormat}}</td>
+                                <!-- 在途 -->
+                                <td>{{item.on_way_number}}</td>
+                                <!-- <td>
+                                    <p v-for="(whItem, i) in item.on_way_warehouse" :key="i">{{$lang(whItem.deliveryWarehouseName)}}: {{whItem.num}}</p>
+                                </td> -->
+                                <td>￥{{item.on_way_cost | numberFormat}}</td>
+                                <td>￥{{(Number(item.spot_drawback) + Number(item.on_way_drawback)).toFixed(2)}}</td>
+
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!--商品信息end-->
+            <!--报价目录start-->
+            <div class="module-wrap" v-if="status.is_spot != 1">
+                <div class="title">
+                    <el-col :span="12"> {{$lang('报价目录')}} </el-col>
+                    <el-col :span="12" class="text-right">  <el-button type="primary" size="mini" @click="folding('quotation')">{{$lang('折叠/展开')}}</el-button> </el-col>
+                </div>
+                <div v-if="fold.quotation">
+                  <table class="goods-table" border="0" cellpadding="0" cellspacing="0">
+                      <thead>
+                          <tr >
+                            <th>{{$lang('采购单号')}}</th>
+                            <th>{{$lang('采购')}}</th>
+                            <th>{{$lang('采购团队')}}</th>
+                            <th>{{$lang('销售团队&分成')}}</th>
+                            <th>{{$lang('介绍团队&分成')}}</th>
+                            <th>{{$lang('中标情况')}}</th>
+                            <th>{{$lang('报价流程节点')}}</th>
+                            <th>{{$lang('报价节点状态')}}</th>
+                            <th>{{$lang('法务审批人')}}</th>
+                            <th>{{$lang('操作')}}</th>
+                          </tr>
+                      </thead>
+                      <tbody>
+                          <tr v-for="item in quotation" v-if="active.step < 3  || active.step > 2 && item.status != 'N002150100'">
+                            <td>{{item.quotation_code}}</td>
+                            <td>{{item.purchaser}}</td>
+                            <td>{{item.purchase_team_val}}</td>
+                            <td></td>
+                            <td></td>
+                            <td>{{$lang(item.chosen_val)}}</td>
+                            <td>{{$lang(item.step_val)}}</td>
+                            <td>{{$lang(item.status_val)}}</td>
+                            <td>{{item.legal_man}}</td>
+                            <td> 
+                                <el-button type="primary" size="mini" class="blue-btn" @click="lookOver(item.id)" style="pointer-events: all;"> {{$lang('查看')}} </el-button> 
+                                <el-button v-if="item.request_advance == 1 && active.step == 5 &&  demand.status != 'N002130600'" type="success" size="mini" class="blue-btn" @click="showAarlyApprovalDialog(item.id)" style="pointer-events: all;"> {{$lang('同意提前审批')}} </el-button> 
+                            </td>
+                          </tr>
+                      </tbody>
+                  </table>
+              </div>
+            </div>
+            <!--报价目录end-->
+            <!-- 预估利润start -->
+            <div class="module-wrap" v-if="status.is_spot != 1 && (selectAll || showCalcTable)">
+              <div class="title">
+                    <el-col :span="12">  {{$lang('采购-预估利润(货币单位：USD，账期单位：天)')}} </el-col>
+                    <el-col :span="12" class="text-right">  
+                        <el-button size="mini" @click="autoPassRules = true">{{$lang('自动通过规则')}}</el-button> 
+                        <el-button size="mini" @click="showCalc = true">{{$lang('计算方法')}}</el-button> 
+                        <el-button type="primary" size="mini" @click="folding('profit')">{{$lang('折叠/展开')}}</el-button> 
+                    </el-col>
+                </div>
+              <div v-if="fold.profit">
+                <table class="profit-table" border="0" cellpadding="0" cellspacing="0">
+                    <tbody>
+                        <tr>
+                          <td>{{$lang('收款账期')}}</td>
+                          <td>{{profit.collection_period}}</td>
+                          <td>{{$lang('退税账期')}}</td>
+                          <td>{{profit.drawback_period}}</td>
+                          <td>{{$lang('综合账期')}}</td>
+                          <td>{{profit.integrated_period}}</td>
+                        </tr>
+                        <tr>
+                            <td>{{$lang('收入(合同金额)')}}</td>
+                            <td>USD {{profit.revenue | numberFormat}}</td>
+                            <td>{{$lang('应缴税')}}</td>
+                            <td>USD {{profit.tax | numberFormat}}</td>
+                            <td>{{$lang('收入(缴税后/KPI)')}}</td>
+                            <td>USD {{profit.revenue_after_tax | numberFormat}}</td>
+                        </tr>
+                        <tr>
+                            <td>{{$lang('商品成本(退税前)')}}</td>
+                            <td>USD {{profit.commodity_cost | numberFormat}}</td>
+                            <td>{{$lang('退税')}}</td>
+                            <td>USD {{profit.tax_refund | numberFormat}}</td>
+                            <td>{{$lang('商品成本(退税后)')}}</td>
+                            <td>USD {{profit.commodity_cost_after_tax_refund | numberFormat}}</td>
+                        </tr>
+                        <tr>
+                            <td>{{$lang('采购物流及服务费用（预估）')}}</td>
+                            <td>USD {{profit.purchase_cost | numberFormat}}</td>
+                            <td>{{$lang('销售物流及服务费用(预估)')}}</td>
+                            <td>USD {{profit.sale_cost | numberFormat}}</td>
+                            <td>{{$lang('总物流及服务费用(预估)')}}</td>
+                            <td>USD {{profit.total_cost | numberFormat}}</td>  
+                        </tr>
+                        <tr>
+                            <td>{{$lang('毛利(退税前)')}}</td>
+                            <td>USD {{profit.gross_profit | numberFormat}}</td>
+                            <td>{{$lang('毛利(退税后)')}}</td>
+                            <td>USD {{profit.gross_profit_after_tax_refund | numberFormat}}</td>
+                            <td>{{$lang('净利润(预估)')}}</td>
+                            <td>USD {{profit.net_profit | numberFormat}}</td>
+                        </tr>
+                        <tr>
+                            <td>{{$lang('毛利率(退税前)')}}</td>
+                            <td>{{profit.gross_profit_rate | percentage}}</td>
+                            <td>{{$lang('毛利率(退税后)')}}</td>
+                            <td>{{profit.gross_profit_rate_after_tax_refund | percentage}}</td>
+                            <td>{{$lang('净利润率(预估)')}}</td>
+                            <td>{{profit.net_profit_rate | percentage}}</td>
+                        </tr>
+                        <tr>
+                            <td>{{$lang('费用占收入(缴税后/KPI)')}}</td>
+                            <td>{{profit.cost_for_revenue | percentage}}</td>
+                            <td>{{$lang('GL毛利')}}</td>
+                            <td>USD {{profit.gl_gross_profit  | numberFormat}}</td>
+                            <td>{{$lang('CE(退税前)')}}</td>
+                            <td>
+                                <span>{{profit.ce_level}}</span>
+                                <span>( {{profit.ce}} {{profit.ceInfo}})</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>{{$lang('费用占毛利(退税后)')}}</td>
+                            <td>{{profit.cost_for_gross_profit | percentage}}</td>
+                            <td>{{$lang('GL毛利占收入(缴税后/KPI)')}}</td>
+                            <td>{{profit.gl_gross_profit_for_revenue | percentage}}</td>
+                            <td>{{$lang('CE(退税后)')}}</td>
+                            <td>
+                                <span>{{profit.ce_level_after_tax_refund}}</span>
+                                <span> ( {{profit.ce_after_tax_refund}}  {{profit.ceAfterInfo}} ) </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="module-wrap" v-if="status.is_spot == 1 || (status.is_spot != 2 && (selectAll || showCalcTable))">
+                <div class="title">
+                    <el-col :span="12">  {{$lang('现货&在途-预估利润(货币单位：USD)')}} </el-col>
+                    <el-col :span="12" class="text-right">
+                        <el-button type="primary" size="mini" @click="folding('profit')">{{$lang('折叠/展开')}}</el-button> 
+                    </el-col>
+                </div>
+                <table class="forecast-table" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td>{{$lang('收入（合同金额）')}}</td>
+                        <td>{{profit.revenue_spot | numFormat}}</td>
+                        <td>{{$lang('收入（缴税后/KPI）')}}</td>
+                        <td>{{profit.revenue_after_tax_spot | numFormat}}</td>
+                        <td>{{$lang('应缴税')}}</td>
+                        <td>{{profit.tax_spot | numFormat}}</td>
+                    </tr>
+                    <tr>
+                        <td>{{$lang('成本（退税前）')}}</td>
+                        <td>{{profit.commodity_cost_spot | numFormat}}</td>
+                        <td>{{$lang('退税')}}</td>
+                        <td>{{profit.tax_refund_spot | numFormat}}</td>
+                        <td>{{$lang('成本（退税后）')}}</td>
+                        <td>{{profit.cost_after_tax_refund_spot | numFormat}}</td>
+                    </tr>
+                    <tr>
+                        <td>{{$lang('销售物流及服务费用（预估）')}}</td>
+                        <td>{{profit.sale_cost_spot | numFormat}}</td>
+                        <td>{{$lang('毛利（退税前）')}}</td>
+                        <td>{{profit.gross_profit_spot | numFormat}}</td>
+                        <td>{{$lang('毛利（退税后）')}}</td>
+                        <td>{{profit.gross_profit_after_tax_refund_spot | numFormat}}</td>
+                    </tr>
+                    <tr>
+                        <td>{{$lang('毛利率（退税前）')}}</td>
+                        <td>{{profit.gross_profit_rate_spot | percentage}}</td>
+                        <td>{{$lang('毛利率（退税后）')}}</td>
+                        <td>{{profit.gross_profit_rate_after_tax_refund_spot | percentage}}</td>
+                        <td>{{$lang('净利润（预估）')}}</td>
+                        <td>{{profit.net_profit_spot | numFormat}}</td>
+                    </tr>
+                    <tr>
+                        <td>{{$lang('净利润率（预估）')}}</td>
+                        <td>{{profit.net_profit_rate_spot | percentage}}</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </table>
+            </div>
+            <div class="module-wrap" v-if="status.is_spot === '0' && (selectAll || showCalcTable)">
+                <div class="title">
+                    <el-col :span="12">  {{$lang('综合-预估利润(货币单位：USD)')}} </el-col>
+                    <el-col :span="12" class="text-right">
+                        <el-button type="primary" size="mini" @click="folding('profit')">{{$lang('折叠/展开')}}</el-button> 
+                    </el-col>
+                </div>
+                <table class="forecast-table" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td>{{$lang('收入（合同金额）')}}</td>
+                        <td>{{profit.revenue_total | numFormat}}</td>
+                        <td>{{$lang('应缴税')}}</td>
+                        <td>{{profit.tax_total | numFormat}}</td>
+                        <td>{{$lang('收入（缴税后/KPI）')}}</td>
+                        <td>{{profit.revenue_after_tax_total | numFormat}}</td>
+                    </tr>
+                    <tr>
+                        <td>{{$lang('成本（退税前）')}}</td>
+                        <td>{{profit.commodity_cost_total | numFormat}}</td>
+                        <td>{{$lang('退税')}}</td>
+                        <td>{{(+profit.tax_refund + +profit.tax_refund_spot) | numFormat}}</td>
+                        <td>{{$lang('成本（退税后）')}}</td>
+                        <td>{{profit.commodity_cost_after_tax_refund_total | numFormat}}</td>
+                    </tr>
+                    <tr>
+                        <td>{{$lang('费用（预估）')}}</td>
+                        <td>{{profit.sale_cost_total | numFormat}}</td>
+                        <td>{{$lang('毛利（退税前）')}}</td>
+                        <td>{{profit.gross_profit_total | numFormat}}</td>
+                        <td>{{$lang('毛利（退税后）')}}</td>
+                        <td>{{profit.gross_profit_after_tax_refund_total | numFormat}}</td>
+                    </tr>
+                    <tr>
+                        <td>{{$lang('毛利率（退税前）')}}</td>
+                        <td>{{profit.gross_profit_rate_total | percentage}}</td>
+                        <td>{{$lang('毛利率（退税后）')}}</td>
+                        <td>{{profit.gross_profit_rate_after_tax_refund_total | percentage}}</td>
+                        <td>{{$lang('净利润（预估）')}}</td>
+                        <td>{{profit.net_profit_total | numFormat}}</td>
+                    </tr>
+                    <tr>
+                        <td>{{$lang('净利润率（预估）')}}</td>
+                        <td>{{profit.net_profit_rate_total | percentage}}</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </table>
+            </div>
+            <!-- 收款效率 -->
+            <div class="module-wrap" v-if="(demand.demand_type === 'N002100200' || demand.demand_type === 'N002100201') && active.step <= 4">
+                <div class="title">
+                    <el-col :span="12">  {{$lang('收款效率')}} </el-col>
+                </div>
+                <table class="forecast-table" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td class="width-20">{{$lang('本单预计收款天数加权')}}</td>
+                        <td>{{dateWeighting}} days</td>
+                        <td class="width-20">{{$lang('该客户近三个月平均实际收款天数加权')}}</td>
+                        <td>{{demand.receivables_day_avg}} days</td>
+                    </tr>
+                    <tr>
+                        <td>{{$lang('本单预计收款天数评级')}}</td>
+                        <td>{{dateLevel}}</td>
+                        <td>{{$lang('该客户近三个月平均实际收款天数评级')}}</td>
+                        <td>{{customerLevel}}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="module-wrap" v-if="active.step >= 3">
+                <div class="title">
+                    <el-col :span="12">  {{$lang('销售领导备注')}} </el-col>
+                </div>
+                <div v-if="fold.profit">
+                    <table class="profit-table" border="0" cellpadding="0" cellspacing="0">
+                        <tbody>
+                            <!-- 销售领导审批节点编辑 -->
+                            <tr v-if="active.step == 3">
+                                <td> {{$lang('备注( 用于CEO审核展示 )')}} </td>
+                                <td colspan="5" style="text-align: center">
+                                    <el-input v-model="profit.remark" style="width:90%"></el-input>
+                                </td>
+                            </tr>
+                            <!-- 销售领导审批之后节点展示 -->
+                            <tr  v-if="active.step > 3">
+                                <td> {{$lang('备注')}} </td>
+                                <td colspan="5" style="text-align: center"> {{profit.remark}} </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="text-center">
+                <!-- 已申请修改 -->
+                <el-button v-if="demand.status == 'N002130600' && status.process_sync" @click="applications">{{$lang('处理申请')}} </el-button>
+                <!-- 审批失败状态 -->
+                <div v-if="active.step != 6 && demand.status == 'N002130500'">
+                    <el-button type="warning" @click="dialog.modify = true"> {{$lang('撤回到需求草稿')}} </el-button>
+                    <el-button type="primary" @click="reScheme" v-if="status.is_spot != 1"> {{$lang('重选方案')}} </el-button>
+                    <el-button type="info" @click="dialog.giveUp = true"> {{$lang('放弃需求')}} </el-button>
+                </div>
+                <!-- 销售选择 -->
+                <div v-if="active.step == 2 &&  demand.status == 'N002130300'">
+                    <el-button type="warning" v-if="!type.editStatus" @click="dialog.modify = true"> {{$lang('撤回到需求草稿')}} </el-button>
+                    <el-button type="success" v-if="type.editStatus" @click="updateQuote(demand.id)"> {{$lang('提交方案')}} </el-button>
+                    <el-button type="warning" v-if="!type.editStatus" @click="claimingDemand(demand.id)"> {{$lang('认领需求')}} </el-button>
+                    <el-button id="PendingOffer" type="primary" v-if="!type.editStatus" @click="editQuote(demand.id)"> {{$lang('选择报价')}} </el-button>
+                </div>
+                <!-- 销售领导审批 -->
+                <div v-else-if="active.step == 3 && demand.status == 'N002130300'">
+                    <el-button type="warning" @click="dialog.modify = true"> {{$lang('撤回到需求草稿')}} </el-button>
+                    <el-button type="primary" @click="operate('salesLeader','pass')"> {{$lang('通过')}} </el-button>
+                    <el-button @click="backApproval('salesLeader')"> {{$lang('退回')}} </el-button>
+                </div>
+                <!-- ceo审批 -->
+                <div v-else-if="active.step == 4 && demand.status == 'N002130300'">
+                    <el-button type="warning" @click="dialog.modify = true"> {{$lang('撤回到需求草稿')}} </el-button>
+                    <el-button type="danger" @click="remindEmail" plain> {{$lang('重发审批提醒邮件')}} </el-button>
+                    <el-button type="primary" @click="operate('ceo','pass')"> {{$lang('通过')}} </el-button>
+                    <el-button @click="backApproval('ceo')"> {{$lang('退回')}} </el-button>
+                </div>
+                <!-- 上传po -->
+                <div v-else-if="active.step == 5">
+                    <span v-if="demand.status == 'N002130300' && (demand.demand_type== 'N002100200' || demand.demand_type == 'N002100201')">
+                        <el-button type="success" @click="submitPo('po')"> {{$lang('提交需求') }}</el-button>
+                        <el-button type="primary" @click="reScheme" v-if="status.is_spot != 1 && status.process_sync"> {{$lang('重选方案')}} </el-button>
+                        <el-button type="info" @click="dialog.giveUp = true"> {{$lang('放弃需求')}} </el-button>
+                    </span>
+                    <el-button type="warning" @click="dialog.modify = true" v-if="status.process_sync"> {{$lang('撤回到需求草稿')}} </el-button>
+                </div>
+                <!-- 法务确定 未处理-->
+                <div v-else-if="active.step == 6 && demand.status == 'N002130300' && (demand.demand_type== 'N002100200' || demand.demand_type == 'N002100201')">
+                    <el-button type="primary" @click="operate('legal','pass')"> {{$lang('通过')}} </el-button>
+                    <el-button @click="backApproval('legal')"> {{$lang('退回')}} </el-button>
+                </div>
+                <!-- 法务确定 审批失败-->
+                <div v-else-if="active.step == 6 && demand.status == 'N002130500'">
+                    <!-- <el-button type="success" @click="createOrder"> $lang('提交需求') </el-button> -->
+                    <el-button type="warning" @click="dialog.modify = true"> {{$lang('撤回到需求草稿')}} </el-button>
+                    <el-button type="primary" @click="reScheme" v-if="status.is_spot != 1 && status.process_sync"> {{$lang('重选方案')}} </el-button>
+                    <el-button type="info" @click="dialog.giveUp = true"> {{$lang('放弃需求')}} </el-button>
+                </div>
+            </div>
+            <!--预估利润end-->
+            <!-- dialong start-->
+            <el-dialog :title="$lang('退回确认')" :visible.sync="dialog.back" width="30%">
+                    <div>
+                        <el-select class="el-selectOption" style="width: 100%" :popper-append-to-body="false" v-model="dialog.backReason" :placeholder=" $lang('请选择')" size="medium">
+                            <el-option v-for="item in baseData.leader_not_approve_reason" :key="item.CD" :label="$lang(item.CD_VAL)" :value="item.CD"></el-option>
+                        </el-select>
+                    </div>
+                    <div slot="footer" class="dialog-footer">
+                        <el-button type="warning" @click="operate(temporary,'back')">{{$lang('确认退回')}}</el-button>
+                        <el-button type="primary" @click="dialog.back = false">{{$lang('再看看')}}</el-button>
+                    </div>
+            </el-dialog>
+            <el-dialog :title="$lang('提示')" :visible.sync="dialog.modify" width="30%">
+                    <div>
+                        <span class="required"></span>
+                        <el-input type="textarea" :rows="2" :placeholder="$lang('请输入撤回原因')" v-model="dialog.modifyReason"> </el-input>
+                        <p>撤回后，流程将回退至【待提交需求】节点，<span v-if="status.is_spot != 1">清除对应的报价，并给报价关联的采购发邮件通知。</span>确定要撤回需求到草稿吗？</p>
+                        <!-- <el-select class="el-selectOption" style="width: 100%" :popper-append-to-body="false" v-model="dialog.modifyReason" :placeholder=" $lang('请选择')" size="medium">
+                            <el-option v-for="item in baseData.quotation_change_reason" :key="item.CD" :label="item.CD_VAL" :value="item.CD"></el-option>
+                        </el-select> -->
+                    </div>
+                    <div slot="footer" class="dialog-footer">
+                        <el-button type="warning" @click="modifyDemand">{{$lang('确认修改')}}</el-button>
+                        <el-button type="primary" @click="dialog.modify = false">{{$lang('再看看')}}</el-button>
+                    </div>
+            </el-dialog>
+            <el-dialog :title="$lang('弃单确认')" :visible.sync="dialog.giveUp" width="30%">
+                    <div>
+                        <el-select class="el-selectOption" style="width: 100%" :popper-append-to-body="false" v-model="dialog.giveUpReason" :placeholder=" $lang('请选择')" size="medium">
+                            <el-option v-for="item in baseData.abandon_demand_reason" :key="item.CD" :label="item.CD_VAL" :value="item.CD"></el-option>
+                        </el-select>
+                    </div>
+                    <div slot="footer" class="dialog-footer">
+                        <el-button type="warning" @click="giveUpDemand">{{$lang('确认弃单')}}</el-button>
+                        <el-button type="primary" @click="dialog.giveUp = false">{{$lang('再看看')}}</el-button>
+                    </div>
+             </el-dialog>
+             <!--CE值计算方法与规则 start-->
+             <el-dialog :title="$lang('CE评级 & CE值计算方法与规则')" center :visible.sync="showCalc" width="1200px">
+                <table  border="0" cellpadding="0" cellspacing="0" style="border-bottom: 1px solid #ebeef5; border-right: 1px solid #ebeef5;"> 
+                    <tbody>
+                        <!-- CE值计算公式 -->
+                        <tr>
+                            <td rowspan="2"><b>CE值计算公式</b></td>
+                            <td colspan="2">CE（退税前） = [（O.净利润（预估） - H.退税） / F.收入（缴税后/KPI）] / （参与计算成本 / 200,000 + 收款账期） * 1000,000</td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">CE（退税后） = 净利润率（退税后） / （参与计算成本 / 200,000 + 综合账期） * 1000,000</td>
+                        </tr>
+                        <tr> <td colspan="3"></td> </tr>
+                        <!-- 参与计算成本 -->
+                        <tr>
+                            <td rowspan="4"><b>参与计算成本</b></td>
+                            <td><b>条件</b></td>
+                            <td><b>值</b></td>
+                        </tr>
+                        <tr>
+                            <td>采购部分商品成本（退税前）（CNY） <= 100,000</td>
+                            <td>100,000</td>
+                        </tr>
+                        <tr>
+                            <td>100,000 <= 采购部分商品成本（退税前）（CNY） <= 20,000,000</td>
+                            <td>采购部分商品成本（退税前）（CNY）</td>
+                        </tr>
+                        <tr>
+                            <td>采购部分商品成本（退税前）（CNY） >= 20,000,000</td>
+                            <td>2,000,000+[采购部分商品成本（退税前）（CNY）-2,000,000]/2</td>
+                        </tr>
+                        <tr> <td colspan="3"></td> </tr>
+                        <!-- 参与计算成本 -->
+                        <tr>
+                            <td rowspan="10"><b>CE评级方法</b></td>
+                            <td><b>条件</b></td>
+                            <td><b>评级</b></td>
+                        </tr>
+                        <tr>
+                            <td>CE值 >= 3,000</td>
+                            <td>S</td>
+                        </tr>
+                        <tr>
+                            <td>CE值<0 & （净利润or净利润-退税）>0</td>
+                            <td>S（提前收款）</td>
+                        </tr>
+                        <tr>
+                            <td>2,000 <= CE值 < 3,000</td>
+                            <td>A</td>
+                        </tr>
+                        <tr>
+                            <td>1,000 <= CE值 < 2,000</td>
+                            <td>B</td>
+                        </tr>
+                        <tr>
+                            <td>800 <= CE值 < 1,000</td>
+                            <td>C</td>
+                        </tr>
+                        <tr>
+                            <td>500 <= CE值 < 800</td>
+                            <td>D</td>
+                        </tr>
+                        <tr>
+                            <td>0 <= CE值 < 500</td>
+                            <td>F</td>
+                        </tr>
+                        <tr>
+                            <td>CE值<0 & （净利润or净利润-退税）<0</td>
+                            <td>F</td>
+                        </tr>
+                    </tbody>
+                </table>
+             </el-dialog>
+             <!--CE值计算方法与规则 end-->
+            <!--处理采购申请 start -->
+            <el-dialog :title="$lang('处理采购申请')" :visible.sync="process.dialog" width="35%" center>
+                    <p v-for="item in process.list"> {{$lang('报价单号：')}}{{item.quotation_code}} [{{item.status_val}}， {{$lang('申请原因为:')}}{{item.reason_val}}]</> </p>
+                    <template>
+                        <el-select style="width:35%" class="el-selectOption" clearable :popper-append-to-body="false" v-model="process.process_method" :placeholder="$lang('请选择处理方法')" @change="pickProcess">
+                            <el-option v-for="item in baseData.process_application_method" :key="item.CD" :label="item.CD_VAL" :value="item.CD"></el-option>
+                        </el-select>
+                        <el-select  style="width:60%" class="el-selectOption" clearable :disabled="!process.process_method" :popper-append-to-body="false" v-model="process.approve_to_or_reason" :placeholder="$lang('请选择原因')">
+                            <el-option v-for="item in process.selectReasons" :key="item.CD" :label="item.CD_VAL" :value="item.CD"></el-option>
+                        </el-select>
+                    </template>
+                    <span slot="footer" class="dialog-footer">
+                        <el-button @click="process.dialog = false"> {{$lang('取 消')}} </el-button>
+                        <el-button type="primary" @click="sendProcess"> {{$lang('确 定')}} </el-button>
+                    </span>
+                </el-dialog>
+                 <!--处理采购申请 end -->
+          <!-- dialong end-->
+        </el-tab-pane>
+        <!-- 需求详情end -->
+        <!-- 操作日志 -->
+        <el-tab-pane :label="$lang('操作日志')" name="log">
+            <el-form ref="log" :model="log" label-width="80px" style="margin-top: 20px;">
+              <el-row>
+                <el-col :span="7">
+                  <el-form-item :label="$lang('操作时间')">
+                    <el-date-picker  value-format="yyyy-MM-dd" v-model="log.dataRange" type="daterange" :range-separator="$lang('至')" :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')"> </el-date-picker>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="5">
+                  <el-form-item :label="$lang('操作人')" style="width:80%">
+                    <el-input v-model="log.user" :placeholder="$lang('请输入花名')"></el-input>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="5">
+                  <el-form-item :label="$lang('操作简介')">
+                    <el-select v-model="log.info" :placeholder="$lang('请选择')" clearable>
+                      <el-option v-for="(item, index) in logData.infoList " :key="index" :label="$lang(item)" :value="item"></el-option>
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="7">
+                    <el-button type="primary" @click="getLog()" style="margin-right: 30px;"> {{$lang('查询')}} </el-button>
+                    <el-button type="info" plain @click="reset"> {{$lang('重置')}} </el-button>
+                </el-col>
+              </el-row>
+            </el-form>
+            <div class="module-wrap">
+              <table class="goods-table" border="0" cellpadding="0" cellspacing="0">
+                <thead>
+                  <tr>
+                    <th>{{$lang('时间')}}</th>
+                    <th>{{$lang('操作人')}}</th>
+                    <th>{{$lang('操作简介')}}</th>
+                    <th>{{$lang('操作')}}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="item in logData.list">
+                      <td>{{item.time}}</td>
+                      <td>{{item.user}}</td>
+                      <td>{{$lang(item.info)}}</td>
+                      <td>
+                          <span v-if="item.has_detail != 1">-</span>
+                          <el-button style="padding:0" v-else type="text" @click="viewLogDetail(item.id,item.detail_type)">{{$lang('记录详情')}}</el-button>
+                      </td>
+                    </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="text-right">
+                <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="log.p" :page-sizes="[10, 20, 50, 100]" :page-size="log.rows" layout="total, sizes, prev, pager, next, jumper" :total="logData.totalRows"> </el-pagination>
+            </div>
+        </el-tab-pane>
+        <!-- 操作日志end -->
+        <!-- 关联订单 -->
+        <el-tab-pane v-if="active.step == 7" :label="$lang('关联订单')" name="order">
+            <div class="module-wrap" v-if="demand.demand_type != 'N002100100'">
+                <div class="title"> {{$lang('销售订单')}} </div>
+                <div>
+                    <table class="goods-table" border="0" cellpadding="0" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th width="40%">{{$lang('需求编号&B2B订单号')}}</th>
+                                <th width="30%">{{$lang('所属部门')}}</th>
+                                <th width="30%">{{$lang('操作')}}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>{{demand.demand_code}}</td>
+                                <td>{{demand.sell_team_val}}</td>
+                                <td> <el-button type="primary" @click="viewB2B(demand.b2b_order_id)" size="mini">{{$lang('查看')}} </el-button> </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="module-wrap">
+                <div class="title"> {{$lang('采购订单')}} </div>
+                <div>
+                    <table class="goods-table" border="0" cellpadding="0" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th width="40%"> {{$lang('报价编号&采购订单号')}} </th>
+                                <th width="30%"> {{$lang('所属部门')}} </th>
+                                <th width="30%"> {{$lang('操作')}} </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 采购中标的单子 -->
+                            <tr v-for="item in quotation" v-if="item.chosen == 'N002140300'">
+                                <td>{{item.quotation_code}}</td>
+                                <td>{{item.purchase_team_val}}</td>
+                                <td> <el-button type="primary" @click="viewPurcahse(item.purchase_id)" size="mini"> {{$lang('查看')}} </el-button> </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </el-tab-pane>
+        <!-- 现货选择框 -->
+        <el-dialog title="" width="70%" :close-on-click-modal="false" :visible.sync="dialogTableVisible">
+            <el-row>
+                <el-col :span="24">
+                    <div style="font-weight: bold;text-align: center">{{goodsName}}</div>
+                </el-col>
+            </el-row>
+            <el-table ref="multipleTable" height="350" v-loading="batchLoading" :border="true" :data="gridData" show-summary :summary-method="getstockSummaries"
+                @selection-change="handleSelectionChange" @select="manualSelect">
+                <el-table-column type="selection" width="55"></el-table-column>
+                <el-table-column  :label="$lang('仓库')">
+                        <template slot-scope="scope">
+                                {{$lang(scope.row.deliveryWarehouseName)}}
+                            </template>
+                </el-table-column>
+                <el-table-column property="availableNum" :label="$lang('可选择数量')"></el-table-column>
+                <el-table-column :label="$lang('本次选择数量')">
+                    <template slot-scope="scope">
+                        <el-input type="number" v-model="scope.row.num" :disabled="scope.row.isSelected" @focus="confirmDisabled = true" @blur="numChange(scope.$index, scope.row)"
+                            placeholder=""></el-input>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('现货成本（退税前）')">
+                    <template slot-scope="scope">
+                        <span>
+                            ￥{{scope.row.cost | numberFormat}}
+                        </span>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('退税')">
+                    <template slot-scope="scope">
+                        <span>
+                            ￥{{scope.row.drawback | numberFormat}}
+                        </span>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <footer style="margin-top:20px;padding-bottom:10px;">
+                <el-row>
+                    <el-col :span="24" style="text-align: center;">
+                        <el-button type="primary" style="margin-right: 50px;" @click="batchConfire" :disabled="confirmDisabled" :loading="confirmFlag">
+                            {{$lang('保存')}}
+                        </el-button>
+                    </el-col>
+                </el-row>
+            </footer>
+        </el-dialog>
+        <!--提前审批提示 start-->
+        <el-dialog :title="$lang('提示')" :visible.sync="earlyApprovalDialog" width="800">
+                <div>
+                    <p>提前进行审批，有风险！</p>
+                    <p>
+                        如果其他采购采购PO最终没能生效，导致客户拒收货或要求支付违约金。
+                        已采购的超期库存成本和违约金将由销售团队和采购团队按照分成比例承担。
+                    </p>
+                    <p>确认后【同意提前审批】，则申请提前审批的报价提前进入法务审批阶段。且提前后，流程将不能回退。</h4>
+                    <p>确定要同意该报价提前审批吗？<p/>
+                </div>
+                <span slot="footer" class="dialog-footer">
+                    <el-button @click="earlyApprovalDialog = false">取 消</el-button>
+                    <el-button type="primary" @click="allowAdvance">确 定</el-button>
+                </span>
+        </el-dialog>
+        <!--提前审批提示 end-->
+        <el-dialog :title="$lang('自动通过规则')" :visible.sync="autoPassRules" center width="800">
+            <div>
+                <p style="font-weight: bold;">{{$lang('如果采购-预估利润中【商品成本(退税前)】大于10W美金，则不能自动通过；否则从以下4个部分来判断，满足D则自动通过；如果不满足D，则ABC全部符合自动通过条件则自动通过，ABC只要有一个不符合即不自动通过。')}}</p>
+                </br>
+                <p>
+                    {{$lang('A.采购部分自动通过条件（满足以下任意一点即满足采购部分自动通过）')}}
+                    {{$lang('1.无采购部分。')}}
+                    {{$lang('2.采购部分总CE为S、A、B。')}}
+                    {{$lang('3.采购部分所有报价的采购类型都为线上采购。')}}
+                </p>
+                </br>
+                <p>
+                    {{$lang('B.现货部分自动通过条件（满足以下任意一点即满足现货部分自动通过）')}}
+                    {{$lang('1.无现货部分。')}}
+                    {{$lang('2.现货&在途部分 净利润 + 采购部分 净利润 > 0。（没有这部分则按0计算）')}}
+                    {{$lang('3.现货全部为超期库存SKU集合内的商品。')}}
+                </p>
+                </br>
+                <p>
+                    {{$lang('C.销售部分自动通过条件（满足以下任意一点即满足销售部分自动通过）')}}
+                    {{$lang('1.该客户近3个月平均实际收款天数评级为A B C D或无数据导致的无法计算。')}}
+                    {{$lang('2.客户为：【网易环球购有限公司】')}}
+                    {{$lang('3.客户为：【阿里巴巴新加坡电商公司】')}}
+                </p>
+                </br>
+                <p>
+                    {{$lang('D.特殊情况自动通过条件（满足以下所有才满足特殊情况自动通过）')}}
+                    {{$lang('1.需求对应的销售团队为美国团队（Gshopper US，N001283100）')}}
+                    {{$lang('2.关联所有报价的【采购金额（退税前）】之和小于USD 50,000')}}
+                    {{$lang('3.综合-预估利润中的净利润（预估）>0（如果是纯采购或纯现货，则分别取采购-预估利润和现货-预估利润中的净利润（预估））')}}
+                </p>
+            </div>
+            <span slot="footer" class="dialog-footer">
+                <el-button @click="autoPassRules = false">{{$lang('确定')}}</el-button>
+            </span>
+    </el-dialog>
+    </el-tabs>
+  </div>
+
+<script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js?<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script>
+
+
+    if(getCookie('think_language') !== "zh-cn" ){
+        ELEMENT.locale(ELEMENT.lang.en)
+    }
+    var BATCHSTOCK = 'batch_stock';// 查询库存
+    var BATCHSEARCH = 'batch_search';// 查询批次
+    var REUPLOADPO = 'demand_reupload_po';// 重新上传po
+    var AUDITPROPOSAL = 'demand_forensic_audit_proposal';// 保存法务审批建议
+    var WATERMARKPO = 'demand_watermark_to_po';// 生成带水印PO
+    var AUDITEMAIL = 'demand_audit_email'; //发送邮件
+    var POARCHIRE = 'demand_po_archive';// 同步po
+
+    var EMAIL = '@gshopper.com';
+    var NOWDATETIME = new Date().getTime();
+    var baseUrl = '/index.php?g=scm&m=demand&a=';
+  var app = new Vue({
+      el: "#sales_leader",
+      data: {
+        saleSitecd: [], // y预计销售平台
+        saleCountries: [], // 预计销售国家
+        baseData:{
+          countries:[],//国家
+          provinces:[],//省市
+          citys:[], //区县
+        },
+        summaryDisplay:true,
+        fold:{
+            sell:true,
+            goods:true,
+            quotation:true,
+            profit:true,
+        },
+        curreneyobj: {
+            '': ''
+        },
+        autoPassRules:false,
+        showCalc:false,
+        selectAll:false,
+        customLoading: false,
+        customOptions: [],
+        temporary:'',//临时存储数据,用于退回
+        loading:{ contractLoading:false },
+        date:{ 
+            picksBefore: { disabledDate:function(item) { return item.getTime() < (Date.now() - 24 * 60 * 60 * 1000); } }, 
+            picksAfter: { disabledDate:function(item) { return item.getTime() > Date.now() }}, 
+        },
+        type:{
+          hotProducts:true, //是否是热销品囤货
+          editStatus:false, //是否在编辑状态
+        },
+        demand: {}, //销售信息
+        goodsInfo: [], //商品信息
+        profit: {},  //预估利润
+        quotation: [],  //预估利润
+        status:{},  //展示节点状态
+        showCalcTable:false,//展示预估利润
+        audit_info: {}, // 客户审核信息
+        tab:{ loading:true, active:'detail' },
+        active:{ step:0 },
+        selects:[],
+        isLawUploadFlag: false,
+        exchangeRate:{},
+        //操作日志部分
+        log:{ dataRange:'', demand_id:'', begin_time:'', end_time:'', user:'', info:'', step:'', rows:10, p:1, },
+        logData:{ totalRows:0, list:[], infoList:[] },
+        orderFileList:[],
+        poFileList:[],
+        dialog:{batch:false,back:false,backReason:'',modify:false,modifyReason:'',giveUp:false,giveUpReason:''},
+        batchData:{
+            list:[],
+            skuid:'',
+            barCode:'',
+            demandMete:'',
+        },//指定批次
+        process:{
+            dialog:false,
+            list:[],
+            selectReasons:[],
+            approve_to_or_reason:[],
+            process_method:[],
+        },
+        // 重选现货
+        dialogTableVisible: false,
+        isSell_small_team:true,
+        batchLoading: false,
+        gridData: [],
+        goodsName: '',
+        batchIndex: 0,
+        currentBatch: [],
+        confirmDisabled: true,
+        confirmFlag: false,
+        // 法务确定
+        auditProposal: '',
+        targetObj: '',
+        copyObj: [{
+            val: '',
+        }],
+        isArchiveFlag: false,
+        isShowFileList: false,
+        axyncArchiveFlag: true,
+        fileArr: [],
+        earlyApprovalDialog:false,
+        earlyApprovalId:0,
+      },
+      created: function () {
+        this.getCd();
+        this.getExchange();
+        this.getCountryies();
+      },
+      updated: function() {
+            var openEdit = sessionStorage.getItem("openEdit");
+            var PendingOfferLen = document.querySelector('#PendingOffer')
+            if(openEdit == 'PendingOffer' && PendingOfferLen){
+                document.querySelector('#PendingOffer').click()
+                sessionStorage.removeItem("openEdit")
+            }
+      },
+      
+      
+
+      methods: {
+        // 获取预计销售国家和平台
+        getCountryies() {
+            axios.post('index.php?g=oms&m=CommonData&a=commonData',{
+                data: {
+                    query: {
+                        area_code: true,
+                        site_cd: true,
+                    },
+                    type:"outstorage_sort"
+                }
+            }).then(res => {
+                console.log(res);
+                if(res.data.code==2000){
+                    this.saleCountries = res.data.data.area_code;
+                    this.saleSitecd = res.data.data.site_cd;
+                }
+            })
+        },
+        /* log页面交互操作 start*/
+        goList:function(){
+            window.location.reload();
+            
+            // backTab('/index.php?g=scm&m=display&a=demand_list',this.$lang('需求列表'));
+        },
+        viewLogDetail:function(id,type){
+            newTab("/index.php?g=scm&m=display&a=logdetail&type=" + id + "&type_id=" + type, this.$lang('记录详情'));
+        },
+        switchTab: function () {
+          var _this = this;
+          axios.post("/index.php?g=scm&m=log&a=log_info_list").then(function(res){
+            _this.logData.infoList = res.data.data;
+          })
+          this.getLog();
+        },
+        getExchange:function(){
+          axios.post("/index.php?g=common&m=index&a=exchange_rate").then(function(res){
+            this.exchangeRate = res.data.data.exchange_rate;
+          }.bind(this));
+        },
+        getLog:function(){
+          var _this = this;
+          this.log.demand_id = this.demand.id;
+          this.log.begin_time = this.log.dataRange[0];
+          this.log.end_time =  this.log.dataRange[1];
+          axios.post("/index.php?g=scm&m=log&a=log_list",Qs.stringify(this.log)).then(function(res){
+            _this.logData.list = res.data.data.list;
+            _this.logData.totalRows = +res.data.data.page.total_rows;
+          })
+        },
+        reset:function(){
+          this.log = { dataRange:'', demand_id:'', begin_time:'', end_time:'', user:'', info:'', step:'', rows:10, p:1};
+        },
+        handleCurrentChange:function(val){
+          this.log.p = val;
+          this.getLog();
+        },
+        handleSizeChange:function(val){
+          this.log.rows = val;
+          this.getLog();
+        },
+        /* log页面交互操作 end*/
+        folding:function(param){
+            this.fold[param] = !this.fold[param] 
+        },
+        displayDde:function(){
+            this.summaryDisplay = !this.summaryDisplay
+            var _this = this;
+            this.goodsInfo.forEach(function(item){
+                _this.shrink(item)
+            })
+        },
+        selectAllFn:function(){
+            var _this = this;
+            this.goodsInfo.forEach(function(item,index){
+                _this.$set(item, 'checkAll', _this.selectAll);
+                _this.pickAll(item,index,true);
+            })
+        },
+        //数据详情
+        nodeName:function(val){
+            return val.replace(/待/,'');
+        },
+        getDetail:  function(){
+          var _id = utils.parseQuery(location.search).type;
+          var _this = this;
+          _this.tab.loading = true;
+          
+          axios.post("/index.php?g=scm&m=demand&a=demand_detail", Qs.stringify({ id: _id }))
+            .then(function (response) {
+              _this.tab.loading = false;
+              var data = response.data;
+              if (data.code == 2000) {
+
+
+                _this.get_sell_small_team(data.data.demand.sell_team)
+                
+                //接口数据获取
+                _this.demand = data.data.demand;
+
+
+                _this.demand.expected_sales_country = _this.demand.expected_sales_country ? _this.demand.expected_sales_country.split(',') : [];
+                _this.demand.expected_sales_platform_cd = _this.demand.expected_sales_platform_cd ? _this.demand.expected_sales_platform_cd.split(',') : [];
+
+                _this.audit_info = data.data.audit_info;
+                _this.demand.collection_time = _this.demand.collection_time || [{ node: '', days: '', day_type: '', percent: '', date: '' }];
+                _this.goodsInfo = data.data.goods || [];
+                _this.status = data.data.status_list;
+                _this.quotation = data.data.quotation || [];
+                var total = 0;
+                data.data.goods.forEach(function(el){
+                    total += +el.on_way_cost;
+                })
+
+
+                
+                _this.profit = data.data.profit || _this.calcProfit();
+ 
+                _this.profit.commodity_cost_spot = data.data.profit && +data.data.profit.commodity_cost_spot?+data.data.profit.commodity_cost_spot:0 + utils.conversionRate(_this.exchangeRate, 'CNY', total, 'USD');
+                //获取当前节点
+                _this.baseData.scm_step.forEach(function (item, index) {
+                  if (item.CD == _this.status.step) {
+                    _this.active.step = index;
+                  }
+                })
+                //判断热销品状态
+                _this.type.hotProducts = _this.demand.demand_type == 'N002100100';
+                //为后续的选择项 生成动态数组
+                for (var i = 0; i < _this.goodsInfo.length; i++) {
+                  _this.selects.push([]);
+                }
+                //文件列表
+                var attachmentList = _this.demand.attachment || [];
+                for (var j = 0, len = attachmentList.length; j < len; j++) {
+                    _this.orderFileList.push({name:attachmentList[j].original_name,url:""});
+                };
+                 
+                //判断ce等级 一级 是否提前付款
+                if(data.data.profit){
+                    _this.profit.ceInfo = (_this.profit.net_profit - _this.profit.tax_refund >= 0 && _this.profit.ce < 0 && ',提前收款') || (_this.profit.net_profit - _this.profit.tax_refund  < 0 && _this.profit.ce > 0 && ',提前收款,但退税前净利润为负') || '';
+                    _this.profit.ceAfterInfo = (_this.profit.net_profit >= 0 && _this.profit.ce_after_tax_refund < 0 && ',提前付款') || (_this.profit.net_profit < 0 && _this.profit.ce_after_tax_refund > 0 && ',提前付款,但净利润为负') || '';
+                }
+
+                if (_this.active.step == 6 && data.data.demand.status == 'N002130300') {
+                    _this.isLawUploadFlag = true;
+                };
+                
+                if (_this.active.step >= 6 && data.data.demand.status !== 'N002130300') {
+                    _this.isArchiveFlag = true;
+                };
+                // 判断复选框，增加已选中状态
+                if(_this.active.step > 2 && _this.status.is_spot != '1'){
+                    var selectAll = true;
+                    _this.goodsInfo.forEach(function(item){
+                        if(item.quotation_goods && item.quotation_goods.length){
+                            var checkAll = true,pickQuantity = 0;
+                            item.quotation_goods.forEach(function(e){
+                                if(!e.choose_number){
+                                    checkAll = false;
+                                }
+                                _this.$set(e,'checked',!!e.choose_number)
+                                pickQuantity += (+e.choose_number || 0);
+                            })
+                            _this.$set(item,'pickQuantity',pickQuantity)
+                            _this.$set(item,'checkAll',checkAll)
+                            if(!item.checkAll){
+                                selectAll = false;
+                            }
+                        }
+                    })
+                    _this.selectAll = selectAll;
+
+                }
+
+
+
+                 
+
+              } else {
+                _this.$message.error(_this.$lang('获取详情失败'));
+              }
+            });
+
+            
+        },
+        get_sell_small_team:  function(val){
+             axios.post("/index.php?g=scm&m=quotation&a=get_sell_small_teame", Qs.stringify({ code: val }))
+            .then(function (res) {
+                if(res.data.code == 2000){
+                    if(res.data.data){
+                        app.isSell_small_team = true
+                    }else{
+                        app.isSell_small_team = false
+                    }
+                }
+            });
+        },
+        //获取公共数据
+        getCd: function () {
+          var _this = this,
+            params = {
+              cd_type: {
+                our_company: false,
+                scm_step: false,
+                pur_website: false,
+                business_type: false,
+                delivery_type: false,
+                collection_cycle: false,
+                collection_node: false,
+                payment_days: false,
+                collection_days_type: false,
+                invoice_type: false,
+                tax_rate: false,
+                currency: false,
+                sell_team: false,
+                leader_not_approve_reason: false,
+                scm_demand_status: false,
+                demand_change_reason: false,
+                quotation_change_reason: false,
+                abandon_demand_reason: false,
+                agree_apply_action: false,
+                not_agree_apply_reason: false,
+                process_application_method: false,
+              }
+            };
+          axios.post("/index.php?g=common&m=index&a=get_cd", Qs.stringify(params))
+            .then(function (response) {
+              var data = response.data;
+              if (data.code == 2000) {
+                for(var key in data.data){
+                    _this.baseData[key] = data.data[key];
+                }
+                for (var o = 0, _len = data.data.currency.length; o < _len; o++) {
+                    _this.$set(_this.curreneyobj, data.data.currency[o].CD, data.data.currency[o].CD_VAL)
+                };
+                _this.getAddress(null,'countries'); //获取地址
+                _this.getDetail(); //获取完基础数据，获取详细数据
+              } else {
+                _this.$message.error(_this.$lang('获取基础数据失败'));
+              }
+            })
+        },
+        /**
+         * 收缩列表
+         * item 当前节点
+         */
+        shrink: function (item) {
+          this.$set(item, 'open', !item.open)
+        },
+        /**
+         * 展示图片大图
+         * item 当前元素 
+         * tag  标记元素
+         * type 是否展示状态
+         */
+        previewImg: function (item, tag, type) {
+          this.$set(item, tag, type);
+        },
+        fillRequire: function (row, key) {
+            this.$nextTick(() => {
+                row[key] = row[key].replace(/\s|,/g, "");
+            });
+        },
+        /**
+        * 勾选复选框
+        * tag  ALL || single
+        * item 当前元素
+        */
+        pickAll: function (item, key, outher) {
+            console.log(1);
+            var _this = this;
+            //勾选所有
+            if (item.quotation_goods && item.quotation_goods.length) {
+                item.quotation_goods.forEach(function (e) {
+                    _this.$set(e, 'checked', item.checkAll);
+                    _this.$set(e, 'choose_number', item.checkAll ? e.supply_number : 0);
+                });
+                //选中的数据
+                _this.selects[key] = item.checkAll ? item.quotation_goods : [];
+                _this.cooseNumber(item);
+            }
+            if (!outher) {
+                var selectAll = true;
+                _this.goodsInfo.forEach(function (item) {
+                    if (item.quotation_goods && item.quotation_goods.length) {
+                        item.quotation_goods.forEach(function (e) {
+                            if (!e.checked) {
+                                selectAll = false;
+                            }
+                        })
+                    }
+                })
+                this.selectAll = selectAll;
+            };
+        },
+        pickSingle: function (item, parent, key) {
+          var _this = this;
+          //选中的数据放到selects中
+          if (item.checked) {
+            _this.$set(item, 'choose_number', item.supply_number);
+            _this.selects[key].push(item);
+          } else {
+            _this.$set(item, 'choose_number', 0);
+            _this.selects[key] = _this.selects[key].filter(function (e) {
+              return e.id != item.id;
+            })
+          }
+          var type = _this.selects[key].length == _this.goodsInfo[key].quotation_goods.length;
+          _this.$set(_this.goodsInfo[key], 'checkAll', type);
+
+           var selectAll = true;
+            _this.goodsInfo.forEach(function(item){
+                if (item.quotation_goods && item.quotation_goods.length) {
+                    item.quotation_goods.forEach(function(e){
+                        if(!e.checked){
+                            selectAll = false;
+                        }
+                    })
+                }
+            })
+            this.selectAll = selectAll;
+          _this.cooseNumber(parent);
+        },
+        optionalQuantity:function(goods){
+          var total= 0;
+          goods.forEach(function(e){
+            total += +e.supply_number;
+          })
+          return total;
+        },
+        cooseNumber:function(item){
+          var total = 0;
+          item.quotation_goods.forEach(function(e){
+            total += +e.choose_number;
+          })
+          this.$set(item,'pickQuantity',total);
+          this.calcProfit();
+        },
+        //需求列表--报价目录 点击查看跳转方法
+        lookOver: function lookOver(id) {
+          newTab("/index.php?g=scm&m=display&a=purchases&type=" + id, this.$lang('采购详情'));
+        },
+        //ce计算
+        calcProfit:function(){
+          var _this = this;
+          var profit = {},
+              //获取时间
+              getDate = function(date){
+
+                  // 符合YYYY-MM-DD格式的时间才转化为YYYY/MM/DD,有很多之前老流程中调用此方法的地方date传参为空字符串/0
+                  const regExp = /\d{4}-\d{2}-\d{2}/
+                  if (regExp.test(date)) {
+                    date = date.replace(new RegExp(/-/gm), "/")
+                  }
+
+                  return +new Date(date)
+             },
+              //小数点四舍五入
+              round = function (num,ponit) { return  parseFloat(num || 0).toFixed(ponit||2) },
+              //百分比转换
+              percent = function(percent){ return parseFloat(percent || 0)/100 },
+              //判断商品成本区间
+              getCostValue = function(value){ return (value <= 100000 && 100000) || (value >= 2000000 && 2000000 + (value - 2000000)/2) || value; },
+              //判断测评级 退税前 (ce值，净利润 - 退税)
+              //判断测评级 退税后 (ce值，净利润)
+              calcLevel =  function (num,netProfit,taxRefund) { 
+                  if(num < 0 && netProfit > 0) return 'S';
+                  if(num < 0 && netProfit < 0) return 'F';
+                  return (num >= 3000 && 'S') || (num >= 2000 && 'A') || (num >= 1000 && 'B') || (num >= 800 && 'C') || (num >= 500 && 'D') || (num >= 0 && 'F'); 
+              }
+         /* 
+           //#endregion
+          * 获取收款金额
+          * 总应收款
+          * 采购应收款
+          */
+          var totalReceivables = 0,     
+              purchaseReceivables = 0,
+          // 现货ce变量    
+              revenueSpot = 0,
+              commodityCostSpot = 0;
+              taxRefundSpot = 0;
+          this.goodsInfo.forEach(function(e){
+            var _batchs = e.spot_batch　|| [];
+            var _onway = e.on_way_batch|| [];
+
+            totalReceivables += utils.conversionRate(_this.exchangeRate, _this.curreneyobj[_this.demand.sell_currency], e.sell_price, 'USD') * ((e.pickQuantity || 0) + (+e.spot_number || 0));
+            purchaseReceivables += utils.conversionRate(_this.exchangeRate,  _this.curreneyobj[_this.demand.sell_currency], e.sell_price, 'USD') * (e.pickQuantity || 0);
+            revenueSpot += utils.conversionRate(_this.exchangeRate,  _this.curreneyobj[_this.demand.sell_currency], e.sell_price, 'USD') * (+e.spot_number + +e.on_way_number);
+            taxRefundSpot += (utils.conversionRate(_this.exchangeRate, 'CNY', e.spot_drawback, 'USD') +  utils.conversionRate(_this.exchangeRate, 'CNY', e.on_way_drawback, 'USD'));
+
+            for (var i = 0, len = _batchs.length; i < len; i++) {
+                var price = _batchs[i].unit_price || 0;
+                commodityCostSpot += _batchs[i].num * utils.conversionRate(_this.exchangeRate, 'CNY', price, 'USD');
+            };
+            for (var i = 0, len = _onway.length; i < len; i++) {
+                var price = _onway[i].unitPrice || 0;
+                commodityCostSpot += _onway[i].selectNum * utils.conversionRate(_this.exchangeRate, 'CNY', price, 'USD');
+            };
+          })
+
+          /**
+           * 采购部分对应销售额的收款日期加权   purcahseSalesWeight
+           * 判断购应收款 和 总收款分期的比例editQuote
+           * 分别取出对应分期信息
+           */
+          var phaseOne = this.demand.collection_time[0] || { percent: 0, date: 0 },
+                secondTerm = this.demand.collection_time[1] || { percent: 0, date: 0 },
+                thirdPeriod = this.demand.collection_time[2] || { percent: 0, date: 0 },
+                firstReceipt = totalReceivables * phaseOne.percent / 100,
+                secondReceipt = secondTerm ? totalReceivables * (+phaseOne.percent + +secondTerm.percent) / 100 : 0;
+
+            if (purchaseReceivables <= firstReceipt) {
+                purcahseSalesWeight = getDate(phaseOne.date || 0);
+            } else if (firstReceipt < purchaseReceivables <= secondReceipt) {
+                purcahseSalesWeight = getDate(phaseOne.date) + (getDate(secondTerm.date) - getDate(phaseOne.date)) * (purchaseReceivables - firstReceipt) / purchaseReceivables;
+            } else {
+                purcahseSalesWeight = getDate(phaseOne.date) +
+                    (getDate(secondTerm.date) - getDate(phaseOne.date)) * totalReceivables * (+secondTerm.percent || 0) / 100 / purchaseReceivables +
+                    (getDate(thirdPeriod.date) - getDate(phaseOne.date)) * (purchaseReceivables - totalReceivables * (+phaseOne.percent + +secondTerm.percent) / 100) / purchaseReceivables;
+            }
+
+            //获取已选择报价的单号
+            var pickQuotationCode = this.selects.reduce(function (res, item) {
+                item.forEach(function (e) {
+                    if (res.indexOf(e.quotation_code) < 0) { res.push(e.quotation_code); }
+                })
+                return res;
+            }, []);
+
+            //采购金额 = 目标售价 * 中标数量
+            var amount = {
+                purchaseAmount: 0, //采购金额
+                commodityCost: 0,  //商品成本
+                taxRefund: 0,      //退税
+                drawbackTotal: 0,  //退税总额
+                purePurchase: 0    //销售纯采购
+            }
+            //获取单个的退税金额 以及 po金额 放入对象
+            var drawbackData = {}, poData = {};
+            amount = this.goodsInfo.reduce(function (res, e) {
+                res.purchaseAmount += (e.pickQuantity || 0) * utils.conversionRate(_this.exchangeRate,  _this.curreneyobj[_this.demand.sell_currency], e.sell_price, 'USD');
+                /*获取每行的 商品成本，退税 start*/
+                var rowAmount = { commodityCost: 0, taxRefund: 0, drawbackAmount: 0 };
+                rowAmount = (e.quotation_goods || []).reduce(function (result, item) {
+                    //获取该笔采购发票的税点
+                    var data = _this.quotation.filter(function (node) {
+                        return node.quotation_code == item.quotation_code;
+                    })[0];
+                    var po = utils.conversionRate(_this.exchangeRate, item.currency, item.purchase_price, 'USD') * item.choose_number;
+
+                    poData[item.quotation_code] = (poData[item.quotation_code] || 0) + po; //报价单号一样的累加
+                    result.commodityCost += po;        //总金额累加
+                    result.taxRefund += utils.conversionRate(_this.exchangeRate, item.currency, item.purchase_price, 'USD') * item.choose_number * percent(item.drawback_percent) / (1 + percent(data.tax_rate_val));
+
+                    var drawback = utils.conversionRate(_this.exchangeRate, item.currency, item.purchase_price, 'USD') * item.choose_number * percent(item.drawback_percent)/(1 + percent(data.tax_rate_val));
+                    drawbackData[item.quotation_code] = (drawbackData[item.quotation_code] || 0) + drawback; //报价单号一样的累加
+                    result.drawbackAmount += drawback; //总金额累加
+                    return result;
+                }, rowAmount);
+                /*获取每行的 商品成本，退税 end*/
+
+                res.purePurchase += +e.spot_number;
+                res.commodityCost += rowAmount.commodityCost;
+                res.drawbackTotal += rowAmount.drawbackAmount;
+                res.taxRefund += rowAmount.taxRefund;
+                return res
+            }, amount);
+
+           
+            
+            //获取总的服务费用
+            var totalserviceExpense = this.quotation.reduce(function (res, e) {
+                //判断选中的数据
+                if (pickQuotationCode.indexOf(e.quotation_code) > -1) {
+                    res += utils.conversionRate(_this.exchangeRate, e.currency_val, e.service_expense, 'USD');
+                }
+                return res;
+            }, 0);
+
+            /**
+              * 付款日期加权的加权  paymentDateWeight
+              * 预计退税日期加权   drawbackWeight
+              */
+            var weight = { paymentDateWeight: 0, drawbackWeight: 0 },
+                //获取paymentDateWeight付款日期加权的加权
+                weight = this.quotation.reduce(function (res, e) {
+                    //判断选中的数据
+                    if (pickQuotationCode.indexOf(e.quotation_code) > -1) {
+
+                        // e.clause_info字段为null:[禅道需求#9259采购结算改版]之前的数据,否则为之后的数据
+                        if (e.clause_info) {
+                            //后台返回的付款日期
+                            var paymentTime = e.clause_info,
+                                paymentDate = 0;
+                            //获取付款日期加权
+                            paymentDate = paymentTime.reduce(function (result, item) {
+                                return result += getDate(item.pre_paid_date) * item.percent / 100;
+                            }, paymentDate);
+                        } else {
+                            //后台返回的付款日期
+                            var paymentTime = JSON.parse(e.payment_time),
+                                paymentDate = 0;
+                            //获取付款日期加权
+                            paymentDate = paymentTime.reduce(function (result, item) {
+                                return result += getDate(item.date) * item.percent / 100;
+                            }, paymentDate);
+                        }
+                        
+
+                        var serviceExpense = utils.conversionRate(_this.exchangeRate, e.currency_val, e.service_expense, 'USD');
+                        res.paymentDateWeight += (poData[e.quotation_code]  + serviceExpense) / (+amount.commodityCost + totalserviceExpense) * paymentDate;
+                        //有退税时间才计算退税金额总额
+                        if (amount.drawbackTotal && e.drawback_time) {
+                            res.drawbackWeight += drawbackData[e.quotation_code] / amount.drawbackTotal * getDate(e.drawback_time);
+                        }
+                    }
+                    return res;
+                }, weight);
+
+            //采购物流及服务费用（预估）
+            var purchase_cost = this.quotation.reduce(function (res, item) {
+                if (pickQuotationCode.indexOf(item.quotation_code) > -1) {
+                    res += utils.conversionRate(_this.exchangeRate, item.currency_val, item.service_expense, 'USD') + utils.conversionRate(_this.exchangeRate, _this.curreneyobj[item.expense_currency], item.expense, 'USD')
+                }
+                return res;
+            }, 0);
+
+            //计算结果 按照展示顺序
+            var tax = utils.conversionRate(_this.exchangeRate, this.curreneyobj[this.demand.tax_currency], this.demand.tax, 'USD') || 0,
+                sell_amount = utils.conversionRate(_this.exchangeRate, this.curreneyobj[this.demand.sell_currency], this.demand.sell_amount, 'USD');
+                
+            profit.collection_period = transformDays(purcahseSalesWeight - weight.paymentDateWeight);
+            profit.drawback_period = weight.drawbackWeight > 0 ? transformDays(weight.drawbackWeight - weight.paymentDateWeight) : 0;
+            profit.integrated_period = Math.ceil(sell_amount / (sell_amount + amount.taxRefund) * profit.collection_period + amount.taxRefund / (sell_amount + amount.taxRefund) * profit.drawback_period) || 0;
+            profit.revenue = round(purchaseReceivables);
+            //判断 热销品囤货||销售纯采购的货物(已选现货合计为0))
+            profit.tax = round(tax);
+            profit.revenue_after_tax = round(profit.revenue - profit.tax);
+            profit.commodity_cost = round(amount.commodityCost);
+            profit.tax_refund = round(amount.taxRefund);
+            profit.commodity_cost_after_tax_refund = round(profit.commodity_cost - profit.tax_refund);
+            profit.purchase_cost = round(purchase_cost);
+            profit.sale_cost = round(utils.conversionRate(_this.exchangeRate, this.curreneyobj[this.demand.expense_currency], this.demand.expense, 'USD') + profit.revenue * _this.demand.rebate_rate * 0.01);
+            profit.total_cost = round(+profit.purchase_cost + +profit.sale_cost);
+            profit.gross_profit = round(profit.revenue_after_tax - profit.commodity_cost);
+            profit.gross_profit_after_tax_refund = round(+profit.gross_profit + +profit.tax_refund);
+            profit.net_profit = round(profit.revenue_after_tax - profit.commodity_cost_after_tax_refund - profit.total_cost);
+            profit.gross_profit_rate = round(profit.gross_profit / profit.revenue_after_tax, 4);
+            profit.gross_profit_rate_after_tax_refund = round(profit.gross_profit_after_tax_refund / profit.revenue_after_tax, 4);
+            profit.net_profit_rate = round(profit.net_profit / profit.revenue_after_tax, 4);
+            profit.cost_for_revenue = round(profit.total_cost / profit.revenue_after_tax, 4);
+            profit.gl_gross_profit = round(profit.gross_profit_after_tax_refund - profit.total_cost);
+            profit.cost_for_gross_profit = round(profit.total_cost / profit.gross_profit_after_tax_refund, 4);
+            profit.gl_gross_profit_for_revenue = round(profit.gl_gross_profit / profit.revenue_after_tax, 4);
+            //商品成本转换成人民币
+            var cnyCommodityAfter = utils.conversionRate(_this.exchangeRate, 'USD', profit.commodity_cost_after_tax_refund);
+            var cnyCommodity = utils.conversionRate(_this.exchangeRate, 'USD', profit.commodity_cost);
+            //ce退税前
+            profit.ce =  Math.round(((profit.net_profit - profit.tax_refund) / +profit.revenue_after_tax)/(getCostValue(cnyCommodity)/200000 + profit.collection_period) * 1000000) || 0;
+            profit.ce_level = calcLevel(profit.ce, profit.net_profit - profit.tax_refund);
+            profit.ceInfo = (profit.net_profit - profit.tax_refund >= 0 && profit.ce < 0 && ',提前收款') || (profit.net_profit - profit.tax_refund  < 0 && profit.ce > 0 && ',提前收款,但退税前净利润为负') || '';
+            // ce退税后
+            profit.ce_after_tax_refund = Math.round(profit.net_profit_rate / (getCostValue(cnyCommodityAfter) / 200000 + profit.integrated_period) * 1000000);
+            profit.ce_level_after_tax_refund = calcLevel(profit.ce_after_tax_refund, profit.net_profit);
+            profit.ceAfterInfo = (profit.net_profit >= 0 && profit.ce_after_tax_refund < 0 && ',提前收款') || (profit.net_profit < 0 && profit.ce_after_tax_refund > 0 && ',提前收款,但净利润为负') || '';
+            
+            // 现货ce
+            profit.revenue_spot = revenueSpot;
+            profit.revenue_after_tax_spot = revenueSpot - utils.conversionRate(_this.exchangeRate, this.curreneyobj[this.demand.tax_currency_spot],  _this.demand.tax_spot, 'USD');
+            profit.commodity_cost_spot = commodityCostSpot;
+            profit.tax_refund_spot = taxRefundSpot;
+            profit.cost_after_tax_refund_spot = profit.commodity_cost_spot - profit.tax_refund_spot;
+            profit.tax_spot = utils.conversionRate(this.exchangeRate, this.curreneyobj[this.demand.tax_currency_spot], _this.demand.tax_spot, 'USD');
+            profit.sale_cost_spot = parseFloat(utils.conversionRate(this.exchangeRate, this.curreneyobj[this.demand.expense_currency_spot], this.demand.expense_spot, 'USD') + profit.revenue_spot * _this.demand.rebate_rate * 0.01);
+            profit.gross_profit_spot = profit.revenue_after_tax_spot - profit.commodity_cost_spot;
+            profit.gross_profit_after_tax_refund_spot = profit.gross_profit_spot + profit.tax_refund_spot;
+            profit.gross_profit_rate_spot = +profit.revenue_after_tax_spot ? +profit.gross_profit_spot.toFixed(2) / Math.abs(profit.revenue_after_tax_spot) : '0';
+            profit.gross_profit_rate_after_tax_refund_spot = profit.gross_profit_after_tax_refund_spot/profit.revenue_after_tax_spot;
+            profit.net_profit_spot = profit.gross_profit_after_tax_refund_spot - profit.sale_cost_spot;
+            profit.net_profit_rate_spot = +profit.revenue_after_tax_spot ? +profit.net_profit_spot.toFixed(2) / Math.abs(profit.revenue_after_tax_spot) : '0';
+            
+            // 综合ce
+            profit.revenue_total = +profit.revenue + profit.revenue_spot;
+            profit.tax_total = +profit.tax + profit.tax_spot;
+            profit.revenue_after_tax_total =  +profit.revenue_after_tax + profit.revenue_after_tax_spot;
+            profit.commodity_cost_total = +profit.commodity_cost + profit.commodity_cost_spot;
+            profit.commodity_cost_after_tax_refund_total= +profit.commodity_cost_after_tax_refund + profit.cost_after_tax_refund_spot
+            profit.sale_cost_total = +profit.total_cost +  profit.sale_cost_spot;
+            profit.gross_profit_total = +profit.revenue_after_tax_total - profit.commodity_cost_total;
+            profit.gross_profit_after_tax_refund_total = +profit.revenue_after_tax_total - profit.commodity_cost_after_tax_refund_total;
+            profit.gross_profit_rate_total = +profit.gross_profit_total.toFixed(2) / Math.abs(profit.revenue_after_tax_total);
+            profit.gross_profit_rate_after_tax_refund_total = profit.gross_profit_after_tax_refund_total / profit.revenue_after_tax_total;
+            profit.net_profit_total = profit.gross_profit_after_tax_refund_total - profit.sale_cost_total;
+            profit.net_profit_rate_total = +profit.net_profit_total.toFixed(2) / Math.abs(profit.revenue_after_tax_total);
+
+            this.profit = profit;
+            return profit;
+        },
+        //返利比例求返利金额
+        getAmount: function (){
+            if(this.demand.rebate_rate && this.demand.rebate_rate > 0){
+                this.demand.rebate_rate = Math.floor(Number(this.demand.rebate_rate) * 100) / 100;
+                this.demand.rebate_amount = (this.demand.rebate_rate * Number(this.demand.sell_amount) / 100).toFixed(2);
+            }else{
+                this.demand.rebate_rate = 0;
+                this.demand.rebate_amount = '0.00';
+            }
+        },
+        //更新编辑报价
+        updateQuote:function(){
+          var _this = this;
+          var check = this.type.hotProducts ?
+            [
+              {name:'销售同事',code:'seller'},
+              {name:'业务类型',code:'business_mode'},
+              {name:'销售团队',code:'sell_team'},
+              {name:'收款时间',code:'collection_time'},
+            ]:[
+              {name:'客户名称',code:'customer'},
+              {name:'我方公司',code:'our_company'},
+              {name:'业务类型',code:'business_mode'},
+              {name:'客户收货方式',code:'receive_mode'},
+              {name:'国家',code:'receive_country'},
+            //   {name:'省市',code:'receive_province'},
+              {name:'详细地址',code:'receive_address'},
+              {name:'销售金额币种',code:'sell_currency'},
+              {name:'发货时间',code:'ship_date'},
+              {name:'发票类型',code:'invoice_type'},
+              {name:'税点',code:'tax_rate'},
+              {name:'销售同事',code:'seller'},
+              {name:'销售团队',code:'sell_team'},
+              {name:'返利比例',code:'rebate_rate'},
+            ];
+            
+            var _arr2 = [
+                {name: '销售物流及服务费用（采购）币种', code: 'expense_currency'},
+                {name: '销售物流及服务费用（采购）', code: 'expense'},
+                {name: '销售应缴税（采购）币种', code: 'tax_currency'},
+                {name: '销售应缴税（采购）', code: 'tax'},
+            ];
+            var _arr1 = [
+                {name: '销售物流及服务费用（现货）币种', code: 'expense_currency_spot'},
+                {name: '销售物流及服务费用（现货）', code: 'expense_spot'},
+                {name: '销售应缴税（现货）币种', code: 'tax_currency_spot'},
+                {name: '销售应缴税（现货）', code: 'tax_spot'},
+            ];
+
+           check = this.status.is_spot == 2 ? check.concat(_arr2) : check;
+           check = this.status.is_spot == 0 ? check.concat(_arr2, _arr1) : check;
+           
+           if(this.demand.expected_sales_country.length == 0) {
+                this.$message.warning(this.$lang("预计销售国家为必填项"));
+                return false
+            }
+            if(this.type.hotProducts && this.demand.customer_charter_no ==''){
+                if(this.demand.expected_sales_platform_cd.length == 0) {
+                    this.$message.warning(this.$lang("预计销售平台为必填项"));
+                    return false
+                }
+            }
+            for (var i = 0; i < check.length; i++) {
+                if(!this.demand[check[i].code] != 0 && !this.demand[check[i].code]){
+                    if(check[i].code == 'rebate_rate' && this.demand[check[i].code] != 0){
+                        this.$message.warning(this.$lang(check[i].name) + this.$lang("为必填项"));
+                        return false;
+                    }
+                    
+                }
+            }
+
+            if(!this.demand.collection_time[0].date){
+                this.$message.warning(this.$lang("收款时间为必填项"));
+                return false;
+            }
+            if(!this.type.hotProducts && this.demand.is_purchase_only != 1 && !this.demand.contract ){
+                this.$message.warning(this.$lang("框架合同不能为空"));
+                return false;
+            };
+            var _sum = 0;
+            for (var i = 0, len = this.demand.collection_time.length; i < len; i++) {
+                _sum += (this.demand.collection_time[i].percent - 0);
+            };
+
+            if (_sum !== 100) {
+                this.$message.warning(this.$lang('每期收款比例之和必须为100'));
+                return false;
+            };
+            //已选择报价数量总计
+            var pickQuantity = 0;
+            this.goodsInfo.forEach(function(item,index){
+                if(!item.sell_price){
+                    _this.$message.warning(_this.$lang('第') + (+index + 1) + this.$lang('条SKU的销售金额不能为空'));
+                    return false;
+                }
+                pickQuantity += +(item.pickQuantity||0);
+                
+            });
+
+            if(!pickQuantity){
+                _this.$message.warning(_this.$lang('请选择报价数量'));
+                return false;
+            }
+            this.type.editStatus = false;
+            this.demand.is_spot = this.status.is_spot;
+            var param = {};
+            param = JSON.parse(JSON.stringify(this.demand));
+            // param = this.demand;
+            param.expected_sales_country = param.expected_sales_country.join(',');
+            param.expected_sales_platform_cd = param.expected_sales_platform_cd.join(',');
+            param.goods = this.goodsInfo;
+            axios.post('/index.php?g=scm&m=demand&a=demand_save',Qs.stringify(param))
+                .then(function(res){
+                    if(res.data.code == 2000){
+                        _this.submitQuote();
+                    }else{
+                        _this.$message.warning(_this.$lang(res.data.msg));
+                    }
+                });
+        },
+        changeCurrency:function(){
+            var _this = this;
+            var data = this.baseData.currency.filter(function(item){
+                return item.CD == _this.demand.sell_currency;
+            });
+            this.demand.sell_currency_val = data[0].CD_VAL;
+            this.calcProfit()
+        },
+        //销售提交按钮
+        submitQuote:function(){
+            //报价ID 以及 数量
+            var goods = this.goodsInfo.reduce(function(res,item){
+                 item.quotation_goods && item.quotation_goods.forEach(function(e){
+                    res[e.id] = e.choose_number;
+                });
+                return res;
+            },{});
+            
+            if (this.demand.demand_type === 'N002100200' || this.demand.demand_type === 'N002100201') {
+                this.profit.days_of_receivables = this.dateWeighting;
+                this.profit.receivables_efficiency = this.dateLevel;
+                this.profit.average_days_of_receivables = this.demand.receivables_day_avg;
+                this.profit.average_receivables_efficiency = this.customerLevel;
+            };
+            
+             //this.$message.error('ce值中有错误项，请检查ce值！');
+             var _this = this,
+                param = {
+                    id:this.demand.id,
+                    sell_amount:this.demand.sell_amount,
+                    sell_amount_not_contain_tax:this.demand.sell_amount_not_contain_tax,
+                    expense:this.demand.expense,
+                    expense_currency:this.demand.expense_currency,
+                    profit:this.profit,
+                    goods:goods
+                }
+            _this.tab.loading = true;
+            axios.post('/index.php?g=scm&m=demand&a=choose_quotation',Qs.stringify(param))
+                .then(function(res){
+                    _this.tab.loading = false;
+                    if (res.data.code == 2000) {
+                        _this.$message.success(_this.$lang('提交成功'));
+                        setTimeout(function(){ _this.goList()},1000);
+                    } else {
+                        _this.$message.error(_this.$lang(res.data.msg));
+                    }
+                })
+        },
+        //选择报价
+        editQuote:function(){
+            this.type.editStatus = true;
+            this.customOptions = [{SP_NAME: this.demand.customer, SP_CHARTER_NO: this.demand.customer_charter_no}];
+            //收款日期判断
+            if(this.type.hotProducts){
+                this.demand.collection_cycle = 'N002170100';
+                this.demand.collection_time[0].percent = '100';
+            }
+        },
+        //认领需求
+        claimingDemand:function(){
+            backTab("/index.php?g=scm&m=display&a=procurement_claim&type=" + this.demand.id,this.$lang('认领需求'));
+        },
+        //审批通过
+        operate: function(type,status) {
+            var _this = this,
+                list = [
+                    { step: 'salesLeader', url: 'seller_leader_approve' },
+                    { step: 'ceo', url: 'ceo_approve' },
+                    { step: 'legal', url: 'demand_justice_approve' },
+                    { step: 'stamp', url: 'demand_justice_stamp' },
+                    { step: 'po_archive', url: 'demand_po_archive' },
+                ];
+            node = list.filter(function (item) { return item.step == type; })[0],
+            url = "/index.php?g=scm&m=demand&a=" + node.url;
+            if(!this.dialog.backReason && status != 'pass'){
+                _this.$message.error(_this.$lang('请选择退回原因'));
+                return false;
+            }
+            var param = {
+                id: this.demand.id,
+                remark:type == 'salesLeader' ? this.profit.remark:null,
+                status: status == 'pass' ? 1 : 0,
+                reason: this.dialog.backReason
+            };
+
+            _this.dialog.back = false;
+            _this.tab.loading = true;
+            axios.post(url,Qs.stringify(param))
+                .then(function(res){
+                    _this.tab.loading = false;
+                    if(res.data.code == 2000){
+                        _this.$message.success(_this.$lang('审批成功'));
+                        setTimeout(function(){ _this.goList()},1000);
+                    }else{
+                        _this.$message.error(_this.$lang(res.data.msg))
+                    }
+                })
+        },
+        remindEmail: function () {
+            var  _this = this;
+            axios.post('/index.php?g=scm&m=demand&a=resend_ceo_email', Qs.stringify({id: _this.demand.id})).then(function (res) {
+                var _data = res.data;
+                if (_data.code === 2000) {
+                    _this.$message.success(_this.$lang(_data.msg));
+                } else {
+                    _this.$message.error(_this.$lang(_data.msg));
+                };
+            });
+        },
+        backApproval:function(type){
+            this.dialog.back = true;
+            this.temporary = type;
+        },
+        selectBatch: function(item) {
+            this.batchData.list = item.spot_batch;
+            this.batchData.skuid = item.sku_id;
+            this.batchData.barCode = item.bar_code;
+            this.batchData.demandMete = item.require_number;
+            this.dialog.batch = true;
+        },
+        //修改需求
+        modifyDemand: function () {
+            var _this = this;
+            if(!this.dialog.modifyReason){
+                _this.$message.error(_this.$lang('请输入撤回原因'));
+                return false;
+            }
+            axios.post('/index.php?g=scm&m=demand&a=checkPredestinateNum',{demand_code: this.demand.demand_code}).then(res => {
+                console.log(res)
+                // return false;
+                if (res.data.code === 200) {
+                    this.queryModifyDemand()
+                } else {
+                    this.$confirm('检测到所选在途库存数量有变动，撤回后将清空所有SKU的在途/现货库存选择数量，请重新选择, 是否继续?', '提示', {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                        }).then((e) => {
+                            this.queryModifyDemand();
+                        }).catch((e) => {
+                        this.$message({
+                            type: 'info',
+                            message: '已取消操作'
+                        });          
+                    });
+                }
+            })
+        },
+        queryModifyDemand() {
+            var _this = this;
+            var param = {
+                id: this.demand.id,
+                reason: this.dialog.modifyReason
+            };
+            _this.dialog.modify = false;
+            _this.tab.loading = true;
+            axios.post('/index.php?g=scm&m=demand&a=return_to_draft', Qs.stringify(param))
+            .then(function (res) {
+                _this.tab.loading = false;
+                if (res.data.code == 2000) {
+                    _this.$message.success(_this.$lang('修改成功'));
+                    backTab("/index.php?g=scm&m=display&a=demand_draft&type=" + _this.demand.id, _this.$lang("需求详情"));
+                } else {
+                    _this.$message.error(_this.$lang(res.data.msg));
+                }
+            });
+        },
+        //重选方案
+        reScheme: function () {
+            var _this = this;
+            axios.post("/index.php?g=scm&m=demand&a=return_to_seller_choose", Qs.stringify({ id: this.demand.id }))
+            .then(function (res) {
+                if (res.data.code == 2000) {
+                    _this.$message.success(_this.$lang('提交成功'));
+                    setTimeout(function(){ _this.goList()},1000);
+                } else {
+                    _this.$message.warning(_this.$lang(res.data.msg));
+                }
+            });
+        },
+        //放弃需求
+        giveUpDemand: function() {
+            var _this = this;
+            if(!this.dialog.giveUpReason){
+                _this.$message.error(_this.$lang('请选择放弃原因'));
+                return false;
+            }
+            var param = {
+                id: this.demand.id,
+                reason: this.dialog.giveUpReason
+            };
+            axios.post("/index.php?g=scm&m=demand&a=demand_discard", Qs.stringify(param))
+                .then(function (res) {
+                    if (res.data.code == 2000) {
+                        _this.$message.error(_this.$lang('修改成功'));
+                        setTimeout(function(){ _this.goList()},1000);
+                    } else {
+                        _this.$message.error(_this.$lang(res.data.msg));
+                    }
+                });
+        },
+        handleSelect: function (val) {
+            if (!val) {
+                this.demand.customer = val
+                return;
+            };
+            this.demand.contract = '';
+            this.demand.our_company = '';
+            this.demand.is_purchase_only = '0';
+            var _arr = this.customOptions.filter((item) => {
+                return item.SP_CHARTER_NO === val;
+            });
+            this.demand.customer = _arr[0].SP_NAME;
+            this.demand.receivables_day_avg = _arr[0].receivables_day_avg !== null ? _arr[0].receivables_day_avg : null;
+        },
+        /* 编辑状态下的操作  satrt*/
+        remoteMethod(queryString) {
+            if (!queryString) {
+                return;
+            };
+            this.customLoading = true;
+            axios.post("/index.php?g=common&m=index&a=search_customer_or_supplier", Qs.stringify({
+                supplier_id: queryString,
+                type: '1'
+            })).then((res) => {
+                this.customLoading = false;
+                var _data = res.data;
+                if (_data.code === 2000) {
+                    this.customOptions = _data.data;
+                } else {
+                    this.$message.error(this.$lang(_data.msg));
+                }
+            });
+        },
+        //搜索销售同事
+        querySearchSeller: function (qs, cb) {
+            if (qs) {
+            axios.post("/index.php?g=common&m=user&a=search_user",Qs.stringify({ name: qs }))
+              .then(function(res) {
+                  var _data = res.data;
+                  if (_data.code === 2000) {
+                      cb(_data.data || []);
+                  } else {
+                      this.$message.error(this.$lang(_data.msg));
+                  };
+              })
+          };
+        },
+        //选择客户名称
+        selectCustomer:function(item){
+          this.demand.customer_charter_no = item.value;
+        },
+        //获取框架合同
+        queryContract() {
+          var _this = this;
+          this.loading.contractLoading = true;
+          axios.post("/index.php?m=order_detail&a=getContract", Qs.stringify({sp_charter_no: this.demand.customer_charter_no}))
+            .then(function (res) {
+              var _data = res.data;
+              _this.loading.contractLoading = false;
+              if (_data.status === 1) {
+                _this.baseData.contract = _data.data || [];
+              } else {
+                _this.$message.error(_this.$lang(_data.msg));
+              }
+            });
+        },
+        //获取地址
+        getAddress: function (id,type) {
+          var _this = this;
+          axios.post("/index.php?g=common&m=index&a=get_address",Qs.stringify({pid:id})).then(function(res){
+            var _data = res.data;
+            if (_data.code === 2000) {
+              _this.baseData[type] = _data.data;
+            } else {
+              _this.$message.error(_this.$lang(_data.msg));
+            }
+          });
+        },
+        pickCycle:function(val){
+          var list = this.baseData.collection_cycle;
+          this.demand.collection_time = [];
+          for (var i = 0; i < list.length; i++) {
+            this.demand.collection_time.push({ node: '', days: '', day_type: '', percent: '', date: '' })
+            if (list[i].CD == val) break;
+          }
+        },
+        pickTime:function(list,index,val){
+          if(list[index + 1]){
+            this.$set(list[index + 1],'picksBeforeTime', {
+              disabledDate:function(item) { return item.getTime() < new Date(val) }
+            })
+          }
+        },
+        beforeUpload: function (file) {
+            var key = '';
+            switch (this.active.step) {
+                case 6:
+                case 5:
+                    key = 'po';
+                    break;
+                default:
+                    key = 'attachment';
+            }
+            this.demand[key] = this.demand[key] || [];
+            for (var i = 0, len = this.demand[key].length; i < len; i++) {
+                if (this.demand[key][i].original_name === file.name) {
+                    this.$message.warning(this.$lang('该文件已上传'));
+                    return false;
+                };
+            };
+        },
+        upProgress: function (file) {
+            
+            var key = '';
+            switch (this.active.step) {
+                case 5:
+                case 6:
+                    key = 'po';
+                    break;
+                default:
+                    key = 'attachment';
+            }
+            if (file.status === "success") {
+                this.demand[key] = this.demand[key] || [];
+                if (key == 'po') {
+                    if (this.active.step === 6 && this.isLawUploadFlag) {
+                        this.isLawUploadFlag = false;
+                        this.demand[key] = [{
+                            original_name: file.response.info.name,
+                            save_name: file.response.info.savename
+                        }];
+                    } else {
+                        this.demand[key].push({
+                            original_name: file.response.info.name,
+                            save_name: file.response.info.savename
+                        });
+                    };
+                    this.active.step == 6 && this.reuploadPo('rePo');
+                } else {
+                    this.demand[key].push({
+                        original_name: file.response.info.name,
+                        save_name: file.response.info.savename
+                    });
+                };
+            };
+        },
+        removeList: function (file) {
+            var key = '';
+            switch (this.active.step) {
+                case 5:
+                case 6:
+                    key = 'po';
+                    break;
+                default:
+                    key = 'attachment';
+            }
+            if (file.status === "success") {
+                for (var i = 0, len = this.demand[key].length; i < len; i++) {
+                    if (this.demand[key][i].original_name === file.name) {
+                        this.demand[key].splice(i, 1);
+                        break;
+                    };
+                };
+                this.active.step == 6 && this.reuploadPo('rePo');
+            };
+        },
+        /* 编辑状态下的操作  end*/
+        //po提交报价需求
+        submitPo:function(type){
+            if(!this.demand[type] || !this.demand[type].length){
+                this.$message.warning(this.$lang('请上传PO文件'));
+                return false;
+            }
+            if(type == 'po'){
+                if(!this.demand.po_date){
+                    this.$message.warning(this.$lang('PO时间不能为空'));
+                    return false;
+                }
+                if(this.demand.has_3rd_po == 1 && !this.demand.third_po_no){
+                    this.$message.warning(this.$lang('请填写PO单号'));
+                    return false;
+                }
+            }
+            var _this = this,
+                param = {
+                    id: _this.demand.id,
+                    po: _this.demand[type],
+                    status:1,
+                    third_po_no:this.demand.third_po_no,
+                    has_3rd_po:this.demand.has_3rd_po,
+                    po_date:this.demand.po_date
+                },
+                url = type == 'po' ? 'demand_upload_po':'demand_po_archive';
+            _this.tab.loading = true;
+            axios.post('/index.php?g=scm&m=demand&a=' + url, Qs.stringify(param))
+                .then(function (res) {
+                    _this.tab.loading = false;
+                    if (res.data.code == 2000) {
+                        _this.$message.success(_this.$lang('提交成功'));
+                        setTimeout(function(){ _this.goList()},1000);
+                    } else {
+                        _this.$message.error(_this.$lang(res.data.msg));
+                    }
+                });
+        },
+        //创建b2b订单
+        createOrder: function () {
+            var _this = this;
+            _this.tab.loading = true;
+            axios.post("/index.php?g=scm&m=demand&a=create_order", Qs.stringify({ id: this.demand.id }))
+            .then(function (res) {
+                _this.tab.loading = false;
+                if (res.data.code == 2000) {
+                    _this.$message.success(_this.$lang('创建成功'));
+                    setTimeout(function(){ _this.goList()},1000);
+                } else {
+                    _this.$message.error(_this.$lang(res.data.msg));
+                }
+            });
+        },
+        //关联订单跳转
+        viewB2B: function(id) {
+            newTab("/index.php?m=b2b&a=order_list&order_id=" + id + "#/b2bsend", this.$lang('B2B订单'));
+        },
+        //关联订单跳转
+        viewPurcahse: function(id) {
+            newTab("/index.php?m=order_detail&a=purchase_order_detail&relevance_id=" + id, this.$lang('采购详情'));
+        },
+        setCompany:function(val){
+            var data = this.baseData.contract.filter(function(item){
+            return item.CON_NO == val;
+            })[0];
+            this.demand.our_company = val ? data.CON_COMPANY_CD : '';
+        
+        },
+        applications:function(){
+            var _this = this;
+            this.process.dialog = true;
+            this.process.list = [];
+            this.quotation.forEach(function (item, index) {
+                //采购进度为弃单 和 申请修改
+                if (item.status == 'N002150700' || item.status == 'N002150600') {
+                    _this.process.list.push(item);
+                }
+            });
+        },
+        pickProcess:function(val){
+            this.process.approve_to_or_reason = '';
+            if(val){
+                this.process.selectReasons = (val == 'N002340100' && this.baseData.agree_apply_action) ||
+                (val == 'N002340300' && this.baseData.not_agree_apply_reason) || this.baseData.demand_change_reason;
+            };
+        },
+        sendProcess:function(){
+            var _this = this;
+            var param = {
+                id:this.demand.id,
+                process_method:this.process.process_method,
+                approve_to_or_reason:this.process.approve_to_or_reason
+            }
+            if (this.process.approve_to_or_reason && this.process.process_method) {
+                this.process.dialog = false;
+                axios.post("/index.php?g=scm&m=demand&a=process_application", Qs.stringify(param)).then(function (res) {
+                    if (res.data.code == 2000) {
+                        _this.$message.success(_this.$lang(res.data.msg));
+                        setTimeout(function(){ _this.goList()},1000);
+                    } else {
+                        _this.$message.error(_this.$lang(res.data.msg));
+                    }
+                });
+            } else {
+                this.$message.warning(this.$lang('请选择处理方法且原因'));
+            }
+        },
+        againSpot: function (row, index) {
+            var _this = this;
+            this.dialogTableVisible = true;
+            this.batchLoading = true;
+
+            this.goodsName = row.goods_name;
+            this.batchIndex = index;
+
+            this.getSingleSkuStock(row.sku_id, stockCb);
+                    
+            function stockCb (_arr) {
+                _arr = _arr || [];
+                _this.batchLoading = false;
+                _this.gridData = _arr.length && _arr.map(function (item) {
+                    _this.$set(item, 'isSelected', true);
+                    _this.$set(item, 'num', '');
+                    _this.$set(item, 'cost', '');
+                    _this.$set(item, 'batchs', []);
+                    _this.$set(item, 'drawback', '');
+                    return item;
+                });
+                row.spot_warehouse = row.spot_warehouse || [];
+
+                row.spot_warehouse.length && (_this.confirmDisabled = false);
+                var _array = [];
+                
+                for (var i = 0, ilen = _this.gridData.length; i < ilen; i++) {
+                    var item = _this.gridData[i];
+                    for (var j = 0, jlen = row.spot_warehouse.length; j < jlen; j++) {
+                        var jtem = row.spot_warehouse[j];
+                        if (item.deliveryWarehouse === jtem.deliveryWarehouse) {
+                            _this.$set(item, 'num', jtem.num);
+                            _this.$set(item, 'cost', jtem.cost);
+                            _this.$set(item, 'isSelected', jtem.isSelected === 'false' ? false : true);
+                            _this.$set(item, 'batchs', jtem.batchs);
+                            _this.$set(item, 'drawback', jtem.drawback);
+                            _array.push(item);
+                            break;
+                        };
+                    };
+                };
+                
+                _this.$nextTick(function () {
+                    var i = 0,
+                    len = _array.length;
+                    if (len) {
+                        for (; i < len; i++) {
+                            _this.$refs.multipleTable.toggleRowSelection(_array[i], true);
+                        }; 
+                    };
+                });
+            };
+        },
+        getSingleSkuStock: function (id, cb) {// 根据sku获取库存
+            var _this = this;
+            var saleCode = this.demand.sell_team;
+            var req = {
+                processCode: "ORDER_BATCH_SEARCH",
+                processId: "4ea9083b9c74f80c23b097d820f4a8e7",
+                data: [{
+                    skuId: id,
+                    saleTeamCode: saleCode,
+                    orderId: _this.demand.demand_code
+                }],
+            };
+            axios.post(baseUrl+BATCHSTOCK, req).then(function (res) {
+                var _data = res.data;
+                if (_data.code === 2000) {
+                    cb && cb(_data.data[0].batchStock);
+                } else {
+                    this.$message.error(this.$lang(_data.msg));
+                };
+            });
+        },
+        getstockSummaries: function () {
+            var sums = [this.$lang("合计")],
+                _sum2,_sum3,_sum4,_sum5;
+                _sum2 = _sum3 = _sum4 = _sum5 = 0;
+
+            for (var i = 0, len = this.gridData.length; i < len; i++) {
+                _sum2 += (this.gridData[i].availableNum - 0);
+                _sum3 += (this.gridData[i].num - 0);
+                _sum4 += (this.gridData[i].cost - 0);
+                _sum5 += (this.gridData[i].drawback - 0);
+            };
+            sums[2] = _sum2;
+            sums[3] = _sum3;
+            sums[4] = '￥'+ (_sum4 ? this.$options.filters.numberFormat(_sum4) : '0.00');
+            sums[5] = '￥'+ (_sum5 ? this.$options.filters.numberFormat(_sum5) : '0.00');
+            return sums;
+        },
+        handleSelectionChange: function (val) {
+            this.gridData.map(function (item) {
+                item.isSelected = true;
+                return item;
+            });
+            val.map(function (item) {
+                item && (item.isSelected = false);
+                return item;
+            });
+            this.currentBatch = val;
+        },
+        gridSelect: function (val) {
+            if (val && !val.length) {
+                this.gridData.map(function (item) {
+                    item.isSelected = true;
+                    item.num = '';
+                    item.cost = '';
+                    item.batchs = [];
+                    return item;
+                });
+            };
+        },
+        manualSelect: function (val, row) {
+            if (row.isSelected) {
+                row.num = "";
+                row.cost = "";
+            };
+        },
+        numChange: function (i, row) {
+            if ((row.num - 0) > (row.availableNum - 0)) {
+                this.$message.warning(this.$lang('已选数量不能大于可用数量'));
+                return;
+            };
+            var skuID = this.goodsInfo[this.batchIndex].sku_id;
+            this.confirmDisabled = false;
+            this.confirmFlag = true;
+            var _this = this;
+            // 去调接口
+            var req = {
+                processCode: 'BATCH_SEARCH',
+                processId: '4ea9083b9c74f80c23b097d820f4a8e7',
+                data: [
+                    {
+                        skuId: skuID,
+                        deliveryWarehouse: row.deliveryWarehouse,
+                        num: row.num,
+                        saleTeamCode: _this.demand.sell_team,
+                        orderId: _this.demand.demand_code
+                    }
+                ]
+            };
+            axios.post(baseUrl+BATCHSEARCH, req).then(function (res) {
+                var _data = res.data;
+                if (_data.code === 2000) {
+                    _this.confirmFlag = false;
+                    var occupyDetail = _data.data[0].occupyDetail;
+                    var cost = occupyDetail.reduce(function (init, item) {
+                        return init + item.num * item.unitPrice;
+                    }, 0);
+
+                    row.cost = cost.toFixed(2);
+                    var drawback = occupyDetail.reduce(function (init, item) {
+                        return init + item.num * item.drawback;
+                    }, 0);
+
+                    row.drawback = drawback.toFixed(2);
+                    
+                    _this.$set(row, 'batchs', occupyDetail);
+                } else {
+                    _this.$message.error(_this.$lang(_data.msg));
+                };
+            });
+        },
+        batchConfire: function () {
+            if (this.confirmFlag) {
+                return;
+            };
+            var spotNumber = 0,
+                _arr = [],
+                isSpotNum = 0,
+                spotCost = 0;
+                spotDrawback = 0;
+            var _this = this;
+            for (var i = 0, len = this.currentBatch.length; i < len; i++) {
+                if (!this.currentBatch[i].num) {
+                    this.$message.warning(this.$lang('本次选择数量不能为空'));
+                    return;
+                };
+            };
+            
+            for (var i = 0, len = this.currentBatch.length; i < len; i++) {
+                this.currentBatch[i].batchs.forEach(function (item) {
+                    !item.id && _this.$set(item, 'id', item.batch_id);
+                    !item.unit_price && _this.$set(item, 'unit_price', item.unitPrice);
+                    item.batch_id && _this.$delete(item, 'batch_id');
+                    item.unitPrice && _this.$delete(item, 'unitPrice');
+                });
+                spotNumber += (+this.currentBatch[i].num);
+                spotCost += (+this.currentBatch[i].cost);
+                spotDrawback += (+this.currentBatch[i].drawback);
+                _arr = _arr.concat(this.currentBatch[i].batchs);
+            };
+            this.goodsInfo[this.batchIndex].spot_number = spotNumber;
+            this.goodsInfo[this.batchIndex].spot_cost = spotCost;
+            this.goodsInfo[this.batchIndex].spot_drawback = spotDrawback;
+
+            isSpotNum = this.goodsInfo.reduce(function (init, item) {
+                return init + +item.spot_number;
+            }, 0);
+            
+            this.status.is_spot = isSpotNum ? '0' : '2';
+
+            if (!isSpotNum) {
+                this.demand.expense_currency_spot = '';
+                this.demand.expense_spot = '';
+                this.demand.tax_currency_spot = '';
+                this.demand.tax_spot = '';
+            };
+
+            this.goodsInfo[this.batchIndex].spot_warehouse = this.currentBatch.filter(function (item) {
+                return item.num;
+            });
+            
+            this.goodsInfo[this.batchIndex].spot_batch = _arr;
+
+            this.dialogTableVisible = false;
+        },
+        // 法务确定
+        reuploadPo: function (val, isRePoArchive) {
+            var _this = this;
+            var interface = {
+                rePo: REUPLOADPO,// 重新上传po
+                syncPo: POARCHIRE,// 归档po
+            };
+            var req = {
+                id: this.demand.id,
+                po: isRePoArchive ? this.demand.po_archive : this.demand.po
+            };
+            axios.post(baseUrl+interface[val], Qs.stringify(req)).then(function (res) {
+                var _data = res.data;
+                if (_data.code === 2000) {
+                    if (val === 'syncPo' && !isRePoArchive) {
+                        _this.axyncArchiveFlag = true;
+                        _this.demand.po_archive = _this.demand.po;
+                        _this.$refs.popopo.clearFiles();
+                    };
+                    (_this.active.step == 7 && isRePoArchive) && (_this.isArchiveFlag = false);
+                    _this.$message.success(_this.$lang('上传成功'));
+                } else {
+                    _this.$message.error(_this.$lang(_data.msg));
+                };
+            });
+        },
+        saveProposal: function () {
+            var _this = this;
+            var auditProposal = this.auditProposal.replace(/\r\n/g, '<br/>').replace(/\n/g, '<br/>').replace(/\s/g, ' '); //转换格式
+            var req = {
+                id: this.demand.id,
+                forensic_audit_proposal: auditProposal
+            };
+            axios.post(baseUrl+AUDITPROPOSAL, Qs.stringify(req)).then(function (res) {
+                var _data = res.data;
+                if (_data.code === 2000) {
+                    _this.$message.success(_this.$lang('保存成功'));
+                    _this.demand.forensic_audit_proposal = auditProposal;
+                } else {
+                    _this.$message.error(_this.$lang(_data.msg));
+                };
+            });
+        },
+        saveWatermark: function () {
+            var _this = this;
+            var req = {
+                id: this.demand.id,
+            };
+            axios.post(baseUrl+WATERMARKPO, Qs.stringify(req)).then(function (res) {
+                var _data = res.data;
+                if (_data.code === 2000) {
+                    _this.$message.success(_this.$lang('保存成功'));
+                    _this.demand.po_with_watermark = _data.data;
+                } else {
+                    _this.$message.error(_this.$lang(_data.msg));
+                };
+            });
+        },
+        rearchiveBeforeUpload: function (file) {
+           
+            this.demand.po_archive = this.demand.po_archive || [];
+            for (var i = 0, len = this.demand.po_archive.length; i < len; i++) {
+                if (this.demand.po_archive[i].original_name === file.name) {
+                    this.$message.warning(this.$lang('该文件已上传'));
+                    return false;
+                };
+            };
+        },
+        rearchiveRemoveList: function (file) {
+            if (file.status === "success") {
+                for (var i = 0, len = this.demand.po_archive.length; i < len; i++) {
+                    if (this.demand.po_archive[i].original_name === file.name) {
+                        this.demand.po_archive.splice(i, 1);
+                        break;
+                    };
+                };
+                this.reuploadPo('syncPo', true);
+            };
+        },
+        rearchiveUpProgress: function (file) {
+            if (file.status === "success") {
+                this.axyncArchiveFlag = false;
+                this.demand.po_archive = this.demand.po_archive || [];
+                if (!this.isShowFileList) {
+                    this.demand.po_archive = [{
+                        original_name: file.response.info.name,
+                        save_name: file.response.info.savename
+                    }];
+                } else {
+                    this.demand.po_archive.push({
+                        original_name: file.response.info.name,
+                        save_name: file.response.info.savename
+                    })
+                };
+                this.isShowFileList = true;
+                this.reuploadPo('syncPo', true);
+            };
+        },
+        addCopyEmail: function () {
+            this.copyObj.push({val: ''});
+        },
+        sendEmail: function () {
+            var _this = this;
+            if (!this.targetObj) {
+                return;
+            };
+            var _arr = this.copyObj.reduce(function (init, item) {
+                item.val && init.push(item.val + EMAIL);
+                return init;
+            }, []);
+            var req = {
+                id: this.demand.id,
+                to: [this.targetObj + EMAIL],
+                cc: _arr
+            };
+            axios.post(baseUrl+AUDITEMAIL, Qs.stringify(req)).then(function (res) {
+                var _data = res.data;
+                if (_data.code === 2000) {
+                    _this.$message.success(_this.$lang('发送成功'));
+                } else {
+                    _this.$message.error(_this.$lang(_data.msg));
+                };
+            });
+        },
+        showAarlyApprovalDialog:function(id){
+            this.earlyApprovalDialog = true;
+            this.earlyApprovalId = id;
+        },
+        allowAdvance:function(id){
+            var _this = this;
+            axios.post('/index.php?g=scm&m=quotation&a=allow_advance', { id: _this.earlyApprovalId })
+                .then(function (res) {
+                    if (res.data.code == 2000) {
+                        _this.earlyApprovalDialog = false;
+                        _this.$message.success('审批成功');
+                        _this.getDetail();
+                    } else {
+                        _this.$message.warning(res.data.msg);
+                    }
+                })
+        }
+      },
+      computed: {
+           // 收款效率
+        dateWeighting: function () {
+            // 收款日期加权
+            var collections = this.demand.collection_time;
+            if (!collections[0].date || !collections[0].percent) {
+                return;
+            };
+            var wei = collections.reduce(function (init, item) {
+                return init + singelgetTime(item.date) * item.percent / 100;
+            }, 0);
+
+            return transformDays(wei.toFixed(0) - NOWDATETIME);
+
+        },
+        dateLevel: function () {
+            if (!this.dateWeighting) {
+                return;
+            };
+            var dateNum = this.dateWeighting - 0;
+            if (dateNum <= 20) {
+                return "A";
+            } else if (dateNum <= 30) {
+                return "B";
+            } else if (dateNum <= 40) {
+                return "C";
+            } else if (dateNum <= 60) {
+                return "D";
+            } else {
+                return "F";
+            };
+        },
+        customerLevel: function () {
+            if (this.demand.receivables_day_avg === null || this.demand.receivables_day_avg === undefined) {
+                return;
+            };
+            var avg = this.demand.receivables_day_avg - 0;
+            
+            if (avg <= 20) {
+                return "A";
+            } else if (avg <= 30) {
+                return "B";
+            } else if (avg <= 40) {
+                return "C";
+            } else if (avg <= 60) {
+                return "D";
+            } else {
+                return "F";
+            };
+        },
+      },
+      watch: {
+        'demand.receive_country':function(newVal,oldVal){
+          if(newVal !== oldVal){
+            this.getAddress(newVal,'provinces');
+          }
+        },
+        'demand.receive_province':function(newVal,oldVal){
+          if(newVal !== oldVal){
+            this.getAddress(newVal,'citys');
+          }
+        },
+        dialogTableVisible: function (bol) {
+            !bol && (this.currentBatch = []);
+            !bol && (this.batchIndex = 0);
+        },
+        goodsInfo:{
+            handler:function(newVal,oldVal){
+                this.showCalcTable = newVal.some(function (i) {
+                    if (i.checkAll == true) {
+                        return true;
+                    }
+                    return (i.quotation_goods || []).some(function (j) {
+                        return j.checked == true
+                    })
+                })
+                var sellAmount = this.goodsInfo.reduce(function (res, item) {
+                    return res += item.sell_price * (+item.spot_number + +item.on_way_number + (+item.pickQuantity || 0));
+                }, 0);
+                var sellAmountNotContainTax = this.goodsInfo.reduce(function (res, item) {
+                    return res += item.sell_price_not_contain_tax * (+item.spot_number + +item.on_way_number + (+item.pickQuantity || 0));
+                }, 0);
+
+                this.demand.sell_amount = sellAmount || this.demand.sell_amount;
+                this.getAmount();
+                this.demand.sell_amount_not_contain_tax = sellAmountNotContainTax || this.demand.sell_amount_not_contain_tax;
+                this.active.step < 3 && this.calcProfit();
+            },
+            deep: true 
+        },
+        demand:{
+            handler:function(newVal,oldVal){
+                var _this = this;
+                if(this.demand.tax_currency){
+                    this.demand.tax_currency_val = this.baseData.currency.filter(function(item){ return item.CD == _this.demand.tax_currency})[0].CD_VAL;
+                }
+                if(this.demand.expense_currency){
+                    this.demand.expense_currency_val = this.baseData.currency.filter(function(item){ return item.CD == _this.demand.expense_currency})[0].CD_VAL;
+                }
+                this.active.step < 3 && this.calcProfit();
+            },
+            deep: true 
+        }
+      },
+      filters: {
+        numberFormat:function(val){
+          if(val){
+            var num = parseFloat(val).toLocaleString();
+            return num.indexOf('.') > 0 ? num : num + ".00";
+          }
+        },
+        numFormat: function (num, flag) {
+            if (!num || num == 'NaN') {
+                return 0;
+            };
+            num = !flag ? (num - 0).toFixed(2) : num + '';
+            return num.replace(/(\d)(?=(\d{3})+\.)/g, function ($0, $1) {
+                return $1 + ',';
+            }).replace(/\.$/, '');
+        },
+        percentage:function(val){
+            return (parseFloat(val||0) * 100).toFixed(2) + '%';
+        }
+      }
+    });
+    //获取时间
+    function singelgetTime (date){ return +new Date(date).getTime()};
+    //转换成天数
+    function transformDays (millisecond) {return Math.ceil(millisecond/(24 * 60 * 60 * 1000))};
+</script>
+</body>
+</html>

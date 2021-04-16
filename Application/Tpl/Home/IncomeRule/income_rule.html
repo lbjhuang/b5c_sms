@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.config.VER_NUM}>">
+    <title>收入分成规则</title>
+</head>
+<style>
+    [v-cloak] {
+        display: none;
+    }
+
+    .head_title {
+        font-size: 24px;
+        font-weight: 600;
+    }
+</style>
+
+<body class="orderList">
+    <div id="store" class="list-common" v-cloak style="margin-bottom:220px">
+        <div class="head_title">
+            {{ $lang("收入分成规则") }}
+        </div>
+        <!-- 搜索查询 start-->
+        <div class="orderList-search search-common">
+            <div class="search-toggle">
+                <el-form ref="form" label-width="120px" :label-position="labelPosition">
+                    <el-row>
+                        <el-col :span="5">
+                            <el-form-item :label="$lang('规则ID')">
+                                <el-input placeholder="请输入内容" v-model="form.ruleId" clearable>
+                                </el-input>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="5">
+                            <el-form-item :label="$lang('规则名称')">
+                                <el-input placeholder="请输入内容" v-model="form.title" clearable>
+                                </el-input>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="5">
+                            <el-form-item :label="$lang('业务类型')">
+                                <el-select :popper-append-to-body="false" v-model="form.busyId" clearable filterable
+                                    :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                    <el-option v-for="item in baseData.busyList" :label="item.busy_type_name"
+                                        :value="item.id" :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="5">
+                            <el-form-item :label="$lang('销售团队')">
+                                <el-select :popper-append-to-body="false" v-model="form.saleTeamId" clearable filterable
+                                    :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                    <el-option v-for="item in baseData.groupList" :label="item.cn_name" :value="item.id"
+                                        :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="5">
+                            <el-form-item :label="$lang('采购团队')">
+                                <el-select :popper-append-to-body="false" v-model="form.purchaseTeamId" clearable filterable
+                                    :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                    <el-option v-for="item in baseData.groupList" :label="item.cn_name" :value="item.id"
+                                        :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="5">
+                            <el-form-item :label="$lang('介绍团队')">
+                                <el-select :popper-append-to-body="false" v-model="form.introTeamId" clearable filterable
+                                    :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                    <el-option v-for="item in baseData.groupList" :label="item.cn_name" :value="item.id"
+                                        :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="5">
+                            <el-form-item :label="$lang('品牌')">
+                                <el-select :popper-append-to-body="false" v-model="form.brandId" filterable remote
+                                    clearable reserve-keyword :placeholder="$lang('All')" :remote-method="remoteMethod"
+                                    style="width:100%;padding:0;">
+                                    <el-option v-for="item in search_brandList" :label="item.cn_name" :value="item.id"
+                                        :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="5">
+                            <el-form-item :label="$lang('国家')">
+                                <el-select :popper-append-to-body="false" v-model="form.countryId" clearable filterable
+                                    :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                    <el-option v-for="item in baseData.countryList" :label="item.country_cn_name"
+                                        :value="item.id" :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row>
+                        <el-col :span="10">
+                            <el-form-item :label="$lang('创建时间')">
+                                <el-date-picker style="width:100%;height: 40px;float: right;" value-format="yyyyMMdd"
+                                    size="small" :clearable=false v-model="form.dateRange" type="daterange"
+                                    align="right" unlink-panels :range-separator="$lang('至')"
+                                    :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')"
+                                    :picker-options="pickerOptions">
+                                </el-date-picker>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="5">
+                            <el-form-item :label="$lang('创建人')">
+                                <el-input placeholder="请输入内容" v-model="form.createBy" clearable>
+                                </el-input>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="5">
+                            <el-form-item :label="$lang('仓库')">
+                                <el-select :popper-append-to-body="false" v-model="form.warehouseId" clearable filterable
+                                    :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                    <el-option v-for="item in baseData.warehouseList" :label="item.cn_name"
+                                        :value="item.id" :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row style="padding-left:55px">
+                        <el-col :span="2">
+                            <el-button type="primary" @click="searchRule()">{{$lang('查询')}}</el-button>
+                        </el-col>
+                        <el-col :span="2">
+                            <el-button @click="reset()">{{$lang('重置')}}</el-button>
+                        </el-col>
+                    </el-row>
+                </el-form>
+            </div>
+            <!-- 搜索查询 end-->
+        </div>
+        <!-- 分割线 start-->
+        <div class="orderList-line line-split" style="height: 2px;margin-bottom: 20px"></div>
+        <!-- 分割线 end-->
+
+        <!-- 表格主体 start-->
+        <div style="margin-top: 24px;font-size: 14px">
+            <el-row>
+                <el-col :span="21" style="line-height:40px">
+                    {{$lang('搜索结果:')}}
+                    {{$lang('共')}}
+                    <b>{{totalCount}}</b>
+                    {{ $lang("条记录") }}
+                </el-col>
+                <el-col :span="3" style="text-align:right">
+                    <el-button type="primary" @click="createRule()">{{$lang('创建')}}</el-button>
+                </el-col>
+            </el-row>
+        </div>
+        <div class="orderList-Main list-common-main" style="margin-top: 20px">
+            <el-table border :data="ruleTableData" tooltip-effect="dark" style="width: 100%"
+                class="order-list-table table-common" v-loading="tableLoading">
+                <el-table-column prop="id" :label="$lang('ID')"></el-table-column>
+                <el-table-column prop="title" :label="$lang('名称')"></el-table-column>
+                <el-table-column prop="busy_type_name" :label="$lang('业务类型')"></el-table-column>
+                <el-table-column prop="sale_team_name" :label="$lang('销售团队')"></el-table-column>
+                <el-table-column prop="purchase_team_name" :label="$lang('采购团队')"></el-table-column>
+                <el-table-column prop="intro_team_name" :label="$lang('介绍团队')"></el-table-column>
+                <el-table-column prop="brand_name" :label="$lang('品牌')"></el-table-column>
+                <el-table-column prop="country_name" :label="$lang('国家')"></el-table-column>
+                <el-table-column prop="warehouse_name" :label="$lang('仓库')"></el-table-column>
+                <el-table-column prop="priority" :label="$lang('优先级')"></el-table-column>
+                <el-table-column prop="remarks" :label="$lang('备注')"></el-table-column>
+                <el-table-column prop="effective_date" :label="$lang('生效日期')"></el-table-column>
+                <el-table-column prop="expire_date" :label="$lang('失效日期')"></el-table-column>
+                <el-table-column prop="create_time" :label="$lang('创建时间')"></el-table-column>
+                <el-table-column prop="create_by" :label="$lang('创建人')"></el-table-column>
+                <el-table-column :label="$lang('操作')">
+                    <template slot-scope="scope">
+                        <el-button size="mini" type="primary" style="padding: 7px 25px" @click="editRule(scope.row)">
+                            {{$lang('编辑')}}</el-button>
+                        <el-button size="mini" type="success" style="margin-top:20px;margin-left:0"
+                            @click="addRuleResult(scope.row)">{{$lang('添加结果')}}</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+
+            <el-pagination background @size-change="handleSizeChange" @current-change="handleCurrentChange"
+                :current-page.sync="form.page" :page-sizes="[10, 30, 50, 100]" :page-size="form.pageSize"
+                layout="sizes,prev, pager, next, jumper" :total="totalCount">
+            </el-pagination>
+
+        </div>
+        <!-- 表格主体 end-->
+        <!-- 创建规则彈出框 -->
+        <el-dialog title="提示" :visible.sync="isShowRule" width="45%">
+            <div style="padding: 20px 20px">
+                <div style="font-size: 16px;margin-bottom: 50px" v-if="isShowExit">
+                    {{$lang('修改规则')}}
+                    <i class="el-icon-close" style="position: absolute; right: 25px; cursor: pointer;"
+                        @click="isShowRule = false"></i>
+                </div>
+                <div style="font-size: 16px;margin-bottom: 50px" v-if="!isShowExit">
+                    {{$lang('创建规则')}}
+                    <i class="el-icon-close" style="position: absolute; right: 25px; cursor: pointer;"
+                        @click="isShowRule = false"></i>
+                </div>
+                <el-form ref="form" :model="form" label-width="80px">
+                    <el-row class="rule_content" v-if="isShowExit">
+                        <el-col :span="15">
+                            <el-form-item :label="$lang('ID')">
+                                <el-input v-model="createForm.ruleId" disabled></el-input>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="15">
+                            <el-form-item :label="$lang('名称')">
+                                <el-input v-model="createForm.title"></el-input>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="15">
+                            <el-form-item :label="$lang('业务类型')">
+                                <el-select :popper-append-to-body="false" v-model="createForm.busyId" clearable filterable
+                                    :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                    <el-option v-for="item in updateData.busyList" :label="item.busy_type_name"
+                                        :value="item.id" :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="15">
+                            <el-form-item :label="$lang('销售团队')">
+                                <el-select :popper-append-to-body="false" v-model="createForm.saleTeamId" clearable filterable
+                                    :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                    <el-option v-for="item in updateData.groupList" :label="item.cn_name"
+                                        :value="item.id" :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="15">
+                            <el-form-item :label="$lang('采购团队')">
+                                <el-select :popper-append-to-body="false" v-model="createForm.purchaseTeamId" clearable filterable
+                                    :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                    <el-option v-for="item in updateData.groupList" :label="item.cn_name"
+                                        :value="item.id" :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="15">
+                            <el-form-item :label="$lang('介绍团队')">
+                                <el-select :popper-append-to-body="false" v-model="createForm.introTeamId" clearable filterable
+                                    :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                    <el-option v-for="item in updateData.groupList" :label="item.cn_name"
+                                        :value="item.id" :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="15">
+                            <el-form-item :label="$lang('品牌')">
+                                <el-select :popper-append-to-body="false" multiple v-model="createForm.brandId"
+                                    filterable remote reserve-keyword :placeholder="$lang('All')"
+                                    :remote-method="remoteMethod" style="width:100%;padding:0;">
+                                    <el-option v-for="item in dialog_brandList" :label="item.cn_name"
+                                        :value="item.id" :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="15">
+                            <el-form-item :label="$lang('国家')">
+                                <el-select :popper-append-to-body="false" v-model="createForm.countryId" clearable filterable
+                                    :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                    <el-option v-for="item in updateData.countryList" :label="item.country_cn_name"
+                                        :value="item.id" :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="15">
+                            <el-form-item :label="$lang('仓库')">
+                                <el-select :popper-append-to-body="false" multiple v-model="createForm.warehouseId"
+                                    clearable filterable :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                    <el-option v-for="item in updateData.warehouseList" :label="item.cn_name"
+                                        :value="item.id" :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="15">
+                            <el-form-item :label="$lang('优先级')">
+                                <el-input v-model="createForm.priority" disabled></el-input>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="15">
+                            <el-form-item :label="$lang('生效日期')">
+                                <el-date-picker style="width:100%;height: 40px;float: right;" value-format="yyyyMMdd"
+                                    size="small" :clearable=false v-model="createForm.dateRange" type="daterange"
+                                    align="right" unlink-panels :range-separator="$lang('至')"
+                                    :start-placeholder="$lang('开始日期')" :end-placeholder="$lang('结束日期')"
+                                    :default-value="createForm.timeDefaultShow" :picker-options="pickerOptions">
+                                </el-date-picker>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="15">
+                            <el-form-item :label="$lang('备注')">
+                                <el-input type="textarea" v-model="createForm.remarks"></el-input>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="15" style="text-align:center">
+                            <el-form-item>
+                                <el-button type="primary" @click="addExitFuc()">提交</el-button>
+                                <el-button @click="resetRule()">取消</el-button>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                </el-form>
+            </div>
+        </el-dialog>
+        <!-- 添加规则结果彈出框 -->
+        <el-dialog title="提示" :visible.sync="isShowRuleResult" width="45%">
+            <div style="padding: 20px 20px">
+                <div style="font-size: 16px;margin-bottom: 50px">
+                    {{$lang('添加结果')}}
+                    <i class="el-icon-close" style="position: absolute; right: 25px; cursor: pointer;"
+                        @click="isShowRuleResult = false"></i>
+                </div>
+                <el-form ref="form" :model="form" label-width="100px">
+                    <el-row class="rule_content">
+                        <el-col :span="15">
+                            <el-form-item :label="$lang('名称')">
+                                <el-input v-model="createResultForm.title"></el-input>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="15">
+                            <el-form-item :label="$lang('分成规则ID')">
+                                <el-select :popper-append-to-body="false" v-model="createResultForm.splitRuleId"
+                                    clearable :placeholder="$lang('All')" style="width:100%;padding:0;" disabled>
+                                    <el-option v-for="item in updateData.ruleList" :label="item.id + item.title"
+                                        :value="item.id" :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="15">
+                            <el-form-item :label="$lang('团队')">
+                                <el-select :popper-append-to-body="false" v-model="createResultForm.busyGroupId"
+                                    clearable filterable :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                    <el-option v-for="item in updateData.groupList" :label="item.cn_name"
+                                        :value="item.id" :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="15">
+                            <el-form-item :label="$lang('团队类型')">
+                                <el-select :popper-append-to-body="false" v-model="createResultForm.businessTypeId"
+                                    clearable :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                    <el-option v-for="item in updateData.groupTypeList" :label="item.cn_name"
+                                        :value="item.id" :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="15">
+                            <el-form-item :label="$lang('分成比例')">
+                                <el-input v-model="createResultForm.splitPer"></el-input>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="15">
+                            <el-form-item :label="$lang('分成规则类型')">
+                                <el-select :popper-append-to-body="false" v-model="createResultForm.splitTypeId"
+                                    clearable :placeholder="$lang('All')" style="width:100%;padding:0;">
+                                    <el-option v-for="item in updateData.SplitTypeList" :label="item.split_name"
+                                        :value="item.id" :key="item.id"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="15">
+                            <el-form-item :label="$lang('来源类型')">
+                                <el-select :popper-append-to-body="false" v-model="createResultForm.sourceType"
+                                    clearable :placeholder="$lang('All')" style="width:100%;padding:0;" disabled>
+                                    <el-option v-for="item in updateData.sourceTypeList" :label="item.name"
+                                        :value="item.name" :key="item.name"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="15">
+                            <el-form-item :label="$lang('备注')">
+                                <el-input type="textarea" v-model="createResultForm.remarks"></el-input>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row class="rule_content">
+                        <el-col :span="15" style="text-align:center">
+                            <el-form-item>
+                                <el-button type="primary" @click="addResult()">提交</el-button>
+                                <el-button @click="resetResult()">取消</el-button>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                </el-form>
+            </div>
+        </el-dialog>
+    </div>
+    </div>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script>
+        if (getCookie('think_language') !== "zh-cn") {
+            ELEMENT.locale(ELEMENT.lang.en)
+        }
+
+        var store = new Vue({
+            el: '#store',
+            data: {
+                tableLoading: true,
+                labelPosition: 'center',
+                loading: false,
+                isShowRule: false,
+                isShowExit: false, // 是否编辑
+                isShowRuleResult: false, // 添加结果弹出框
+                ruleTableData: [], // 表格数据
+                totalCount: 10,
+                baseData: {},
+                search_brandList: [],
+                dialog_brandList: [],
+                updateData: {},
+                form: {
+                    ruleId: '', // 规则Id
+                    title: '', // 规则名称
+                    busyId: '', // 业务类型
+                    saleTeamId: '', // 销售团队
+                    purchaseTeamId: '', // 采购团队
+                    introTeamId: '', // 介绍团队
+                    brandId: '', // 品牌
+                    countryId: '', // 国家
+                    // update_start_time: "", // 创建开始时间
+                    // update_end_time: "", // 创建结束时间
+                    dateRange: [], // 时间初始值,
+                    createBy: '', // 创建人
+                    warehouseId: '', // 仓库
+                    page: 1,
+                    pageSize: 10
+                },
+                createForm: {
+                    ruleId: '', // 规则Id
+                    title: '', // 名称
+                    busyId: '', // 业务类型
+                    saleTeamId: '', // 销售团队
+                    purchaseTeamId: '', // 采购团队
+                    introTeamId: '', // 介绍团队
+                    brandId: [], // 品牌
+                    countryId: '', // 国家
+                    warehouseId: [], // 仓库
+                    priority: '', // 优先级
+                    remarks: '', // 备注
+                    effective_date: "", // 创建开始时间
+                    expire_date: "", // 创建结束时间
+                    dateRange: [], // 时间初始值,
+                    brandName: [], // 品牌name,
+                },
+                createResultForm: {
+                    title: '', // 名称
+                    splitRuleId: '', // 分成规则
+                    busyGroupId: '', // 团队
+                    businessTypeId: '', // 团队类型
+                    splitPer: '', // 分成比例
+                    sourceType: '', // 来源类型
+                    remarks: '', // 备注
+                    splitTypeId: '', // 分成规则类型
+                    createBy: '' // 创建人
+                },
+                pickerOptions: {},
+                queryPost: function (url, param) {
+                    var headers = {
+                        headers: {
+                            'erp_req': true,
+                            'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+                        }
+                    }
+                    var host = (window.location.origin == "http://erp.gshopper.com" || window.location.origin == "https://erp.gshopper.com") ?
+                        location.protocol+"//insight.gshopper.com/insight-backend/RevenueSplitConfig" :
+                        ((window.location.origin == "http://erp.gshopper.prod.com") ?
+                            location.protocol+"//insight.gshopper.prod.com/insight-backend/RevenueSplitConfig" :
+                            location.protocol+"//insight.gshopper.stage.com/insight-backend/RevenueSplitConfig");
+                    // 初始化时间展示
+                    return axios.post(host + url, Qs.stringify(param), headers);
+                }
+            },
+            created: function () {
+                this.pickerOptions = {
+                    shortcuts: [{
+                        text: this.$lang("最近一周"),
+                        onClick: function (picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: this.$lang("最近一个月"),
+                        onClick: function (picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: this.$lang("最近三个月"),
+                        onClick: function (picker) {
+                            const end = new Date();
+                            const start = new Date();
+                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+                            picker.$emit('pick', [start, end]);
+                        }
+                    }],
+                    // disabledDate(time) {
+                    //     return time.getTime() > Date.now();
+                    // }
+                }
+                this.search();
+                this.getData();
+            },
+            methods: {
+                // 筛选条件
+                search: function () {
+                    var param = {
+                        'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp_req': true
+                    }
+                    this.queryPost("/queryParam", param)
+                        .then((res) => {
+                            var _data = res.data;
+                            if (_data.success) {
+                                this.baseData = _data.datas;
+                                this.updateData = _data.datas;
+
+                                for(let item of this.updateData.SplitTypeList){
+                                    if(item.split_name == 'KPI'){
+                                        item.split_name = '收入'
+                                    }else if(item.split_name == 'Revenue'){
+                                        item.split_name = '利润'
+                                    }
+                                }
+                            } else {
+                                this.$message.error(this.$lang(_data.msg));
+                            }
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                search1: function (item) {
+                    var param = {
+                        id: item.id,
+                        effective_date:item.effective_date,
+                        sale_team_id:item.sale_team_id,
+                        purchase_team_id:item.purchase_team_id,
+                        intro_team_id:item.intro_team_id,
+                        split_rule_id:item.split_rule_id,
+                        'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp_req': true
+                    }
+                    this.queryPost("/queryParam", param)
+                        .then((res) => {
+                            var _data = res.data;
+                            if (_data.success) {
+                                this.createForm.saleTeamId = _data.datas.busyId[0] ? _data.datas.busyId[0].id : '';
+                                this.createForm.purchaseTeamId = _data.datas.busyId[1] ? _data.datas.busyId[1].id : '';
+                                this.createForm.introTeamId = _data.datas.busyId[2] ? _data.datas.busyId[2].id : '';
+                                this.baseData = _data.datas;
+                                this.updateData = _data.datas;
+                                
+                                for(let item of this.updateData.SplitTypeList){
+                                    if(item.split_name == 'KPI'){
+                                        item.split_name = '收入'
+                                    }else if(item.split_name == 'Revenue'){
+                                        item.split_name = '利润'
+                                    }
+                                }
+                            } else {
+                                this.$message.error(this.$lang(_data.msg));
+                            }
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                remoteMethod(query) {
+                    if (query !== '') {
+                        this.loading = true;
+                        setTimeout(() => {
+                            this.loading = false;
+                            var param = {
+                                'brandName': query,
+                                'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                                'erp_req': true
+                            }
+                            this.queryPost("/queryBrand", param)
+                                .then((res) => {
+                                    this.search_brandList = res.data;
+                                    this.dialog_brandList = res.data;
+                                }).catch(function (err) {
+                                    console.log(err);
+                                });
+                        }, 200);
+                    } else {
+                        this.search_brandList = [];
+                        this.dialog_brandList = [];
+                    }
+                },
+                // 列表数据
+                getData: function () {
+                    this.tableLoading = true;
+                    let param = {
+                        ruleId: this.form.ruleId,
+                        title: this.form.title,
+                        busyId: this.form.busyId,
+                        saleTeamId: this.form.saleTeamId,
+                        purchaseTeamId: this.form.purchaseTeamId,
+                        introTeamId: this.form.introTeamId,
+                        brandId: this.form.brandId,
+                        countryId: this.form.countryId,
+                        createBy: this.form.createBy,
+                        warehouseId: this.form.warehouseId,
+                        startDate: this.form.dateRange && this.form.dateRange[0],
+                        endDate: this.form.dateRange && this.form.dateRange[1],
+                        page: this.form.page,
+                        pageSize: this.form.pageSize,
+                        'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp_req': true
+                    }
+                    this.queryPost("/queryRevenueSplitRulePage",
+                            param)
+                        .then((res) => {
+                            var _data = res.data;
+                            if (_data.success) {
+                                this.tableLoading = false;
+                                this.ruleTableData = _data.datas;
+                                this.totalCount = _data.totalCount;
+                            } else {
+                                this.$message.error(this.$lang(_data.msg));
+                            }
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                // 添加修改函数
+                addExitFuc: function () {
+                    var _this = this;
+                    let param = {
+                        busyId: this.createForm.busyId,
+                        saleTeamId: isEmpty(this.createForm.saleTeamId) ? '-1' : this.createForm.saleTeamId,
+                        purchaseTeamId: isEmpty(this.createForm.purchaseTeamId) ? '-1' : this.createForm.purchaseTeamId,
+                        introTeamId: isEmpty(this.createForm.introTeamId) ? '-1' : this.createForm.introTeamId,
+                        brandId: this.createForm.brandId.length ? this.createForm.brandId.join() : '-1',
+                        countryId: isEmpty(this.createForm.countryId) ? '-1' : this.createForm.countryId,
+                        warehouseId: this.createForm.warehouseId.length ? this.createForm.warehouseId.join() : '-1',
+                        effectiveDate: this.createForm.dateRange && this.createForm.dateRange[0],
+                        expireDate: this.createForm.dateRange && this.createForm.dateRange[1],
+                        'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp_req': true
+                    }
+                    _this.queryPost("/checkSpiltRule",
+                            param)
+                        .then((res) => {
+                            var _data = res.data;
+                            if (_data.success) {
+                                _this.addCheckSubmit()
+                            } else {
+                                _this.$alert(_this.$lang(_data.msg), '提示', {
+                                    confirmButtonText: '确定',
+                                    callback: action => {
+                                        // _this.isShowRule = false;
+                                    }
+                                }); 
+                            }
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                //验证后提交
+                addCheckSubmit: function(){
+                    let param = {
+                        id: this.createForm.ruleId,
+                        title: this.createForm.title,
+                        busyId: this.createForm.busyId,
+                        saleTeamId: isEmpty(this.createForm.saleTeamId) ? '-1' : this.createForm.saleTeamId,
+                        purchaseTeamId: isEmpty(this.createForm.purchaseTeamId) ? '-1' : this.createForm.purchaseTeamId,
+                        introTeamId: isEmpty(this.createForm.introTeamId) ? '-1' : this.createForm.introTeamId,
+                        brandId: this.createForm.brandId.length ? this.createForm.brandId.join() : '-1',
+                        countryId: isEmpty(this.createForm.countryId) ? '-1' : this.createForm.countryId,
+                        warehouseId: this.createForm.warehouseId.length ? this.createForm.warehouseId.join() : '-1',
+                        effectiveDate: this.createForm.dateRange && this.createForm.dateRange[0],
+                        expireDate: this.createForm.dateRange && this.createForm.dateRange[1],
+                        priority: this.createForm.priority,
+                        remarks: this.createForm.remarks,
+                        createBy: $('#scName', top.document).text(),
+                        updateBy: $('#scName', top.document).text(),
+                        'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp_req': true
+                    }
+                    this.queryPost("/saveAndUpdateRule",
+                            param)
+                        .then((res) => {
+                            var _data = res.data;
+                            if (_data.success) {
+                                this.isShowRule = false;
+                                this.$message.success(this.$lang(_data.msg));
+                                this.getData()
+                            } else {
+                                this.$message.error(this.$lang(_data.msg));
+                            }
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                // 搜索列表
+                searchRule: function () {
+                    this.getData();
+                },
+                // 重置列表筛选
+                reset: function () {
+                    this.form = {
+                        ruleId: '', // 规则Id
+                        title: '', // 规则名称
+                        busyId: '', // 业务类型
+                        saleTeamId: '', // 销售团队
+                        purchaseTeamId: '', // 采购团队
+                        introTeamId: '', // 介绍团队
+                        brandId: '', // 品牌
+                        countryId: '', // 国家
+                        // update_start_time: "", // 创建开始时间
+                        // update_end_time: "", // 创建结束时间
+                        dateRange: [], // 时间初始值,
+                        createBy: '', // 创建人
+                        warehouseId: '', // 仓库
+                        page: 1,
+                        pageSize: 10
+                    };
+                    this.getData();
+                },
+                // 取消规则
+                resetRule: function () {
+                    // this.createForm = {};
+                    this.isShowRule = false;
+                },
+                // 创建规则
+                createRule: function () {
+                    this.isShowRule = true;
+                    this.isShowExit = false;
+                    this.createForm = {
+                        warehouseId: [],
+                        brandId: [],
+                        dateRange: []
+                    };
+                    this.createForm.priority = 10;
+                    this.search();
+                },
+                // 编辑规则
+                editRule: function (item) {
+                    this.isShowRule = true;
+                    this.isShowExit = true;
+                    this.createForm = {
+                        warehouseId: [],
+                        brandId: [],
+                        dateRange: [],
+                        busyId: '',
+                        saleTeamId: '',
+                        purchaseTeamId: '',
+                        introTeamId: ''
+                    };
+                    this.search1(item);
+                    this.createForm.ruleId = item.id;
+                    this.createForm.title = item.title;
+                    this.createForm.busyId = +item.busy_id || '';
+                    this.createForm.brandId = changWarehouse(item.brand_id);
+                    this.dialog_brandList = changBrand(item.brand_id, item.brand_name);
+                    this.createForm.countryId = +item.country_id;
+                    this.createForm.warehouseId = changWarehouse(item.warehouse_id);
+                    this.createForm.warehouseName = item.warehouse_id;
+                    this.createForm.priority = item.priority;
+                    this.createForm.remarks = item.remarks;
+                    if (item.effective_date || item.expire_date) {
+                        this.createForm.dateRange[0] = item.effective_date;
+                        this.createForm.dateRange[1] = item.expire_date;
+                    } else {
+                        this.createForm.timeDefaultShow = new Date();
+                    }
+                },
+                // 添加结果
+                addRuleResult: function (item) {
+                    this.isShowRuleResult = true;
+                    this.createResultForm = {};
+                    this.createResultForm.splitRuleId = +item.id;
+                    this.createResultForm.sourceType = 'sales';
+                },
+                // 提交结果
+                addResult: function () {
+                    let param = {
+                        title: this.createResultForm.title,
+                        splitRuleId: isEmpty(this.createResultForm.splitRuleId) ? '-1' : this.createResultForm.splitRuleId,
+                        busyGroupId: isEmpty(this.createResultForm.busyGroupId) ? '-1' : this.createResultForm.busyGroupId,
+                        businessTypeId: isEmpty(this.createResultForm.businessTypeId) ? '-1' : this.createResultForm.businessTypeId,
+                        splitPer: this.createResultForm.splitPer,
+                        sourceType: isEmpty(this.createResultForm.sourceType) ? 'sales' : this.createResultForm.sourceType,
+                        splitTypeId: isEmpty(this.createResultForm.splitTypeId) ? '-1' : this.createResultForm.splitTypeId,
+                        remarks: this.createResultForm.remarks,
+                        createBy: $('#scName', top.document).text(),
+                        updateBy: $('#scName', top.document).text(),
+                        'erp_cookie': 'PHPSESSID=' + getCookie('PHPSESSID') + ';',
+                        'erp_req': true
+                    }
+                    this.queryPost("/saveAndUpdateResult",
+                            param)
+                        .then((res) => {
+                            var _data = res.data;
+                            if (_data.success) {
+                                this.isShowRuleResult = false;
+                                this.getData()
+                            } else {
+                                this.$message.error(this.$lang(_data.msg));
+                            }
+                        }).catch(function (err) {
+                            console.log(err);
+                        });
+                },
+                resetResult: function () {
+                    this.createResultForm = {};
+                    this.isShowRuleResult = false;
+                },
+                handleSizeChange: function (val) {
+                    this.form.pageSize = val;
+                    this.getData()
+                },
+                handleCurrentChange: function (val) {
+                    this.form.page = val;
+                    this.getData()
+                }
+            },
+            //监听数据
+            // watch: {
+            //     form: {
+            //         handler(newValue, oldValue) {
+            //             console.log(newValue,oldValue)
+            //             this.getData(newValue)
+            //         },
+            //         deep: true
+            //     }
+            // }
+        });
+
+        function isEmpty(obj) {
+            return obj == null || obj === "" || obj === 'undefined' || obj === undefined || obj.length === 0;
+        }
+
+        function changWarehouse(str) {
+            if (str) {
+                var arr = str.substring(1, str.length - 1).split(",");
+                var newArr = [];
+                for (var i = 0; i < arr.length; i++) {
+                    newArr.push(+arr[i])
+                }
+                return newArr;
+            } else {
+                return
+            }
+
+        }
+
+        function changBrand(str, str1) {
+            if (str) {
+                var arr = str.substring(1, str.length - 1).split(",");
+                var newArr = [];
+                for (var i = 0; i < arr.length; i++) {
+                    newArr.push({
+                        cn_name: str1,
+                        id: +arr[i]
+                    })
+                }
+                return newArr;
+            } else {
+                return
+            }
+
+        }
+    </script>
+</body>
+
+</html>

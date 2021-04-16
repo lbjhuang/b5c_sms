@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css">
+    <link href="./Application/Tpl/Home/Public/lib/My97DatePicker/skin/WdatePicker.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/lib/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/purchase.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/purchaseDetail.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css">
+    <link rel="stylesheet" href="../Public/css/logistics.css">
+    <title><{$Think.lang.物流信息关联表}></title>
+    <style>
+        [v-cloak] {display: none !important;}
+        .layui-layer-content{width:500px;background:white !important;border:1px solid #cccccc;border-right:2px solid #cccccc}
+        #pagination .is-in-pagination{
+            border: none !important;
+            width: 30px !important;
+        }
+        #pagination .el-pagination__editor .el-input__inner{
+            height: 100% !important;
+            line-height: 100% !important;
+        }
+    </style>
+</head>
+<body>
+<div id="logistics">
+    <!--<div class="logistics_title">-->
+        <!--<a onclick="opennewtab(this,'<{$Think.lang.物流方式表}>')" _href="<{:U(\'Configs/logistics_basis\')}>" ><{$Think.lang.物流方式表}></a>-->
+        <!--<a onclick="opennewtab(this,'<{$Think.lang.派单规则表}>')" _href="<{:U(\'Configs/logistics_dispatch\')}>"><{$Think.lang.派单规则表}></a>-->
+        <!--<a class="active"><{$Think.lang.物流信息关联表}></a>-->
+    <!--</div>-->
+    <form action="" class="logistics_form">
+        <div class="card order_list_row_top_input">
+            <div class="card-block">
+                <blockquote class="card-blockquote">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                            <tr>
+                                <th width="2%"></th>
+                                <th width="21%"></th>
+                                <th width="2%"></th>
+                                <th width="2%"></th>
+                                <th width="21%"></th>
+                                <th width="2%"></th>
+                                <th width="2%"></th>
+                                <th width="21%"></th>
+                                <th width="0%"></th>
+                                <th width="4%"></th>
+                                <th width="21%"></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr>
+                                <td><{$Think.lang.创建时间}></td>
+                                <td class="common_data">
+                                    <input type="text" name="start_time" id="startTime" value="" onfocus="WdatePicker({firstDayOfWeek:1})" placeholder="<{$Think.lang.起始日期}>" class="form-control">
+                                    <span class="input-group-btn">
+													<button class="btn btn-secondary" type="button"><i></i></button>
+												</span>
+                                </td>
+                                <td colspan="2" class="text-center"><div class="col-data_l">—</div></td>
+                                <td class="common_data">
+
+                                    <input type="text" name="end_time" id="endTime" value="" onfocus="WdatePicker({firstDayOfWeek:1})" placeholder="<{$Think.lang.结束时间}>" class="form-control">
+                                    <span class="input-group-btn">
+													<button class="btn btn-secondary" type="button"><i ></i></button>
+												</span>
+                                </td>
+                                <td></td>
+                                <td><{$Think.lang.第三方物流标识}></td>
+                                <td>
+                                    <input type="text" class="form-control" id="thirdCode">
+                                </td>
+                                <td></td>
+                                <td>B5C<{$Think.lang.物流标识}></td>
+                                <td>
+                                    <input type="text" class="form-control" id="ownCode">
+                                </td>
+
+                            </tr>
+                            </tbody>
+                        </table>
+                        <div class="logistics_search">
+                            <button type="button" class="logistics_search_search" @click="relationSearch()"><i class="fa fa-search" aria-hidden="true"></i><{$Think.lang.搜索}></button>
+                            <button type="reset"><{$Think.lang.重置}></button>
+                            <a  @click="logisticsXlExport()" class="logistics_xl_export"><i class="fa fa-file-excel-o" aria-hidden="true"></i><{$Think.lang.导出}></a>
+                        </div>
+                    </div>
+                </blockquote>
+            </div>
+        </div>
+    </form>
+    <div class="row logistics_add">
+        <div class="col-lg-12 col-md-12 col-sm-12">
+             <?php if(ButtonAction::hidden()){ ?>
+            <button type="button"  @click="add()"><i class="fa fa-check" aria-hidden="true"></i><{$Think.lang.增加}></button>
+             <?php } ?>
+             <?php if(ButtonAction::hidden()){ ?>
+            <button type="button" @click="deleteRelation()"><i class="fa fa-times" aria-hidden="true"></i><{$Think.lang.删除}></button>
+             <?php } ?>
+             <?php if(ButtonAction::hidden()){ ?>
+            <button class="pop_operation_modefied" type="button" @click="modefiedButton()"><i class="fa fa-pencil" aria-hidden="true"></i><{$Think.lang.修改}></button>
+             <?php } ?>
+        </div>
+    </div>
+    <div class="logistics_table">
+        <table class="table">
+            <thead>
+            <tr>
+                <th width="5%"><input type="checkbox" class="checkboxAllItems"></th>
+                <th width="5%"><{$Think.lang.编号}></th>
+                <th width="10%"><{$Think.lang.快递&物流公司}></th>
+                <th width="10%">B5C<{$Think.lang.物流标识}></th>
+                <th width="10%"><{$Think.lang.第三方物流标识}></th>
+                <th width="10%"><{$Think.lang.销售渠道标识}></th>
+                <th width="10%"><{$Think.lang.销售渠道名称}></th>
+                <th width="10%"><{$Think.lang.创建者}></th>
+                <th width="15%"><{$Think.lang.创建时间}></th>
+            </tr>
+            </thead>
+            <tbody class="use-body" v-cloak>
+            <template v-for="(a,index) in tableData">
+                <tr>
+                    <td><input type="checkbox" :data-id="a.id" class="logistics_table_checkbox"></td>
+                    <td>{{a.id}}</td>
+                    <td class="list_logistics_name">{{a.logistics_company}}</td>
+                    <td class="list_b5c_logistics_cd">{{a.b5c_logistics_cd}}</td>
+                    <td class="list_third_logistics_cd">{{a.third_logistics_cd}}</td>
+                    <td class="list_plat_cd">{{a.plat_cd}}</td>
+                    <td class="list_plat_cd">{{a.platform_name}}</td>
+                    <td class="list_create_user">{{a.create_user}}</td>
+                    <td class="list_create_time">{{a.create_time}}</td>
+                </tr>
+            </template>
+            </tbody>
+        </table>
+        <div class="logistics_table_record" v-cloak>
+            <p><{$Think.lang.显示结果}>：<span>{{page.displayData}}</span><{$Think.lang.条记录}></p>
+            <div class="block">
+             <!--    <el-pagination
+                        @current-change="handleCurrentChange"
+                        :current-page.sync="page.pageCurrent"
+                        :page-size="page.pageRows"
+                        layout="prev, pager, next"
+                        :total="page.pageTotal">
+                </el-pagination> -->
+                <el-pagination id="pagination" background @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="page.pageCurrent"
+                :page-sizes="[10, 30, 50, 100]" :page-size="page.pageRows" layout="sizes,prev, pager, next, jumper" :total="page.pageTotal">
+            </el-pagination>
+            </div>
+        </div>
+    </div>
+    <div class="logistics_relation_pop">
+        <form action="" id="logistics_relation_pop_form">
+        <div class="logistics_relation_pop_content">
+            <div class="pop_title" v-if="addStateShow == true">
+                <{$Think.lang.新建表}><i @click="cancel()">X</i>
+            </div>
+            <div class="pop_title" v-else>
+                <{$Think.lang.修改}><i @click="cancel()">X</i>
+            </div>
+            <div class="pop_body order_list_row_top_input">
+                <table class="table">
+                    <tbody class="use-body">
+                    <tr>
+                        <td class="must" width="20%"><{$Think.lang.快递&物流公司}></td>
+                        <td  width="30%">
+                            <fieldset class="form-group perchase_list_select relation_csCompany" v-if="addStateShow == true" id="pop_b5c_logistics_cd">
+                                <select name="" class="from-control">
+                                    <option value=""><{$Think.lang.请选择}></option>
+                                    <template v-for="(company,index) in companyData">
+                                        <option  :value="company.code" >{{company.val}}</option>
+                                    </template>
+                                </select>
+                            </fieldset>
+                            <fieldset class="form-group perchase_list_select" v-else id="pop_b5c_logistics_cd">
+                                <select name="" class="from-control">
+                                    <option value=""><{$Think.lang.请选择}></option>
+                                    <template v-for="(company,index) in companyData">
+                                        <!--<option  :value="company.code" v-if="company.code == popB5CIdentificationVal" selected>{{company.val}}</option>-->
+                                        <!--<option  :value="company.code" v-else>{{company.val}}</option>-->
+                                        <option  :value="company.code">{{company.val}}</option>
+                                    </template>
+                                </select>
+                            </fieldset>
+                        </td>
+                        <td class="must" width="20%"><{$Think.lang.销售渠道标识}></td>
+                        <td width="30%">
+                            <fieldset class="form-group perchase_list_select relation_csCompany" v-if="addStateShow == true" id="pop_plat_cd">
+                                <select name="" class="from-control">
+                                    <option value=""><{$Think.lang.请选择}></option>
+                                    <template v-for="(channel,index) in channelData">
+                                        <option  :value="channel.code" >{{channel.val}}</option>
+                                    </template>
+                                </select>
+                            </fieldset>
+                            <fieldset class="form-group perchase_list_select" v-else id="pop_plat_cd">
+                                <select name="" class="from-control">
+                                    <option value=""><{$Think.lang.请选择}></option>
+                                    <template v-for="(channel,index) in channelData">
+                                        <!--<option  :value="channel.code" v-if="channel.code == popChannelIdentificationVal" selected>{{channel.val}}</option>-->
+                                        <!--<option  :value="channel.code" v-else>{{channel.val}}</option>-->
+                                        <option  :value="channel.code">{{channel.val}}</option>
+                                    </template>
+                                </select>
+                            </fieldset>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="must"><{$Think.lang.第三方物流标识}></td>
+                        <td>
+                            <input type="text" class="form-control" id="pop_third_logistics_cd" v-if="addStateShow == true">
+                            <input type="text" class="form-control" id="pop_third_logistics_cd" v-else>
+                        </td>
+                        <td><{$Think.lang.授权码}></td>
+                        <td>
+                            <input type="text" v-if="addStateShow == true" class="form-control" id="pop_partner_key">
+                            <input type="text" v-else class="form-control" id="pop_partner_key">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>B5C<{$Think.lang.月结账号}></td>
+                        <td>
+                            <input type="text" class="form-control" id="pop_partner_id" v-if="addStateShow == true">
+                            <input type="text" class="form-control" id="pop_partner_id" v-else>
+                        </td>
+                        <td class="must"><{$Think.lang.备注}></td>
+                        <td>
+                            <input class="Remarks form-control" id="remark" v-if="addStateShow == true">
+                            <input class="Remarks form-control" id="remark" v-else>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="logistics_pop_footer">
+                <button type="button" @click="relationSave()"><{$Think.lang.保存}></button>
+                <button type="button" class="cancel" @click="cancel()"><{$Think.lang.取消}></button>
+            </div>
+        </div>
+        </form>
+    </div>
+</div>
+</body>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script src="/Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script src="/Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/lib/My97DatePicker/WdatePicker.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/vue-2.4.2.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui.js?v=<{$Think.const.V}>"></script>
+<script src="/Application/Tpl/Home/Public/lib/layer/1.9.3/layer.js" type="text/javascript"></script>
+<script src="/Application/Tpl/Logistics/Configs/logistics_relation.js"></script>
+</html>

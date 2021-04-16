@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css">
+    <link href="./Application/Tpl/Home/Public/lib/My97DatePicker/skin/WdatePicker.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/lib/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/purchase.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/purchaseDetail.css">
+    <link rel="stylesheet" href="../Public/css/logistics.css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <title><{$Think.lang.物流模板列表}></title>
+    <style>
+        [v-cloak]{display: none !important;}
+        .layui-layer-content{width:500px;background:white !important;border:1px solid #cccccc;border-right:2px solid #cccccc}
+        .el-pagination__editor{
+            border: none;
+        }
+        .el-pagination__jump{
+            line-height: 36px;
+        }
+        input[type=number] {
+            -moz-appearance:textfield;
+        }
+        .el-pagination__jump .is-in-pagination .el-input__inner{
+            height: 30px;
+            margin-bottom: 8px;
+            width: 30px;
+           -webkit-appearance: none;
+        }
+        .el-select{
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+ <div id="logistics" class="rule_list" v-cloak>
+    <input type="hidden" id="logModeId" value=<?php echo $logModeId; ?> >
+    <div class="logistics_title">
+        <a class="active">{{LOGISTICS_MODE}}</a>
+        <a @click="reviewLog()">{{$lang('查看日志')}}</a>
+    </div>
+     <form action="" class="logistics_form"  v-loading="tableLoading">
+         <div class="card order_list_row_top_input">
+             <div class="card-block">
+                 <blockquote class="card-blockquote">
+                     <div class="table-responsive">
+                         <table class="table">
+                             <thead>
+                             <tr>
+                                 <th width="2%"></th>
+                                 <th width="21%"></th>
+                                 <th width="2%"></th>
+                                 <th width="2%"></th>
+                                 <th width="21%"></th>
+                                 <th width="2%"></th>
+                                 <th width="2%"></th>
+                                 <th width="21%"></th>
+                                 <th width="0%"></th>
+                                 <th width="4%"></th>
+                                 <th width="21%"></th>
+                             </tr>
+                             </thead>
+                             <tbody>
+                             <tr>
+                                 <td>{{$lang('状态')}}</td>
+                                 <td>
+                                     <fieldset class="form-group perchase_list_select">
+                                         <select v-model="search.STATE_CODE" name="" class="from-control" id="lineType">
+                                             <option value="">{{$lang('请选择运费模板状态')}}</option>
+                                             <option value="0">{{$lang('启用')}}</option>
+                                             <option value="1">{{$lang('停用')}}</option>
+                                         </select>
+                                     </fieldset>
+                                 </td>
+                                 <td></td>
+                                 <td><{$Think.lang.计价方式}></td>
+                                 <td>
+                                     <fieldset class="form-group perchase_list_select">
+                                         <select name="" v-model="search.DENOMINATED_TYPE" class="from-control" id="ValuationMethod">
+                                             <option value="">{{$lang('请选择计价方式')}}</option>
+                                             <option value="1">{{$lang('计泡')}}</option>
+                                             <option value="0">{{$lang('仅计重')}}</option>
+                                         </select>
+                                     </fieldset>
+                                 </td>
+                                 <td></td>
+                                 <td>{{$lang('出发地')}}</td>
+                                 <td>
+                                     <fieldset class="form-group perchase_list_select">
+                                         <el-select v-model="search.OUT_AREAS" filterable :placeholder="$lang('请选择出发地')" >
+                                             <el-option
+                                                     v-for="item in OUT_AREAS_ALL"
+                                                     :key="item.code"
+                                                     :label="$lang(item.val)"
+                                                     :value="item.code">
+                                             </el-option>
+                                         </el-select>
+                                         <select  style="visibility: hidden;" v-model="search.OUT_AREAS" class="from-control" id="departurePlace">
+                                             <option value="">{{$lang('请选择出发地')}}</option>
+                                                 <template v-for="item in OUT_AREAS_ALL">
+                                                    <option :value="item.code">{{$lang(item.val)}}</option>
+                                                 </template>
+                                         </select>
+                                     </fieldset>
+                                 </td>
+                                 <td></td>
+                                 <td>{{$lang('目的地')}}</td>
+                                 <td>
+                                     <fieldset class="form-group perchase_list_select">
+                                         <el-select v-model="search.SEND_AREAS" filterable :placeholder="$lang('请选择出发地')" >
+                                             <el-option
+                                                     v-for="item in SEND_AREAS_ALL"
+                                                     :key="item.area_no"
+                                                     :label="$lang(item.zh_name)"
+                                                     :value="item.area_no">
+                                             </el-option>
+                                         </el-select>
+                                         <select  style="visibility: hidden;" v-model="search.SEND_AREAS"  class="from-control" id="destination">
+                                            <option value="">{{$lang('请选择目的地')}}</option>
+                                                 <template v-for="item in SEND_AREAS_ALL">
+                                                    <option :value="item.area_no">{{$lang(item.zh_name)}}</option>
+                                                 </template>
+                                         </select>
+                                     </fieldset>
+                                 </td>
+                                 <td></td>
+                             </tr>
+                             </tbody>
+                         </table>
+                     </div>
+                 </blockquote>
+             </div>
+         </div>
+         <div class="logistics_search">
+             <button type="button" @click="postageDataSearch()" class="logistics_search_search"><i aria-hidden="true" class="fa fa-search"></i>{{$lang('搜索')}}</button>
+             <button @click="reset()" type="reset" >{{$lang('重置')}}</button>
+             <!--<a class="logistics_xl_export"><i aria-hidden="true" class="fa fa-file-excel-o"></i>导出</a>-->
+         </div>
+     </form>
+     <div class="row logistics_add" v-cloak>
+       <div class="col-lg-12 col-md-12 col-sm-12">
+             <p>{{$lang('共计')}}：<span> {{page.pageLength}} </span>{{$lang('条记录')}}</p>
+            <?php if(ButtonAction::hidden()){ ?>
+           <button type="button" @click="stopUseItems()"><i class="fa fa-times" aria-hidden="true"></i>{{$lang('停用')}}</button>
+            <?php } ?>
+            <?php if(ButtonAction::hidden()){ ?>
+           <button type="button" @click="add('add')"><i class="fa fa-check" aria-hidden="true"></i>{{$lang('新增')}}</button>
+            <?php } ?>
+
+       </div>
+     </div>
+     <div class="logistics_table" v-cloak>
+             <table class="table">
+                 <thead>
+                     <tr>
+                         <th width="4%"><input type="checkbox" @click="choseAllItems()" class="checkBoxAll"></th>
+                        <th width="10%">{{$lang('模板名称')}}</th>
+                         <!-- <th width="8%">{{$lang('区间')}}</th>
+                         <th width="9%">{{$lang('固定费用')}}</th>
+                         <th width="9%">{{$lang('每X千克')}}</th>
+                         <th width="9%">{{$lang('每X千克费用（元）')}}</th> -->
+                         <th width="9%">{{$lang('最大重量')}}</th>
+                         <th width="8%">{{$lang('计价方式')}}</th>
+                         <th width="8%">{{$lang('运费折扣')}}</th>
+                         <th width="9%">{{$lang('出发地')}}</th>
+                         <th width="9%">{{$lang('目的地')}}</th>
+                         <th width="8%">{{$lang('状态')}}</th>
+                     </tr>
+                 </thead>
+                 <tbody class="use-body">
+                 <template v-for="(val,k) in postageModelData">
+                     <tr>
+                         <td><input type="checkbox" :name="val.ID" :data-msg="val.MODEL_NM" class="postageModelDataCheckbox" :disabled="val.STATE_CODE =='1'"></td>
+                         <td class="colorBlue" @click="jumpDetail(val.ID)">{{$lang(val.MODEL_NM)}}</td>
+                         <!-- <td>{{val.WEIGHT1}} - {{val.WEIGHT2}}</td>
+                         <td>{{val.COST}}</td>
+                         <td>{{val.PROCESS_WEIGHT}}</td>
+                         <td>{{val.PROCESS_COST}}</td> -->
+                         <td v-if="val.MAX_WEIGHT_TYPE=='1'"> - </td>
+                         <td v-else>{{val.MAX_WEIGHT}}</td>
+                         <td v-if="val.DENOMINATED_TYPE=='1'">{{$lang('计泡')}}</td>
+                         <td v-else>{{$lang('仅记重')}}</td>
+                         <td>{{val.POSTTAGE_DISCOUNT || 100 }}%</td>
+                         <td>{{$lang(val.OUT_AREAS_SHOW)}}</td>
+                         <td>{{$lang(val.SEND_AREAS_SHOW)}}</td>
+                         <td>
+                             <span v-if="val.STATE_CODE =='0'">{{$lang('已启用')}}</span>
+                             <span v-else-if="val.STATE_CODE =='1'" style="color: #cccccc;">{{$lang('已停用')}}</span>
+                         </td>
+                     </tr>
+                 </template>
+                 </tbody>
+             </table>
+         <div class="logistics_table_record" v-cloak>
+             <div class="block">
+                 <el-pagination
+                         @current-change="handleCurrentChange"
+                         @size-change="handleSizeChange"
+                         :current-page.sync="page.sePage"
+                         :page-size="page.pageSize"
+                         :page-sizes="[20, 50, 100, 200]"
+                         layout="total, sizes, prev, pager, next"
+                         :total="page.pageLength">
+                 </el-pagination>
+             </div>
+         </div>
+     </div>
+     <div class="rule_list_pop" v-show="rule_list_pop" v-cloak>
+         <div class="rule_list_content">
+             <p class="rule_list_content_p">{{$lang('你将停用以下运费规则')}}：</p>
+             <div class="rule_list_body" v-if="rulePopData" :id="popActive?'active':''">
+                 <template v-for="(data,index) in rulePopData">
+                     <p>{{data}}</p>
+                 </template>
+             </div>
+             <div class="rule_list_pop_footer">
+                 <button type="button" @click="basisSubmitButton()">{{$lang('确认')}}</button>
+                 <button type="button" class="cancel"  @click="cancel()">{{$lang('取消')}}</button>
+             </div>
+         </div>
+     </div>
+ </div>
+</body>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/lib/My97DatePicker/WdatePicker.js"></script>
+<!-- <script type="text/javascript" src="/Application/Tpl/Home/Public/js/vue-2.4.2.js?v=<{$Think.const.V}>"></script> -->
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/axios.min.js"></script>
+<!-- <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui.js?v=<{$Think.const.V}>"></script> -->
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script src="/Application/Tpl/Home/Public/lib/layer/1.9.3/layer.js" type="text/javascript"></script>
+<script src="/Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script src="/Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script src="/Application/Tpl/Logistics/FreightRules/rule_list.js?v=<{$Think.const.V}>"></script>
+</html>

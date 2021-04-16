@@ -1,0 +1,380 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+    <title>会议跟进</title>
+    <link rel="stylesheet" href="../Public/utils/css/public.style.css?v=0907">
+    <link rel="stylesheet" href="../Public/css/element-ui.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="../Public/css/default.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="../Public/../Hr/depList.css?v=1117">
+    <link rel="stylesheet" href="../Public/icon/css/font-awesome.min.css">
+    <!-- 副文本编辑器组件 -->
+    <script type="text/javascript" charset="utf-8" src="../Public/ueEdit/ueditor.config.js"></script>
+    <script type="text/javascript" charset="utf-8" src="../Public/ueEdit/ueditor.all.min.js"> </script>
+    <script type="text/javascript" charset="utf-8" src="../Public/ueEdit/lang/zh-cn/zh-cn.js"></script>
+    <style>
+        .complete{
+            opacity: 0.6;
+        }
+    </style>
+   
+</head>
+
+<body>
+    <div id="meeting" v-cloak class="recruit">
+        <div v-show="!showDet">
+            <el-form ref="form" :model="form" label-width="80px" :inline="true">
+                <el-row>
+                    <el-col :span="24">
+                        <el-form-item :label="$lang('会议状态')">
+                            <el-checkbox  :label="$lang('全部')"  @change="checkAllFn(test)" v-model="test"></el-checkbox>
+                            <el-checkbox-group  v-model="form.meetStatus" style="display: inline-block;">   
+                                <el-checkbox   v-for="(item,key) in meetingStatus" :key="item" :label="$lang(item)"  @change="checks(item)"></el-checkbox>
+                            </el-checkbox-group>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="24">
+                        <el-form-item>
+                            <el-select v-model="form.timeType" :placeholder="$lang('会议时间')">
+                                <el-option :label="$lang('会议时间')" value="MEETING_DATE"></el-option>
+                            </el-select>
+                        </el-form-item>
+                        <el-form-item :label="$lang('时间范围')">
+                            <el-date-picker type="date" :placeholder="$lang('起始时间')" v-model="form.startMeetTime"></el-date-picker>
+                            -
+                            <el-date-picker type="date" :placeholder="$lang('结束时间')" v-model="form.endMeetTime"></el-date-picker>
+                        </el-form-item>
+                        <el-form-item>
+                            <el-input :placeholder="$lang('请搜索关键字')" v-model="form.keyValue">
+                                <el-select v-model="form.keyWord" slot="prepend" :placeholder="$lang('记录人')" style="width: 120px">
+                                    <el-option :label="item.label" :value="item.val" :key="item.val" v-for="item in keyfield"></el-option>
+                                </el-select>
+                            </el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+            </el-form>
+            <div class="row">
+                <div class="col-100 use-btn">
+                    <button class="btn-pub btn-default mg-l-10" @click="reset()">{{$lang('重置')}}</button>
+                </div>
+            </div>
+            <div class="baseline"></div>
+            <div class="use-row use-btn" style="margin-bottom: 15px">
+                <div class="col-100 result-num">
+                    {{$lang('搜索结果：')}}&nbsp;&nbsp;{{$lang('共')}} <b>{{ count }}</b> {{$lang('条')}}
+                </div>
+                <div class="use-row col-40">
+                    <?php if(ButtonAction::hidden()){ ?>
+                        <el-button style="background: rgba(255, 145, 0, 1)" slot="trigger" style="padding-top: 7px;" type="warning" @click="openChangeStatus()">{{$lang('批量修改状态')}}</el-button>
+                    <?php }?>
+                    <el-button slot="trigger" type="warning" @click="exportMeet()"  style="background: rgba(255, 145, 0, 1);"> {{$lang('导出')}}</el-button>
+                    &nbsp;&nbsp;
+                    <?php if(ButtonAction::hidden()){ ?>
+                        <el-button style="background: rgba(255, 145, 0, 1)" slot="trigger" style="padding-top: 7px;" type="warning" @click="batchDel()">{{$lang('批量删除')}}</el-button>
+                    <?php }?>
+                </div>
+                <div class=" col-25 ">
+                </div>
+                <div class="col-35 text-right">
+                    <?php if(ButtonAction::hidden()){ ?>
+                        <button class="btn-pub btn-blue" type="button" @click="addRec()"><i class="fa fa-plus"></i>&nbsp;&nbsp;{{$lang('新建会议纪要')}}</button>
+                    <?php }?>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-100 use-btn">
+                    <table class="table-list">
+                        <thead>
+                            <tr>
+                                <th width="30">
+                                    <el-checkbox v-model="checkAll" v-model="item.checked" @change=checkedAllFun()></el-checkbox>
+                                </th>
+                                <th width="100px">{{$lang('编号')}}</th>
+                                <th width="45%">{{$lang('会议主题')}}</th>
+                                <th width="100px">{{$lang('会议时间')}}</th>
+                                <th width="45%">{{$lang('参与人')}}</th>
+                                <th width="100px">{{$lang('记录人')}}</th>
+                                <th width="100px">{{$lang('会议地点')}}</th>
+                                <th width="100px">{{$lang('会议状态')}}</th>
+                                <th width="10%">{{$lang('操作')}}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <span >
+                                <tr v-for="item in dataList">
+                                
+                                    <td v-if="item.STATUS=='待跟进'" >                                           
+                                        <el-checkbox v-model="item.checked" ></el-checkbox>
+                                    </td>
+                                    <td v-else class="complete">                                           
+                                        <el-checkbox v-model="item.checked" ></el-checkbox>
+                                    </td>
+                                <td v-if="item.STATUS=='待跟进'">{{item.sort}}</td>  <td v-else class="complete">{{item.sort}}</td>
+                                <td v-if="item.STATUS=='待跟进'">{{item.MEETING_THEME}}</td> <td v-else class="complete">{{item.MEETING_THEME}}</td>
+                                <td v-if="item.STATUS=='待跟进'">{{item.MEETING_DATE}}&nbsp;&nbsp;{{item.MEETING_TIME}}</td> <td v-else class="complete">{{item.MEETING_DATE}}&nbsp;&nbsp;{{item.MEETING_TIME}}</td>
+                                <td v-if="item.STATUS=='待跟进'">
+                                    {{item.PARTCIPANT}}
+                                </td>
+                                <td v-else class="complete">{{item.PARTCIPANT}}</td>
+                                <td v-if="item.STATUS=='待跟进'">{{item.RECORD_MAN}}</td>  <td v-else class="complete">{{item.RECORD_MAN}}</td>
+                                <td v-if="item.STATUS=='待跟进'">{{item.MEETING_PLACE}}</td> <td v-else class="complete">{{item.MEETING_PLACE}}</td>
+                                    
+                                <td v-if="item.STATUS=='待跟进'">
+                                    <span v-if="item.edit">
+                                        <el-radio v-model="item.STATUS" :label="$lang('完成')">{{$lang('完成')}}</el-radio>
+                                        <el-radio style="margin-left: 0px;" v-model="item.STATUS" :label="$lang('待跟进')">{{$lang('待跟进')}}</el-radio>
+                                    </span>
+                                    <span v-else>{{item.STATUS}}</span>
+                                </td>
+                                <td v-else class="complete">
+                                    <span v-if="item.edit">
+                                        <el-radio v-model="item.STATUS" :label="$lang('完成')">{{$lang('完成')}}</el-radio>
+                                        <el-radio style="margin-left: 0px;" v-model="item.STATUS" :label="$lang('待跟进')">{{$lang('待跟进')}}</el-radio>
+                                    </span>
+                                    <span v-else>{{item.STATUS}}</span>
+                                </td>
+
+                                <td v-if="item.STATUS=='待跟进'">
+                                    <span v-if="item.edit">
+                                        <el-button type='text'  @click="cancel()">{{$lang('取消')}}</el-button>
+                                        <el-button type='text'  @click="saveList(item.ID)">{{$lang('保存')}}</el-button>
+                                        &nbsp;
+                                       
+                                    </span>
+                                    <span v-else>
+                                        <?php if(ButtonAction::hidden()){ ?>
+                                            <button style="background: #20a0ff;border: none;" class="btn-pub btn-blue" @click="item.edit = !item.edit">{{$lang('编辑')}}</button>
+                                        <?php }?>
+                                    </span>
+                                    <button class="btn-pub btn-green" @click="show(item.ID)">{{$lang('查看')}}</button>
+                                </td>
+
+                                <td v-else class="complete">
+                                    <span v-if="item.edit">
+                                        <el-button type='text'  @click="cancel()">{{$lang('取消')}}</el-button>
+                                        <el-button type='text'  @click="saveList(item.ID)">{{$lang('保存')}}</el-button>
+                                        &nbsp;
+                                    </span>
+                                    <span v-else>
+                                        <?php if(ButtonAction::hidden()){ ?>
+                                            <button style="background: #20a0ff;border: none;" class="btn-pub btn-blue" @click="item.edit = !item.edit">{{$lang('编辑')}}</button>
+                                        <?php }?>
+                                    </span>
+                                     <button class="btn-pub btn-green" @click="show(item.ID)">{{$lang('查看')}}</button>
+                                </td>
+
+
+                               <!--  <td v-if="item.edit">
+                                    <el-button type='text'  @click="cancel()">取消</el-button>
+                                    <el-button type='text'  @click="saveList(item.ID)">保存</el-button>
+                                    &nbsp;
+                                    <button class="btn-pub btn-green" @click="show(item.ID,isAppendTo)">查看</button>
+                                </td>
+                                <td v-else>
+                                    <button style="background: #20a0ff;border: none;" class="btn-pub btn-blue" @click="item.edit = !item.edit">编辑</button>
+                                    <button class="btn-pub btn-green" @click="show(item.ID)">查看</button>
+                                </td> --> 
+                                    
+                            </tr>
+
+                    </table>
+                    <div class="use-row">
+                        <div class="col-100 text-right">
+                            <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="page.sePage" :page-sizes="[5,10,20, 50, 100, 200,300]" :page-size="page.pageSize" layout="sizes, prev, pager, next" :total="count"></el-pagination>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- 状态面板 -->
+             <el-dialog :title="'已选择 ' +  checkCount  + ' 条记录'" :visible.sync="editVisible" size="tiny">
+                <el-form :model="form">
+                    <el-form-item :label="$lang('修改状态')" :label-width="formLabelWidth">
+                        <el-select v-model="changeStatus" :placeholder="$lang('请选择状态')">
+                            <el-option  :label="$lang('完成')" value="has" key="has"></el-option>
+                            <el-option  :label="$lang('待跟进')" value="none" key="none"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-form>
+                <div slot="footer" class="dialog-footer">
+                    <el-button @click="editVisible = false">{{$lang('取消')}}</el-button>
+                    <el-button type="primary" @click="confirmChange()">{{$lang('确定')}}</el-button>
+                </div>
+            </el-dialog>
+        </div>
+        <div class="add-form" v-show="showDet">
+            
+
+            <div class="row" style="margin-bottom: 20px;">
+                <div class="col-50 use-btn text-right">
+                    <span style="float: left;padding-top: 6px;font-size: 16px;">{{$lang('会议记录')}}</span>
+                    <el-button @click="retGo()">{{$lang('返回')}}</el-button>
+                </div>
+            </div>
+           
+            <el-form ref="form" :model="newForm" label-width="80px">
+                <table class="cus-table">
+                    <thead>
+                        <tr>
+                            <th width="45%"></th>
+                            <th width="5%"></th>
+                            <th width="45%"></th>
+                            <th width="5%"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <el-form-item :label="$lang('主题')" class="is-required">
+                                    <el-input v-model="newForm.MEETING_THEME"></el-input>
+                                </el-form-item>
+                            </td>
+                            <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                            <td>
+                                <el-form-item :label="$lang('记录人')" class="is-required">
+                                    <el-input v-model="newForm.RECORD_MAN"></el-input>
+                                </el-form-item>
+                            </td>
+                            <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td style="white-space: nowrap">
+                                <el-form-item :label="$lang('地点')" class="use-btn">
+                                    <el-input v-model="newForm.MEETING_PLACE"></el-input>
+                                </el-form-item>
+                            </td>
+                            <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                            <td>
+                                <el-form-item :label="$lang('参与人')" class="is-required">
+                                    <!-- 支持拼音搜索 -->
+                                     <el-select v-model="newForm.PARTCIPANT" filterable multiple remote clearable  :remote-method="remoteMethod" :loading="loading"  :placeholder="$lang('请选择参与人')" >
+                                        <el-option v-for="item in personlist" :label="item.EMP_SC_NM" :value="item.EMP_SC_NM" ></el-option>
+                                    </el-select>
+                                </el-form-item>
+                            </td>
+                            <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <el-form-item :label="$lang('时间')" class="is-required">
+                                    <el-date-picker v-model="newForm.MEETING_DATE" type="date" :placeholder="$lang('选择日期')"></el-date-picker>
+                                    <el-time-select v-model="newForm.MEETING_TIME"  :picker-options="{selectableRange: '06:30:00 - 22:30:00'}" :placeholder="$lang('选择时间')"></el-time-select>
+                                </el-form-item>
+                            </td>
+                            <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                            <td style="vertical-align: top">
+                                <el-form-item :label="$lang('会议状态')" class="is-required">
+                                    <el-radio v-model="newForm.STATUS" :label="$lang('完成')">{{$lang('完成')}}</el-radio>
+                                    <el-radio v-model="newForm.STATUS" :label="$lang('待跟进')">{{$lang('待跟进')}}</el-radio>
+                                </el-form-item>
+                            </td>
+                            <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <el-form-item :label="$lang('会议纪要')">
+                                <div id= "id1">  </div>
+                                </el-form-item> 
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+
+                <div class="row" style="margin-top: 20px">
+                    <div class="col-100 use-btn text-center ">
+                        <?php if(ButtonAction::hidden()){ ?>
+                            <span v-if="newForm.ID"><button class="btn-pub btn-blue" type="button" @click="save()">{{$lang('保存')}}</button></span>
+                            <span v-else><button class="btn-pub btn-blue" type="button" @click="save()">{{$lang('保存')}}</button></span>
+                        <?php }?>
+                        <el-button @click="resetNewRec()">{{$lang('重置')}}</el-button>
+                    </div>
+                </div>
+                    
+                <div v-if="newForm.ID">
+                    <div class="row" style="margin-top: 20px;">
+                        <div class="col-50 use-btn text-right">
+                            <span style="float: left;padding-top: 6px;margin-bottom: 10px;font-size: 16px;">{{$lang('待办事项')}}</span>
+                        </div>
+                    </div>
+                    <div style="margin-top: -10px;" class="row">
+                        <div class="col-100">
+                            <table class="table-list">
+                                <thead>
+                                    <tr>
+                                       
+                                        <th width="50px;">{{$lang('编号')}}</th>
+                                        <th width="600px">{{$lang('内容')}}</th>
+                                        <th>{{$lang('截止日期')}}</th>
+                                        <th>{{$lang('跟进人')}}</th>
+                                        <th width="150px">{{$lang('状态')}}</th>
+                                        <th width="180px" >{{$lang('操作')}}
+                                            <?php if(ButtonAction::hidden()){ ?>
+                                                <el-button style="margin-left: 10px;" type="primary" @click = addThing()>{{$lang('新建')}}</el-button>
+                                            <?php }?>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="width: 100%;" v-for="item in waitForm.wait">
+                                        <td> {{item.SORT_ID}}</td>
+                                        <td v-if="item.edit"><el-input type="textarea"  v-model="item.THINGS_THEME" :rows="1" :placeholder="$lang('请填写内容')" ></el-input> </td>
+                                        <td v-else style="width: 50%;word-break: break-all;white-space: normal; "> 
+                                            <pre style="text-align: left;font-size: 14px; line-height: 25px;margin-top: -5px;margin-bottom: 0px;">{{item.THINGS_THEME}}</pre>
+                                        </td> 
+                                       <td  v-if="item.edit"> <el-date-picker v-model="item.END_DATE" type="date" :placeholder="$lang('选择截止日期')"></el-date-picker></td>
+                                        <td  v-else>{{item.END_DATE}}</td>
+                                        <td v-if="item.edit" style="width: 25%;">  
+                                            <el-select v-model="item.ARR_FOLLOW_MAN" remote multiple :placeholder="$lang('请选择跟进人')" :remote-method="remoteMethod" :loading="loading" filterable clearable>
+                                                <el-option v-for="item in personlist" :label="item.EMP_SC_NM" :value="item.EMP_SC_NM" ></el-option>
+                                            </el-select> 
+                                        </td>
+                                        <td v-else style="width: 25%;">{{item.FOLLOW_MAN}}</td>
+                                        <td v-if="item.edit"> 
+                                            <el-radio v-model="item.STATUS" :label="$lang('完成')">{{$lang('完成')}}</el-radio>
+                                            <el-radio v-model="item.STATUS" :label="$lang('待跟进')">{{$lang('待跟进')}}</el-radio>
+                                         </td>
+                                        <td v-else>{{item.STATUS}}</td>
+                                        <td v-if="item.edit">
+                                            <span v-if="item.WAIT_ID"><el-button type='text' @click="trueWaitDel(item)">{{$lang('删除')}}</el-button></span>
+                                            <span v-else><el-button type='text' @click="waitDel(item)">{{$lang('删除')}}</el-button></span>
+                                            <!-- 有会议id的情况下是修改,没有是新建 -->
+                                            <span v-if="item.WAIT_ID"><el-button type='text' @click="waitSave(item.MEETING_ID,item.WAIT_ID)">{{$lang('修改')}}</el-button></span>
+                                            <span v-else><el-button type='text' @click="waitSave(item.MEETING_ID,item.ID)">{{$lang('保存')}}</el-button></span>
+                                        </td>
+                                        <td v-else>
+                                            <?php if(ButtonAction::hidden()){ ?>
+                                                <el-button type='text'  @click="meetedit(item.edit,item.SORT_ID)">{{$lang('编辑')}}</el-button>
+                                            <?php }?>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </el-form>
+        </div>
+        <!-- 修改 -->
+        <!-- 推送 -->
+    </div>
+
+    
+
+
+    <!--引入js-->
+    <script type="text/javascript" src="../Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script src="../Public/js/H-ui.js"></script>
+    <script src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="../Public/js/vue-2.4.2.js?v=<{$Think.const.V}>"></script>
+    <script type="text/javascript" src="../Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="../Public/js/element-ui.js?v=<{$Think.const.V}>"></script>
+    <script type="text/javascript" src="../Public/../Hr/meeting.js?v=11sds21"></script>
+    <script type="text/javascript">
+    //实例化编辑器
+    </script>
+   
+</body>
+
+</html>

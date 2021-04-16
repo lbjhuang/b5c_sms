@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>账户列表</title>
+    <link rel="stylesheet" href="../Public/utils/css/public.style.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="../Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="../Public/css/default.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="../Public/../Hr/hrstyle.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="../Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">
+</head>
+
+<style>
+    [v-cloak] {
+        display: none;
+    }
+
+    .el-row+.el-row {
+        margin-top: 15px;
+    }
+
+    .el-pagination {
+        margin-bottom: 180px;
+    }
+    .normal{
+        white-space: normal !important;
+        word-wrap: break-word;
+        word-break: break-all;
+    }
+    .company .el-select{
+        width: 100%;
+        display: flex;
+    }
+    .company .el-select .el-tag{
+        display: table;
+    }
+    .company .el-select .el-tag .el-select__tags-text{
+        white-space: normal;
+    }
+    .create-wrap{
+        white-space: nowrap;
+    }
+
+    .create-wrap .occupy{
+        display: inline-block;
+        width: 49.5%;
+    }
+    .show-list .el-form-item__label{
+        padding: 0;
+    }
+</style>
+
+<body>
+    <div id="bank" class="show-list" v-cloak>
+        <el-form ref="form" :inline="true" :model="form" :label-position="labelPosition" label-width="120px">
+            <el-form-item style="margin:0 0 20px 10px" :label="$lang('账户归属')">
+                <el-select :filterable="true" :placeholder="$lang('请选择账户归属')" v-model="form.accountClassCd" clearable multiple>
+                    <el-option :key="item.cd" :label="$lang(item.cdVal)" :value="item.cd" v-for="item in baseData.account_class_cd"></el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item class="company" style="margin:0 0 20px 10px" :label="$lang('公司名称')">
+                <el-select :filterable="true" :placeholder="$lang('请选择公司名称')" v-model="form.companyCode" multiple filterable>
+                    <el-option :key="item.cd" :label="item.cdVal" :value="item.cd" v-for="item in search_company_open"></el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item style="margin:0 0 20px 10px" :label="$lang('账户类型')">
+                <el-select :filterable="true" :placeholder="$lang('请选择账户类型')" multiple v-model="form.account_type" clearable>
+                    <el-option :key="item.cd" :label="item.cdVal" :value="item.cd" v-for="item in baseData.account"></el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item style="margin:0 0 20px 10px" :label="$lang('银行名称')">
+                <el-input v-model="form.openBank" :placeholder="$lang('请填写银行名称')"></el-input>
+            </el-form-item>
+            <el-form-item style="margin:0 0 20px 10px" :label="$lang('银行/平台账号')">
+                <el-input v-model="form.accountBank" :placeholder="$lang('请填写账号')"></el-input>
+            </el-form-item>
+            <el-form-item style="margin:0 0 20px 10px" :label="$lang('平台')">
+                <el-select :filterable="true"  :placeholder="$lang('请选择平台')" multiple v-model="form.payment_channel_cd" clearable>
+                    <el-option :key="item.cd" :label="$lang(item.cdVal)" :value="item.cd" v-for="item in baseData.payment_channel"></el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item style="margin:0 0 20px 10px" :label="$lang('币种')">
+                <el-select :filterable="true" :placeholder="$lang('请选择币种')" v-model="form.currencyCode" clearable>
+                    <el-option :key="item.cd" :label="item.cdVal" :value="item.cd" v-for="item in baseData.currency"></el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item style="margin:0 0 20px 10px" :label="$lang('状态')">
+                <el-select :filterable="true" :placeholder="$lang('请选择状态')" v-model="form.state" clearable>
+                    <el-option :key="item.cd" :label="$lang(item.cdVal)" :value="item.cd" v-for="item in baseData.accountListState"></el-option>
+                </el-select>
+            </el-form-item>
+            <div class="col-100 use-btn">
+                <button type="button" class="btn-pub btn-green" @click="search"> {{$lang('查询')}}</button>
+                <button type="button" class="btn-pub btn-default mg-l-20" @click="reset()">{{$lang('重置')}}</button>
+            </div>
+        </el-form>
+        <div class="baseline"></div>
+        <div class="use-row create-wrap">
+            <div class="col-50 result-num occupy">
+                {{$lang('搜索结果')}}：&nbsp;&nbsp;{{$lang('共')}}
+                <b>{{totalCount}}</b> {{$lang('条')}}
+            </div>
+            <div class="col-50 text-right occupy" style="width: 50%">
+                <?php if(ButtonAction::hidden()){ ?>
+                    <el-button type="primary" @click="createAcc()">{{$lang('创建账户')}}</el-button>
+                <?php }?>
+
+                <?php if(ButtonAction::hidden()){ ?>
+                    <el-button type="primary" @click="exportList()">{{$lang('导出')}}</el-button>
+                <?php }?>
+            </div>
+        </div>
+        <div class="use-row">
+            <div class="col-100">
+                <table class="table-list">
+                    <thead>
+                        <tr>
+                            <th>{{$lang('ID')}}</th>
+                            <th>{{$lang('账户归属')}}</th>
+                            <th>{{$lang('公司名称')}}</th>
+                            <th>{{$lang('平台名称')}}</th>
+                            <th>{{$lang('银行名称')}} </th>
+                            <th>{{$lang('银行/平台账号')}} </th>
+                            <th>SWIFT CODE</th>
+                            <th>{{$lang('币种')}}</th>
+                            <th>{{$lang('最新修改人')}}</th>
+                            <th>{{$lang('最新修改时间')}}</th>
+                            <th>{{$lang('状态')}}</th>
+                            <th>{{$lang('操作')}}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(item,index) in dataList">
+                            <td>{{item.id}}</td>
+                            <td>{{$lang(getValue('account_class_cd', item.accountClassCd))}}</td>
+                            <!-- 目前加入了归属供应商的公司 -->
+                            <td class="normal">{{$lang(getValue(item.accountClassCd === 'N003510001' ? 'company' : 'supplier',item.companyCode))}}</td>
+                            <!-- <td class="normal">{{$lang(getValue('payment_channel',item.payment_channel_cd))}}</td> -->
+                            <td class="normal">{{$lang(item.payment_channel_cd_val)}}</td>
+                            <td class="normal">{{$lang(item.openBank)}}</td>
+                            <td class="normal">{{item.accountBank}}</td>
+                            <td class="normal">{{item.swiftCode}}</td>
+                            <td>{{getValue('currency',item.currencyCode)}}</td>
+                            <td>{{item.updateUser}}</td>
+                            <td>{{item.updateTime}}</td>
+                            <td>{{$lang(getValue('accountListState',item.state))}}</td>
+                            <td class="use-btn">
+                                <?php if(ButtonAction::hidden()){ ?>
+                                    <button class="btn-pub btn-blue" @click="editData(item)">{{$lang('编辑')}}</button>
+                                <?php }?>
+                                    <button class="btn-pub btn-default mg-l-10" @click="viewDetail(item)">{{$lang('查看')}}</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="use-row">
+            <div class="col-100 text-right">
+                <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="form.pageIndex" :page-sizes="[20, 50, 100, 200,300]" :page-size="form.pageSize" layout="sizes, prev, pager, next,jumper" :total="totalCount"></el-pagination>
+            </div>
+        </div>
+        <el-dialog :title="$lang('账户编辑')" :visible.sync="dialogFormVisible" :before-close="cancel">
+            <el-form :model="createData" label-width="110px" :label-position="'left'">
+                <el-row>
+                    <el-col :span="24">
+                        <el-form-item :label="$lang('账户归属')" class="is-required">
+                            <el-radio-group v-model="createData.accountClassCd" @change="handleAccountClassChange">
+                                <el-radio v-for="item in baseData.account_class_cd" :key="item.cd" :label="item.cd" :disabled="createData.id ? true : false">
+                                    {{$lang(item.cdVal)}}
+                                </el-radio>
+                            </el-radio-group>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="10">
+                        <el-form-item :label="$lang('公司名称')" class="is-required" v-if="createData.accountClassCd === 'N003510001'">
+                            <el-select :filterable="true" v-model="createData.companyCode" :placeholder="$lang('请选择公司名称')">
+                                <el-option :key="item.cd" :label="item.cdVal" :value="item.cd" v-for="item in baseData.company_open"></el-option>
+                            </el-select>
+                        </el-form-item>
+                        <el-form-item :label="$lang('公司名称')" class="is-required" v-else>
+                            <el-select :filterable="true" v-model="createData.companyCode" :placeholder="$lang('请选择公司名称')">
+                                <el-option :key="item.ID" :label="item.SP_NAME" :value="item.ID" v-for="item in baseData.supplier"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="2">&nbsp;</el-col>
+                    <el-col :span="10">
+                        <el-form-item :label="$lang('账户类型')" class="is-required">
+                            <el-select v-model="createData.accountType" :placeholder="$lang('请选择账户类型')">
+                                <el-option :key="item.cd" :label="item.cdVal" :value="item.cd" v-for="item in baseData.account"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="10">
+                        <el-form-item :label="$lang('平台名称')" class="is-required">
+                            <el-select :filterable="true" @change="payment_channel_change(createData.payment_channel_cd)" v-model="createData.payment_channel_cd" :placeholder="$lang('请选择平台名称')">
+                                <el-option :key="item.cd" :label="item.cdVal" :value="item.cd" v-for="item in baseData.payment_channel"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="2">&nbsp;</el-col>
+                    <el-col :span="10">
+                        <el-form-item :label="$lang('状态')" class="is-required" style="white-space: nowrap;">
+                            <el-radio v-model="createData.state" label="1"><{$Think.lang.启用}></el-radio>
+                            <el-radio v-model="createData.state" label="2"><{$Think.lang.停用}></el-radio>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="10">
+                        <el-form-item :label="$lang('银行名称')" :class="{ 'is-required': bankStatus}">
+                            <el-input :disabled="!bankStatus" v-model="createData.openBank" auto-complete="off" :placeholder="$lang('请填写银行名称')" @blur="trimSN('openBank')"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="2">&nbsp;</el-col>
+                    <el-col :span="10">
+                        <el-form-item :label="$lang('银行简称')">
+                            <el-input v-model="createData.bank_short_name" auto-complete="off" :placeholder="$lang('请填写银行简称')"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="10">
+                        <el-form-item :label="$lang('银行/平台账号')" class="is-required">
+                            <el-input v-model="createData.accountBank" auto-complete="off" :placeholder="$lang('请填写银行/平台账号')" @change="trim('accountBank')" @blur="trim('accountBank')"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="2">&nbsp;</el-col>
+                    <el-col :span="10">
+                        <el-form-item :label="$lang('币种')" class="is-required">
+                            <el-select :filterable="true" v-model="createData.currencyCode" :placeholder="$lang('请选择币种')">
+                                <el-option :key="item.cd" :label="item.cdVal" :value="item.cd" v-for="item in baseData.currency"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="10">
+                        <el-form-item label="SWIFT Code">
+                            <el-input v-model="createData.swiftCode" auto-complete="off" :placeholder="$lang('请填写SWIFT Code')" @change="trim('swiftCode')" @blur="trim('swiftCode')"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="2">&nbsp;</el-col>
+                    <el-col :span="10">
+                        <el-form-item label="BSB No">
+                            <el-input v-model="createData.bsbNo" auto-complete="off" placeholder="No."></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="10">
+                        <el-form-item :label="$lang('账户备注')">
+                            <el-input v-model="createData.reason" auto-complete="off" :placeholder="$lang('请填写备注')"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="2">&nbsp;</el-col>
+                    <el-col :span="10">
+                        <el-form-item :label="$lang('本地结算代码')">
+                            <el-input v-model="createData.bank_settlement_code" auto-complete="off" :placeholder="$lang('请填写备注')"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="10">
+                        <el-form-item :label="$lang('银行地址')">
+                            <el-select v-model="selectCountry" style="width: 30%;"  filterable @change="selectCountryChange"
+                                    placeholder="<{$Think.lang.国家}>">
+                                <el-option v-for="item in country" :key="item.id" :label="item.zh_name"
+                                            :value="item.id"></el-option>
+                            </el-select>
+                            <el-select  v-model="selectProvince" style="width: 30%;"  filterable  @change="selectProvinceChange"
+                                        placeholder="<{$Think.lang.省市}>">
+                                <el-option v-for="item in province" :key="item.id" :label="item.zh_name"
+                                            :value="item.id"></el-option>
+                            </el-select>
+                            <el-select  v-model="selectCounty"  style="width: 30%;" filterable @change="selectCountyChange"
+                                        placeholder="<{$Think.lang.区县}>">
+                                <el-option v-for="item in county" :key="item.id" :label="item.zh_name"
+                                            :value="item.id"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="2">&nbsp;</el-col>
+                    <el-col :span="10">
+                        <el-form-item :label="$lang('银行详细地址')">
+                            <el-input v-model="createData.bank_address_detail" auto-complete="off" :placeholder="$lang('请填写备注')"></el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row>
+                    <el-col :span="10">
+                        <el-form-item :label="$lang('银行邮编')">
+                            <el-input v-model="createData.bank_postal_code" auto-complete="off" :placeholder="$lang('请填写备注')"></el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="2">&nbsp;</el-col>
+                    <el-col :span="10">
+                        <el-form-item :label="$lang('账户种类')">
+                            <el-select v-model="createData.bank_account_type" filterable :placeholder="$lang('请选择')">
+                                <el-option
+                                  v-for="item in collection_account_type"
+                                  :key="item.cd"
+                                  :label="$lang(item.cdVal)"
+                                  :value="item.cd">
+                                </el-option>
+                            </el-select>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+                <el-button @click="cancel()">{{$lang('取消')}}</el-button>
+                <el-button type="primary" @click="saveAcc()">{{$lang('确定')}}</el-button>
+            </div>
+        </el-dialog>
+    </div>
+    <script type="text/javascript" src="../Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="../Public/utils/utils.js"></script>
+    <script src="../Public/js/H-ui.js"></script>
+    <script src="../Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="../Public/js/vue.2.5.13.js"></script>
+    <script type="text/javascript" src="../Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="../Public/js/element-ui-2.2.js"></script>
+    <script src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+    <script>    
+        if(getCookie('think_language') !== "zh-cn" ){
+            ELEMENT.locale(ELEMENT.lang.en)
+        }
+        var bank = new Vue({
+            el: '#bank',
+            data: {
+                labelPosition: 'left',
+                labelModal: 'top',
+                totalCount: 10,
+                dialogFormVisible: false,
+                formLabelWidth: 80,
+                form: {
+                    accountClassCd: [],
+                    companyCode: [],
+                    account_type:[],
+                    openBank: '',
+                    accountBank: '',
+                    currencyCode: '',
+                    state: '',
+                    pageIndex: 1,
+                    pageSize: 20,
+                    payment_channel_cd:[]
+                },
+                createData: {
+                    accountClassCd: 'N003510001',
+                    companyCode: '',
+                    accountType: '',
+                    openBank: '',
+                    accountBank: '',
+                    currencyCode: '',
+                    swiftCode: '',
+                    bsbNo: '',
+                    reason: '',
+                    state: '1',
+                    payment_channel_cd:'',
+                    collection_account_type_cd:'',
+                    bank_short_name:'',
+                    bank_settlement_code:'',
+                    bank_address_detail:'',
+                    bank_postal_code:'',
+                    bank_account_type:'',
+                    city:'',
+                    bank_address:''
+                },
+                baseData: {},
+                search_company_open: [], //  搜索条件-公司名称
+                dataList: [],
+                bankStatus:false,
+                country:[],
+                province:[],
+                county:[],
+                selectCountryVal:'',
+                selectProvinceVal:'',
+                selectCountyVal:'',
+                selectCountry:'',
+                selectProvince:'',
+                selectCounty:'',
+                collection_account_type:[],
+                getValue: function(dataName, key) {
+                    var result = '';
+                    for (var i in this.baseData[dataName]) {
+                        if (dataName !== 'supplier') {
+                            if (this.baseData[dataName][i].cd == key) {
+                                result = this.baseData[dataName][i].cdVal
+                                break;
+                            }
+                        } else {
+                            // 获取供应商公司名称
+                            if (this.baseData[dataName][i].ID == key) {
+                                result = this.baseData[dataName][i].SP_NAME
+                                break;
+                            }
+                        }
+                    }
+                    return result ? result : '-';
+                }
+            },
+            created: function() {
+                this.getCommonData()
+                this.getBaseData();
+                this.search();
+            },
+            methods: {
+                getCommonData:function(){
+                    var _this = this
+                    axios.post('index.php?g=oms&m=CommonData&a=commonData', {
+                        data: {
+                            query: {
+                                "collection_account_type":true,
+                                // "area": true,
+                            }
+                        }
+                    }).then(function (res) {
+                        if(res.data.code == 2000){
+                            _this.collection_account_type = res.data.data.collection_account_type
+                            // _this.country = res.data.data.area
+                        }
+                    })
+
+                    axios.post('/index.php?g=common&m=index&a=get_area', {
+                        "parent_no": 0,
+                        "is_id":''
+                    }).then(function (res) {
+                        console.log(res)
+                        if (res.data.code == 2000) {
+                            _this.country = res.data.data;
+                        } else {
+                            _this.$message({
+                                message: data.msg,
+                                type: 'error'
+                            });
+                        }
+                    })
+                },
+                inNum: function(key, val) {
+                    this[key][val] = this[key][val].replace(/[^\d]/g,'');
+                },
+                trim: function(val) {
+                    this.createData[val] = this.createData[val].replace(/\s/g, '');
+                },
+                trimSN:function(val) {
+                    this.createData[val] = this.createData[val].replace(/(^\s*)|(\s*$)/g, '');
+                },
+                selectCountryChange:function(val){
+                    let obj = {};
+                    obj = this.country.find((item)=>{
+                        return item.id === val;
+                    });
+                    this.selectCountryVal = obj.zh_name
+                },
+                selectProvinceChange:function(val){
+                    let obj = {};
+                    obj = this.province.find((item)=>{
+                        return item.id === val;
+                    });
+                    this.selectProvinceVal = obj.zh_name
+                },
+                selectCountyChange:function(val){
+                    let obj = {};
+                    obj = this.county.find((item)=>{
+                        return item.id === val;
+                    });
+                    this.selectCountyVal = obj.zh_name
+                },
+                getBaseData: function() {
+                    var param = {
+                        "data": {
+                            "query": {
+                                "company": "true",
+                                "company_open": "true",
+                                "currency": "true",
+                                "accountListState": "true",
+                                "account": "true",
+                                "payment_channel":"true",
+                                "account_class_cd": "true",
+                                "supplier": "true"
+                            }
+                        }
+                    }
+                    var _this = this;
+                    axios.post("/index.php?m=finance&a=commonData", param).then(function(res) {
+                        if (res.data.code == 2000) {
+                            bank.baseData = res.data.data;
+                            _this.search_company_open = bank.baseData.company_open ? JSON.parse(JSON.stringify(bank.baseData.company_open)) : [];
+                            // 合并供应商数据到公司列表
+                            res.data.data.supplier.map(item => {
+                                _this.search_company_open.push({
+                                        cd: item.ID,
+                                        cdVal: item.SP_NAME
+                                    })
+                                })
+                        }
+                    })
+                },
+                search: function() {
+                    var param = {
+                        data: {
+                            query: this.form
+                        }
+                    };
+                    param.data.query.openBank = $.trim(this.form.openBank);
+                    param.data.query.accountBank = $.trim(this.form.accountBank);
+                    axios.post("/index.php?m=finance&a=bankAccountList", param).then(function(res) {
+                        var data = res.data;
+                        if (data.code == 2000) {
+                            bank.dataList = data.data.pageData;
+                            bank.totalCount = +data.data.totalCount;
+                        } else {
+                            bank.$message({
+                                message: bank.$lang('获取数据失败'),
+                                type: 'warning'
+                            });
+                        }
+                    })
+                },
+                handleSizeChange: function(size) {
+                    this.form.pageSize = size;
+                    this.search();
+                },
+                handleCurrentChange: function(currentPage) {
+                    this.form.pageIndex = currentPage;
+                    this.search();
+                },
+                // 编辑账户
+                editData: function(item) {
+                    console.log(item);
+                    
+                    this.dialogFormVisible = true;
+                    this.createData = item;
+                    if(item.payment_channel_cd == 'N001000301'){
+                        this.bankStatus = true
+                    }else{
+                        this.bankSt
+                        atus = false
+                    }
+                    if(item.city){
+                        var areaSel = item.city.split(',');
+                        this.selectCountry = areaSel[0] || '';
+                        this.selectProvince = areaSel[1] || '';
+                        this.selectCounty = areaSel[2] || '';
+                    }
+                    if(item.bank_address){
+                        var areaSel = item.bank_address.split('-');
+                        this.selectCountryVal = areaSel[0] || '';
+                        this.selectProvinceVal = areaSel[1] || '';
+                        this.selectCountyVal = areaSel[2] || '';
+                    }
+                    
+                },
+                //新账户
+                createAcc: function() {
+                    this.dialogFormVisible = true;
+                    this.bankStatus = false
+                    this.createData = {
+                        accountClassCd: 'N003510001',
+                        companyCode: '',
+                        accountType: '',
+                        openBank: '',
+                        accountBank: '',
+                        currencyCode: '',
+                        swiftCode: '',
+                        bsbNo: '',
+                        reason: '',
+                        state: '1',
+                        bank_short_name:'',
+                        bank_settlement_code:'',
+                        bank_address_detail:'',
+                        bank_postal_code:'',
+                        bank_account_type:'',
+                        city:'',
+                        bank_address:''
+                    }
+                    this.selectCountry = ''
+                    this.selectProvince = ''
+                    this.selectCounty = ''
+                    this.selectCountryVal = '' 
+                    this.selectProvinceVal = ''            
+                    this.selectCountyVal = ''            
+                },
+                //保存编辑
+                saveAcc: function() {
+                    if (!this.createData.accountClassCd) {
+                        this.$message({
+                            message: this.$lang('账户归属不能为空'),
+                            type: 'warning'
+                        })
+                        return false;
+                    }
+                    if (!this.createData.companyCode) {
+                        this.$message({
+                            message: this.$lang('公司名称不能为空'),
+                            type: 'warning'
+                        });
+                        return false;
+                    }
+                    if (!this.createData.accountType) {
+                        this.$message({
+                            message: this.$lang('账户类型不能为空'),
+                            type: 'warning'
+                        });
+                        return false;
+                    }
+                    if (this.bankStatus && !this.createData.openBank) {
+                        this.$message({
+                            message: this.$lang('银行名称不能为空'),
+                            type: 'warning'
+                        });
+                        return false;
+                    }
+                    if (!this.createData.payment_channel_cd) {
+                        this.$message({
+                            message: this.$lang('平台名称不能为空'),
+                            type: 'warning'
+                        });
+                        return false;
+                    }
+                    if (!this.createData.accountBank) {
+                        this.$message({
+                            message: this.$lang('银行/平台账号不能为空'),
+                            type: 'warning'
+                        });
+                        return false;
+                    }
+                    if (!this.createData.currencyCode) {
+                        this.$message({
+                            message: this.$lang('币种不能为空'),
+                            type: 'warning'
+                        });
+                        return false;
+                    }
+
+
+                    if(this.selectCounty){
+                        this.createData.city = this.selectCountry + ',' + this.selectProvince + ',' + this.selectCounty
+                        this.createData.bank_address = this.selectCountryVal + '-' +  this.selectProvinceVal + '-' + this.selectCountyVal
+                    }else if(this.selectProvince && !this.selectCounty){
+                        this.createData.city = this.selectCountry + ',' + this.selectProvince
+                        this.createData.bank_address = this.selectCountryVal + '-' +  this.selectProvinceVal
+                    }else if(this.selectCountry && !this.selectProvince){
+                        this.createData.city = this.selectCountry
+                        this.createData.bank_address = this.selectCountryVal
+                    }else if(!this.selectCountry){
+                        this.createData.city = ''
+                        this.createData.bank_address = ''
+                    }
+                    
+
+                    axios.post('/index.php?m=finance&a=createBankAccount', {
+                        data: this.createData
+                    }).then(function(res) {
+                        if (res.data.code == 2000) {
+                            bank.dialogFormVisible = false;
+                            bank.$message({
+                                message: bank.$lang(res.data.msg),
+                                type: 'success'
+                            });
+                            bank.search();
+                        } else {
+                            bank.$message({
+                                message: bank.$lang(res.data.data.error),
+                                type: 'error'
+                            })
+                        }
+                    })
+                },
+                cancel: function() {
+                    this.dialogFormVisible = false;
+                    this.search();
+                },
+                //账户详情
+                viewDetail: function(item) {
+                    console.log(item);
+                    
+                    sessionStorage.setItem('backAccount', JSON.stringify(item));
+                    var href = "/index.php?m=finance&a=accountDetail",
+                        a = document.createElement("a");
+                    a.setAttribute("style", "display: none");
+                    a.setAttribute("onclick", "opennewtab(this,'" + this.$lang('账户详情') + "')" );
+                    a.setAttribute("_href", href);
+                    a.onclick();
+                },
+                reset: function() {
+                    this.form = {
+                        accountClassCd: [],
+                        companyCode: [],
+                        account_type:[],
+                        openBank: '',
+                        accountBank: '',
+                        currencyCode: '',
+                        state: '',
+                        pageIndex: 1,
+                        pageSize: 20,
+                        payment_channel_cd:[]
+                    }
+                    this.search();
+                },
+                exportList: function () {
+                        var param = {
+                            data: {
+                                query: this.form
+                            }
+                        };
+                        param.data.query.openBank = $.trim(this.form.openBank);
+                        param.data.query.accountBank = $.trim(this.form.accountBank);
+
+                        var tmep = document.createElement('form');
+                        tmep.action = '/index.php?m=finance&a=outputExcel';
+                        tmep.method = "post";
+                        tmep.style.display = "none";
+                        var opt = document.createElement("input");
+                        opt.name = 'export_params';
+                        opt.value = JSON.stringify(param);
+                        tmep.appendChild(opt);
+                        document.body.appendChild(tmep);
+                        tmep.submit();
+                        $(tmep).remove();
+                },
+                payment_channel_change:function(val){
+                    if(val == 'N001000301'){
+                        this.bankStatus = true
+                        this.createData.openBank = ''
+                    }else{
+                        this.bankStatus = false
+                        
+                        for(var i in this.baseData.payment_channel){
+                            if(this.createData.payment_channel_cd == this.baseData.payment_channel[i].cd){
+                                this.createData.openBank = this.baseData.payment_channel[i].cdVal
+                            }
+                        }
+                    }
+                },
+                handleAccountClassChange: function (val) {
+                    this.createData.companyCode = '';
+                },
+            },
+            computed: {
+                countryVal() {
+                    return this.selectCountry;
+                },
+                provinceVal() {
+                    return this.selectProvince;
+                }
+            },
+            watch: {
+                selectCountry: function (newVal) {
+                    var _this = this;
+                if (!newVal) return;
+                axios.post('/index.php?g=common&m=index&a=get_area', {
+                        parent_no: newVal,
+                        is_id:'Y'
+                }).then(function (res) {
+                  if (res.data.code == 2000) {
+                    _this.province = res.data.data;
+
+                    if(res.data.data == null){
+                        _this.selectProvince = '';
+                        _this.county = [];
+                        _this.selectCounty = '';
+                    }else{
+                        var provinceAll = res.data.data
+                        var status = '1'
+                        for(var i=0;i<provinceAll.length;i++){
+                            if(provinceAll[i].id == _this.selectProvince){
+                                status = '2'
+                            }
+                        }
+                        if(status == '1'){
+                            _this.selectProvince = '';
+                            _this.county = [];
+                            _this.selectCounty = '';
+                        }
+                    }
+
+                  } else {
+                    _this.$message({
+                      message: data.msg,
+                      type: 'error'
+                    });
+                  }
+                })
+
+
+                },
+                selectProvince: function (newVal) {
+                    var _this = this;
+                if (!newVal || !_this.selectCountry) return;
+                var parentId = _this.selectCountry + ',' + newVal;
+
+                axios.post('/index.php?g=common&m=index&a=get_area', {
+                        parent_no: newVal,
+                        is_id:'Y'
+                }).then(function (res) {
+                  if (res.data.code == 2000) {
+                    _this.county = res.data.data;
+
+                    if(res.data.data == null){
+                        _this.selectCounty = '';
+                    }else{
+                        var countyAll = res.data.data
+                        var status = '1'
+                        for(var i=0;i<countyAll.length;i++){
+                            if(countyAll[i].id == _this.selectCounty){
+                                status = '2'
+                            }
+                        }
+                        if(status == '1'){
+                            _this.selectCounty = '';
+                        }
+                    }
+                  } else {
+                    _this.$message({
+                      message: data.msg,
+                      type: 'error'
+                    });
+                  }
+                })
+
+                  
+
+                }
+            }
+        })
+    </script>
+</body>
+
+</html>

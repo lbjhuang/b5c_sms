@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>正次品转换</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="./Application/Tpl/Home/Public/css/H-ui-3.1.min.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/stock.css">
+    <link rel="stylesheet" type="text/css" href="./Application/Tpl/Home/Public/css/style.css" />
+    <link rel="stylesheet" type="text/css" href="./Application/Tpl/Home/Public/css/default.css" />
+    <link rel="stylesheet" type="text/css" href="./Application/Tpl/Home/Public/css/NewAllocate.css" />
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.config.VER_NUM}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.config.VER_NUM}>">
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+        
+        #app {
+            padding: 20px;
+        }
+        
+        .el-button--mini {
+            width: 14%;
+        }
+        
+        .el-button-group {
+            display: inline-block;
+            vertical-align: middle;
+            width: 100%;
+        }
+        
+        .active-btn {
+            color: #fff;
+            background-color: #409eff;
+            border-color: #409eff;
+        }
+        
+        .el-select .el-input {
+            width: 100%;
+        }
+        
+        .input-with-select .el-input-group__prepend {
+            background-color: #fff;
+        }
+        
+        .el-row {
+            margin-bottom: 20px;
+        }
+        
+        .query-class .el-col-6 {
+            padding-right: 20px;
+        }
+        
+        .label-tag {
+            margin-right: 10px;
+        }
+        
+        .baseline {
+            height: 1px;
+            background: #E0E0E0;
+            margin: 10px 0 20px;
+        }
+        
+        .text-right {
+            text-align: right;
+        }
+        
+        .table {
+            width: 100%;
+            border-left: 1px solid #E0E0E0;
+            border-bottom: 1px solid #E0E0E0;
+        }
+        
+        .table thead th {
+            background-color: #537a8c;
+            color: white;
+        }
+        
+        .table thead th,
+        .table tbody td {
+            border-top: 1px solid #E0E0E0;
+            border-right: 1px solid #E0E0E0;
+            text-align: center;
+        }
+        
+        .label-tag {
+            display: inline-block;
+            width: 56px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="content" id="app" v-cloak>
+        <el-row>
+            <el-col :span="24">
+                <el-button-group>
+                    <el-button @click="stateCheckAll()" size="mini" :class="{'active-btn':stateCheckAllItems}">{{$lang('单据状态')}}：</el-button>
+                    <el-button v-for="(i,v) in states" size="mini" :key="v" @click="stateCheck(i.CD)" :class="{'active-btn':params.status_cd == i.CD}">{{$lang(i.CD_VAL)}}</el-button>
+                </el-button-group>
+            </el-col>
+        </el-row>
+        <el-row class="query-class">
+            <el-col :span="5">
+                <label class="label-tag">{{$lang('转换单号')}}</label>
+                <el-input :placeholder="$lang('请输入内容')" v-model="params.conversion_no" style="width:72%">
+                </el-input>
+            </el-col>
+            <el-col :span="5">
+                <label class="label-tag">{{$lang('转换类型')}}</label>
+                <el-select :placeholder="$lang('请选择')" v-model="params.type_cd" clearable filterable style="width:60%;">
+                    <el-option v-for="(item) in types" :key="item.CD" :label="$lang(item.CD_VAL)" :value="item.CD"></el-option>
+                </el-select>
+            </el-col>
+            <el-col :span="7">
+                <label class="label-tag" style="width:130px;">{{$lang('是否同步更新采购单')}}</label>
+                <el-select :placeholder="$lang('请选择')" v-model="params.affect_supplier_settlement" clearable style="width:50%;">
+                    <el-option :label="$lang('否')" value="0"></el-option>
+                    <el-option :label="$lang('是')" value="1"></el-option>
+                </el-select>
+            </el-col>
+            <el-col :span="7">
+                <label class="label-tag" style="width:100px;">{{$lang('归属销售团队')}}</label>
+                <el-select :placeholder="$lang('请选择')" v-model="params.sales_team_cd" clearable filterable style="width:50%;">
+                    <el-option v-for="(item) in teams" :key="item.CD" :label="$lang(item.CD_VAL)" :value="item.CD"></el-option>
+                </el-select>
+            </el-col>
+        </el-row>
+        <el-row class="query-class">
+            <el-col :span="5">
+                <label class="label-tag">{{$lang('发起人')}}</label>
+                <el-input :placeholder="$lang('请输入内容')" v-model="params.created_by" style="width:72%">
+                </el-input>
+            </el-col>
+            <el-col :span="5">
+                <label class="label-tag">{{$lang('发起时间')}}</label>
+                <div style="display:inline-block;width:72%;">
+                    <el-date-picker v-model="params.created_at_start" clearable style="width:42%" value-format="yyyy-MM-dd" type="date"></el-date-picker>
+                    <label>-</label>
+                    <el-date-picker v-model="params.created_at_end" clearable style="width:42%" value-format="yyyy-MM-dd" type="date"></el-date-picker>
+                </div>
+            </el-col>
+            <el-col :span="7">
+                <label class="label-tag" style="width:130px;">{{$lang('应审核人')}}</label>
+                <el-input :placeholder="$lang('请输入内容')" v-model="params.need_reviewer" style="width:50%">
+                </el-input>
+            </el-col>
+            <el-col :span="7">
+                <label class="label-tag" style="width:100px;">{{$lang('SKU/条形码')}}</label>
+                <el-input :placeholder="$lang('请输入内容')" v-model="params.sku_or_barcode" style="width:50%">
+                </el-input>
+            </el-col>
+        </el-row>
+        <el-row class="query-class">
+            <el-col :span="24">
+                <el-button @click="getListData()" type="primary" size="small">{{$lang('查询')}}</el-button>
+                <el-button @click="resetSearch()" size="small">{{$lang('重置')}}</el-button>
+            </el-col>
+        </el-row>
+        <div class="baseline"></div>
+
+        <!-- 订单表格主体 start-->
+        <div class="orderList-Main list-common-main">
+            <header>
+                <el-row>
+                    <el-col :span="16">
+                        {{$lang('搜索结果:共')}}
+                        <span class="num-bold">{{totalCount}}</span> {{$lang('条记录')}}
+                    </el-col>
+                    <el-col :span="8" class="text-right">
+                        <!-- <a style="color:white" onclick="opennewtab(this,'<{$Think.lang.正次品转换}>')" _href="<{:U('display/positive_toactive')}>"></a> -->
+                        <el-button type="primary" size="small" @click="viewRouter()">
+                            {{$lang('发起')}}
+                        </el-button>
+                    </el-col>
+                </el-row>
+            </header>
+
+            <el-table border show-header :data="listData" tooltip-effect="dark" style="width: 100%" class="order-list-table table-common" v-loading="tableLoading">
+                <el-table-column prop="conversion_no" :label="$lang('转换单号')"></el-table-column>
+                <el-table-column :label="$lang('转换类型')">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.type)}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('是否同步更新采购单')">
+                    <template slot-scope="scope">
+                        <!-- {{scope.row.affect_supplier_settlement | filteraffect}} -->
+                        <span v-if="scope.row.affect_supplier_settlement == 0">{{$lang('否')}}</span>
+                        <span v-else>{{$lang('是')}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('归属销售团队')">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.sales_team)}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('归属仓库')">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.warehouse)}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('单据状态')">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.status)}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('应审核人')">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.need_reviewer)}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('发起人')">
+                    <template slot-scope="scope">
+                        {{$lang(scope.row.created_by)}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="created_at" :label="$lang('发起时间')"></el-table-column>
+                <el-table-column :label="$lang('操作')">
+                    <template slot-scope="scope">
+                        <el-button type="success" size="small" @click="viewDraft(scope.row.id)">
+                            {{$lang('查看')}}
+                        </el-button>
+                        <!-- <a onclick="opennewtab(this,'<{$Think.lang.正次品转换详情}>')" class="el-button el-button--primary el-button--small" :_href="show + scope.row.id + '&storageKey=storage0003'" target="_blank">{{$lang('查看详情')}}</a> -->
+                    </template>
+                </el-table-column>
+            </el-table>
+
+            <el-pagination background @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="params.p" :page-sizes="[10, 30, 50, 100]" :page-size="params.rows" layout="sizes,prev, pager, next, jumper" :total="totalCount"></el-pagination>
+        </div>
+        <!-- 订单表格主体 end-->
+    </div>
+</body>
+<script src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/jquery-ui.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js?<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui-3.1.min.js"></script>
+<script src="./Application/Tpl/Home/Public/lib/layer-v3.0.3/layer/layer.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/lib/My97DatePicker/WdatePicker.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/common_allo.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-en.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/queryString.js?v=<{$Think.config.VER_NUM}>"></script>
+<script>
+    if (getCookie('think_language') !== "zh-cn") {
+        ELEMENT.locale(ELEMENT.lang.en)
+    }
+    // Vue.filter('filteraffect', function(value) {
+    //     if (!value) return ''
+    //     return value == '0' ? this.$lang('否') : this.$lang('是')
+    // })
+    let that = "";
+    var vm = new Vue({
+        el: '#app',
+        data: {
+            stateCheckAllItems: true,
+            teams: '',
+            states: '',
+            types: '',
+            listData: [],
+            totalCount: 0,
+            tableLoading: true,
+            params: {
+                conversion_no: '',
+                type_cd: '',
+                affect_supplier_settlement: '',
+                sales_team_cd: '',
+                created_by: '',
+                need_reviewer: '',
+                sku_or_barcode: '',
+                created_at_start: '',
+                created_at_end: '',
+                status_cd: '', // 状态
+                rows: 10,
+                p: 1
+            },
+            queryPost: function(url, param) {
+                var headers = {
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                }
+                return axios.post(url, Qs.stringify(param), headers);
+            },
+            storageKey: 'storage0003'
+        },
+        created: function() {
+            this.monitorStorage();
+            this.getListData();
+            this.getBaseData();
+        },
+        //监听数据
+        // watch: {
+        //     params: {
+        //         handler(newValue, oldValue) {
+        //             this.getListData(newValue);
+        //         },
+        //         deep: true
+        //     }
+
+        // },
+        methods: {
+            getBaseData() {
+                let param = {
+                    cd_type: {
+                        product_conversion_status: true,
+                        sell_team: true,
+                        product_conversion_type: true,
+                    }
+                }
+                this.queryPost("/index.php?g=common&m=index&a=get_cd", param).then((res) => {
+                    if (res.data.code === 2000) {
+                        this.states = res.data.data.product_conversion_status;
+                        this.teams = res.data.data.sell_team;
+                        this.types = res.data.data.product_conversion_type;
+                    } else {
+                        this.$message.error(this.$lang(res.data.msg));
+                    }
+                }).catch(function(err) {
+                    console.log(err);
+                });
+            },
+            monitorStorage: function() {
+                var _this = this;
+                window.onstorage = function(storage) {
+                    if (storage.key == _this.storageKey) {
+                        // _this.searchRet();
+                        _this.getListData();
+                        localStorage.removeItem(storage.key);
+                    }
+                }
+            },
+            stateCheck: function(e) {
+                var keyIndex = 0;
+                for (key in vm.states) {
+                    if (vm.states[key].CD == e) {
+                        keyIndex = key;
+                        vm.states[key].selected = true;
+                    } else {
+                        vm.states[key].selected = false;
+                    }
+                }
+                this.params.status_cd = e;
+                vm.states[keyIndex].selected == true ? vm.getListData() : '';
+                vm.stateCheckAllItems = false
+            },
+            stateCheckAll: function() {
+                this.params.status_cd = '';
+                this.stateCheckAllItems = true;
+                vm.getListData();
+            },
+            resetSearch: function() {
+                this.params = {
+                    conversion_no: '',
+                    type_cd: '',
+                    affect_supplier_settlement: '',
+                    sales_team_cd: '',
+                    created_by: '',
+                    need_reviewer: '',
+                    sku_or_barcode: '',
+                    created_at_start: '',
+                    created_at_end: '',
+                    status_cd: '' // 状态
+                };
+                this.stateCheckAllItems = true;
+                vm.getListData();
+            },
+            handleSizeChange: function(val) {
+                this.params.rows = val;
+                vm.getListData();
+            },
+            handleCurrentChange: function(val) {
+                this.params.p = val;
+                vm.getListData();
+            },
+            getListData: function() {
+                this.tableLoading = true;
+                this.queryPost("/index.php?g=warehouse&m=product&a=conversion_list&" + this.params.p, this.params).then((res) => {
+                    var _data = res.data;
+                    if (_data.code == 2000) {
+                        this.tableLoading = false;
+                        this.listData = _data.data.list;
+                        this.totalCount = _data.data.page.total_rows - 0;
+                    } else {
+                        this.$message.error(this.$lang("获取列数据失败"));
+                    }
+                }).catch(function(err) {
+                    console.log(err);
+                });
+            },
+            viewRouter: function() {
+                var dom = document.createElement("a"),
+                    _href = "/index.php?g=scm&m=display&a=positive_toactive";
+                dom.setAttribute("onclick", "opennewtab(this,'" + this.$lang('正次品转换') + "')");
+                dom.setAttribute("_href", _href);
+                dom.setAttribute("target", "_blank");
+                dom.click();
+            },
+
+            viewDraft: function(id) {
+                this.route(this.$lang('正次品转换详情'), "positive_show", id);
+            },
+            //跳转详情页
+            route: function(title, _html, type) {
+                var dom = document.createElement("a"),
+                    _href = "/index.php?g=scm&m=display&a=" + _html + "&type=" + type;
+                dom.setAttribute("onclick", "opennewtab(this,'" + title + "')");
+                dom.setAttribute("_href", _href);
+                dom.setAttribute("target", "_self");
+                dom.click();
+            },
+        }
+    });
+</script>
+
+</html>

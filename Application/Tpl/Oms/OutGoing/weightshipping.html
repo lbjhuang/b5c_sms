@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/utils/css/public.style.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/element-ui-2.2.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/normailize.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/icon/css/font-awesome.min.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Public/css/list_common.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Oms/Order/orderList.css?v=<{$Think.const.V}>">
+    <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+    <title>{{$lang('称重发货页')}}</title>
+    <style>
+        #weighing-delivery {
+            padding: 20px 40px 0px 40px;
+        }
+        [v-cloak]{
+            display: none;
+        }
+
+        .input-content {
+            width: 1200px;
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .input-content .check-item {
+            width: 600px;
+            height: 50px;
+            line-height: 50px;
+        }
+
+        .input-content .check-item .info-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-right: 20px;
+        }
+
+        .el-input {
+            display: inline-block;
+            width: 280px;
+        }
+
+        .btn-content {
+            height: 24px;
+            margin-bottom: 20px;
+        }
+
+        .btn-content .common-btn {
+            float: right;
+        }
+
+        .table-common {
+            overflow: auto !important;
+        }
+
+        .activeRow {
+            transition: 1s all;
+            background-color: #ade6b6 !important;
+        }
+
+        .error-row {
+            color: red !important;
+        }
+        .selectStatus .el-dialog {
+            padding: 10px 20px;
+        }
+        .tableStatus .el-dialog{
+            padding:20px;
+        }
+        .selectStatus .el-dialog__header {
+            display: inline-block;
+            margin-bottom: 12px;
+        }
+
+        .selectStatus .el-button.el-button--default {
+            background-color: #fff !important;
+        }
+
+        .selectStatus .el-button ,.tableStatus .el-button{
+            padding: 8px 12px !important;
+        }
+        .isError{
+            color:red;
+        } 
+        .el-dialog{
+            width:900px;
+        }
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none !important;
+             margin: 0; 
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        .listTip .el-dialog{
+            width:920px;
+        }
+        .listTip .el-dialog .el-dialog__header{
+            display: block;
+        }
+        .listTip .el-dialog .el-dialog__body{
+            padding: 0 35px !important;
+        }
+        .tipTable .el-table_2_column_13 .cell{
+            padding: 0;
+        }
+        .tipTable .el-table_2_column_14 .cell{
+            padding: 0;
+        }
+        .tipTable .el-table_2_column_15 .cell{
+            padding: 0;
+        }
+    </style>
+</head>
+<style>
+</style>
+
+<body>
+    <div id="weighing-delivery" v-cloak>
+        <div class="input-content ">
+            <div class="check-item">
+                <span class="info-title">{{$lang('称重方式')}}</span>
+                <span class="info-input">
+                    <el-radio-group v-model="radio" size="medium" @change="selectWeightStyle">
+                        <el-radio label="1">{{$lang('逐单称重')}}</el-radio>
+                        <el-radio label="2">{{$lang('同重量直接扫描')}}</el-radio>
+                    </el-radio-group>
+
+                </span>
+            </div>
+            <div class="check-item">
+                <span class="info-title">{{$lang('发货方式')}}</span>
+                <span class="info-input">
+                    <el-radio-group v-model="radio1" size="medium" @change="selectDeliveryStyle">
+                        <el-radio label="1">{{$lang('自动发货(5单前)')}}</el-radio>
+                        <el-radio label="2">{{$lang('手动发货')}}</el-radio>
+                    </el-radio-group> 
+                </span>
+            </div>
+            <div class="check-item">
+                <span class="info-title">{{$lang('包裹重量')}}</span>
+                <span class="info-input">
+                    <el-input type='text' size="small" id="weightInput" v-model="weightValue" :maxlength="weightLength" :placeholder="$lang('请称重或手动输入重量信息(KG)')" @keyup.enter.native="saveWeight" ref="weightInput" onkeypress = "return event.keyCode>=48&&event.keyCode<=57||event.keyCode==46"
+                        onpaste = "return !clipboardData.getData('text').match(/\D/)"
+                        ondragenter = "return false"
+                        style= "ime-mode:Disabled"></el-input>
+                </span>
+            </div>
+            <div class="check-item">
+                <span class="info-title">{{$lang('面单/包装号条码')}}</span>
+                <span class="info-input">
+                    <el-input size="small" v-model="numValue" :placeholder="$lang('扫描或输入面单/包装号条码以获取订单信息')" @keyup.enter.native="saveNum" ref="numberInput"></el-input>
+                </span>
+            </div>
+
+        </div>
+        <div class="info-detail list-common-main">
+            <div class="btn-content">
+                <button class="common-btn" v-if="isBtnVisible" @click="batchDelivery" :disabled="!isClicked">{{$lang('批量发货')}}</button>
+            </div>
+            <el-dialog :title="$lang('回退结果')" :visible.sync="dialogTableVisible" class="tableStatus">
+                <el-table :data="gridData" border>
+                    <el-table-column :label="$lang('订单号')" width="300">
+                        <template scope="scope">
+                            <div :class="{'isError':(scope.row.code != '2000')}">{{scope.row.ordId}}</div>
+                        </template>
+                    </el-table-column>
+                    <el-table-column :label="$lang('出库状态')" >
+                        <template scope="scope">
+                            <div :class="{'isError':(scope.row.code != '2000')}">{{scope.row.msg}}</div>
+                        </template>
+                    </el-table-column>
+                </el-table>
+                <span slot="footer" class="dialog-footer">
+                        <el-button size="small" type="primary" @click="finishedStatus">{{$lang('确 定')}}</el-button>
+                    </span>
+            </el-dialog>
+            <!-- 当发现待出库订单中存在多个运单号/包装号=扫描的条码的订单时，提示此弹窗 -->
+            <el-dialog
+            :title="$lang('提示')"
+            :center="true"
+            :visible.sync="dialogTipVisible"
+            class="listTip">
+            <p style="text-align: center;">检测到用包装号/运单号一样的待出库订单，请选择：</p>
+            
+            <el-table :data="tipData" border class="tipTable">
+                <el-table-column prop="platName" :label="$lang('平台')">
+                </el-table-column>
+                <el-table-column prop="storeName" :label="$lang('店铺')">
+                </el-table-column>
+                <el-table-column prop="orderId" :label="$lang('平台订单ID')">
+                </el-table-column>
+                <el-table-column :label="$lang('SKU')">
+                    <template slot-scope="scope">
+                        <p v-for="(item, index) in scope.row.patch_data" :key="index" :style="index == scope.row.patch_data.length-1 ? '' : 'border-bottom: 1px solid #ebeef5;'" style="padding:10px 5px">{{item.sku_id}}</p>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('商品名称')" width="220">
+                    <template slot-scope="scope">
+                        <p v-for="(item, index) in scope.row.patch_data" :key="index" :style="index == scope.row.patch_data.length-1 ? '' : 'border-bottom: 1px solid #ebeef5;'" style="padding:10px 5px">{{item.product_name}}</p>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('数量')">
+                    <template slot-scope="scope">
+                        <p v-for="(item, index) in scope.row.patch_data" :key="index" :style="index == scope.row.patch_data.length-1 ? '' : 'border-bottom: 1px solid #ebeef5;'" style="padding:10px 5px">{{item.the_number_issued}}</p>
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('操作')">
+                    <template slot-scope="scope">
+                        <el-button type="primary" @click="columnQuery(scope.row)">确认</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+            </el-dialog>
+            <el-table :data="detailData" border style="width: 100%" class="table-common" :row-class-name="tableRowClassName">
+                <el-table-column type="index" width="50" :label="$lang('编号')"> </el-table-column>
+                <el-table-column prop="trackingNumber" :label="$lang('运单号')" width="180">
+                </el-table-column>
+                <el-table-column prop="packingNo" :label="$lang('包装号')" width="180">
+                </el-table-column>
+                <el-table-column prop="b5cOrderNo" :label="$lang('ERP订单号')" width="180">
+                </el-table-column>
+                <el-table-column prop="orderId" :label="$lang('平台订单号')">
+                </el-table-column>
+                <!-- <el-table-column prop="logisticModel" :label="$lang('物流方式')">
+                </el-table-column> -->
+                <el-table-column prop="logisticModel" :label="$lang('物流方式')">
+                    <template scope="scope">
+                        {{$lang(scope.row.logisticModel)}}
+                    </template>
+                </el-table-column>
+                <el-table-column :label="$lang('重量 (KG)')">
+                    <template slot-scope="scope">
+                        <span :class="{'error-row':!scope.row.freight}">{{scope.row.weight}}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="freight" :label="$lang('运费计算（元')">
+                </el-table-column>
+                <!-- <el-table-column prop="ordStatCdNm" :label="$lang('状态')">
+                </el-table-column> -->
+                <!-- <el-table-column :label="$lang('状态')">
+                    <template scope="scope">
+                        {{$lang(scope.row.ordStatCdNm)}}
+                    </template>
+                </el-table-column> -->
+            </el-table>
+        </div>
+    </div>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/utils/utils.js?v=<{$Think.const.V}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/lib/jquery.table2excel.js?v=<{$Think.const.V}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js?<{$Think.config.VER_NUM}>"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js"></script>
+    <script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.2.js"></script>
+    <script>
+
+        VM = new Vue({
+            el: '#weighing-delivery',
+            data: {
+                detailData: [],
+                radio: '1',
+                radio1: '2',
+                weightingStatus: 'onebyone',
+                deliveryMethod: 'manual',
+                weightValue: '',
+                numValue: '',
+                isBtnVisible: true,
+                dialogTableVisible:false,
+                gridData:[],
+                weightLength:8,
+                isClicked:true,
+                isLength: 0,
+                dialogTipVisible: false,
+                tipData: []
+            },
+            created: function created() { },
+            methods: {
+                finishedStatus: function finishedStatus() {
+                    window.location.reload();
+                },
+                //手动批量发货
+                batchDelivery: function batchDelivery() {
+                    var postArr = [];
+                    VM.detailData.forEach(function (ele, ind) {
+                        postArr.push({
+                            "trackingNumber": ele.trackingNumber || ele.packingNo,
+                            "weight": ele.weight,
+                            "orderId": ele.orderId,
+                            "platCd": ele.platCd,
+                        });
+                    });
+                    var postData = {
+                        "data": {
+                            "query": postArr
+                        }
+                    };
+                    if(VM.isClicked){
+                        if (postArr.length < 1) {
+                            VM.$message.error(this.$lang('没有可以发货的订单'));
+                        } else {
+                            VM.isClicked =false
+                        axios.post('/index.php?g=oms&m=OutGoing&a=scanWeightShipping', postData).then(function (response) {
+                            if (response.data.code == 2000) {
+                                VM.gridData = response.data.data;
+                                VM.dialogTableVisible = true;
+                            }
+                            VM.isClicked =true                            
+                        }).catch(function (err) {
+                            VM.isClicked =true                            
+                            
+                            console.log(err);
+                        });
+                    }
+                    }
+                   
+                },
+                // 提示音
+                playVoice:function(type){
+                    var borswer = window.navigator.userAgent.toLowerCase();
+                    var successSrc = "./Application/Tpl/Oms/OutGoing/Win.wav"; 
+                    var errorSrc = "./Application/Tpl/Oms/OutGoing/Warn.wav"; 
+
+                    if(document.getElementById("audioPlay")){
+                        document.getElementById("audioPlay").remove();
+                    }
+                        
+                    if(type == 'success'){
+                        var strAudio = "<audio id='audioPlay' src='"+successSrc+"' hidden='true'>";  
+                    }else if(type == 'error'){
+                        var strAudio = "<audio id='audioPlay' src='"+errorSrc+"' hidden='true'>";
+                    }
+
+
+                    // if($("body").find("audio").length <= 0){
+                        $("body").append(strAudio);  
+                    // }
+                   
+                    var audio = document.getElementById("audioPlay");  
+                    console.log(audio)
+                    audio.play();  
+                },
+
+
+                //没有运费计算的行 标红
+                tableRowClassName: function tableRowClassName(_ref) {
+                    var row = _ref.row,
+                        rowIndex = _ref.rowIndex;
+
+                    if (row.code == '3000') {
+                        return 'error-row';
+                    }
+                },
+
+                saveWeight: function saveWeight() {
+                    this.$refs.numberInput.focus();
+                },
+                //确认
+                columnQuery(data) {
+                    console.log(data);
+                    var _this = this;
+                    var flag = true;
+                    _this.dialogTipVisible = false;
+                    VM.detailData.forEach(function (ele, index) {
+                        if (ele.trackingNumber == data.trackingNumber || (ele.packingNo && data.packingNo && ele.packingNo == data.packingNo)) {
+                            console.log('11')
+                            flag = false;
+                            VM.$delete(VM.detailData, index);
+                            VM.detailData.unshift(data);
+                            VM.$message.success(_this.$lang('订单信息已更新'));
+                            _this.playVoice('success')
+                        }
+                    });
+                    if (flag) {
+                        VM.detailData.unshift(data);
+                        _this.playVoice('success')
+                    }
+                    VM.detailData.forEach(function (ele, ind) {
+                        if (ele !== '') {
+                            console.log('isTrue')
+                            ele['isTrue'] = true;
+                        } else {
+                            console.log('isFalse')
+                            ele['isTrue'] = false;
+                        }
+                    });
+
+                    if (VM.weightingStatus == 'onebyone') {
+                        console.log('update')
+                        VM.clearInput();
+                        VM.$refs.weightInput.focus();
+                    } else if (VM.weightingStatus == 'continuous') {
+                        console.log('continuous')
+                        VM.numValue = '';
+                        VM.$refs.numberInput.focus();
+                    }
+                },
+                saveNum: function saveNum() {
+                    this.isLength++;
+                    var postData = {
+                        "data": {
+                            "query": [{
+                                "trackingNumber": VM.numValue,
+                                "weight": $.trim(VM.weightValue)
+                            }]
+                        }
+                    };                                         
+                    var _this = this;
+                    if(!VM.numValue){
+                        VM.$message.error(this.$lang('请输入面单条码'));
+                                                                                   
+                    }else{
+                        axios.post('/index.php?g=oms&m=OutGoing&a=scanTracking', postData).then(function (response) {
+                            if (response.data.code == 2000) {
+                                var resData = response.data.data.pageData;
+                                var isError = false;
+                                if(response.data.data.pageData.length <= 1){
+                                    var flag = true;
+                                VM.detailData.forEach(function (ele, index) {
+                                    if ((ele.trackingNumber && response.data.data.pageData[0].trackingNumber && ele.trackingNumber == response.data.data.pageData[0].trackingNumber) || (ele.packingNo && response.data.data.pageData[0].packingNo && ele.packingNo == response.data.data.pageData[0].packingNo)) {
+                                        flag = false;
+                                        VM.$delete(VM.detailData, index);
+                                        VM.detailData.unshift(response.data.data.pageData[0]);
+                                        $('.info-detail .el-table__row').eq(0).addClass('activeRow');
+                                        setTimeout(function () {
+                                            $('.info-detail .el-table__row').eq(0).removeClass('activeRow');
+                                        }, 1000);
+                                        VM.$message.success(_this.$lang('订单信息已更新'));
+                                        _this.playVoice('success')
+                                    }
+                                });
+                                if (flag) {
+                                    if (response.data.data.pageData != null && response.data.data.pageData.length > 0) {
+                                        console.log('success')
+                                        VM.detailData.unshift(response.data.data.pageData[0]);
+                                        _this.playVoice('success')
+                                    } else {
+                                        console.log('error')
+                                        _this.playVoice('error')
+                                        VM.$message.error(_this.$lang('无符合条件订单'));
+                                    }
+                                }
+                                VM.detailData.forEach(function (ele, ind) {
+                                    if (ele !== '') {
+                                        console.log('isTrue')
+                                        ele['isTrue'] = true;
+                                    } else {
+                                        console.log('isFalse')
+                                        ele['isTrue'] = false;
+                                    }
+                                });
+
+                                if (VM.weightingStatus == 'onebyone') {
+                                    console.log('update')
+                                    VM.clearInput();
+                                    VM.$refs.weightInput.focus();
+                                } else if (VM.weightingStatus == 'continuous') {
+                                    console.log('continuous')
+                                    VM.numValue = '';
+                                    VM.$refs.numberInput.focus();
+                                }
+                                } else {
+                                    _this.dialogTipVisible = true;
+                                    _this.tipData = response.data.data.pageData;
+
+                                }
+                                
+                                
+                            } else {
+                                VM.$message.error(_this.$lang('无符合条件订单'));
+                                VM.numValue = "";
+                                VM.$refs.numberInput.focus();
+                                                         
+                            }
+                        }).catch(function (err) {
+                       
+                            
+                            console.log(err);
+                        });
+                    }
+    
+                    
+                  
+                },
+                selectWeightStyle: function selectWeightStyle(val) {
+                    this.weightValue = '';
+                    this.numValue = '';
+                    if (val == 1) {
+                        this.weightingStatus = 'onebyone';
+                    } else {
+                        this.weightingStatus = 'continuous';
+                    }
+                },
+                selectDeliveryStyle: function selectDeliveryStyle(val) {
+                    if (val == 1) {
+                        this.isBtnVisible = false;
+                        this.deliveryMethod = 'auto';
+                    } else {
+                        this.isBtnVisible = true;
+                        this.deliveryMethod = 'manual';
+                    }
+                    this.weightValue = '';
+                    this.numValue = '';
+                },
+                clearInput: function clearInput() {
+                    this.numValue = '';
+                    this.weightValue = '';
+                },
+                checkNum(){
+                    console.log(event.keyCode)
+                }
+            },
+            mounted: function mounted() {
+                this.$refs.weightInput.focus();
+            },
+            watch: {
+                weightValue:{
+                    handler(newValue, oldValue) {
+                        var index = newValue.indexOf('.');
+                        if(newValue.length == 8){
+                            if(newValue[7] != '.'){
+                                this.$nextTick(function () { this.weightValue = VM.weightValue.substr(0,7) })
+                            }
+                        }
+                        
+                        if(index !=-1){
+                            this.weightLength = 3+index;
+                        }else{
+                            this.weightLength = 8;
+                        }
+                        
+                    },
+                    deep: true
+                },
+                numValue:{
+                    handler(newValue, oldValue) {
+                        this.numValue =$.trim(newValue)
+                    }
+                },
+                detailData: {
+                    handler: function handler(newValue, oldValue) {
+                        if (VM.deliveryMethod == 'auto') {
+                            var length = 0;
+                            var i = 0;
+                            var flag = true;
+                            newValue.forEach(function (ele, ind) {
+                                if (ele.isTrue) {
+                                    length++;
+                                }
+                                if (flag && length == 6) {
+                                    i = ind;
+                                    flag = false;
+                                }
+                            });
+                            if (length >= 6 && newValue[i].isTrue) {
+                                var postData = {
+                                    "data": {
+                                        "query": [{
+                                            "trackingNumber": newValue[i].trackingNumber,
+                                            "weight": newValue[i].weight,
+                                            "orderId": newValue[i].orderId,
+                                            "platCd": newValue[i].platCd,
+                                        }]
+                                    }
+                                };
+                                var postArr = [];
+                                VM.detailData.forEach(function (ele, ind) {
+                                    postArr.push({
+                                        "trackingNumber": ele.trackingNumber,
+                                        "weight": ele.weight,
+                                        "orderId": ele.orderId,
+                                        "platCd": ele.platCd,
+                                    });
+                                });
+                                var _this = this;
+                                axios.post('/index.php?g=oms&m=OutGoing&a=scanWeightShipping', postData).then(function (response) {
+
+                                    if (response.data.data[0].code == 2000) {
+
+                                        VM.$delete(newValue, i);
+                                        VM.$message.success(VM.$lang('自动发货成功'));
+                                    } else {
+                                        VM.$delete(newValue, i);
+                                        VM.$message.error(VM.$lang('自动发货失败'));
+                                    }
+                                }).catch(function (err) {
+                                    console.log(err);
+                                });
+                            }
+                        }
+                    },
+
+                    deep: true
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

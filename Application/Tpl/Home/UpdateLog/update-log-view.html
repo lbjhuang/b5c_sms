@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="renderer" content="webkit|ie-comp|ie-stand">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport"
+        content="width=device-width,initial-scale=1,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+  <meta http-equiv="Cache-Control" content="no-siteapp"/>
+  <title>更新日志详情</title>
+  <link rel="stylesheet" href="./Application/Tpl/Home/Public/css/default.css?v=<{$Think.const.V}>">
+  <link rel="stylesheet"
+        href="./Application/Tpl/Home/Public/css/element-ui-2.8.2.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">
+  <link rel="stylesheet"
+        href="./Application/Tpl/Home/Public/mavon-editor/dist/css/index.css">
+
+  <!--    <link rel="stylesheet" href="../Public/../Hr/hrstyle.css?v=<{$Think.config.VER_NUM}>?v=<{$Think.config.VER_NUM}>">-->
+  <!--    <link rel="stylesheet" href="../Public/icon/css/font-awesome.min.css?v=<{$Think.config.VER_NUM}>">-->
+
+
+  <style>
+    html {
+      /*height: 100vh;*/
+    }
+
+    #main {
+      height: 100%;
+      padding-top: 15px;
+
+    }
+
+    .log__title {
+      font-weight: bold;
+      font-size: 28px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .log__information {
+      display: flex;
+      justify-content: flex-end;
+      padding: 30px 0px;
+      border-bottom: 1px solid #dddddd;
+    }
+
+    .log__information span {
+      margin-right: 10px;
+      /*color: #dddddd;*/
+    }
+
+    .edit__actions {
+      display: flex;
+      justify-content: center;
+      margin-top: 30px;
+    }
+
+    .button--save {
+      width: 54px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body id="content">
+<div id="main" v-cloak>
+  <div class="edit">
+    <div class="edit__fields">
+      <el-row :gutter="20">
+        <el-col :offset="2" :sm="20">
+          <div class="log log__title">
+            <span>{{updateLog.log_name}}</span>
+          </div>
+        </el-col>
+      </el-row>
+      <el-row :gutter="20">
+        <el-col :offset="2" :sm="20">
+          <div class="log__information">
+            <span class="heir">{{$lang('上传人：')}}{{updateLog.created_by}}</span>
+            <span class="update-time">{{$lang('上传时间：')}}{{updateLog.created_log_at}}</span>
+            <span class="reading">{{$lang('阅读量：')}}{{updateLog.read_num}}</span>
+          </div>
+        </el-col>
+      </el-row>
+      <el-row :gutter="20">
+        <el-col :offset="2" :sm="20">
+          <div class="log log__content" style="padding-top: 20px" v-html="updateLog.log_content">
+          </div>
+        </el-col>
+      </el-row>
+      <el-row :gutter="20">
+        <el-col :offset="2" :sm="20">
+          <div class="edit__actions">
+            <?php if (checkPermissions('updateLog', 'deleteLog')) { ?>
+            <el-button
+                data-test="save"
+                type="primary"
+                :loading="saving"
+                class="button button--save"
+                @click="onDelete"
+            >{{$lang('删除')}}
+            </el-button
+            >
+            <?php } ?>
+
+            <?php if (checkPermissions('updateLog', 'updateLogEdit')) { ?>
+            <el-button
+                data-test="save"
+                type="primary"
+                :loading="saving"
+                class="button button--save"
+                @click="onEdit"
+            >{{$lang('编辑')}}
+            </el-button
+            >
+            <?php } ?>
+
+          </div>
+        </el-col>
+      </el-row>
+    </div>
+  </div>
+</div>
+
+<script src="/Application/Tpl/Home/Public/lib/jquery/1.9.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/vue.2.5.13.js"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/element-ui-2.8.2.js?v=<{$Think.const.V}>"></script>
+<script type="text/javascript" src="../Public/wang-editor/release/wangEditor.min.js"></script>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.js"></script>
+<a href="javascript:void(0)" class="Hui-iconfont toTop" title="返回顶部" alt="返回顶部"
+   style="width:40px;height:40px;display:none;position:fixed;right:50px;bottom:30px;z-index:999999"><img
+    src="/Application/Tpl/Home/Public/images/top.png" style="width:42px;height:42px;margin-left:-1px;"></a>
+<script type="text/javascript" src="/Application/Tpl/Home/Public/js/H-ui.admin.js?v=<{$Think.config.VER_NUM}>"></script>
+<script type="text/javascript" src="./Application/Tpl/Home/Public/js/axios.min.js?v=201907011048"></script>
+
+
+<script>
+    const vueApp = new Vue({
+        el: '#main',
+        data() {
+            return {
+                OPEN_HOST: '<{$OPEN_HOST}>',
+                user_name: '<{$user_name}>',
+                saving: false,
+                updateLog: {},
+                editor: null,
+                isDisabled: true,
+                id: null
+            }
+        },
+        mounted() {
+            let that = this;
+            let Editor = window.wangEditor;
+            this.editor = new Editor('#editor');
+            this.editor.customConfig.uploadImgShowBase64 = true;
+            this.editor.customConfig.onchange = function (html) {
+                // html 即变化之后的内容
+                if (html === '<p><br></p>') {
+                    html = ""
+                }
+                that.updateLog.log_content = html;
+                console.log("内容变化", that.updateLog.log_content)
+
+            }
+            this.editor.create();
+
+            this.getIdByHref().then(() => {
+                this.getUpdateLog();
+            });
+        },
+        methods: {
+            getIdByHref() {
+                return new Promise((resolve) => {
+                    let href = window.location.href;
+                    this.id = href.substr(href.indexOf("id")).split("=")[1];
+                    resolve();
+                })
+            },
+            getUpdateLog() {
+                this.editor.$textElem.attr('contenteditable', false);
+                axios.post(`${this.OPEN_HOST}/api/logDetail`, {
+                    id: this.id,
+                    M_NAME: this.user_name
+                }).then((res) => {
+                    this.updateLog = res.data.data;
+                    this.updateLog.log_content = this.updateLog.log_content;
+                    console.log("详情数据", res);
+                })
+            },
+            onDelete() {
+                this.$confirm(this.$lang("你确定要删除更新日志") + '"' + this.updateLog.log_name + '"' + this.$lang("吗?"), this.$lang("提示")).then(() => {
+                    axios.post(`${this.OPEN_HOST}/api/deleteLog`, {
+                        id: this.updateLog.uuid,
+                        deleted_by: this.updateLog.deleted_by
+                    }).then((res) => {
+                        console.log("删除成功", res);
+                        if (res.data.code === 200) {
+                            this.$message.success(this.$lang("删除成功"));
+                            setTimeout(() => {
+                                //方法来源于H-ui.admin.js文件
+                                // closeTab();
+                                backTab('/index.php?m=update_log&a=updateLogList', this.$lang('更新日志'));
+                            }, 1000)
+                        }
+                    })
+                }).catch(() => {
+                    this.$message.warning(this.$lang("取消删除"));
+                })
+
+            },
+            onEdit() {
+                let href = "/index.php?m=update_log&a=updateLogEdit&id=" + this.id;
+                let a = document.createElement('a');
+                a.setAttribute("style", "display: none");
+                a.setAttribute("onclick", "opennewtab(this,'" + this.$lang('更新日志编辑') + "')");
+                a.setAttribute("_href", href);
+                a.onclick();
+            }
+        }
+    });
+</script>
+</body>
+</html>
